@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   BookOpen, 
@@ -10,196 +11,276 @@ import {
   Award,
   Clock,
   Target,
-  AlertTriangle
+  FileText,
+  CheckCircle
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 const StudentDashboard = () => {
-  const { user } = useAuth();
-  
-  const subjects = [
-    { name: 'Data Structures', code: 'CS301', attendance: 85, internals: 78, professor: 'Dr. Smith' },
-    { name: 'Database Management', code: 'CS302', attendance: 92, internals: 85, professor: 'Prof. Johnson' },
-    { name: 'Web Development', code: 'CS303', attendance: 78, internals: 82, professor: 'Dr. Wilson' },
-    { name: 'Software Engineering', code: 'CS304', attendance: 88, internals: 90, professor: 'Prof. Brown' },
-    { name: 'Computer Networks', code: 'CS305', attendance: 95, internals: 88, professor: 'Dr. Davis' },
+  const currentGPA = 8.4;
+  const attendancePercentage = 87;
+  const completedCredits = 142;
+  const totalCredits = 180;
+
+  const subjectPerformance = [
+    { subject: 'Data Structures', marks: 92, attendance: 95, color: '#8B0000' },
+    { subject: 'Database Systems', marks: 88, attendance: 82, color: '#001F54' },
+    { subject: 'Operating Systems', marks: 85, attendance: 89, color: '#8B5E3C' },
+    { subject: 'Computer Networks', marks: 90, attendance: 91, color: '#4A5568' },
+    { subject: 'Software Engineering', marks: 87, attendance: 85, color: '#2D5A27' }
   ];
 
-  const upcomingEvents = [
-    { title: 'Mid-term Exam - Data Structures', date: '2024-01-15', type: 'exam' },
-    { title: 'Assignment Due - Web Development', date: '2024-01-12', type: 'assignment' },
-    { title: 'Lab Session - Database Management', date: '2024-01-10', type: 'lab' },
-    { title: 'Project Presentation', date: '2024-01-18', type: 'presentation' },
+  const monthlyAttendance = [
+    { month: 'Aug', attendance: 92 },
+    { month: 'Sep', attendance: 88 },
+    { month: 'Oct', attendance: 85 },
+    { month: 'Nov', attendance: 89 },
+    { month: 'Dec', attendance: 87 }
   ];
 
-  const getAttendanceColor = (percentage: number) => {
-    if (percentage >= 85) return 'text-green-600';
-    if (percentage >= 75) return 'text-yellow-600';
-    return 'text-red-600';
+  const upcomingAssignments = [
+    {
+      id: 1,
+      subject: 'Data Structures',
+      title: 'Binary Tree Implementation',
+      dueDate: '2024-01-15',
+      status: 'pending',
+      priority: 'high'
+    },
+    {
+      id: 2,
+      subject: 'Database Systems',
+      title: 'SQL Query Optimization',
+      dueDate: '2024-01-18',
+      status: 'in-progress',
+      priority: 'medium'
+    },
+    {
+      id: 3,
+      subject: 'Software Engineering',
+      title: 'Project Documentation',
+      dueDate: '2024-01-20',
+      status: 'pending',
+      priority: 'low'
+    }
+  ];
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-600 text-white';
+      case 'medium': return 'bg-yellow-600 text-white';
+      case 'low': return 'bg-green-600 text-white';
+      default: return 'bg-gray-600 text-white';
+    }
   };
 
-  const getAttendanceStatus = (percentage: number) => {
-    if (percentage >= 85) return 'Good';
-    if (percentage >= 75) return 'Warning';
-    return 'Critical';
-  };
-
-  const overallStats = {
-    attendance: Math.round(subjects.reduce((acc, sub) => acc + sub.attendance, 0) / subjects.length),
-    internals: Math.round(subjects.reduce((acc, sub) => acc + sub.internals, 0) / subjects.length),
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-600 text-white';
+      case 'in-progress': return 'bg-blue-600 text-white';
+      case 'pending': return 'bg-gray-600 text-white';
+      default: return 'bg-gray-600 text-white';
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome back, {user?.name}!</h1>
-          <p className="text-muted-foreground">
-            Year {user?.year} • Section {user?.section} • Roll No: {user?.rollNumber}
-          </p>
-        </div>
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Current Semester
-        </Badge>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Student Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Track your academic progress and performance</p>
       </div>
 
-      {/* Overall Performance */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Overall Attendance</p>
-                <p className={`text-2xl font-bold ${getAttendanceColor(overallStats.attendance)}`}>
-                  {overallStats.attendance}%
-                </p>
-                <Badge 
-                  variant={overallStats.attendance >= 85 ? 'default' : overallStats.attendance >= 75 ? 'secondary' : 'destructive'}
-                  className="text-xs mt-1"
-                >
-                  {getAttendanceStatus(overallStats.attendance)}
-                </Badge>
-              </div>
-              <Calendar className="h-8 w-8 text-muted-foreground" />
-            </div>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Current GPA</CardTitle>
+            <Award className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{currentGPA}</div>
+            <Progress value={(currentGPA / 10) * 100} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-green-600">+0.2</span> from last semester
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Internal Average</p>
-                <p className="text-2xl font-bold text-green-600">{overallStats.internals}%</p>
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Above Average
-                </p>
-              </div>
-              <Target className="h-8 w-8 text-muted-foreground" />
-            </div>
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Attendance</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{attendancePercentage}%</div>
+            <Progress value={attendancePercentage} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className={attendancePercentage >= 75 ? 'text-green-600' : 'text-red-600'}>
+                {attendancePercentage >= 75 ? 'Good' : 'Below minimum'}
+              </span>
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Academic Standing</p>
-                <p className="text-2xl font-bold text-blue-600">Good</p>
-                <p className="text-xs text-muted-foreground">Rank: 15/89</p>
-              </div>
-              <Award className="h-8 w-8 text-muted-foreground" />
-            </div>
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Credits</CardTitle>
+            <Target className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{completedCredits}/{totalCredits}</div>
+            <Progress value={(completedCredits / totalCredits) * 100} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {totalCredits - completedCredits} credits remaining
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Subjects</CardTitle>
+            <BookOpen className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{subjectPerformance.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              This semester
+            </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Subject Performance */}
-        <Card>
+        <Card className="border-border">
           <CardHeader>
-            <CardTitle>Subject Performance</CardTitle>
-            <CardDescription>Attendance and internal marks overview</CardDescription>
+            <CardTitle className="text-foreground">Subject Performance</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Internal marks across all subjects
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {subjects.map((subject, index) => (
-              <div key={index} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{subject.name}</p>
-                    <p className="text-sm text-muted-foreground">{subject.code} • {subject.professor}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge 
-                      variant={subject.attendance >= 85 ? 'default' : subject.attendance >= 75 ? 'secondary' : 'destructive'}
-                      className="text-xs"
-                    >
-                      {subject.attendance}% Attendance
-                    </Badge>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Attendance</span>
-                    <span className={getAttendanceColor(subject.attendance)}>{subject.attendance}%</span>
-                  </div>
-                  <Progress value={subject.attendance} className="h-2" />
-                  <div className="flex justify-between text-sm">
-                    <span>Internal Marks</span>
-                    <span className="text-green-600">{subject.internals}%</span>
-                  </div>
-                  <Progress value={subject.internals} className="h-2" />
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={subjectPerformance} layout="horizontal">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
+                <YAxis dataKey="subject" type="category" width={100} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Bar dataKey="marks" fill="#8B0000" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Upcoming Events */}
-        <Card>
+        {/* Attendance Trend */}
+        <Card className="border-border">
           <CardHeader>
-            <CardTitle>Upcoming Events</CardTitle>
-            <CardDescription>Exams, assignments, and important dates</CardDescription>
+            <CardTitle className="text-foreground">Attendance Trend</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Monthly attendance percentage
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={monthlyAttendance}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <YAxis domain={[70, 100]} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="attendance" 
+                  stroke="#001F54" 
+                  strokeWidth={3}
+                  dot={{ fill: '#001F54', strokeWidth: 2, r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Assignments and Subject Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Upcoming Assignments */}
+        <Card className="lg:col-span-2 border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Upcoming Assignments</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Deadlines and current status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {upcomingAssignments.map((assignment) => (
+                <div key={assignment.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-foreground">{assignment.title}</h4>
+                    <p className="text-sm text-muted-foreground">{assignment.subject}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary" className={getPriorityBadge(assignment.priority)}>
+                        {assignment.priority.toUpperCase()}
+                      </Badge>
+                      <Badge variant="secondary" className={getStatusBadge(assignment.status)}>
+                        {assignment.status.replace('-', ' ').toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-foreground">
+                      Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {Math.ceil((new Date(assignment.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Subject Summary */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Subject Summary</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Quick overview of all subjects
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {upcomingEvents.map((event, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 rounded-lg border">
-                <div className="flex-shrink-0">
-                  {event.type === 'exam' && <AlertTriangle className="h-5 w-5 text-red-600" />}
-                  {event.type === 'assignment' && <BookOpen className="h-5 w-5 text-blue-600" />}
-                  {event.type === 'lab' && <Clock className="h-5 w-5 text-green-600" />}
-                  {event.type === 'presentation' && <Award className="h-5 w-5 text-purple-600" />}
+            {subjectPerformance.map((subject, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-foreground">{subject.subject}</span>
+                  <span className="text-sm font-bold text-foreground">{subject.marks}%</span>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{event.title}</p>
-                  <p className="text-xs text-muted-foreground">{event.date}</p>
+                <Progress value={subject.marks} className="h-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Attendance: {subject.attendance}%</span>
+                  <span className={subject.marks >= 85 ? 'text-green-600' : subject.marks >= 70 ? 'text-yellow-600' : 'text-red-600'}>
+                    {subject.marks >= 85 ? 'Excellent' : subject.marks >= 70 ? 'Good' : 'Needs Improvement'}
+                  </span>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {event.type}
-                </Badge>
               </div>
             ))}
           </CardContent>
         </Card>
       </div>
-
-      {/* Attendance Alert */}
-      {overallStats.attendance < 85 && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="font-medium text-yellow-800">Attendance Warning</p>
-                <p className="text-sm text-yellow-700">
-                  Your overall attendance is {overallStats.attendance}%. Maintain at least 85% to avoid academic issues.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

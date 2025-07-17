@@ -10,7 +10,6 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
 import ProfessorDashboard from '@/components/dashboard/ProfessorDashboard';
-import ChatSystem from '@/components/chat/ChatSystem';
 import AttendanceManager from '@/components/attendance/AttendanceManager';
 
 const queryClient = new QueryClient();
@@ -49,8 +48,6 @@ const MainApp = () => {
           default:
             return <AdminDashboard />;
         }
-      case 'chat':
-        return <ChatSystem />;
       case 'attendance':
         return <AttendanceManager />;
       case 'profile':

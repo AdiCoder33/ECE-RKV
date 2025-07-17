@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Bell, 
   GraduationCap, 
@@ -16,7 +17,9 @@ import {
   Calendar,
   FileText,
   Home,
-  User
+  User,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -29,6 +32,15 @@ import {
   SidebarTrigger,
   SidebarInset
 } from '@/components/ui/sidebar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import ChatSidebar from '@/components/chat/ChatSidebar';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,12 +55,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const [unreadNotifications] = useState(3);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const getMenuItems = () => {
     const commonItems = [
       { id: 'dashboard', label: 'Dashboard', icon: Home },
       { id: 'profile', label: 'Profile', icon: User },
-      { id: 'chat', label: 'Chat', icon: MessageSquare },
     ];
 
     switch (user?.role) {
@@ -112,40 +125,52 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="border-r">
+        <Sidebar className={`border-r transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
           <SidebarHeader className="border-b p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary rounded-lg">
                 <GraduationCap className="h-6 w-6 text-primary-foreground" />
               </div>
-              <div className="flex-1">
-                <h1 className="font-bold text-lg">DepartmentConnect</h1>
-                <p className="text-sm text-muted-foreground">Academic Portal</p>
-              </div>
+              {!sidebarCollapsed && (
+                <div className="flex-1">
+                  <h1 className="font-bold text-lg">DepartmentConnect</h1>
+                  <p className="text-sm text-muted-foreground">Academic Portal</p>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="h-8 w-8"
+              >
+                {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
             </div>
           </SidebarHeader>
           
           <SidebarContent className="flex-1 p-4">
-            <div className="mb-6">
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary-foreground">
-                    {user?.name?.charAt(0)}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{user?.name}</p>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant="secondary" 
-                      className={`text-white ${getRoleBadgeColor(user?.role || '')}`}
-                    >
-                      {user?.role?.toUpperCase()}
-                    </Badge>
+            {!sidebarCollapsed && (
+              <div className="mb-6">
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary-foreground">
+                      {user?.name?.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{user?.name}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-white ${getRoleBadgeColor(user?.role || '')}`}
+                      >
+                        {user?.role?.toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <SidebarMenu>
               {getMenuItems().map((item) => (
@@ -153,15 +178,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <SidebarMenuButton
                     onClick={() => onPageChange(item.id)}
                     isActive={currentPage === item.id}
-                    className="w-full justify-start gap-3"
+                    className={`w-full justify-start gap-3 ${sidebarCollapsed ? 'justify-center' : ''}`}
+                    tooltip={sidebarCollapsed ? item.label : undefined}
                   >
                     <item.icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                    {item.id === 'chat' && unreadNotifications > 0 && (
-                      <Badge variant="destructive" className="ml-auto">
-                        {unreadNotifications}
-                      </Badge>
-                    )}
+                    {!sidebarCollapsed && <span>{item.label}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -172,10 +193,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <Button 
               variant="ghost" 
               onClick={logout}
-              className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+              className={`w-full gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 ${sidebarCollapsed ? 'justify-center' : 'justify-start'}`}
+              title={sidebarCollapsed ? "Sign Out" : undefined}
             >
               <LogOut className="h-5 w-5" />
-              Sign Out
+              {!sidebarCollapsed && <span>Sign Out</span>}
             </Button>
           </div>
         </Sidebar>
@@ -183,8 +205,27 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <SidebarInset className="flex-1">
           <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-14 items-center gap-4 px-4">
-              <SidebarTrigger className="md:hidden" />
               <div className="flex-1" />
+              
+              {/* Chat Toggle */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setChatOpen(!chatOpen)}
+                className="relative"
+              >
+                <MessageSquare className="h-5 w-5" />
+                {unreadNotifications > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadNotifications}
+                  </Badge>
+                )}
+              </Button>
+
+              {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 {unreadNotifications > 0 && (
@@ -196,13 +237,59 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   </Badge>
                 )}
               </Button>
+
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user?.name?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-white w-fit mt-1 ${getRoleBadgeColor(user?.role || '')}`}
+                      >
+                        {user?.role?.toUpperCase()}
+                      </Badge>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onPageChange('profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
           
-          <main className="flex-1 p-6">
+          <main className={`flex-1 p-6 transition-all duration-300 ${chatOpen ? 'mr-80' : ''}`}>
             {children}
           </main>
         </SidebarInset>
+
+        {/* Chat Sidebar */}
+        <ChatSidebar isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
       </div>
     </SidebarProvider>
   );
