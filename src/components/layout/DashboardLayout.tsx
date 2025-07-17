@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -42,69 +43,64 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-  currentPage: string;
-  onPageChange: (page: string) => void;
-}
-
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
-  children, 
-  currentPage, 
-  onPageChange 
-}) => {
+const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [unreadNotifications] = useState(3);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
+  const currentPage = location.pathname.split('/')[1] || 'dashboard';
+
   const getMenuItems = () => {
     const commonItems = [
-      { id: 'dashboard', label: 'Dashboard', icon: Home },
-      { id: 'profile', label: 'Profile', icon: User },
+      { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
+      { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     ];
 
     switch (user?.role) {
       case 'admin':
         return [
           ...commonItems,
-          { id: 'users', label: 'User Management', icon: Users },
-          { id: 'classes', label: 'Class Management', icon: BookOpen },
-          { id: 'subjects', label: 'Subject Management', icon: FileText },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
-          { id: 'settings', label: 'Settings', icon: Settings },
+          { id: 'users', label: 'User Management', icon: Users, path: '/users' },
+          { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/classes' },
+          { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/subjects' },
+          { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance' },
+          { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/announcements' },
+          { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
         ];
       case 'hod':
         return [
           ...commonItems,
-          { id: 'classes', label: 'Classes', icon: BookOpen },
-          { id: 'professors', label: 'Professors', icon: Users },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
+          { id: 'classes', label: 'Classes', icon: BookOpen, path: '/classes' },
+          { id: 'professors', label: 'Professors', icon: Users, path: '/users' },
+          { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/announcements' },
         ];
       case 'professor':
         return [
           ...commonItems,
-          { id: 'classes', label: 'My Classes', icon: BookOpen },
-          { id: 'attendance', label: 'Attendance', icon: Calendar },
-          { id: 'marks', label: 'Internal Marks', icon: BarChart3 },
-          { id: 'students', label: 'Students', icon: Users },
+          { id: 'classes', label: 'My Classes', icon: BookOpen, path: '/classes' },
+          { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance' },
+          { id: 'marks', label: 'Internal Marks', icon: BarChart3, path: '/analytics' },
+          { id: 'students', label: 'Students', icon: Users, path: '/users' },
         ];
       case 'student':
         return [
           ...commonItems,
-          { id: 'subjects', label: 'My Subjects', icon: BookOpen },
-          { id: 'attendance', label: 'My Attendance', icon: Calendar },
-          { id: 'marks', label: 'My Performance', icon: BarChart3 },
-          { id: 'announcements', label: 'Announcements', icon: Bell },
+          { id: 'subjects', label: 'My Subjects', icon: BookOpen, path: '/subjects' },
+          { id: 'attendance', label: 'My Attendance', icon: Calendar, path: '/attendance' },
+          { id: 'marks', label: 'My Performance', icon: BarChart3, path: '/analytics' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/announcements' },
         ];
       case 'alumni':
         return [
           ...commonItems,
-          { id: 'records', label: 'Academic Records', icon: FileText },
-          { id: 'achievements', label: 'Achievements', icon: BarChart3 },
-          { id: 'network', label: 'Alumni Network', icon: Users },
+          { id: 'records', label: 'Academic Records', icon: FileText, path: '/subjects' },
+          { id: 'achievements', label: 'Achievements', icon: BarChart3, path: '/analytics' },
+          { id: 'network', label: 'Alumni Network', icon: Users, path: '/users' },
         ];
       default:
         return commonItems;
@@ -122,6 +118,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     }
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -133,7 +133,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1">
-                  <h1 className="font-bold text-lg">DepartmentConnect</h1>
+                  <h1 className="font-bold text-lg">ECE Department</h1>
                   <p className="text-sm text-muted-foreground">Academic Portal</p>
                 </div>
               )}
@@ -176,7 +176,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {getMenuItems().map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    onClick={() => onPageChange(item.id)}
+                    onClick={() => handleNavigation(item.path)}
                     isActive={currentPage === item.id}
                     className={`w-full justify-start gap-3 ${sidebarCollapsed ? 'justify-center' : ''}`}
                     tooltip={sidebarCollapsed ? item.label : undefined}
@@ -265,11 +265,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onPageChange('profile')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavigation('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
@@ -284,7 +284,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </header>
           
           <main className={`flex-1 p-6 transition-all duration-300 ${chatOpen ? 'mr-80' : ''}`}>
-            {children}
+            <Outlet />
           </main>
         </SidebarInset>
 
