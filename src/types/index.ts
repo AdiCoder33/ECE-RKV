@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name: string;
   role: 'admin' | 'hod' | 'professor' | 'student' | 'alumni';
+  department?: string;
   year?: number;
   section?: string;
   rollNumber?: string;

@@ -36,11 +36,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Mock authentication - replace with actual API call
       const mockUsers: User[] = [
-        { id: '1', email: 'admin@college.edu', name: 'Admin User', role: 'admin' },
-        { id: '2', email: 'hod@college.edu', name: 'Dr. Smith', role: 'hod', department: 'CSE' },
-        { id: '3', email: 'prof@college.edu', name: 'Prof. Johnson', role: 'professor', department: 'CSE' },
-        { id: '4', email: 'student@college.edu', name: 'John Doe', role: 'student', year: 3, section: 'A', rollNumber: '20CS001' },
-        { id: '5', email: 'alumni@college.edu', name: 'Jane Smith', role: 'alumni', department: 'CSE' }
+        { id: '1', email: 'admin@college.edu', name: 'Admin User', role: 'admin', department: 'ECE' },
+        { id: '2', email: 'hod@college.edu', name: 'Dr. Smith', role: 'hod', department: 'ECE' },
+        { id: '3', email: 'prof@college.edu', name: 'Prof. Johnson', role: 'professor', department: 'ECE' },
+        { id: '4', email: 'student@college.edu', name: 'John Doe', role: 'student', department: 'ECE', year: 3, section: 'A', rollNumber: '20EC001' },
+        { id: '5', email: 'alumni@college.edu', name: 'Jane Smith', role: 'alumni', department: 'ECE' }
       ];
 
       const foundUser = mockUsers.find(u => u.email === email);
