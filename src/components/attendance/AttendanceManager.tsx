@@ -16,11 +16,12 @@ import {
   Upload,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Save
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Student {
+interface AttendanceStudent {
   id: string;
   name: string;
   rollNumber: string;
@@ -30,25 +31,54 @@ interface Student {
 
 const AttendanceManager = () => {
   const { user } = useAuth();
-  const [selectedClass, setSelectedClass] = useState('CSE-3A-DS');
+  const [selectedYear, setSelectedYear] = useState('1');
+  const [selectedSection, setSelectedSection] = useState('A');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedPeriod, setSelectedPeriod] = useState('1');
   const [searchTerm, setSearchTerm] = useState('');
-  const [students, setStudents] = useState<Student[]>([
-    { id: '1', name: 'John Doe', rollNumber: '20CS001', present: true, attendancePercentage: 85 },
-    { id: '2', name: 'Jane Smith', rollNumber: '20CS002', present: false, attendancePercentage: 92 },
-    { id: '3', name: 'Mike Johnson', rollNumber: '20CS003', present: true, attendancePercentage: 78 },
-    { id: '4', name: 'Sarah Wilson', rollNumber: '20CS004', present: true, attendancePercentage: 95 },
-    { id: '5', name: 'David Brown', rollNumber: '20CS005', present: false, attendancePercentage: 82 },
-    { id: '6', name: 'Lisa Davis', rollNumber: '20CS006', present: true, attendancePercentage: 88 },
-    { id: '7', name: 'Tom Miller', rollNumber: '20CS007', present: true, attendancePercentage: 91 },
-    { id: '8', name: 'Anna Garcia', rollNumber: '20CS008', present: false, attendancePercentage: 76 },
-  ]);
 
-  const classes = [
-    { id: 'CSE-3A-DS', name: 'Data Structures - CSE 3A', students: 45 },
-    { id: 'CSE-3B-ALG', name: 'Algorithms - CSE 3B', students: 42 },
-    { id: 'CSE-4A-DB', name: 'Database Systems - CSE 4A', students: 38 },
+  // Generate students based on selected year and section
+  const [students, setStudents] = useState<AttendanceStudent[]>(() => {
+    const generatedStudents: AttendanceStudent[] = [];
+    for (let i = 1; i <= 60; i++) {
+      const rollNumber = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
+      generatedStudents.push({
+        id: rollNumber,
+        name: `Student ${i} ${selectedSection}${selectedYear}`,
+        rollNumber,
+        present: Math.random() > 0.2, // 80% attendance by default
+        attendancePercentage: Math.floor(Math.random() * 20) + 75 // 75-95% attendance
+      });
+    }
+    return generatedStudents;
+  });
+
+  const years = ['1', '2', '3', '4'];
+  const sections = ['A', 'B', 'C', 'D', 'E'];
+  const periods = [
+    { value: '1', label: 'Period 1 (9:00 AM - 10:00 AM)' },
+    { value: '2', label: 'Period 2 (10:00 AM - 11:00 AM)' },
+    { value: '3', label: 'Period 3 (11:00 AM - 12:00 PM)' },
+    { value: '4', label: 'Period 4 (2:00 PM - 3:00 PM)' },
+    { value: '5', label: 'Period 5 (3:00 PM - 4:00 PM)' },
+    { value: '6', label: 'Period 6 (4:00 PM - 5:00 PM)' }
   ];
+
+  // Update students when year/section changes
+  React.useEffect(() => {
+    const newStudents: AttendanceStudent[] = [];
+    for (let i = 1; i <= 60; i++) {
+      const rollNumber = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
+      newStudents.push({
+        id: rollNumber,
+        name: `Student ${i} ${selectedSection}${selectedYear}`,
+        rollNumber,
+        present: Math.random() > 0.2,
+        attendancePercentage: Math.floor(Math.random() * 20) + 75
+      });
+    }
+    setStudents(newStudents);
+  }, [selectedYear, selectedSection]);
 
   const toggleAttendance = (studentId: string) => {
     setStudents(prev => prev.map(student => 
@@ -87,6 +117,17 @@ const AttendanceManager = () => {
     return { variant: 'destructive' as const, label: 'Critical' };
   };
 
+  const handleSaveAttendance = () => {
+    console.log('Saving attendance for:', {
+      year: selectedYear,
+      section: selectedSection,
+      date: selectedDate,
+      period: selectedPeriod,
+      attendance: students.map(s => ({ id: s.id, present: s.present }))
+    });
+    // Implementation for saving attendance
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -109,20 +150,35 @@ const AttendanceManager = () => {
       {/* Class and Date Selection */}
       <Card>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="class-select">Select Class</Label>
+              <Label htmlFor="year-select">Year</Label>
               <select 
-                id="class-select"
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
+                id="year-select"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
                 className="w-full p-2 border rounded-md bg-background"
               >
-                {classes.map(cls => (
-                  <option key={cls.id} value={cls.id}>{cls.name}</option>
+                {years.map(year => (
+                  <option key={year} value={year}>{year}st Year</option>
                 ))}
               </select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="section-select">Section</Label>
+              <select 
+                id="section-select"
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+                className="w-full p-2 border rounded-md bg-background"
+              >
+                {sections.map(section => (
+                  <option key={section} value={section}>Section {section}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="date-select">Date</Label>
               <Input
@@ -132,18 +188,27 @@ const AttendanceManager = () => {
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="period-select">Period</Label>
               <select 
                 id="period-select"
+                value={selectedPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
                 className="w-full p-2 border rounded-md bg-background"
               >
-                <option value="1">Period 1 (9:00 AM)</option>
-                <option value="2">Period 2 (10:00 AM)</option>
-                <option value="3">Period 3 (11:00 AM)</option>
-                <option value="4">Period 4 (2:00 PM)</option>
-                <option value="5">Period 5 (3:00 PM)</option>
+                {periods.map(period => (
+                  <option key={period.value} value={period.value}>
+                    {period.label}
+                  </option>
+                ))}
               </select>
+            </div>
+
+            <div className="flex items-end">
+              <Button className="w-full">
+                Load Class
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -201,13 +266,17 @@ const AttendanceManager = () => {
         </Card>
       </div>
 
-      {/* Student List */}
+      {/* Student Attendance Grid */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Student Attendance</CardTitle>
-              <CardDescription>Mark attendance for selected class and date</CardDescription>
+              <CardTitle>
+                Student Attendance - Year {selectedYear}, Section {selectedSection}
+              </CardTitle>
+              <CardDescription>
+                {selectedDate} • {periods.find(p => p.value === selectedPeriod)?.label}
+              </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={markAllPresent}>
@@ -234,37 +303,40 @@ const AttendanceManager = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          {/* Grid Layout for Students */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredStudents.map((student) => {
               const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
               return (
-                <div 
-                  key={student.id} 
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                <Card 
+                  key={student.id}
+                  className={`p-4 border-2 transition-all cursor-pointer ${
+                    student.present ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                  }`}
+                  onClick={() => toggleAttendance(student.id)}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between mb-2">
                     <Checkbox
-                      id={`student-${student.id}`}
                       checked={student.present}
                       onCheckedChange={() => toggleAttendance(student.id)}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <div className="flex-1">
-                      <p className="font-medium">{student.name}</p>
-                      <p className="text-sm text-muted-foreground">{student.rollNumber}</p>
-                    </div>
+                    <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className={`text-sm font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
+                  
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">{student.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{student.rollNumber}</p>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
                         {student.attendancePercentage}%
-                      </p>
+                      </span>
                       <Badge variant={attendanceBadge.variant} className="text-xs">
                         {attendanceBadge.label}
                       </Badge>
                     </div>
-                    <div className={`w-4 h-4 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -273,8 +345,8 @@ const AttendanceManager = () => {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button size="lg" className="bg-primary hover:bg-primary/90">
-          <Clock className="h-4 w-4 mr-2" />
+        <Button size="lg" className="bg-primary hover:bg-primary/90" onClick={handleSaveAttendance}>
+          <Save className="h-4 w-4 mr-2" />
           Save Attendance
         </Button>
       </div>

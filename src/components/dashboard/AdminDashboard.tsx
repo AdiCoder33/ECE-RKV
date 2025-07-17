@@ -14,7 +14,7 @@ import {
   BarChart3,
   Calendar
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
   const stats = [
@@ -35,8 +35,8 @@ const AdminDashboard = () => {
       bgColor: 'bg-green-50'
     },
     {
-      title: 'Departments',
-      value: '12',
+      title: 'Active Classes',
+      value: '20',
       change: '0%',
       icon: BookOpen,
       color: 'text-purple-600',
@@ -53,20 +53,10 @@ const AdminDashboard = () => {
   ];
 
   const enrollmentData = [
-    { month: 'Jan', students: 2400 },
-    { month: 'Feb', students: 2210 },
-    { month: 'Mar', students: 2290 },
-    { month: 'Apr', students: 2000 },
-    { month: 'May', students: 2181 },
-    { month: 'Jun', students: 2500 },
-    { month: 'Jul', students: 2847 }
-  ];
-
-  const departmentData = [
-    { name: 'Computer Science', students: 850, color: '#8B0000' },
-    { name: 'Mechanical', students: 720, color: '#001F54' },
-    { name: 'Electrical', students: 680, color: '#8B5E3C' },
-    { name: 'Civil', students: 597, color: '#4A5568' }
+    { year: '1st Year', students: 800 },
+    { year: '2nd Year', students: 750 },
+    { year: '3rd Year', students: 720 },
+    { year: '4th Year', students: 577 }
   ];
 
   const recentActivities = [
@@ -105,7 +95,7 @@ const AdminDashboard = () => {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Overview of college operations and management</p>
+        <p className="text-muted-foreground mt-2">Overview of ECE Department operations and management</p>
       </div>
 
       {/* Stats Grid */}
@@ -135,19 +125,19 @@ const AdminDashboard = () => {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Enrollment Trend */}
+        {/* Year-wise Enrollment */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-foreground">Student Enrollment Trend</CardTitle>
+            <CardTitle className="text-foreground">Year-wise Student Distribution</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Monthly enrollment numbers for current academic year
+              Current student count across all years in ECE Department
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={enrollmentData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip 
                   contentStyle={{ 
@@ -156,55 +146,47 @@ const AdminDashboard = () => {
                     borderRadius: '6px'
                   }}
                 />
-                <Bar dataKey="students" fill="#8B0000" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="students" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Department Distribution */}
+        {/* Academic Performance Overview */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-foreground">Department Distribution</CardTitle>
+            <CardTitle className="text-foreground">Academic Performance</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Student distribution across departments
+              Overall department performance metrics
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={departmentData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="students"
-                >
-                  {departmentData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              {departmentData.map((dept, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: dept.color }}
-                  />
-                  <span className="text-sm text-muted-foreground">{dept.name}</span>
-                </div>
-              ))}
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Average Attendance</span>
+                <span className="font-medium">87%</span>
+              </div>
+              <Progress value={87} className="h-2" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Pass Rate</span>
+                <span className="font-medium">94%</span>
+              </div>
+              <Progress value={94} className="h-2" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Placement Rate</span>
+                <span className="font-medium">78%</span>
+              </div>
+              <Progress value={78} className="h-2" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Research Publications</span>
+                <span className="font-medium">156</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -263,7 +245,7 @@ const AdminDashboard = () => {
             </Button>
             <Button className="w-full justify-start" variant="outline">
               <Calendar className="h-4 w-4 mr-2" />
-              Schedule Management
+              Attendance Management
             </Button>
           </CardContent>
         </Card>
