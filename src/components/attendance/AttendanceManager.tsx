@@ -16,7 +16,6 @@ import {
   Upload,
   CheckCircle,
   XCircle,
-  Clock,
   Save
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +23,8 @@ import { useAuth } from '@/contexts/AuthContext';
 interface AttendanceStudent {
   id: string;
   name: string;
-  rollNumber: string;
+  rollNumber: number;
+  collegeId: string;
   present: boolean;
   attendancePercentage: number;
 }
@@ -37,15 +37,16 @@ const AttendanceManager = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('1');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Generate students based on selected year and section
+  // Generate students based on selected year and section with sequential roll numbers
   const [students, setStudents] = useState<AttendanceStudent[]>(() => {
     const generatedStudents: AttendanceStudent[] = [];
     for (let i = 1; i <= 60; i++) {
-      const rollNumber = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
+      const collegeId = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
       generatedStudents.push({
-        id: rollNumber,
+        id: collegeId,
         name: `Student ${i} ${selectedSection}${selectedYear}`,
-        rollNumber,
+        rollNumber: i,
+        collegeId,
         present: Math.random() > 0.2, // 80% attendance by default
         attendancePercentage: Math.floor(Math.random() * 20) + 75 // 75-95% attendance
       });
@@ -68,11 +69,12 @@ const AttendanceManager = () => {
   React.useEffect(() => {
     const newStudents: AttendanceStudent[] = [];
     for (let i = 1; i <= 60; i++) {
-      const rollNumber = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
+      const collegeId = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
       newStudents.push({
-        id: rollNumber,
+        id: collegeId,
         name: `Student ${i} ${selectedSection}${selectedYear}`,
-        rollNumber,
+        rollNumber: i,
+        collegeId,
         present: Math.random() > 0.2,
         attendancePercentage: Math.floor(Math.random() * 20) + 75
       });
@@ -98,7 +100,8 @@ const AttendanceManager = () => {
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    student.collegeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.rollNumber.toString().includes(searchTerm)
   );
 
   const presentCount = students.filter(s => s.present).length;
@@ -129,7 +132,7 @@ const AttendanceManager = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background text-foreground">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Attendance Management</h1>
@@ -157,7 +160,7 @@ const AttendanceManager = () => {
                 id="year-select"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background"
+                className="w-full p-2 border rounded-md bg-background text-foreground"
               >
                 {years.map(year => (
                   <option key={year} value={year}>{year}st Year</option>
@@ -171,7 +174,7 @@ const AttendanceManager = () => {
                 id="section-select"
                 value={selectedSection}
                 onChange={(e) => setSelectedSection(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background"
+                className="w-full p-2 border rounded-md bg-background text-foreground"
               >
                 {sections.map(section => (
                   <option key={section} value={section}>Section {section}</option>
@@ -195,7 +198,7 @@ const AttendanceManager = () => {
                 id="period-select"
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background"
+                className="w-full p-2 border rounded-md bg-background text-foreground"
               >
                 {periods.map(period => (
                   <option key={period.value} value={period.value}>
@@ -315,7 +318,7 @@ const AttendanceManager = () => {
                   }`}
                   onClick={() => toggleAttendance(student.id)}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <Checkbox
                       checked={student.present}
                       onCheckedChange={() => toggleAttendance(student.id)}
@@ -324,10 +327,20 @@ const AttendanceManager = () => {
                     <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
                   </div>
                   
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">{student.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{student.rollNumber}</p>
-                    <div className="flex items-center justify-between">
+                  <div className="text-center space-y-2">
+                    {/* Large Roll Number */}
+                    <div className="text-4xl font-bold text-primary">
+                      {student.rollNumber}
+                    </div>
+                    
+                    {/* Student Name */}
+                    <p className="font-medium text-sm text-foreground">{student.name}</p>
+                    
+                    {/* College ID */}
+                    <p className="text-xs text-muted-foreground font-mono">{student.collegeId}</p>
+                    
+                    {/* Attendance Percentage and Badge */}
+                    <div className="flex items-center justify-between mt-2">
                       <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
                         {student.attendancePercentage}%
                       </span>

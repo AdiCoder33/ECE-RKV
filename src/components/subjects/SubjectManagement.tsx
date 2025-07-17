@@ -11,19 +11,20 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter,
   Clock,
   Award,
   User
 } from 'lucide-react';
 import { Subject } from '@/types';
+import AddSubjectModal from './AddSubjectModal';
 
 const SubjectManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [subjects] = useState<Subject[]>([
+  const [subjects, setSubjects] = useState<Subject[]>([
     {
       id: '1',
       name: 'Engineering Mathematics I',
@@ -86,6 +87,18 @@ const SubjectManagement = () => {
     }
   ]);
 
+  const handleAddSubject = (newSubject: Omit<Subject, 'id'>) => {
+    const subject: Subject = {
+      ...newSubject,
+      id: (subjects.length + 1).toString()
+    };
+    setSubjects(prev => [...prev, subject]);
+  };
+
+  const handleDeleteSubject = (subjectId: string) => {
+    setSubjects(prev => prev.filter(subject => subject.id !== subjectId));
+  };
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'theory': return 'bg-blue-100 text-blue-800';
@@ -113,13 +126,13 @@ const SubjectManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background text-foreground">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Subject Management</h1>
           <p className="text-muted-foreground">Manage subjects in ECE Department</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsAddModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Subject
         </Button>
@@ -217,7 +230,7 @@ const SubjectManagement = () => {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-3 py-2 border rounded-md"
+              className="px-3 py-2 border rounded-md bg-background text-foreground"
             >
               <option value="all">All Years</option>
               <option value="1">1st Year</option>
@@ -229,7 +242,7 @@ const SubjectManagement = () => {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="px-3 py-2 border rounded-md"
+              className="px-3 py-2 border rounded-md bg-background text-foreground"
             >
               <option value="all">All Types</option>
               <option value="theory">Theory</option>
@@ -240,69 +253,68 @@ const SubjectManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Subjects by Year */}
-      <Tabs value={selectedYear === 'all' ? '1' : selectedYear} onValueChange={setSelectedYear}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="all">All Years</TabsTrigger>
-          <TabsTrigger value="1">1st Year</TabsTrigger>
-          <TabsTrigger value="2">2nd Year</TabsTrigger>
-          <TabsTrigger value="3">3rd Year</TabsTrigger>
-          <TabsTrigger value="4">4th Year</TabsTrigger>
-        </TabsList>
+      {/* Subjects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredSubjects.map((subject) => (
+          <Card key={subject.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg leading-tight">{subject.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground font-mono">{subject.code}</p>
+                </div>
+                <Badge className={getTypeColor(subject.type)}>
+                  {subject.type}
+                </Badge>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Year/Sem</p>
+                  <p className="font-medium">{subject.year}-{subject.semester}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Credits</p>
+                  <p className="font-medium">{subject.credits}</p>
+                </div>
+              </div>
 
-        <TabsContent value={selectedYear === 'all' ? '1' : selectedYear} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredSubjects.map((subject) => (
-              <Card key={subject.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg leading-tight">{subject.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground font-mono">{subject.code}</p>
-                    </div>
-                    <Badge className={getTypeColor(subject.type)}>
-                      {subject.type}
-                    </Badge>
+              <div className="pt-2 border-t">
+                <p className="text-sm text-muted-foreground mb-2">Professor</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <User className="h-3 w-3 text-primary-foreground" />
                   </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Year/Sem</p>
-                      <p className="font-medium">{subject.year}-{subject.semester}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Credits</p>
-                      <p className="font-medium">{subject.credits}</p>
-                    </div>
-                  </div>
+                  <span className="text-sm font-medium">{subject.professorName}</span>
+                </div>
+              </div>
 
-                  <div className="pt-2 border-t">
-                    <p className="text-sm text-muted-foreground mb-2">Professor</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <User className="h-3 w-3 text-primary-foreground" />
-                      </div>
-                      <span className="text-sm font-medium">{subject.professorName}</span>
-                    </div>
-                  </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 hover:text-red-700"
+                  onClick={() => handleDeleteSubject(subject.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+      <AddSubjectModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddSubject={handleAddSubject}
+      />
     </div>
   );
 };
