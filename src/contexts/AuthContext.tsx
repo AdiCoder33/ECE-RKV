@@ -35,12 +35,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       // Mock authentication - replace with actual API call
+      // Sample credentials for testing:
       const mockUsers: User[] = [
         { id: '1', email: 'admin@college.edu', name: 'Admin User', role: 'admin', department: 'ECE' },
         { id: '2', email: 'hod@college.edu', name: 'Dr. Smith', role: 'hod', department: 'ECE' },
         { id: '3', email: 'prof@college.edu', name: 'Prof. Johnson', role: 'professor', department: 'ECE' },
         { id: '4', email: 'student@college.edu', name: 'John Doe', role: 'student', department: 'ECE', year: 3, section: 'A', rollNumber: '20EC001' },
-        { id: '5', email: 'alumni@college.edu', name: 'Jane Smith', role: 'alumni', department: 'ECE' }
+        { id: '5', email: 'alumni@college.edu', name: 'Jane Smith', role: 'alumni', department: 'ECE', graduationYear: 2020 }
       ];
 
       const foundUser = mockUsers.find(u => u.email === email);

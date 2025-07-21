@@ -5,9 +5,11 @@ import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
+import Homepage from './pages/Homepage';
 import AdminDashboard from './components/dashboard/AdminDashboard';
 import StudentDashboard from './components/dashboard/StudentDashboard';
 import ProfessorDashboard from './components/dashboard/ProfessorDashboard';
+import AlumniDashboard from './components/dashboard/AlumniDashboard';
 import UserManagement from './components/users/UserManagement';
 import ClassManagement from './components/classes/ClassManagement';
 import SubjectManagement from './components/subjects/SubjectManagement';
@@ -20,17 +22,18 @@ import './App.css';
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-background">
             <Routes>
+              <Route path="/" element={<Homepage />} />
               <Route path="/login" element={<LoginForm />} />
-              <Route path="/" element={<DashboardLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="student-dashboard" element={<StudentDashboard />} />
-                <Route path="professor-dashboard" element={<ProfessorDashboard />} />
+              <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="student" element={<StudentDashboard />} />
+                <Route path="professor" element={<ProfessorDashboard />} />
+                <Route path="alumni" element={<AlumniDashboard />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="classes" element={<ClassManagement />} />
                 <Route path="subjects" element={<SubjectManagement />} />
