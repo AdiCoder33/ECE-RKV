@@ -29,9 +29,9 @@ import PromoteStudentsModal from './PromoteStudentsModal';
 
 const ClassManagement = () => {
   const [classes, setClasses] = useState<Class[]>([
-    { id: '1', name: 'ECE 1st Year', year: 1, section: 'A', totalStudents: 60 },
-    { id: '2', name: 'ECE 2nd Year', year: 2, section: 'B', totalStudents: 55 },
-    { id: '3', name: 'ECE 3rd Year', year: 3, section: 'C', totalStudents: 48 },
+    { id: '1', year: 1, semester: 1, section: 'A', subjects: [], students: [], totalStrength: 60 },
+    { id: '2', year: 2, semester: 3, section: 'B', subjects: [], students: [], totalStrength: 55 },
+    { id: '3', year: 3, semester: 5, section: 'C', subjects: [], students: [], totalStrength: 48 },
   ]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newClassName, setNewClassName] = useState('');
@@ -41,13 +41,15 @@ const ClassManagement = () => {
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
 
   const handleCreateClass = () => {
-    if (newClassName && newClassYear && newClassSection) {
+    if (newClassYear && newClassSection) {
       const newClass: Class = {
         id: String(classes.length + 1),
-        name: newClassName,
         year: newClassYear,
+        semester: newClassYear * 2 - 1, // Calculate semester based on year
         section: newClassSection,
-        totalStudents: 0,
+        subjects: [],
+        students: [],
+        totalStrength: 0,
       };
       setClasses([...classes, newClass]);
       setIsCreateModalOpen(false);
@@ -115,11 +117,11 @@ const ClassManagement = () => {
             </TableHeader>
             <TableBody>
               {classes.map((cls) => (
-                <TableRow key={cls.id}>
-                  <TableCell className="font-medium">{cls.year}</TableCell>
-                  <TableCell>{cls.name}</TableCell>
-                  <TableCell>{cls.section}</TableCell>
-                  <TableCell className="text-right">{cls.totalStudents}</TableCell>
+                 <TableRow key={cls.id}>
+                   <TableCell className="font-medium">{cls.year}</TableCell>
+                   <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
+                   <TableCell>{cls.section}</TableCell>
+                   <TableCell className="text-right">{cls.totalStrength}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center space-x-2">
                       <Button variant="outline" size="icon">
