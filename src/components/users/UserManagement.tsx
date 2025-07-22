@@ -19,14 +19,16 @@ import {
   BookOpen
 } from 'lucide-react';
 import { User } from '@/types';
+import AddUserModal from './AddUserModal';
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Mock data - replace with actual API calls
-  const [users] = useState<User[]>([
+  const [users, setUsers] = useState<User[]>([
     {
       id: '1',
       name: 'Dr. Rajesh Kumar',
@@ -91,6 +93,14 @@ const UserManagement = () => {
     alumni: users.filter(u => u.role === 'alumni').length
   };
 
+  const handleAddUser = (newUser: Omit<User, 'id'>) => {
+    const user: User = {
+      ...newUser,
+      id: String(users.length + 1)
+    };
+    setUsers([...users, user]);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -103,7 +113,7 @@ const UserManagement = () => {
             <Upload className="h-4 w-4 mr-2" />
             Import Excel
           </Button>
-          <Button>
+          <Button onClick={() => setIsAddModalOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Add User
           </Button>
@@ -280,6 +290,12 @@ const UserManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddUser={handleAddUser}
+      />
     </div>
   );
 };

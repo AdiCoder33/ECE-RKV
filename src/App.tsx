@@ -6,6 +6,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
 import Homepage from './pages/Homepage';
+import StudentProfile from './components/profile/StudentProfile';
+import StudentAttendance from './pages/StudentAttendance';
 import AdminDashboard from './components/dashboard/AdminDashboard';
 import StudentDashboard from './components/dashboard/StudentDashboard';
 import ProfessorDashboard from './components/dashboard/ProfessorDashboard';
@@ -41,6 +43,8 @@ function App() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="profile/student/:studentId" element={<StudentProfile studentId="" />} />
+                <Route path="student-attendance" element={<StudentAttendance />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>

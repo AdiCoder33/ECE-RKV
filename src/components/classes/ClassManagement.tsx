@@ -26,8 +26,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import PromoteStudentsModal from './PromoteStudentsModal';
+import ClassStudentsModal from './ClassStudentsModal';
+import { useNavigate } from 'react-router-dom';
 
 const ClassManagement = () => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState<Class[]>([
     { id: '1', year: 1, semester: 1, section: 'A', subjects: [], students: [], totalStrength: 60 },
     { id: '2', year: 2, semester: 3, section: 'B', subjects: [], students: [], totalStrength: 55 },
@@ -39,6 +42,8 @@ const ClassManagement = () => {
   const [newClassSection, setNewClassSection] = useState('A');
   const { toast } = useToast()
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
 
   const handleCreateClass = () => {
     if (newClassYear && newClassSection) {
@@ -75,6 +80,16 @@ const ClassManagement = () => {
   const handlePromoteStudents = () => {
     console.log('Students promoted successfully');
     // Logic to update student years would go here
+  };
+
+  const handleClassClick = (cls: Class) => {
+    setSelectedClass(cls);
+    setIsStudentsModalOpen(true);
+  };
+
+  const handleStudentClick = (studentId: string) => {
+    setIsStudentsModalOpen(false);
+    navigate(`/dashboard/profile/student/${studentId}`);
   };
 
   return (
@@ -117,12 +132,12 @@ const ClassManagement = () => {
             </TableHeader>
             <TableBody>
               {classes.map((cls) => (
-                 <TableRow key={cls.id}>
+                 <TableRow key={cls.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleClassClick(cls)}>
                    <TableCell className="font-medium">{cls.year}</TableCell>
                    <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
                    <TableCell>{cls.section}</TableCell>
                    <TableCell className="text-right">{cls.totalStrength}</TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center space-x-2">
                       <Button variant="outline" size="icon">
                         <Edit className="h-4 w-4" />
@@ -149,6 +164,13 @@ const ClassManagement = () => {
         isOpen={isPromoteModalOpen}
         onClose={() => setIsPromoteModalOpen(false)}
         onPromote={handlePromoteStudents}
+      />
+
+      <ClassStudentsModal
+        isOpen={isStudentsModalOpen}
+        onClose={() => setIsStudentsModalOpen(false)}
+        classData={selectedClass}
+        onStudentClick={handleStudentClick}
       />
 
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>

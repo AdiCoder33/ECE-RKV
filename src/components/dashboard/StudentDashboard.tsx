@@ -15,8 +15,10 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const currentGPA = 8.4;
   const attendancePercentage = 87;
   const completedCredits = 142;
@@ -86,9 +88,21 @@ const StudentDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Student Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Track your academic progress and performance</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Student Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Track your academic progress and performance</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => navigate('/dashboard/student-attendance')}>
+            <Calendar className="h-4 w-4 mr-2" />
+            View Attendance
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/dashboard/profile')}>
+            <Award className="h-4 w-4 mr-2" />
+            My Profile
+          </Button>
+        </div>
       </div>
 
       {/* Key Metrics */}
