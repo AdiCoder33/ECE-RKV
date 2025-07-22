@@ -51,59 +51,64 @@ const DashboardLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const currentPage = location.pathname.split('/')[1] || 'dashboard';
+  const currentPage = location.pathname.split('/').pop() || 'dashboard';
 
   const getMenuItems = () => {
-    const commonItems = [
-      { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
-      { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
-    ];
-
     switch (user?.role) {
       case 'admin':
         return [
-          ...commonItems,
-          { id: 'users', label: 'User Management', icon: Users, path: '/users' },
-          { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/classes' },
-          { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/subjects' },
-          { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance' },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
-          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/announcements' },
-          { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
+          { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
+          { id: 'users', label: 'User Management', icon: Users, path: '/dashboard/users' },
+          { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/dashboard/classes' },
+          { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
+          { id: 'attendance', label: 'Attendance Manager', icon: Calendar, path: '/dashboard/attendance' },
+          { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/dashboard/analytics' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
+          { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
+          { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
         ];
       case 'hod':
         return [
-          ...commonItems,
-          { id: 'classes', label: 'Classes', icon: BookOpen, path: '/classes' },
-          { id: 'professors', label: 'Professors', icon: Users, path: '/users' },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
-          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/announcements' },
+          { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
+          { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/dashboard/classes' },
+          { id: 'users', label: 'Faculty & Students', icon: Users, path: '/dashboard/users' },
+          { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
+          { id: 'analytics', label: 'Department Analytics', icon: BarChart3, path: '/dashboard/analytics' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
+          { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
         ];
       case 'professor':
         return [
-          ...commonItems,
-          { id: 'classes', label: 'My Classes', icon: BookOpen, path: '/classes' },
-          { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance' },
-          { id: 'marks', label: 'Internal Marks', icon: BarChart3, path: '/analytics' },
-          { id: 'students', label: 'Students', icon: Users, path: '/users' },
+          { id: 'professor', label: 'Dashboard', icon: Home, path: '/dashboard/professor' },
+          { id: 'classes', label: 'My Classes', icon: BookOpen, path: '/dashboard/classes' },
+          { id: 'attendance', label: 'Mark Attendance', icon: Calendar, path: '/dashboard/attendance' },
+          { id: 'subjects', label: 'My Subjects', icon: FileText, path: '/dashboard/subjects' },
+          { id: 'users', label: 'My Students', icon: Users, path: '/dashboard/users' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
+          { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
         ];
       case 'student':
         return [
-          ...commonItems,
-          { id: 'subjects', label: 'My Subjects', icon: BookOpen, path: '/subjects' },
-          { id: 'attendance', label: 'My Attendance', icon: Calendar, path: '/attendance' },
-          { id: 'marks', label: 'My Performance', icon: BarChart3, path: '/analytics' },
-          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/announcements' },
+          { id: 'student', label: 'Dashboard', icon: Home, path: '/dashboard/student' },
+          { id: 'student-attendance', label: 'My Attendance', icon: Calendar, path: '/dashboard/student-attendance' },
+          { id: 'subjects', label: 'My Subjects', icon: BookOpen, path: '/dashboard/subjects' },
+          { id: 'analytics', label: 'My Performance', icon: BarChart3, path: '/dashboard/analytics' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
+          { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
         ];
       case 'alumni':
         return [
-          ...commonItems,
-          { id: 'records', label: 'Academic Records', icon: FileText, path: '/subjects' },
-          { id: 'achievements', label: 'Achievements', icon: BarChart3, path: '/analytics' },
-          { id: 'network', label: 'Alumni Network', icon: Users, path: '/users' },
+          { id: 'alumni', label: 'Dashboard', icon: Home, path: '/dashboard/alumni' },
+          { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
+          { id: 'subjects', label: 'Academic Records', icon: FileText, path: '/dashboard/subjects' },
+          { id: 'users', label: 'Alumni Network', icon: Users, path: '/dashboard/users' },
+          { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
         ];
       default:
-        return commonItems;
+        return [
+          { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
+          { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
+        ];
     }
   };
 
@@ -173,19 +178,25 @@ const DashboardLayout: React.FC = () => {
             )}
 
             <SidebarMenu>
-              {getMenuItems().map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => handleNavigation(item.path)}
-                    isActive={currentPage === item.id}
-                    className={`w-full justify-start gap-3 ${sidebarCollapsed ? 'justify-center' : ''}`}
-                    tooltip={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {!sidebarCollapsed && <span>{item.label}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {getMenuItems().map((item) => {
+                const isActive = currentPage === item.id || 
+                  (item.id === 'dashboard' && currentPage === 'dashboard') ||
+                  (item.id === user?.role && currentPage === user?.role);
+                
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation(item.path)}
+                      isActive={isActive}
+                      className={`w-full justify-start gap-3 ${sidebarCollapsed ? 'justify-center' : ''}`}
+                      tooltip={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {!sidebarCollapsed && <span>{item.label}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarContent>
 
@@ -265,14 +276,16 @@ const DashboardLayout: React.FC = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/dashboard/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavigation('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
+                  {(user?.role === 'admin' || user?.role === 'hod') && (
+                    <DropdownMenuItem onClick={() => handleNavigation('/dashboard/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
