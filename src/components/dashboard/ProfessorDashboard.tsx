@@ -77,22 +77,34 @@ const ProfessorDashboard = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6 p-4 lg:p-0">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Professor Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Manage your classes and track student performance</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Professor Dashboard</h1>
+          <p className="text-sm lg:text-base text-muted-foreground mt-1 lg:mt-2">Manage your classes and track student performance</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" size="sm" className="text-xs lg:text-sm">
+            <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
+            Export Report
+          </Button>
+          <Button size="sm" className="text-xs lg:text-sm">
+            <TrendingUp className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
+            Analytics
+          </Button>
+        </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <Card className="border-border hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-xs lg:text-sm font-medium text-muted-foreground">Total Students</CardTitle>
+            <Users className="h-3 w-3 lg:h-4 lg:w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totalStudents}</div>
+            <div className="text-xl lg:text-2xl font-bold text-foreground">{totalStudents}</div>
             <p className="text-xs text-muted-foreground">
               Across {activeClasses} classes
             </p>
@@ -143,7 +155,7 @@ const ProfessorDashboard = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Class Performance */}
         <Card className="border-border">
           <CardHeader>
@@ -153,7 +165,7 @@ const ProfessorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={classData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
@@ -180,7 +192,7 @@ const ProfessorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={attendanceTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" />
@@ -206,7 +218,7 @@ const ProfessorDashboard = () => {
       </div>
 
       {/* Activity and Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Recent Activities */}
         <Card className="lg:col-span-2 border-border">
           <CardHeader>
@@ -216,9 +228,9 @@ const ProfessorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3 max-h-64 lg:max-h-80 overflow-y-auto">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
+                <div key={activity.id} className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="w-2 h-2 bg-primary rounded-full" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">{activity.action}</p>
@@ -239,25 +251,25 @@ const ProfessorDashboard = () => {
               Common teaching tasks
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground" variant="default">
-              <Calendar className="h-4 w-4 mr-2" />
+          <CardContent className="space-y-2 lg:space-y-3">
+            <Button className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground text-xs lg:text-sm h-8 lg:h-10" variant="default">
+              <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Mark Attendance
             </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
+            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+              <FileText className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Grade Assignments
             </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Users className="h-4 w-4 mr-2" />
+            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+              <Users className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               View Students
             </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <TrendingUp className="h-4 w-4 mr-2" />
+            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+              <TrendingUp className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Performance Reports
             </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <BookOpen className="h-4 w-4 mr-2" />
+            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+              <BookOpen className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Course Materials
             </Button>
           </CardContent>
@@ -273,9 +285,9 @@ const ProfessorDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             {classData.map((classItem, index) => (
-              <div key={index} className="p-4 rounded-lg bg-muted/30">
+              <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold text-foreground">{classItem.name}</h4>
                   <Badge variant="secondary" className="text-xs">

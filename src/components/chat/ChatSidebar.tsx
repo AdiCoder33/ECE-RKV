@@ -123,7 +123,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onToggle }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed right-0 top-0 h-full w-80 bg-background border-l z-30">
+    <div className="fixed right-0 top-0 h-full w-full sm:w-80 bg-background border-l z-30">
       <Card className="h-full flex flex-col rounded-none border-0 shadow-lg">
         <CardHeader className="pb-3 border-b">
           <div className="flex items-center justify-between">

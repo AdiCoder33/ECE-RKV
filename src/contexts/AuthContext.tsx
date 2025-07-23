@@ -34,8 +34,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Mock authentication - replace with actual API call
-      // Sample credentials for testing:
+      console.log('Attempting login with:', email);
+      
+      // Mock authentication for demo
       const mockUsers: User[] = [
         { id: '1', email: 'admin@college.edu', name: 'Admin User', role: 'admin', department: 'ECE' },
         { id: '2', email: 'hod@college.edu', name: 'Dr. Smith', role: 'hod', department: 'ECE' },
@@ -46,10 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const foundUser = mockUsers.find(u => u.email === email);
       if (foundUser && password === 'password') {
+        console.log('Login successful for user:', foundUser);
         setUser(foundUser);
         localStorage.setItem('user', JSON.stringify(foundUser));
         return true;
       }
+      console.log('Login failed: Invalid credentials');
       return false;
     } catch (error) {
       console.error('Login error:', error);
