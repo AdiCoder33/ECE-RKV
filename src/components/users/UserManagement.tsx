@@ -249,16 +249,18 @@ const UserManagement = () => {
               <tbody>
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b hover:bg-muted/50">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-primary-foreground">
-                            {user.name.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </td>
+                     <td className="p-3">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0">
+                           <span className="text-sm font-medium text-primary-foreground">
+                             {user.name.charAt(0)}
+                           </span>
+                         </div>
+                         <div className="min-w-0 flex-1">
+                           <span className="font-medium">{user.name}</span>
+                         </div>
+                       </div>
+                     </td>
                     <td className="p-3 text-muted-foreground">{user.email}</td>
                     <td className="p-3">
                       <Badge className={getRoleBadgeColor(user.role)}>
