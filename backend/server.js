@@ -14,6 +14,8 @@ const attendanceRoutes = require('./routes/attendance');
 const marksRoutes = require('./routes/marks');
 const announcementRoutes = require('./routes/announcements');
 const analyticsRoutes = require('./routes/analytics');
+const classRoutes = require('./routes/classes');
+const studentRoutes = require('./routes/students');
 
 // Middleware
 app.use(cors({
@@ -44,6 +46,8 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/internal-marks', marksRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/classes', classRoutes);
+app.use('/api/students', studentRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

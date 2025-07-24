@@ -14,6 +14,7 @@ import ProfessorDashboard from './components/dashboard/ProfessorDashboard';
 import AlumniDashboard from './components/dashboard/AlumniDashboard';
 import UserManagement from './components/users/UserManagement';
 import ClassManagement from './components/classes/ClassManagement';
+import ClassStudents from './pages/ClassStudents';
 import SubjectManagement from './components/subjects/SubjectManagement';
 import AttendanceManager from './components/attendance/AttendanceManager';
 import Analytics from './components/analytics/Analytics';
@@ -38,12 +39,14 @@ function App() {
                 <Route path="alumni" element={<AlumniDashboard />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="classes" element={<ClassManagement />} />
+                <Route path="classes/:classId/students" element={<ClassStudents />} />
                 <Route path="subjects" element={<SubjectManagement />} />
                 <Route path="attendance" element={<AttendanceManager />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="profile/student/:studentId" element={<StudentProfile studentId="" />} />
+                <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
                 <Route path="student-attendance" element={<StudentAttendance />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

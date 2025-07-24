@@ -83,8 +83,7 @@ const ClassManagement = () => {
   };
 
   const handleClassClick = (cls: Class) => {
-    setSelectedClass(cls);
-    setIsStudentsModalOpen(true);
+    navigate(`/dashboard/classes/${cls.id}/students`);
   };
 
   const handleStudentClick = (studentId: string) => {
