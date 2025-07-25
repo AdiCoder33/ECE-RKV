@@ -36,4 +36,44 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Update subject
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, code, year, semester, credits, professorId, type, maxMarks } = req.body;
+    
+    const [result] = await db.execute(
+      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, professor_id = ?, type = ?, max_marks = ? WHERE id = ?',
+      [name, code, year, semester, credits, professorId, type, maxMarks, id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+    
+    res.json({ message: 'Subject updated successfully' });
+  } catch (error) {
+    console.error('Update subject error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete subject
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [result] = await db.execute('DELETE FROM subjects WHERE id = ?', [id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+    
+    res.json({ message: 'Subject deleted successfully' });
+  } catch (error) {
+    console.error('Delete subject error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

@@ -12,15 +12,23 @@ import {
   Hash, 
   Users,
   Search,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft,
+  Link2,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatMessage } from '@/types';
+import EmojiPicker from './EmojiPicker';
+import FileUpload from './FileUpload';
+import { useNavigate } from 'react-router-dom';
 
 const ChatSystem = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeChat, setActiveChat] = useState<'section' | 'global'>('section');
   const [message, setMessage] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<Array<{file: File, type: 'image' | 'document'}>>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -73,14 +81,20 @@ const ChatSystem = () => {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!message.trim() || !user) return;
+    if ((!message.trim() && attachedFiles.length === 0) || !user) return;
+
+    let messageContent = message;
+    if (attachedFiles.length > 0) {
+      const fileNames = attachedFiles.map(f => f.file.name).join(', ');
+      messageContent += attachedFiles.length > 0 ? `\n📎 Attached: ${fileNames}` : '';
+    }
 
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       senderId: user.id,
       senderName: user.name,
       senderRole: user.role,
-      content: message,
+      content: messageContent,
       timestamp: new Date().toISOString(),
       chatType: activeChat,
       section: user.section
@@ -88,6 +102,19 @@ const ChatSystem = () => {
 
     setMessages(prev => [...prev, newMessage]);
     setMessage('');
+    setAttachedFiles([]);
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setMessage(prev => prev + emoji);
+  };
+
+  const handleFileSelect = (file: File, type: 'image' | 'document') => {
+    setAttachedFiles(prev => [...prev, { file, type }]);
+  };
+
+  const removeAttachedFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -133,11 +160,21 @@ const ChatSystem = () => {
   ];
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-4">
+    <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4">
       {/* Channels Sidebar */}
-      <Card className="w-80 flex flex-col">
+      <Card className="w-full md:w-80 flex flex-col md:max-h-full max-h-48">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Channels</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Channels</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden"
+              onClick={() => navigate('/dashboard/alumni')}
+            >
+              <Link2 className="h-4 w-4" />
+            </Button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -174,20 +211,42 @@ const ChatSystem = () => {
       <Card className="flex-1 flex flex-col">
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">
-                {activeChat === 'section' 
-                  ? (user?.role === 'student' ? `${user?.section} Section Chat` : 'Class Discussion')
-                  : 'College Community'
-                }
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {filteredMessages.length} messages
-              </p>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="text-lg">
+                  {activeChat === 'section' 
+                    ? (user?.role === 'student' ? `${user?.section} Section Chat` : 'Class Discussion')
+                    : 'College Community'
+                  }
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {filteredMessages.length} messages
+                </p>
+              </div>
             </div>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {user?.role === 'student' && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => navigate('/dashboard/alumni')}
+                  title="Alumni Directory"
+                >
+                  <Link2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
@@ -239,10 +298,30 @@ const ChatSystem = () => {
 
         {/* Message Input */}
         <div className="border-t p-4">
+          {/* Attached Files Preview */}
+          {attachedFiles.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {attachedFiles.map((item, index) => (
+                <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-sm">
+                  <span className="truncate max-w-32">{item.file.name}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-4 w-4"
+                    onClick={() => removeAttachedFile(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon">
-              <Paperclip className="h-4 w-4" />
-            </Button>
+            <FileUpload 
+              onFileSelect={handleFileSelect}
+              disabled={attachedFiles.length >= 5}
+            />
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -250,10 +329,11 @@ const ChatSystem = () => {
               placeholder={`Message ${activeChat === 'section' ? 'section' : 'community'}...`}
               className="flex-1"
             />
-            <Button variant="ghost" size="icon">
-              <Smile className="h-4 w-4" />
-            </Button>
-            <Button onClick={handleSendMessage} disabled={!message.trim()}>
+            <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={!message.trim() && attachedFiles.length === 0}
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>

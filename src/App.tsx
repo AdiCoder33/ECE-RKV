@@ -48,6 +48,7 @@ function App() {
                 <Route path="profile/student/:studentId" element={<StudentProfile studentId="" />} />
                 <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
                 <Route path="student-attendance" element={<StudentAttendance />} />
+                <Route path="alumni" element={<AlumniDirectory />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>

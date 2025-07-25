@@ -137,6 +137,28 @@ router.get('/:classId/students', authenticateToken, async (req, res) => {
   }
 });
 
+// Update class
+router.put('/:classId', authenticateToken, async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { year, semester, section, hodId } = req.body;
+    
+    const [result] = await db.execute(
+      'UPDATE classes SET year = ?, semester = ?, section = ?, hod_id = ? WHERE id = ?',
+      [year, semester, section, hodId, classId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+    
+    res.json({ message: 'Class updated successfully' });
+  } catch (error) {
+    console.error('Update class error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Delete class
 router.delete('/:classId', authenticateToken, async (req, res) => {
   try {

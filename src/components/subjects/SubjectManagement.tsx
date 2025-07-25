@@ -17,12 +17,17 @@ import {
 } from 'lucide-react';
 import { Subject } from '@/types';
 import AddSubjectModal from './AddSubjectModal';
+import EditSubjectModal from './EditSubjectModal';
+import { useToast } from "@/hooks/use-toast";
 
 const SubjectManagement = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
   const [subjects, setSubjects] = useState<Subject[]>([
     {
@@ -93,10 +98,34 @@ const SubjectManagement = () => {
       id: (subjects.length + 1).toString()
     };
     setSubjects(prev => [...prev, subject]);
+    toast({
+      title: "Subject Added",
+      description: "Subject has been created successfully",
+    });
+  };
+
+  const handleEditSubject = (id: string, updatedSubject: Omit<Subject, 'id'>) => {
+    setSubjects(prev => prev.map(subject => 
+      subject.id === id ? { ...updatedSubject, id } : subject
+    ));
+    toast({
+      title: "Subject Updated",
+      description: "Subject has been updated successfully",
+    });
   };
 
   const handleDeleteSubject = (subjectId: string) => {
     setSubjects(prev => prev.filter(subject => subject.id !== subjectId));
+    toast({
+      variant: "destructive",
+      title: "Subject Deleted",
+      description: "Subject has been removed successfully",
+    });
+  };
+
+  const handleEditClick = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setIsEditModalOpen(true);
   };
 
   const getTypeColor = (type: string) => {
@@ -292,7 +321,12 @@ const SubjectManagement = () => {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditClick(subject)}
+                >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
@@ -314,6 +348,13 @@ const SubjectManagement = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddSubject={handleAddSubject}
+      />
+      
+      <EditSubjectModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onEditSubject={handleEditSubject}
+        subject={selectedSubject}
       />
     </div>
   );

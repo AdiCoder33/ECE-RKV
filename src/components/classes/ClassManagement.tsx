@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import PromoteStudentsModal from './PromoteStudentsModal';
 import ClassStudentsModal from './ClassStudentsModal';
+import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
 
 const ClassManagement = () => {
@@ -44,6 +45,7 @@ const ClassManagement = () => {
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleCreateClass = () => {
     if (newClassYear && newClassSection) {
@@ -68,6 +70,16 @@ const ClassManagement = () => {
     }
   };
 
+  const handleEditClass = (id: string, updatedClass: Omit<Class, 'id'>) => {
+    setClasses(prev => prev.map(cls => 
+      cls.id === id ? { ...updatedClass, id } : cls
+    ));
+    toast({
+      title: "Class Updated",
+      description: "Class has been updated successfully",
+    });
+  };
+
   const handleDeleteClass = (classId: string) => {
     setClasses(classes.filter(c => c.id !== classId));
     toast({
@@ -75,6 +87,11 @@ const ClassManagement = () => {
       title: "Class Deleted",
       description: "Your class has been deleted successfully",
     })
+  };
+
+  const handleEditClick = (cls: Class) => {
+    setSelectedClass(cls);
+    setIsEditModalOpen(true);
   };
 
   const handlePromoteStudents = () => {
@@ -136,16 +153,20 @@ const ClassManagement = () => {
                    <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
                    <TableCell>{cls.section}</TableCell>
                    <TableCell className="text-right">{cls.totalStrength}</TableCell>
-                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-center space-x-2">
-                      <Button variant="outline" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteClass(cls.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                   <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                     <div className="flex items-center justify-center space-x-2">
+                       <Button 
+                         variant="outline" 
+                         size="icon"
+                         onClick={() => handleEditClick(cls)}
+                       >
+                         <Edit className="h-4 w-4" />
+                       </Button>
+                       <Button variant="outline" size="icon" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteClass(cls.id)}>
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
+                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -170,6 +191,13 @@ const ClassManagement = () => {
         onClose={() => setIsStudentsModalOpen(false)}
         classData={selectedClass}
         onStudentClick={handleStudentClick}
+      />
+
+      <EditClassModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onEditClass={handleEditClass}
+        classData={selectedClass}
       />
 
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
