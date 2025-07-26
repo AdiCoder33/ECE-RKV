@@ -103,7 +103,8 @@ const DashboardLayout: React.FC = () => {
       case 'alumni':
         return [
           { id: 'alumni', label: 'Dashboard', icon: Home, path: '/dashboard/alumni' },
-          { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
+          { id: 'alumni-profile', label: 'My Profile', icon: User, path: '/dashboard/alumni/profile' },
+          { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/dashboard/chat' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
         ];
       default:

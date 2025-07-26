@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import ResumeBuilder from './ResumeBuilder';
 import { useAuth } from '@/contexts/AuthContext';
+import ResumeView from './ResumeView';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 interface StudentProfileProps {
@@ -300,22 +301,49 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
           {user?.role === 'student' ? (
             <ResumeBuilder />
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Student Resume
-                </CardTitle>
-                <CardDescription>View {student.name}'s resume and career profile</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Student resume will be displayed here</p>
-                  <p className="text-sm mt-2">Resume data will be fetched from the student's profile</p>
-                </div>
-              </CardContent>
-            </Card>
+            <ResumeView 
+              resumeData={{
+                personalInfo: {
+                  name: student.name,
+                  email: student.email,
+                  phone: '+91 9876543210',
+                  location: 'Mumbai, Maharashtra',
+                  linkedIn: 'linkedin.com/in/student',
+                  github: 'github.com/student',
+                  objective: 'Passionate computer science student seeking internship opportunities in software development.'
+                },
+                education: [
+                  {
+                    institution: 'ABC Engineering College',
+                    degree: 'Bachelor of Technology',
+                    fieldOfStudy: 'Electronics and Communication Engineering',
+                    startYear: '2020',
+                    endYear: '2024',
+                    grade: '8.4 CGPA'
+                  }
+                ],
+                experience: [
+                  {
+                    company: 'TechCorp Solutions',
+                    position: 'Software Development Intern',
+                    startDate: '2023-06-01',
+                    endDate: '2023-08-31',
+                    description: 'Developed web applications using React and Node.js. Improved application performance by 30%.',
+                    current: false
+                  }
+                ],
+                projects: [
+                  {
+                    name: 'E-Commerce Platform',
+                    description: 'Full-stack web application with React frontend and Node.js backend',
+                    technologies: ['React', 'Node.js', 'MongoDB', 'Express'],
+                    link: 'github.com/student/ecommerce'
+                  }
+                ],
+                skills: ['React', 'JavaScript', 'Node.js', 'Python', 'Java', 'SQL', 'MongoDB', 'Git']
+              }}
+              showDownload={true}
+            />
           )}
         </TabsContent>
       </Tabs>

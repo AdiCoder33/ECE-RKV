@@ -25,8 +25,10 @@ import Announcements from './components/announcements/Announcements';
 import Profile from './components/profile/Profile';
 import Settings from './components/settings/Settings';
 import AlumniDirectory from './pages/AlumniDirectory';
+import AlumniProfile from './components/profile/AlumniProfile';
 import ContactAlumni from './pages/ContactAlumni';
 import ResumeBuilder from './components/profile/ResumeBuilder';
+import ChatSystem from './components/chat/ChatSystem';
 import './App.css';
 
 function App() {
@@ -58,8 +60,10 @@ function App() {
                 <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
                 <Route path="student-attendance" element={<StudentAttendance />} />
                 <Route path="alumni" element={<AlumniDirectory />} />
+                <Route path="alumni/profile" element={<AlumniProfile />} />
                 <Route path="contact-alumni" element={<ContactAlumni />} />
                 <Route path="resume" element={<ResumeBuilder />} />
+                <Route path="chat" element={<ChatSystem />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>

@@ -199,9 +199,8 @@ const ContactAlumni = () => {
   };
 
   const sendMessage = (alumni: Alumni) => {
-    navigate('/dashboard', { 
+    navigate('/dashboard/chat', { 
       state: { 
-        openChat: true,
         recipient: {
           id: alumni.id,
           name: alumni.name,
