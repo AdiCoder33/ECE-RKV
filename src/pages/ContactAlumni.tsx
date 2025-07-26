@@ -116,6 +116,82 @@ const ContactAlumni = () => {
               isAvailableForMentoring: false,
               bio: 'Serial entrepreneur building the next generation of fintech solutions.',
               achievements: ['Raised $2M in funding', 'Built team of 25+', 'Featured in Forbes 30 Under 30']
+            },
+            {
+              id: '4',
+              name: 'Dr. Meera Krishnan',
+              email: 'meera.krishnan@research.ac.in',
+              phone: '+91 9988776655',
+              graduationYear: 2015,
+              currentPosition: 'Research Scientist',
+              company: 'Indian Institute of Science',
+              location: 'Bangalore, India',
+              profileImage: null,
+              expertise: ['Computer Vision', 'Deep Learning', 'Robotics'],
+              isAvailableForMentoring: true,
+              linkedinProfile: 'https://linkedin.com/in/meerakrishnan',
+              bio: 'Leading research in computer vision and robotics with 20+ publications.',
+              achievements: ['Ph.D from MIT', '20+ research publications', 'TED Talk speaker']
+            },
+            {
+              id: '5',
+              name: 'Arjun Mehta',
+              email: 'arjun.mehta@amazon.com',
+              phone: '+1 555-0199',
+              graduationYear: 2017,
+              currentPosition: 'Senior Data Scientist',
+              company: 'Amazon',
+              location: 'San Francisco, USA',
+              profileImage: null,
+              expertise: ['Data Science', 'Machine Learning', 'AWS'],
+              isAvailableForMentoring: true,
+              linkedinProfile: 'https://linkedin.com/in/arjunmehta',
+              bio: 'Building recommendation systems that serve millions of customers.',
+              achievements: ['AWS Certified', 'Patent holder', 'Kaggle Grandmaster']
+            },
+            {
+              id: '6',
+              name: 'Sneha Reddy',
+              email: 'sneha.reddy@consultancy.com',
+              graduationYear: 2016,
+              currentPosition: 'Senior Consultant',
+              company: 'McKinsey & Company',
+              location: 'Dubai, UAE',
+              profileImage: null,
+              expertise: ['Strategy Consulting', 'Digital Transformation', 'Leadership'],
+              isAvailableForMentoring: true,
+              bio: 'Helping Fortune 500 companies with digital transformation initiatives.',
+              achievements: ['MBA from INSEAD', 'Promoted twice in 3 years', 'Women in Tech award']
+            },
+            {
+              id: '7',
+              name: 'Karthik Iyer',
+              email: 'karthik@fintech.in',
+              phone: '+91 9876543298',
+              graduationYear: 2021,
+              currentPosition: 'Software Engineer',
+              company: 'Razorpay',
+              location: 'Bangalore, India',
+              profileImage: null,
+              expertise: ['Backend Development', 'Microservices', 'Payment Systems'],
+              isAvailableForMentoring: true,
+              linkedinProfile: 'https://linkedin.com/in/karthikiyer',
+              bio: 'Recent graduate working on high-scale payment processing systems.',
+              achievements: ['Top performer 2023', 'Open source contributor', 'Hackathon winner']
+            },
+            {
+              id: '8',
+              name: 'Riya Jain',
+              email: 'riya.jain@unicorn.startup',
+              graduationYear: 2019,
+              currentPosition: 'VP Engineering',
+              company: 'Swiggy',
+              location: 'Bangalore, India',
+              profileImage: null,
+              expertise: ['Engineering Leadership', 'Scalable Systems', 'Team Building'],
+              isAvailableForMentoring: false,
+              bio: 'Leading engineering teams to build food delivery at scale.',
+              achievements: ['Led 100+ engineers', 'Built real-time tracking', 'IIT Gold Medalist']
             }
           ];
           setAlumni([...data, ...mockAlumni]);
@@ -146,10 +222,17 @@ const ContactAlumni = () => {
   const uniqueCompanies = [...new Set(alumni.map(a => a.company).filter(Boolean))].sort();
 
   const handleMessageAlumni = (alumniMember: Alumni) => {
-    // Here you would integrate with your chat system
-    console.log('Starting chat with:', alumniMember.name);
-    // For now, we'll just show an alert
-    alert(`Starting chat with ${alumniMember.name}. This will integrate with the chat system.`);
+    // Navigate to chat with the alumni
+    navigate('/dashboard/chat', { 
+      state: { 
+        startChatWith: {
+          id: alumniMember.id,
+          name: alumniMember.name,
+          email: alumniMember.email,
+          type: 'alumni'
+        }
+      }
+    });
   };
 
   const handleViewProfile = (alumniMember: Alumni) => {

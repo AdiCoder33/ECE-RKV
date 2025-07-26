@@ -13,8 +13,11 @@ import {
   Award,
   BookOpen,
   TrendingUp,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
+import ResumeBuilder from './ResumeBuilder';
+import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 interface StudentProfileProps {
@@ -22,6 +25,7 @@ interface StudentProfileProps {
 }
 
 const StudentProfile = ({ studentId }: StudentProfileProps) => {
+  const { user } = useAuth();
   // Mock data - replace with actual API call
   const student = {
     id: studentId,
@@ -102,6 +106,9 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
           <TabsTrigger value="academics">Academic Records</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="contact">Contact Info</TabsTrigger>
+          {(user?.role === 'student' || user?.role === 'admin' || user?.role === 'professor' || user?.role === 'hod') && (
+            <TabsTrigger value="resume">Resume</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -287,6 +294,29 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="resume" className="space-y-6">
+          {user?.role === 'student' ? (
+            <ResumeBuilder />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Student Resume
+                </CardTitle>
+                <CardDescription>View {student.name}'s resume and career profile</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Student resume will be displayed here</p>
+                  <p className="text-sm mt-2">Resume data will be fetched from the student's profile</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
