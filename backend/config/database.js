@@ -1,17 +1,53 @@
-const mysql = require('mysql2/promise');
+const sql = require('mssql/msnodesqlv8');
 require('dotenv').config();
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  server: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'college_management',
-  connectionLimit: 10,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  multipleStatements: true
+  driver: 'msnodesqlv8',
+  options: {
+    trustedConnection: true,
+    enableArithAbort: true,
+    trustServerCertificate: true
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
 };
 
-const pool = mysql.createPool(dbConfig);
+let pool;
 
-module.exports = pool;
+const connectDB = async () => {
+  try {
+    if (!pool) {
+      pool = await sql.connect(dbConfig);
+      console.log('Connected to MSSQL database');
+    }
+    return pool;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    throw error;
+  }
+};
+
+const executeQuery = async (query, params = []) => {
+  try {
+    const poolConnection = await connectDB();
+    const request = poolConnection.request();
+    
+    // Add parameters if provided
+    params.forEach((param, index) => {
+      request.input(`param${index}`, param);
+    });
+    
+    const result = await request.query(query);
+    return result;
+  } catch (error) {
+    console.error('Query execution error:', error);
+    throw error;
+  }
+};
+
+module.exports = { connectDB, executeQuery, sql };

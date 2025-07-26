@@ -21,6 +21,7 @@ import Analytics from './components/analytics/Analytics';
 import Announcements from './components/announcements/Announcements';
 import Profile from './components/profile/Profile';
 import Settings from './components/settings/Settings';
+import AlumniDirectory from './pages/AlumniDirectory';
 import './App.css';
 
 function App() {

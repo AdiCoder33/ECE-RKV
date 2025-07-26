@@ -50,6 +50,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Login successful for user:', foundUser);
         setUser(foundUser);
         localStorage.setItem('user', JSON.stringify(foundUser));
+        
+        // Redirect based on role
+        const dashboardRoutes = {
+          admin: '/dashboard',
+          hod: '/dashboard',
+          professor: '/dashboard/professor',
+          student: '/dashboard/student',
+          alumni: '/dashboard/alumni'
+        };
+        
+        window.location.href = dashboardRoutes[foundUser.role as keyof typeof dashboardRoutes];
         return true;
       }
       console.log('Login failed: Invalid credentials');

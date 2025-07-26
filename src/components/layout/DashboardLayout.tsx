@@ -215,8 +215,8 @@ const DashboardLayout: React.FC = () => {
 
         <SidebarInset className="flex-1">
           <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center gap-4 px-4">
-              <SidebarTrigger className="md:hidden" />
+            <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
+              <SidebarTrigger className="lg:hidden" />
               <div className="flex-1" />
               
               {/* Chat Toggle */}
@@ -297,7 +297,7 @@ const DashboardLayout: React.FC = () => {
             </div>
           </header>
           
-          <main className={`flex-1 p-6 transition-all duration-300 ${chatOpen ? 'mr-80' : ''}`}>
+          <main className={`flex-1 p-2 md:p-4 lg:p-6 transition-all duration-300 ${chatOpen ? 'mr-80' : ''}`}>
             <Outlet />
           </main>
         </SidebarInset>
