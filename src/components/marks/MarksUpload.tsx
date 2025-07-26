@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,22 +32,28 @@ interface MarkEntry {
 }
 
 const MarksUpload = () => {
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedSection, setSelectedSection] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [examType, setExamType] = useState('');
-  const [maxMarks, setMaxMarks] = useState('');
+  const [maxMarks, setMaxMarks] = useState('40');
   const [examDate, setExamDate] = useState('');
-  const [students] = useState<Student[]>([
-    { id: '1', name: 'Aarav Patel', rollNumber: '20EC001' },
-    { id: '2', name: 'Priya Sharma', rollNumber: '20EC002' },
-    { id: '3', name: 'Rohit Kumar', rollNumber: '20EC003' },
-    { id: '4', name: 'Ananya Singh', rollNumber: '20EC004' },
-    { id: '5', name: 'Vikram Rao', rollNumber: '20EC005' },
-    { id: '6', name: 'Sneha Gupta', rollNumber: '20EC006' },
-    { id: '7', name: 'Arjun Menon', rollNumber: '20EC007' },
-    { id: '8', name: 'Kavya Nair', rollNumber: '20EC008' }
-  ]);
-  
+  const [students, setStudents] = useState<Student[]>([]);
   const [markEntries, setMarkEntries] = useState<MarkEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const classes = [
+    { value: '1', label: 'Class 1' },
+    { value: '2', label: 'Class 2' },
+    { value: '3', label: 'Class 3' },
+    { value: '4', label: 'Class 4' }
+  ];
+
+  const sections = [
+    { value: 'A', label: 'Section A' },
+    { value: 'B', label: 'Section B' },
+    { value: 'C', label: 'Section C' }
+  ];
 
   const subjects = [
     { id: 'ece301', name: 'Digital Signal Processing' },
@@ -65,9 +71,35 @@ const MarksUpload = () => {
     { value: 'quiz', label: 'Quiz' }
   ];
 
+  // Fetch students when class and section are selected
+  const fetchStudents = async () => {
+    if (!selectedClass || !selectedSection) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/students?year=${selectedClass}&section=${selectedSection}`);
+      if (response.ok) {
+        const studentsData = await response.json();
+        setStudents(studentsData);
+        setMarkEntries([]);
+        toast.success(`Loaded ${studentsData.length} students`);
+      } else {
+        toast.error('Failed to fetch students');
+      }
+    } catch (error) {
+      toast.error('Error fetching students');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, [selectedClass, selectedSection]);
+
   const initializeMarks = () => {
-    if (!selectedSubject || !examType) {
-      toast.error('Please select subject and exam type first');
+    if (!selectedClass || !selectedSection || !selectedSubject || !examType) {
+      toast.error('Please select class, section, subject and exam type first');
       return;
     }
     
@@ -77,6 +109,45 @@ const MarksUpload = () => {
     }));
     setMarkEntries(initialEntries);
     toast.success('Marks sheet initialized for all students');
+  };
+
+  const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csv = e.target?.result as string;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',');
+        
+        // Parse CSV and extract marks
+        const markData: MarkEntry[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(',');
+          if (row.length >= 3) {
+            const rollNumber = row[0].trim();
+            const marks = parseFloat(row[2].trim());
+            
+            // Find student by roll number
+            const student = students.find(s => s.rollNumber === rollNumber);
+            if (student && !isNaN(marks)) {
+              markData.push({ studentId: student.id, marks });
+            }
+          }
+        }
+        
+        setMarkEntries(markData);
+        toast.success(`Uploaded marks for ${markData.length} students`);
+      } catch (error) {
+        toast.error('Error parsing Excel file');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    event.target.value = '';
   };
 
   const updateMarks = (studentId: string, marks: number) => {
@@ -98,32 +169,46 @@ const MarksUpload = () => {
   };
 
   const submitMarks = async () => {
-    if (!selectedSubject || !examType || !maxMarks || markEntries.length === 0) {
+    if (!selectedClass || !selectedSection || !selectedSubject || !examType || !maxMarks || markEntries.length === 0) {
       toast.error('Please fill all required fields and enter marks');
       return;
     }
 
     try {
-      // Here you would make API call to save marks
-      console.log('Submitting marks:', {
-        subjectId: selectedSubject,
-        type: examType,
-        maxMarks: parseInt(maxMarks),
-        date: examDate,
-        marksData: markEntries,
-        enteredBy: 'current_user_id'
+      setLoading(true);
+      const response = await fetch('/api/marks/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          subjectId: selectedSubject,
+          type: examType,
+          maxMarks: parseInt(maxMarks),
+          date: examDate || new Date().toISOString().split('T')[0],
+          marksData: markEntries,
+          enteredBy: JSON.parse(localStorage.getItem('user') || '{}').id
+        })
       });
 
-      toast.success('Marks submitted successfully!');
-      
-      // Reset form
-      setMarkEntries([]);
-      setSelectedSubject('');
-      setExamType('');
-      setMaxMarks('');
-      setExamDate('');
+      if (response.ok) {
+        toast.success('Marks submitted successfully!');
+        
+        // Reset form
+        setMarkEntries([]);
+        setSelectedSubject('');
+        setExamType('');
+        setMaxMarks('40');
+        setExamDate('');
+      } else {
+        toast.error('Failed to submit marks');
+      }
     } catch (error) {
+      console.error('Submit marks error:', error);
       toast.error('Failed to submit marks');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -182,6 +267,47 @@ const MarksUpload = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Class</label>
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map(cls => (
+                    <SelectItem key={cls.value} value={cls.value}>
+                      {cls.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Section</label>
+              <Select value={selectedSection} onValueChange={setSelectedSection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map(section => (
+                    <SelectItem key={section.value} value={section.value}>
+                      {section.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Students</label>
+              <div className="flex items-center h-10 px-3 py-2 text-sm bg-muted rounded-md">
+                {loading ? 'Loading...' : students.length > 0 ? `${students.length} students loaded` : 'Select class & section'}
+              </div>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Subject</label>
@@ -240,6 +366,21 @@ const MarksUpload = () => {
               <Plus className="h-4 w-4 mr-2" />
               Initialize Marks Sheet
             </Button>
+            <div className="relative">
+              <Input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleExcelUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="excel-upload"
+              />
+              <Button variant="outline" asChild>
+                <label htmlFor="excel-upload" className="cursor-pointer">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Excel
+                </label>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
