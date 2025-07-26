@@ -21,6 +21,7 @@ import {
   Eye
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import ResumeView from './ResumeView';
 
 interface Education {
   id: string;
@@ -164,119 +165,32 @@ const ResumeBuilder = () => {
   };
 
   if (!isEditing) {
-    // Resume Preview Mode
+    // Resume Preview Mode - Use the standardized ResumeView component
+    const resumeData = {
+      personalInfo,
+      education,
+      experience,
+      projects,
+      skills
+    };
+
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Resume Preview</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Resume Preview</h2>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsEditing(true)}>
               <Code className="h-4 w-4 mr-2" />
               Edit Resume
             </Button>
-            <Button onClick={downloadResume}>
+            <Button onClick={downloadResume} className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
               <Download className="h-4 w-4 mr-2" />
               Download PDF
             </Button>
           </div>
         </div>
 
-        <Card className="max-w-4xl mx-auto">
-          <CardContent className="p-8 space-y-6">
-            {/* Header */}
-            <div className="text-center border-b pb-6">
-              <h1 className="text-3xl font-bold text-foreground">{personalInfo.name}</h1>
-              <div className="flex justify-center items-center gap-4 mt-2 text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Mail className="h-4 w-4" />
-                  {personalInfo.email}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Phone className="h-4 w-4" />
-                  {personalInfo.phone}
-                </div>
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {personalInfo.location}
-                </div>
-              </div>
-              {personalInfo.objective && (
-                <p className="mt-4 text-muted-foreground italic">{personalInfo.objective}</p>
-              )}
-            </div>
-
-            {/* Education */}
-            <div>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
-                Education
-              </h2>
-              {education.map((edu) => (
-                <div key={edu.id} className="mb-4">
-                  <h3 className="font-semibold">{edu.degree} in {edu.fieldOfStudy}</h3>
-                  <p className="text-muted-foreground">{edu.institution}</p>
-                  <p className="text-sm text-muted-foreground">{edu.startYear} - {edu.endYear} | Grade: {edu.grade}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Experience */}
-            {experience.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Experience
-                </h2>
-                {experience.map((exp) => (
-                  <div key={exp.id} className="mb-4">
-                    <h3 className="font-semibold">{exp.position}</h3>
-                    <p className="text-muted-foreground">{exp.company}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
-                    </p>
-                    <p className="mt-2">{exp.description}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Projects */}
-            {projects.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Projects
-                </h2>
-                {projects.map((project) => (
-                  <div key={project.id} className="mb-4">
-                    <h3 className="font-semibold">{project.name}</h3>
-                    <p className="text-muted-foreground mb-2">{project.description}</p>
-                    <div className="flex gap-1 mb-2">
-                      {project.technologies.map((tech, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tech}
-                        </Badge>
-                      ))}
-                    </div>
-                    {project.link && (
-                      <p className="text-sm text-primary">{project.link}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Skills */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Skills</h2>
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill, index) => (
-                  <Badge key={index} variant="outline">{skill}</Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ResumeView resumeData={resumeData} showDownload={false} />
       </div>
     );
   }

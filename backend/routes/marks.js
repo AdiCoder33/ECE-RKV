@@ -1,17 +1,51 @@
 const express = require('express');
-const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { executeQuery } = require('../config/database');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
-// Get internal marks
-router.get('/', authenticateToken, async (req, res) => {
+// Get marks for a student
+router.get('/student/:studentId', auth, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { subjectId, type } = req.query;
+    
+    let query = `
+      SELECT im.*, s.name as subject_name, s.code as subject_code
+      FROM InternalMarks im 
+      LEFT JOIN Subjects s ON im.subject_id = s.id 
+      WHERE im.student_id = ?
+    `;
+    const params = [studentId];
+    
+    if (subjectId) {
+      query += ' AND im.subject_id = ?';
+      params.push(subjectId);
+    }
+    
+    if (type) {
+      query += ' AND im.type = ?';
+      params.push(type);
+    }
+    
+    query += ' ORDER BY im.date DESC';
+    
+    const result = await executeQuery(query, params);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Get student marks error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all marks (for faculty)
+router.get('/', auth, async (req, res) => {
   try {
     const { subjectId, studentId, type } = req.query;
     let query = `
       SELECT im.*, u.name as student_name, u.roll_number, s.name as subject_name 
-      FROM internal_marks im 
-      LEFT JOIN users u ON im.student_id = u.id 
-      LEFT JOIN subjects s ON im.subject_id = s.id 
+      FROM InternalMarks im 
+      LEFT JOIN Users u ON im.student_id = u.id 
+      LEFT JOIN Subjects s ON im.subject_id = s.id 
       WHERE 1=1
     `;
     const params = [];
@@ -33,38 +67,36 @@ router.get('/', authenticateToken, async (req, res) => {
     
     query += ' ORDER BY im.date DESC';
     
-    const [rows] = await db.execute(query, params);
-    res.json(rows);
+    const result = await executeQuery(query, params);
+    res.json(result.recordset);
   } catch (error) {
-    console.error('Get internal marks error:', error);
+    console.error('Get marks error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Bulk enter internal marks
-router.post('/bulk', authenticateToken, async (req, res) => {
+// Bulk enter marks
+router.post('/bulk', auth, async (req, res) => {
   try {
     const { subjectId, type, marksData, maxMarks, date, enteredBy } = req.body;
     
     // Delete existing marks for the same subject and type
-    await db.execute(
-      'DELETE FROM internal_marks WHERE subject_id = ? AND type = ?',
+    await executeQuery(
+      'DELETE FROM InternalMarks WHERE subject_id = ? AND type = ?',
       [subjectId, type]
     );
     
     // Insert new marks
-    const insertPromises = marksData.map(record => {
-      return db.execute(
-        'INSERT INTO internal_marks (student_id, subject_id, type, marks, max_marks, date, entered_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    for (const record of marksData) {
+      await executeQuery(
+        'INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())',
         [record.studentId, subjectId, type, record.marks, maxMarks, date, enteredBy]
       );
-    });
+    }
     
-    await Promise.all(insertPromises);
-    
-    res.json({ message: 'Internal marks entered successfully' });
+    res.json({ message: 'Marks entered successfully' });
   } catch (error) {
-    console.error('Enter internal marks error:', error);
+    console.error('Enter marks error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

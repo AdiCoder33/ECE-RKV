@@ -147,6 +147,23 @@ CREATE INDEX idx_marks_student_subject ON marks(student_id, subject_id);
 CREATE INDEX idx_chat_messages_group ON chat_messages(group_id);
 CREATE INDEX idx_timetable_year_section ON timetable(year, section);
 
+-- Internal Marks table
+CREATE TABLE InternalMarks (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    student_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    type VARCHAR(50) NOT NULL, -- 'mid1', 'mid2', 'internal1', 'internal2', 'assignment', 'quiz'
+    marks DECIMAL(5,2) NOT NULL,
+    max_marks DECIMAL(5,2) NOT NULL,
+    date DATE NOT NULL,
+    entered_by INT,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (student_id) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES Subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (entered_by) REFERENCES Users(id)
+);
+
 -- Resumes table
 CREATE TABLE resumes (
     id int IDENTITY(1,1) PRIMARY KEY,

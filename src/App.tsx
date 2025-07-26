@@ -28,6 +28,8 @@ import AlumniDirectory from './pages/AlumniDirectory';
 import AlumniProfile from './components/profile/AlumniProfile';
 import ContactAlumni from './pages/ContactAlumni';
 import ResumeBuilder from './components/profile/ResumeBuilder';
+import StudentMarks from './components/marks/StudentMarks';
+import MarksUpload from './components/marks/MarksUpload';
 import ChatSystem from './components/chat/ChatSystem';
 import './App.css';
 
@@ -63,6 +65,8 @@ function App() {
                 <Route path="alumni/profile" element={<AlumniProfile />} />
                 <Route path="contact-alumni" element={<ContactAlumni />} />
                 <Route path="resume" element={<ResumeBuilder />} />
+                <Route path="my-marks" element={<StudentMarks />} />
+                <Route path="marks-upload" element={<MarksUpload />} />
                 <Route path="chat" element={<ChatSystem />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

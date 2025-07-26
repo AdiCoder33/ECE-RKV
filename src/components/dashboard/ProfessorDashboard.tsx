@@ -258,11 +258,7 @@ const ProfessorDashboard = () => {
             </Button>
             <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
               <FileText className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
-              Grade Assignments
-            </Button>
-            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
-              <Users className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
-              View Students
+              Upload Marks
             </Button>
             <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
               <TrendingUp className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />

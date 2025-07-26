@@ -82,16 +82,15 @@ const DashboardLayout: React.FC = () => {
       case 'professor':
         return [
           { id: 'professor', label: 'Dashboard', icon: Home, path: '/dashboard/professor' },
-          { id: 'classes', label: 'My Classes', icon: BookOpen, path: '/dashboard/classes' },
+          { id: 'marks-upload', label: 'Upload Marks', icon: FileText, path: '/dashboard/marks-upload' },
           { id: 'attendance', label: 'Mark Attendance', icon: Calendar, path: '/dashboard/attendance' },
-          { id: 'subjects', label: 'My Subjects', icon: FileText, path: '/dashboard/subjects' },
-          { id: 'users', label: 'My Students', icon: Users, path: '/dashboard/users' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
         ];
       case 'student':
         return [
           { id: 'student', label: 'Dashboard', icon: Home, path: '/dashboard/student' },
+          { id: 'my-marks', label: 'My Marks', icon: BarChart3, path: '/dashboard/my-marks' },
           { id: 'my-subjects', label: 'My Subjects', icon: BookOpen, path: '/dashboard/my-subjects' },
           { id: 'student-attendance', label: 'My Attendance', icon: Calendar, path: '/dashboard/student-attendance' },
           { id: 'timetable', label: 'Timetable', icon: Clock, path: '/dashboard/timetable' },
