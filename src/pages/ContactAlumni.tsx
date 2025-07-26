@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
-  ArrowLeft, 
   Search, 
   MessageCircle, 
   Mail, 
@@ -17,8 +16,9 @@ import {
   Filter,
   GraduationCap,
   Briefcase,
-  Linkedin,
-  Globe
+  Globe,
+  Award,
+  Eye
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,272 +50,222 @@ interface Alumni {
 const ContactAlumni = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [alumni, setAlumni] = useState<Alumni[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [graduationYearFilter, setGraduationYearFilter] = useState<string>('all');
-  const [companyFilter, setCompanyFilter] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
   const [selectedAlumni, setSelectedAlumni] = useState<Alumni | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
+  const [filteredAlumni, setFilteredAlumni] = useState<Alumni[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedCompany, setSelectedCompany] = useState<string>('all');
 
-  useEffect(() => {
-    const fetchAlumni = async () => {
-      try {
-        const response = await fetch('/api/students/alumni', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Add mock data for better demonstration
-          const mockAlumni: Alumni[] = [
-            {
-              id: '1',
-              name: 'Rajesh Kumar',
-              email: 'rajesh.kumar@techcorp.com',
-              phone: '+91 9876543210',
-              graduationYear: 2020,
-              currentPosition: 'Senior Software Engineer',
-              company: 'Google India',
-              location: 'Bangalore, India',
-              profileImage: null,
-              expertise: ['Machine Learning', 'Cloud Computing', 'Python'],
-              isAvailableForMentoring: true,
-              linkedinProfile: 'https://linkedin.com/in/rajeshkumar',
-              bio: 'Passionate software engineer with 4+ years of experience in building scalable systems.',
-              achievements: ['Published 3 research papers', 'Led team of 8 developers', 'Google Cloud Certified']
-            },
-            {
-              id: '2',
-              name: 'Priya Sharma',
-              email: 'priya.sharma@microsoft.com',
-              phone: '+1 415-555-0123',
-              graduationYear: 2019,
-              currentPosition: 'Product Manager',
-              company: 'Microsoft',
-              location: 'Seattle, USA',
-              profileImage: null,
-              expertise: ['Product Management', 'AI/ML', 'Strategy'],
-              isAvailableForMentoring: true,
-              linkedinProfile: 'https://linkedin.com/in/priyasharma',
-              bio: 'Product manager driving innovation in AI-powered productivity tools.',
-              achievements: ['Managed $50M product line', 'Launched 5 major features', 'MBA from IIM Bangalore']
-            },
-            {
-              id: '3',
-              name: 'Amit Patel',
-              email: 'amit.patel@startup.com',
-              graduationYear: 2018,
-              currentPosition: 'Co-Founder & CTO',
-              company: 'TechStart Solutions',
-              location: 'Mumbai, India',
-              profileImage: null,
-              expertise: ['Entrepreneurship', 'Blockchain', 'Full Stack Development'],
-              isAvailableForMentoring: false,
-              bio: 'Serial entrepreneur building the next generation of fintech solutions.',
-              achievements: ['Raised $2M in funding', 'Built team of 25+', 'Featured in Forbes 30 Under 30']
-            },
-            {
-              id: '4',
-              name: 'Dr. Meera Krishnan',
-              email: 'meera.krishnan@research.ac.in',
-              phone: '+91 9988776655',
-              graduationYear: 2015,
-              currentPosition: 'Research Scientist',
-              company: 'Indian Institute of Science',
-              location: 'Bangalore, India',
-              profileImage: null,
-              expertise: ['Computer Vision', 'Deep Learning', 'Robotics'],
-              isAvailableForMentoring: true,
-              linkedinProfile: 'https://linkedin.com/in/meerakrishnan',
-              bio: 'Leading research in computer vision and robotics with 20+ publications.',
-              achievements: ['Ph.D from MIT', '20+ research publications', 'TED Talk speaker']
-            },
-            {
-              id: '5',
-              name: 'Arjun Mehta',
-              email: 'arjun.mehta@amazon.com',
-              phone: '+1 555-0199',
-              graduationYear: 2017,
-              currentPosition: 'Senior Data Scientist',
-              company: 'Amazon',
-              location: 'San Francisco, USA',
-              profileImage: null,
-              expertise: ['Data Science', 'Machine Learning', 'AWS'],
-              isAvailableForMentoring: true,
-              linkedinProfile: 'https://linkedin.com/in/arjunmehta',
-              bio: 'Building recommendation systems that serve millions of customers.',
-              achievements: ['AWS Certified', 'Patent holder', 'Kaggle Grandmaster']
-            },
-            {
-              id: '6',
-              name: 'Sneha Reddy',
-              email: 'sneha.reddy@consultancy.com',
-              graduationYear: 2016,
-              currentPosition: 'Senior Consultant',
-              company: 'McKinsey & Company',
-              location: 'Dubai, UAE',
-              profileImage: null,
-              expertise: ['Strategy Consulting', 'Digital Transformation', 'Leadership'],
-              isAvailableForMentoring: true,
-              bio: 'Helping Fortune 500 companies with digital transformation initiatives.',
-              achievements: ['MBA from INSEAD', 'Promoted twice in 3 years', 'Women in Tech award']
-            },
-            {
-              id: '7',
-              name: 'Karthik Iyer',
-              email: 'karthik@fintech.in',
-              phone: '+91 9876543298',
-              graduationYear: 2021,
-              currentPosition: 'Software Engineer',
-              company: 'Razorpay',
-              location: 'Bangalore, India',
-              profileImage: null,
-              expertise: ['Backend Development', 'Microservices', 'Payment Systems'],
-              isAvailableForMentoring: true,
-              linkedinProfile: 'https://linkedin.com/in/karthikiyer',
-              bio: 'Recent graduate working on high-scale payment processing systems.',
-              achievements: ['Top performer 2023', 'Open source contributor', 'Hackathon winner']
-            },
-            {
-              id: '8',
-              name: 'Riya Jain',
-              email: 'riya.jain@unicorn.startup',
-              graduationYear: 2019,
-              currentPosition: 'VP Engineering',
-              company: 'Swiggy',
-              location: 'Bangalore, India',
-              profileImage: null,
-              expertise: ['Engineering Leadership', 'Scalable Systems', 'Team Building'],
-              isAvailableForMentoring: false,
-              bio: 'Leading engineering teams to build food delivery at scale.',
-              achievements: ['Led 100+ engineers', 'Built real-time tracking', 'IIT Gold Medalist']
-            }
-          ];
-          setAlumni([...data, ...mockAlumni]);
-        }
-      } catch (error) {
-        console.error('Error fetching alumni:', error);
-        // Fallback to mock data
-        setAlumni([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Demo alumni data
+  const demoAlumni: Alumni[] = [
+    {
+      id: '1',
+      name: 'Priya Sharma',
+      email: 'priya.sharma@google.com',
+      phone: '+91 9876543210',
+      graduationYear: 2020,
+      currentPosition: 'Senior Software Engineer',
+      company: 'Google',
+      location: 'Bangalore, India',
+      profileImage: '/placeholder.svg',
+      expertise: ['React', 'Node.js', 'Cloud Computing', 'AI/ML'],
+      isAvailableForMentoring: true,
+      linkedinProfile: 'https://linkedin.com/in/priyasharma',
+      bio: 'Passionate software engineer with 4 years of experience in full-stack development. Currently working on AI-powered applications at Google.',
+      achievements: ['Technical Excellence Award 2023', 'Published 3 research papers', 'Led team of 8 developers']
+    },
+    {
+      id: '2', 
+      name: 'Rohit Kumar',
+      email: 'rohit.kumar@microsoft.com',
+      graduationYear: 2019,
+      currentPosition: 'Product Manager',
+      company: 'Microsoft',
+      location: 'Hyderabad, India',
+      expertise: ['Product Management', 'Strategy', 'Data Analytics'],
+      isAvailableForMentoring: true,
+      bio: 'Product manager passionate about building user-centric solutions. Leading Microsoft Teams mobile app development.',
+      achievements: ['Shipped 5 major product features', 'MBA from IIM Bangalore', '40% user growth in Q3 2023']
+    },
+    {
+      id: '3',
+      name: 'Anita Desai',
+      email: 'anita.desai@amazon.com', 
+      graduationYear: 2021,
+      currentPosition: 'DevOps Engineer',
+      company: 'Amazon',
+      location: 'Mumbai, India',
+      expertise: ['AWS', 'Kubernetes', 'DevOps', 'Infrastructure'],
+      isAvailableForMentoring: false,
+      bio: 'DevOps engineer specializing in cloud infrastructure and automation. Working on Amazon Prime Video infrastructure.',
+      achievements: ['AWS Certified Solutions Architect', 'Reduced deployment time by 60%', 'Mentored 12 junior engineers']
+    },
+    {
+      id: '4',
+      name: 'Vikram Singh',
+      email: 'vikram.singh@uber.com',
+      graduationYear: 2018, 
+      currentPosition: 'Engineering Manager',
+      company: 'Uber',
+      location: 'Delhi, India',
+      expertise: ['Leadership', 'Scalable Systems', 'Microservices'],
+      isAvailableForMentoring: true,
+      bio: 'Engineering manager with expertise in building scalable systems. Leading Uber Eats backend team in India.',
+      achievements: ['Built team from 3 to 25 engineers', 'Launched Uber Eats in 15 Indian cities', 'Speaker at 8 tech conferences']
+    },
+    {
+      id: '5',
+      name: 'Meera Patel',
+      email: 'meera.patel@flipkart.com',
+      graduationYear: 2022,
+      currentPosition: 'Data Scientist', 
+      company: 'Flipkart',
+      location: 'Bangalore, India',
+      expertise: ['Machine Learning', 'Python', 'Data Analysis', 'Statistics'],
+      isAvailableForMentoring: true,
+      bio: 'Data scientist working on recommendation systems and customer analytics. PhD in Computer Science from IISc.',
+      achievements: ['Published 8 ML research papers', 'Improved recommendation accuracy by 25%', 'Filed 2 patents']
+    },
+    {
+      id: '6',
+      name: 'Arjun Reddy',
+      email: 'arjun.reddy@zomato.com',
+      graduationYear: 2020,
+      currentPosition: 'Frontend Architect',
+      company: 'Zomato', 
+      location: 'Gurgaon, India',
+      expertise: ['React', 'JavaScript', 'UI/UX', 'Mobile Development'],
+      isAvailableForMentoring: true,
+      bio: 'Frontend architect passionate about creating exceptional user experiences. Leading Zomato web platform development.',
+      achievements: ['Rebuilt entire Zomato web app', 'Improved page load speed by 50%', 'Open source contributor']
+    },
+    {
+      id: '7',
+      name: 'Kavya Nair', 
+      email: 'kavya.nair@paytm.com',
+      graduationYear: 2019,
+      currentPosition: 'Security Engineer',
+      company: 'Paytm',
+      location: 'Noida, India', 
+      expertise: ['Cybersecurity', 'Penetration Testing', 'Network Security'],
+      isAvailableForMentoring: false,
+      bio: 'Cybersecurity specialist ensuring secure payment systems. Certified Ethical Hacker with 5 years experience.',
+      achievements: ['Prevented 15 major security breaches', 'CISSP Certified', 'Security researcher with 20+ CVEs']
+    },
+    {
+      id: '8',
+      name: 'Rahul Gupta',
+      email: 'rahul.gupta@ola.com', 
+      graduationYear: 2021,
+      currentPosition: 'Mobile App Developer',
+      company: 'Ola',
+      location: 'Bangalore, India',
+      expertise: ['React Native', 'iOS', 'Android', 'Mobile UI/UX'],
+      isAvailableForMentoring: true,
+      bio: 'Mobile developer creating seamless ride-booking experiences. Working on Ola consumer and driver apps.',
+      achievements: ['Launched Ola Electric app', 'Reduced app crash rate by 80%', 'Featured in Google Play Store']
+    }
+  ];
 
-    fetchAlumni();
+  React.useEffect(() => {
+    let filtered = demoAlumni;
+    
+    if (searchTerm) {
+      filtered = filtered.filter(alumni => 
+        alumni.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alumni.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alumni.currentPosition?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alumni.expertise.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
+    if (selectedYear !== 'all') {
+      filtered = filtered.filter(alumni => alumni.graduationYear.toString() === selectedYear);
+    }
+    
+    if (selectedCompany !== 'all') {
+      filtered = filtered.filter(alumni => alumni.company === selectedCompany);
+    }
+    
+    setFilteredAlumni(filtered);
+  }, [searchTerm, selectedYear, selectedCompany]);
+
+  React.useEffect(() => {
+    setFilteredAlumni(demoAlumni);
   }, []);
 
-  const filteredAlumni = alumni.filter(alum => {
-    const matchesSearch = alum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         alum.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         alum.currentPosition?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesYear = graduationYearFilter === 'all' || alum.graduationYear.toString() === graduationYearFilter;
-    const matchesCompany = companyFilter === 'all' || alum.company?.toLowerCase().includes(companyFilter.toLowerCase());
-    
-    return matchesSearch && matchesYear && matchesCompany;
-  });
+  const openAlumniProfile = (alumni: Alumni) => {
+    setSelectedAlumni(alumni);
+  };
 
-  const uniqueYears = [...new Set(alumni.map(a => a.graduationYear))].sort((a, b) => b - a);
-  const uniqueCompanies = [...new Set(alumni.map(a => a.company).filter(Boolean))].sort();
-
-  const handleMessageAlumni = (alumniMember: Alumni) => {
-    // Navigate to chat with the alumni
-    navigate('/dashboard/chat', { 
+  const sendMessage = (alumni: Alumni) => {
+    navigate('/dashboard', { 
       state: { 
-        startChatWith: {
-          id: alumniMember.id,
-          name: alumniMember.name,
-          email: alumniMember.email,
+        openChat: true,
+        recipient: {
+          id: alumni.id,
+          name: alumni.name,
+          email: alumni.email,
           type: 'alumni'
         }
       }
     });
   };
 
-  const handleViewProfile = (alumniMember: Alumni) => {
-    setSelectedAlumni(alumniMember);
-    setShowProfile(true);
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6 p-4 md:p-0">
-        <div className="space-y-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="border-border">
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  <div className="h-6 bg-muted rounded animate-pulse"></div>
-                  <div className="h-4 bg-muted rounded animate-pulse w-2/3"></div>
-                  <div className="h-8 bg-muted rounded animate-pulse w-32"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const graduationYears = [...new Set(demoAlumni.map(a => a.graduationYear))].sort((a, b) => b - a);
+  const companies = [...new Set(demoAlumni.map(a => a.company).filter(Boolean))].sort();
 
   return (
-    <div className="space-y-6 p-4 md:p-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Contact Alumni</h1>
-          <p className="text-muted-foreground">Connect with our graduate community</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Contact Alumni</h2>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Connect with alumni from ECE Department
+          </p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={() => navigate(-1)}
-          className="w-full md:w-auto"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+        <Badge variant="outline" className="text-xs md:text-sm">
+          {filteredAlumni.length} Alumni
+        </Badge>
       </div>
 
-      {/* Filters */}
-      <Card className="border-border">
-        <CardContent className="p-4 space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search alumni by name, company, or position..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full"
-                />
-              </div>
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, company, role, or skills..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-3 md:gap-2">
-              <Select value={graduationYearFilter} onValueChange={setGraduationYearFilter}>
-                <SelectTrigger className="w-full sm:w-36">
+            <div className="flex flex-col sm:flex-row gap-3 lg:w-auto">
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Year" />
+                  <SelectValue placeholder="Graduation Year" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Years</SelectItem>
-                  {uniqueYears.map(year => (
+                  {graduationYears.map(year => (
                     <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                <SelectTrigger className="w-full sm:w-36">
+              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <Building className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Company" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Companies</SelectItem>
-                  {uniqueCompanies.map(company => (
-                    <SelectItem key={company} value={company}>{company}</SelectItem>
+                  {companies.map(company => (
+                    <SelectItem key={company} value={company!}>{company}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -325,78 +275,87 @@ const ContactAlumni = () => {
       </Card>
 
       {/* Alumni Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-        {filteredAlumni.map((alumniMember) => (
-          <Card key={alumniMember.id} className="border-border hover:shadow-lg transition-all duration-200 cursor-pointer group">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+        {filteredAlumni.map((alumni) => (
+          <Card key={alumni.id} className="group hover:shadow-lg transition-all duration-200 cursor-pointer"
+                onClick={() => openAlumniProfile(alumni)}>
             <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col items-center text-center space-y-3 md:space-y-4">
-                <Avatar className="w-16 h-16 md:w-20 md:h-20 ring-2 ring-border group-hover:ring-primary transition-colors">
-                  <AvatarImage src={alumniMember.profileImage} alt={alumniMember.name} />
-                  <AvatarFallback className="text-base md:text-lg font-semibold bg-muted">
-                    {alumniMember.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="space-y-1 md:space-y-2 w-full">
-                  <h3 className="text-base md:text-lg font-semibold text-foreground line-clamp-1">{alumniMember.name}</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{alumniMember.currentPosition}</p>
-                  {alumniMember.company && (
-                    <div className="flex items-center justify-center gap-1 text-xs md:text-sm text-muted-foreground">
-                      <Building className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                      <span className="truncate">{alumniMember.company}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-center gap-1 text-xs md:text-sm text-muted-foreground">
-                    <GraduationCap className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                    <span>Class of {alumniMember.graduationYear}</span>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 md:h-14 md:w-14">
+                    <AvatarImage src={alumni.profileImage} />
+                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                      {alumni.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm md:text-base truncate group-hover:text-primary transition-colors">
+                      {alumni.name}
+                    </h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      Class of {alumni.graduationYear}
+                    </p>
                   </div>
-                  {alumniMember.location && (
-                    <div className="flex items-center justify-center gap-1 text-xs md:text-sm text-muted-foreground">
-                      <MapPin className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                      <span className="truncate">{alumniMember.location}</span>
-                    </div>
-                  )}
                 </div>
+                {alumni.isAvailableForMentoring && (
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    Mentor
+                  </Badge>
+                )}
+              </div>
 
-                {/* Expertise Tags */}
-                <div className="flex flex-wrap gap-1 justify-center w-full">
-                  {alumniMember.expertise.slice(0, 3).map((skill, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs px-2 py-1">
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-xs md:text-sm">
+                  <Briefcase className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                  <span className="truncate">{alumni.currentPosition}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs md:text-sm">
+                  <Building className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                  <span className="truncate">{alumni.company}</span>
+                </div>
+                {alumni.location && (
+                  <div className="flex items-center gap-2 text-xs md:text-sm">
+                    <MapPin className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                    <span className="truncate">{alumni.location}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1">
+                  {alumni.expertise.slice(0, 3).map((skill, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
                       {skill}
                     </Badge>
                   ))}
-                  {alumniMember.expertise.length > 3 && (
-                    <Badge variant="outline" className="text-xs px-2 py-1">
-                      +{alumniMember.expertise.length - 3}
+                  {alumni.expertise.length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{alumni.expertise.length - 3} more
                     </Badge>
                   )}
                 </div>
 
-                {/* Mentoring Badge */}
-                {alumniMember.isAvailableForMentoring && (
-                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs px-2 py-1">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>
-                    Available for Mentoring
-                  </Badge>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 w-full pt-2">
+                <div className="flex gap-2 pt-2">
                   <Button 
-                    variant="outline" 
                     size="sm" 
-                    className="flex-1 text-xs md:text-sm h-8 md:h-9"
-                    onClick={() => handleViewProfile(alumniMember)}
+                    className="flex-1 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openAlumniProfile(alumni);
+                    }}
                   >
+                    <Eye className="h-3 w-3 mr-1" />
                     View Profile
                   </Button>
                   <Button 
                     size="sm" 
-                    className="flex-1 text-xs md:text-sm h-8 md:h-9"
-                    onClick={() => handleMessageAlumni(alumniMember)}
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sendMessage(alumni);
+                    }}
                   >
-                    <MessageCircle className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    Message
+                    <MessageCircle className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -406,79 +365,108 @@ const ContactAlumni = () => {
       </div>
 
       {filteredAlumni.length === 0 && (
-        <Card className="border-border">
-          <CardContent className="p-8 text-center">
-            <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-foreground">No Alumni Found</h3>
-            <p className="text-muted-foreground">
-              {searchTerm || graduationYearFilter !== 'all' || companyFilter !== 'all'
-                ? 'No alumni match your search criteria.'
-                : 'No alumni profiles are available at the moment.'}
-            </p>
-          </CardContent>
+        <Card className="p-8 md:p-12 text-center">
+          <div className="space-y-4">
+            <GraduationCap className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />
+            <div>
+              <h3 className="text-lg md:text-xl font-semibold mb-2">No Alumni Found</h3>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Try adjusting your search criteria or filters
+              </p>
+            </div>
+          </div>
         </Card>
       )}
 
-      {/* Alumni Profile Modal */}
-      <Dialog open={showProfile} onOpenChange={setShowProfile}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-4 md:p-6">
-          <DialogHeader className="pb-4">
-            <DialogTitle className="text-xl md:text-2xl">Alumni Profile</DialogTitle>
+      {/* Alumni Profile Dialog */}
+      <Dialog open={!!selectedAlumni} onOpenChange={() => setSelectedAlumni(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={selectedAlumni?.profileImage} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {selectedAlumni?.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-bold">{selectedAlumni?.name}</h2>
+                <p className="text-sm text-muted-foreground">Class of {selectedAlumni?.graduationYear}</p>
+              </div>
+            </DialogTitle>
           </DialogHeader>
+
           {selectedAlumni && (
-            <div className="space-y-4 md:space-y-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4 pb-4 border-b border-border">
-                <Avatar className="w-20 h-20 md:w-24 md:h-24 ring-2 ring-border">
-                  <AvatarImage src={selectedAlumni.profileImage} alt={selectedAlumni.name} />
-                  <AvatarFallback className="text-lg md:text-xl font-semibold bg-muted">
-                    {selectedAlumni.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-center sm:text-left flex-1">
-                  <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">{selectedAlumni.name}</h2>
-                  <p className="text-base md:text-lg text-muted-foreground mb-2">{selectedAlumni.currentPosition}</p>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex items-center justify-center sm:justify-start gap-1">
-                      <Building className="h-4 w-4 flex-shrink-0" />
-                      <span>{selectedAlumni.company}</span>
-                    </div>
-                    <div className="flex items-center justify-center sm:justify-start gap-1">
-                      <GraduationCap className="h-4 w-4 flex-shrink-0" />
-                      <span>Class of {selectedAlumni.graduationYear}</span>
-                    </div>
+            <div className="space-y-6">
+              {/* Contact Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{selectedAlumni.email}</span>
                   </div>
-                  {selectedAlumni.isAvailableForMentoring && (
-                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs mt-2">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>
-                      Available for Mentoring
-                    </Badge>
+                  {selectedAlumni.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{selectedAlumni.phone}</span>
+                    </div>
                   )}
+                  {selectedAlumni.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{selectedAlumni.location}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{selectedAlumni.currentPosition}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{selectedAlumni.company}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Graduated {selectedAlumni.graduationYear}</span>
+                  </div>
                 </div>
               </div>
 
+              {/* Bio */}
               {selectedAlumni.bio && (
                 <div>
-                  <h3 className="font-semibold mb-2 text-foreground">About</h3>
-                  <p className="text-muted-foreground">{selectedAlumni.bio}</p>
+                  <h3 className="font-semibold mb-2">About</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedAlumni.bio}
+                  </p>
                 </div>
               )}
 
+              {/* Expertise */}
               <div>
-                <h3 className="font-semibold mb-2 text-foreground">Expertise</h3>
+                <h3 className="font-semibold mb-3">Expertise</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedAlumni.expertise.map((skill, index) => (
-                    <Badge key={index} variant="secondary">{skill}</Badge>
+                    <Badge key={index} variant="secondary">
+                      {skill}
+                    </Badge>
                   ))}
                 </div>
               </div>
 
+              {/* Achievements */}
               {selectedAlumni.achievements && selectedAlumni.achievements.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-2 text-foreground">Achievements</h3>
-                  <ul className="space-y-1">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    Achievements
+                  </h3>
+                  <ul className="space-y-2">
                     {selectedAlumni.achievements.map((achievement, index) => (
-                      <li key={index} className="text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
+                      <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="w-1 h-1 bg-primary rounded-full mt-2 shrink-0"></span>
                         {achievement}
                       </li>
                     ))}
@@ -486,59 +474,39 @@ const ContactAlumni = () => {
                 </div>
               )}
 
-              <div>
-                <h3 className="font-semibold mb-3 text-foreground flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Contact Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-muted/50">
-                    <Mail className="h-4 w-4 flex-shrink-0" />
-                    <span className="break-all">{selectedAlumni.email}</span>
+              {/* Mentoring */}
+              {selectedAlumni.isAvailableForMentoring && (
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <GraduationCap className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-green-700 dark:text-green-300">Available for Mentoring</span>
                   </div>
-                  {selectedAlumni.phone && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-muted/50">
-                      <Phone className="h-4 w-4 flex-shrink-0" />
-                      <span>{selectedAlumni.phone}</span>
-                    </div>
-                  )}
-                  {selectedAlumni.location && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-muted/50">
-                      <MapPin className="h-4 w-4 flex-shrink-0" />
-                      <span>{selectedAlumni.location}</span>
-                    </div>
-                  )}
-                  {selectedAlumni.linkedinProfile && (
-                    <div className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/50">
-                      <Linkedin className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <a 
-                        href={selectedAlumni.linkedinProfile} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-primary hover:underline break-all"
-                      >
-                        LinkedIn Profile
-                      </a>
-                    </div>
-                  )}
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    This alumni is open to mentoring students and sharing their experience.
+                  </p>
                 </div>
-              </div>
+              )}
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
                 <Button 
-                  className="flex-1 h-10"
-                  onClick={() => handleMessageAlumni(selectedAlumni)}
+                  className="flex-1"
+                  onClick={() => {
+                    sendMessage(selectedAlumni);
+                    setSelectedAlumni(null);
+                  }}
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Message
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1 sm:flex-none sm:px-6 h-10"
-                  onClick={() => setShowProfile(false)}
-                >
-                  Close
-                </Button>
+                {selectedAlumni.linkedinProfile && (
+                  <Button variant="outline" asChild>
+                    <a href={selectedAlumni.linkedinProfile} target="_blank" rel="noopener noreferrer">
+                      <Globe className="h-4 w-4 mr-2" />
+                      LinkedIn
+                    </a>
+                  </Button>
+                )}
               </div>
             </div>
           )}

@@ -26,6 +26,7 @@ import Profile from './components/profile/Profile';
 import Settings from './components/settings/Settings';
 import AlumniDirectory from './pages/AlumniDirectory';
 import ContactAlumni from './pages/ContactAlumni';
+import ResumeBuilder from './components/profile/ResumeBuilder';
 import './App.css';
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
                 <Route path="student-attendance" element={<StudentAttendance />} />
                 <Route path="alumni" element={<AlumniDirectory />} />
                 <Route path="contact-alumni" element={<ContactAlumni />} />
+                <Route path="resume" element={<ResumeBuilder />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>

@@ -95,6 +95,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'my-subjects', label: 'My Subjects', icon: BookOpen, path: '/dashboard/my-subjects' },
           { id: 'student-attendance', label: 'My Attendance', icon: Calendar, path: '/dashboard/student-attendance' },
           { id: 'timetable', label: 'Timetable', icon: Clock, path: '/dashboard/timetable' },
+          { id: 'resume', label: 'Resume', icon: FileText, path: '/dashboard/resume' },
           { id: 'contact-alumni', label: 'Contact Alumni', icon: GraduationCap, path: '/dashboard/contact-alumni' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
