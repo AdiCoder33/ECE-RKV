@@ -337,19 +337,25 @@ const StudentDashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={studentSubjects} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="name" type="category" width={80} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Bar dataKey="marks" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-              </BarChart>
+              {studentSubjects.length > 0 && studentSubjects.some(s => s.marks && !isNaN(s.marks)) ? (
+                <BarChart data={studentSubjects.filter(s => s.marks && !isNaN(s.marks))} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis dataKey="name" type="category" width={80} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Bar dataKey="marks" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No performance data available</p>
+                </div>
+              )}
             </ResponsiveContainer>
           </CardContent>
         </Card>
