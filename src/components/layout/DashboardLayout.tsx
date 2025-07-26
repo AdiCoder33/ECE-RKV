@@ -20,7 +20,9 @@ import {
   Home,
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  UserCheck
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -90,9 +92,10 @@ const DashboardLayout: React.FC = () => {
       case 'student':
         return [
           { id: 'student', label: 'Dashboard', icon: Home, path: '/dashboard/student' },
+          { id: 'my-subjects', label: 'My Subjects', icon: BookOpen, path: '/dashboard/my-subjects' },
           { id: 'student-attendance', label: 'My Attendance', icon: Calendar, path: '/dashboard/student-attendance' },
-          { id: 'subjects', label: 'My Subjects', icon: BookOpen, path: '/dashboard/subjects' },
-          { id: 'analytics', label: 'My Performance', icon: BarChart3, path: '/dashboard/analytics' },
+          { id: 'timetable', label: 'Timetable', icon: Clock, path: '/dashboard/timetable' },
+          { id: 'contact-alumni', label: 'Contact Alumni', icon: GraduationCap, path: '/dashboard/contact-alumni' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
         ];
@@ -100,8 +103,6 @@ const DashboardLayout: React.FC = () => {
         return [
           { id: 'alumni', label: 'Dashboard', icon: Home, path: '/dashboard/alumni' },
           { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
-          { id: 'subjects', label: 'Academic Records', icon: FileText, path: '/dashboard/subjects' },
-          { id: 'users', label: 'Alumni Network', icon: Users, path: '/dashboard/users' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
         ];
       default:

@@ -18,12 +18,14 @@ import TimetableManagement from './components/timetable/TimetableManagement';
 import ClassManagement from './components/classes/ClassManagement';
 import ClassStudents from './pages/ClassStudents';
 import SubjectManagement from './components/subjects/SubjectManagement';
+import StudentSubjects from './components/subjects/StudentSubjects';
 import AttendanceManager from './components/attendance/AttendanceManager';
 import Analytics from './components/analytics/Analytics';
 import Announcements from './components/announcements/Announcements';
 import Profile from './components/profile/Profile';
 import Settings from './components/settings/Settings';
 import AlumniDirectory from './pages/AlumniDirectory';
+import ContactAlumni from './pages/ContactAlumni';
 import './App.css';
 
 function App() {
@@ -46,6 +48,7 @@ function App() {
                 <Route path="classes" element={<ClassManagement />} />
                 <Route path="classes/:classId/students" element={<ClassStudents />} />
                 <Route path="subjects" element={<SubjectManagement />} />
+                <Route path="my-subjects" element={<StudentSubjects />} />
                 <Route path="attendance" element={<AttendanceManager />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="announcements" element={<Announcements />} />
@@ -54,6 +57,7 @@ function App() {
                 <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
                 <Route path="student-attendance" element={<StudentAttendance />} />
                 <Route path="alumni" element={<AlumniDirectory />} />
+                <Route path="contact-alumni" element={<ContactAlumni />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>
