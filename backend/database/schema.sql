@@ -147,6 +147,55 @@ CREATE INDEX idx_marks_student_subject ON marks(student_id, subject_id);
 CREATE INDEX idx_chat_messages_group ON chat_messages(group_id);
 CREATE INDEX idx_timetable_year_section ON timetable(year, section);
 
+-- Resumes table
+CREATE TABLE resumes (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    student_id int NOT NULL,
+    personal_info nvarchar(max),
+    education nvarchar(max),
+    experience nvarchar(max),
+    projects nvarchar(max),
+    skills nvarchar(max),
+    created_at datetime2 DEFAULT GETDATE(),
+    updated_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Alumni Profiles table
+CREATE TABLE alumni_profiles (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    user_id int NOT NULL,
+    company nvarchar(255),
+    position nvarchar(255),
+    graduation_year int,
+    field_of_study nvarchar(255),
+    location nvarchar(255),
+    bio nvarchar(max),
+    linkedin nvarchar(255),
+    github nvarchar(255),
+    website nvarchar(255),
+    achievements nvarchar(max),
+    skills nvarchar(max),
+    work_experience nvarchar(max),
+    education nvarchar(max),
+    created_at datetime2 DEFAULT GETDATE(),
+    updated_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Messages table for private messaging
+CREATE TABLE messages (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    sender_id int NOT NULL,
+    receiver_id int NOT NULL,
+    content nvarchar(max) NOT NULL,
+    message_type nvarchar(50) DEFAULT 'text',
+    is_read bit DEFAULT 0,
+    created_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE NO ACTION
+);
+
 -- Insert sample data
 INSERT INTO users (name, email, password, role, department) VALUES 
 ('Admin User', 'admin@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'ECE'),

@@ -52,6 +52,9 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/resumes', require('./routes/resumes'));
+app.use('/api/alumni', require('./routes/alumni'));
+app.use('/api/messages', require('./routes/messages'));
 
 // Health check route
 app.get('/api/health', (req, res) => {

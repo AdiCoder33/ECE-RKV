@@ -69,57 +69,64 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 print:space-y-4">
+    <div className="max-w-4xl mx-auto space-y-6 print:space-y-4 print:bg-white">
       {showDownload && (
         <div className="flex justify-between items-center print:hidden">
-          <h2 className="text-2xl font-bold">Resume Preview</h2>
-          <Button onClick={downloadResume} className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Resume Preview
+          </h2>
+          <Button onClick={downloadResume} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
             <Download className="h-4 w-4" />
             Download PDF
           </Button>
         </div>
       )}
 
-      <Card className="print:shadow-none print:border-none">
-        <CardContent className="p-8 print:p-6">
-          {/* Header */}
-          <div className="text-center mb-8 print:mb-6">
-            <h1 className="text-3xl font-bold text-foreground mb-2 print:text-2xl">
-              {resumeData.personalInfo.name}
-            </h1>
-            
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground mb-4 print:gap-2">
-              <div className="flex items-center gap-1">
-                <Mail className="h-4 w-4" />
-                {resumeData.personalInfo.email}
-              </div>
-              <div className="flex items-center gap-1">
-                <Phone className="h-4 w-4" />
-                {resumeData.personalInfo.phone}
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                {resumeData.personalInfo.location}
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap justify-center gap-4 text-sm print:gap-2">
-              {resumeData.personalInfo.linkedIn && (
-                <div className="flex items-center gap-1">
-                  <Globe className="h-4 w-4" />
-                  <span>{resumeData.personalInfo.linkedIn}</span>
+      <Card className="print:shadow-none print:border-none bg-gradient-to-br from-background to-background/95 border-primary/20">
+        <CardContent className="p-10 print:p-8">
+          {/* Header with gradient background */}
+          <div className="relative mb-10 print:mb-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg -m-6 print:hidden" />
+            <div className="relative text-center p-6">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent mb-3 print:text-3xl print:text-foreground">
+                {resumeData.personalInfo.name}
+              </h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4 print:gap-2">
+                <div className="flex items-center justify-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{resumeData.personalInfo.email}</span>
                 </div>
-              )}
-              {resumeData.personalInfo.github && (
-                <div className="flex items-center gap-1">
-                  <Code className="h-4 w-4" />
-                  <span>{resumeData.personalInfo.github}</span>
+                <div className="flex items-center justify-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{resumeData.personalInfo.phone}</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{resumeData.personalInfo.location}</span>
+                </div>
+              </div>
+              
+              {(resumeData.personalInfo.linkedIn || resumeData.personalInfo.github) && (
+                <div className="flex flex-wrap justify-center gap-6 text-sm print:gap-3">
+                  {resumeData.personalInfo.linkedIn && (
+                    <div className="flex items-center gap-2 text-primary">
+                      <Globe className="h-4 w-4" />
+                      <span className="font-medium">{resumeData.personalInfo.linkedIn}</span>
+                    </div>
+                  )}
+                  {resumeData.personalInfo.github && (
+                    <div className="flex items-center gap-2 text-primary">
+                      <Code className="h-4 w-4" />
+                      <span className="font-medium">{resumeData.personalInfo.github}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          <Separator className="mb-6 print:mb-4" />
+          <Separator className="mb-8 print:mb-6 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
           {/* Objective */}
           {resumeData.personalInfo.objective && (
@@ -135,23 +142,25 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
           )}
 
           {/* Education */}
-          <div className="mb-6 print:mb-4">
-            <h2 className="text-xl font-semibold mb-4 flex items-center print:text-lg">
-              <GraduationCap className="h-5 w-5 mr-2" />
+          <div className="mb-8 print:mb-6">
+            <h2 className="text-2xl font-bold mb-6 flex items-center text-primary print:text-xl">
+              <div className="p-2 bg-primary/10 rounded-lg mr-3 print:bg-transparent print:p-0">
+                <GraduationCap className="h-6 w-6" />
+              </div>
               Education
             </h2>
-            <div className="space-y-4 print:space-y-2">
+            <div className="space-y-6 print:space-y-4">
               {resumeData.education.map((edu, index) => (
-                <div key={index} className="border-l-2 border-primary pl-4">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold">{edu.degree} in {edu.fieldOfStudy}</h3>
-                    <span className="text-sm text-muted-foreground flex items-center">
+                <div key={index} className="relative bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-lg border border-primary/20 print:bg-transparent print:border-l-2 print:border-primary print:pl-4 print:p-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-foreground">{edu.degree} in {edu.fieldOfStudy}</h3>
+                    <Badge variant="outline" className="text-xs font-medium border-primary/30 text-primary">
                       <Calendar className="h-3 w-3 mr-1" />
                       {edu.startYear} - {edu.endYear}
-                    </span>
+                    </Badge>
                   </div>
-                  <p className="text-muted-foreground text-sm">{edu.institution}</p>
-                  <p className="text-sm font-medium">Grade: {edu.grade}</p>
+                  <p className="text-muted-foreground font-medium mb-1">{edu.institution}</p>
+                  <p className="text-sm font-semibold text-primary">Grade: {edu.grade}</p>
                 </div>
               ))}
             </div>
@@ -159,23 +168,25 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
 
           {/* Experience */}
           {resumeData.experience.length > 0 && (
-            <div className="mb-6 print:mb-4">
-              <h2 className="text-xl font-semibold mb-4 flex items-center print:text-lg">
-                <Briefcase className="h-5 w-5 mr-2" />
+            <div className="mb-8 print:mb-6">
+              <h2 className="text-2xl font-bold mb-6 flex items-center text-primary print:text-xl">
+                <div className="p-2 bg-primary/10 rounded-lg mr-3 print:bg-transparent print:p-0">
+                  <Briefcase className="h-6 w-6" />
+                </div>
                 Experience
               </h2>
-              <div className="space-y-4 print:space-y-2">
+              <div className="space-y-6 print:space-y-4">
                 {resumeData.experience.map((exp, index) => (
-                  <div key={index} className="border-l-2 border-primary pl-4">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-semibold">{exp.position}</h3>
-                      <span className="text-sm text-muted-foreground flex items-center">
+                  <div key={index} className="relative bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-lg border border-primary/20 print:bg-transparent print:border-l-2 print:border-primary print:pl-4 print:p-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-foreground">{exp.position}</h3>
+                      <Badge variant="outline" className="text-xs font-medium border-primary/30 text-primary">
                         <Calendar className="h-3 w-3 mr-1" />
                         {formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="text-muted-foreground text-sm mb-2">{exp.company}</p>
-                    <p className="text-sm leading-relaxed">{exp.description}</p>
+                    <p className="text-muted-foreground font-medium mb-3">{exp.company}</p>
+                    <p className="text-sm leading-relaxed text-foreground/90">{exp.description}</p>
                   </div>
                 ))}
               </div>
@@ -184,24 +195,29 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
 
           {/* Projects */}
           {resumeData.projects.length > 0 && (
-            <div className="mb-6 print:mb-4">
-              <h2 className="text-xl font-semibold mb-4 flex items-center print:text-lg">
-                <Code className="h-5 w-5 mr-2" />
+            <div className="mb-8 print:mb-6">
+              <h2 className="text-2xl font-bold mb-6 flex items-center text-primary print:text-xl">
+                <div className="p-2 bg-primary/10 rounded-lg mr-3 print:bg-transparent print:p-0">
+                  <Code className="h-6 w-6" />
+                </div>
                 Projects
               </h2>
-              <div className="space-y-4 print:space-y-2">
+              <div className="space-y-6 print:space-y-4">
                 {resumeData.projects.map((project, index) => (
-                  <div key={index} className="border-l-2 border-primary pl-4">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-semibold">{project.name}</h3>
+                  <div key={index} className="relative bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-lg border border-primary/20 print:bg-transparent print:border-l-2 print:border-primary print:pl-4 print:p-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-foreground">{project.name}</h3>
                       {project.link && (
-                        <span className="text-sm text-muted-foreground">{project.link}</span>
+                        <Badge variant="outline" className="text-xs font-medium border-primary/30 text-primary">
+                          <Globe className="h-3 w-3 mr-1" />
+                          Link
+                        </Badge>
                       )}
                     </div>
-                    <p className="text-sm leading-relaxed mb-2">{project.description}</p>
-                    <div className="flex flex-wrap gap-1">
+                    <p className="text-sm leading-relaxed mb-4 text-foreground/90">{project.description}</p>
+                    <div className="flex flex-wrap gap-2">
                       {project.technologies.map((tech, techIndex) => (
-                        <Badge key={techIndex} variant="outline" className="text-xs print:text-xs">
+                        <Badge key={techIndex} variant="secondary" className="text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 print:bg-transparent print:border print:border-primary">
                           {tech}
                         </Badge>
                       ))}
@@ -215,16 +231,20 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
           {/* Skills */}
           {resumeData.skills.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center print:text-lg">
-                <Code className="h-5 w-5 mr-2" />
+              <h2 className="text-2xl font-bold mb-6 flex items-center text-primary print:text-xl">
+                <div className="p-2 bg-primary/10 rounded-lg mr-3 print:bg-transparent print:p-0">
+                  <Code className="h-6 w-6" />
+                </div>
                 Technical Skills
               </h2>
-              <div className="flex flex-wrap gap-2">
-                {resumeData.skills.map((skill, index) => (
-                  <Badge key={index} variant="secondary" className="print:text-xs">
-                    {skill}
-                  </Badge>
-                ))}
+              <div className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-lg border border-primary/20 print:bg-transparent print:border-none print:p-0">
+                <div className="flex flex-wrap gap-3">
+                  {resumeData.skills.map((skill, index) => (
+                    <Badge key={index} variant="default" className="text-sm font-medium bg-primary/90 hover:bg-primary text-primary-foreground px-4 py-2 print:bg-transparent print:border print:border-primary print:text-primary">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
           )}
