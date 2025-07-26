@@ -144,22 +144,22 @@ const AlumniDirectory = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-4 md:space-y-6 p-2 md:p-4 lg:p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Alumni Directory</h1>
-          <p className="text-muted-foreground">Connect with successful ECE graduates</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Alumni Directory</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Connect with successful ECE graduates</p>
         </div>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+        <CardContent className="p-3 md:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -167,13 +167,13 @@ const AlumniDirectory = () => {
                   placeholder="Search by name, company, or expertise..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
               </div>
             </div>
             <div className="flex gap-2">
               <Select value={graduationYearFilter} onValueChange={setGraduationYearFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Graduation Year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,64 +196,64 @@ const AlumniDirectory = () => {
       </Card>
 
       {/* Results count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs md:text-sm text-muted-foreground">
           {filteredAlumni.length} alumni found
         </p>
       </div>
 
       {/* Alumni Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {filteredAlumni.map((person) => (
           <Card key={person.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-4">
-              <div className="flex items-start gap-4">
-                <Avatar className="w-16 h-16">
+            <CardHeader className="pb-3 md:pb-4">
+              <div className="flex items-start gap-3 md:gap-4">
+                <Avatar className="w-12 h-12 md:w-16 md:h-16">
                   <AvatarImage src={person.profileImage} alt={person.name} />
-                  <AvatarFallback className="text-lg">
+                  <AvatarFallback className="text-sm md:text-lg">
                     {person.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg leading-tight">{person.name}</h3>
-                  <p className="text-sm text-muted-foreground">{person.currentPosition}</p>
+                  <h3 className="font-semibold text-base md:text-lg leading-tight">{person.name}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">{person.currentPosition}</p>
                   {person.company && (
                     <div className="flex items-center gap-1 mt-1">
                       <Building className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{person.company}</span>
+                      <span className="text-xs text-muted-foreground truncate">{person.company}</span>
                     </div>
                   )}
                 </div>
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 md:space-y-4">
               {/* Graduation Info */}
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Class of {person.graduationYear}</span>
+                <Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                <span className="text-xs md:text-sm">Class of {person.graduationYear}</span>
               </div>
 
               {/* Location */}
               {person.location && (
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{person.location}</span>
+                  <MapPin className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                  <span className="text-xs md:text-sm truncate">{person.location}</span>
                 </div>
               )}
 
               {/* Expertise Tags */}
               <div>
-                <p className="text-sm font-medium mb-2">Expertise:</p>
+                <p className="text-xs md:text-sm font-medium mb-2">Expertise:</p>
                 <div className="flex flex-wrap gap-1">
-                  {person.expertise.slice(0, 3).map((skill, index) => (
+                  {person.expertise.slice(0, 2).map((skill, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {skill}
                     </Badge>
                   ))}
-                  {person.expertise.length > 3 && (
+                  {person.expertise.length > 2 && (
                     <Badge variant="outline" className="text-xs">
-                      +{person.expertise.length - 3}
+                      +{person.expertise.length - 2}
                     </Badge>
                   )}
                 </div>
@@ -261,34 +261,39 @@ const AlumniDirectory = () => {
 
               {/* Mentoring Status */}
               {person.isAvailableForMentoring && (
-                <Badge variant="default" className="bg-green-100 text-green-800">
+                <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
                   Available for Mentoring
                 </Badge>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+      {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button 
                   className="flex-1" 
+                  size="sm"
                   onClick={() => handleStartChat(person.id, person.name)}
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Chat
                 </Button>
-                {person.email && (
-                  <Button variant="outline" size="icon" asChild>
-                    <a href={`mailto:${person.email}`}>
-                      <Mail className="h-4 w-4" />
-                    </a>
-                  </Button>
-                )}
-                {person.phone && (
-                  <Button variant="outline" size="icon" asChild>
-                    <a href={`tel:${person.phone}`}>
-                      <Phone className="h-4 w-4" />
-                    </a>
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {person.email && (
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none" asChild>
+                      <a href={`mailto:${person.email}`}>
+                        <Mail className="h-4 w-4 mr-1" />
+                        <span className="sm:hidden">Email</span>
+                      </a>
+                    </Button>
+                  )}
+                  {person.phone && (
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none" asChild>
+                      <a href={`tel:${person.phone}`}>
+                        <Phone className="h-4 w-4 mr-1" />
+                        <span className="sm:hidden">Call</span>
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

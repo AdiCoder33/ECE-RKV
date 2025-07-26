@@ -355,4 +355,85 @@ router.get('/:studentId', authenticateToken, async (req, res) => {
   }
 });
 
+// Get student's subjects
+router.get('/:studentId/subjects', authenticateToken, async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    const [subjects] = await db.execute(`
+      SELECT 
+        s.id,
+        s.name,
+        s.code,
+        s.credits,
+        s.description,
+        COALESCE(AVG(m.marks), 0) as marks,
+        COUNT(a.id) as total_classes,
+        SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
+      FROM subjects s
+      LEFT JOIN class_subjects cs ON s.id = cs.subject_id
+      LEFT JOIN student_classes sc ON cs.class_id = sc.class_id
+      LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = ?
+      LEFT JOIN attendance a ON a.student_id = ? AND a.subject_id = s.id
+      WHERE sc.student_id = ?
+      GROUP BY s.id, s.name, s.code, s.credits, s.description
+    `, [studentId, studentId, studentId]);
+    
+    const formattedSubjects = subjects.map(subject => ({
+      id: subject.id.toString(),
+      name: subject.name,
+      code: subject.code,
+      credits: subject.credits,
+      description: subject.description,
+      marks: Math.round(subject.marks || 0),
+      attendance: subject.total_classes > 0 ? Math.round((subject.attended_classes / subject.total_classes) * 100) : 0
+    }));
+    
+    res.json(formattedSubjects);
+  } catch (error) {
+    console.error('Get student subjects error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get classmates
+router.get('/classmates', authenticateToken, async (req, res) => {
+  try {
+    const { year, section } = req.query;
+    
+    if (!year || !section) {
+      return res.status(400).json({ error: 'Year and section are required' });
+    }
+    
+    const [classmates] = await db.execute(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.roll_number,
+        u.phone,
+        u.profile_image,
+        AVG(a.present) * 100 as attendance_percentage
+      FROM users u
+      LEFT JOIN attendance a ON u.id = a.student_id
+      WHERE u.role = 'student' AND u.year = ? AND u.section = ?
+      GROUP BY u.id, u.name, u.email, u.roll_number, u.phone, u.profile_image
+      ORDER BY u.roll_number
+    `, [year, section]);
+    
+    res.json(classmates.map(student => ({
+      id: student.id.toString(),
+      name: student.name,
+      email: student.email,
+      rollNumber: student.roll_number,
+      phone: student.phone,
+      profileImage: student.profile_image,
+      attendancePercentage: Math.round(student.attendance_percentage || 0)
+    })));
+  } catch (error) {
+    console.error('Get classmates error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

@@ -1,14 +1,15 @@
-const sql = require('mssql/msnodesqlv8');
+const sql = require('mssql');
 require('dotenv').config();
 
 const dbConfig = {
   server: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'college_management',
-  driver: 'msnodesqlv8',
+  user: process.env.DB_USER || 'sa',
+  password: process.env.DB_PASSWORD || '',
   options: {
-    trustedConnection: true,
     enableArithAbort: true,
-    trustServerCertificate: true
+    trustServerCertificate: true,
+    encrypt: false
   },
   pool: {
     max: 10,
@@ -39,11 +40,19 @@ const executeQuery = async (query, params = []) => {
     
     // Add parameters if provided
     params.forEach((param, index) => {
-      request.input(`param${index}`, param);
+      if (param !== undefined && param !== null) {
+        request.input(`param${index}`, param);
+      }
     });
     
-    const result = await request.query(query);
-    return result;
+    // Replace ? placeholders with @param syntax for MSSQL
+    let mssqlQuery = query;
+    params.forEach((param, index) => {
+      mssqlQuery = mssqlQuery.replace('?', `@param${index}`);
+    });
+    
+    const result = await request.query(mssqlQuery);
+    return { recordset: result.recordset, rowsAffected: result.rowsAffected };
   } catch (error) {
     console.error('Query execution error:', error);
     throw error;
