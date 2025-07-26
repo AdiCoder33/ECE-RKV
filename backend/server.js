@@ -9,6 +9,8 @@ const PORT = process.env.PORT || 5000;
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const chatRoutes = require('./routes/chat');
+const groupRoutes = require('./routes/groups');
+const timetableRoutes = require('./routes/timetable');
 const subjectRoutes = require('./routes/subjects');
 const attendanceRoutes = require('./routes/attendance');
 const marksRoutes = require('./routes/marks');
@@ -41,6 +43,8 @@ async function connectToDatabase() {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/timetable', timetableRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/internal-marks', marksRoutes);

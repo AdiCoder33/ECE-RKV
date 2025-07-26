@@ -227,8 +227,8 @@ const UserManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Users Table */}
-      <Card>
+      {/* Users Table - Desktop */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>Users ({filteredUsers.length})</CardTitle>
         </CardHeader>
@@ -292,6 +292,67 @@ const UserManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Users Cards - Mobile */}
+      <div className="md:hidden space-y-4">
+        {filteredUsers.map((user) => (
+          <Card key={user.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-sm font-medium text-primary-foreground">
+                      {user.name.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold truncate">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </div>
+                <Badge className={getRoleBadgeColor(user.role)}>
+                  {user.role.toUpperCase()}
+                </Badge>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                {user.year && user.section && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Year/Section:</span>
+                    <span>{user.year}-{user.section}</span>
+                  </div>
+                )}
+                {user.rollNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Roll Number:</span>
+                    <span>{user.rollNumber}</span>
+                  </div>
+                )}
+                {user.phone && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span>{user.phone}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2 mt-4">
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Eye className="h-4 w-4 mr-1" />
+                  View
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <AddUserModal
         isOpen={isAddModalOpen}

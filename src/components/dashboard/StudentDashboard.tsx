@@ -35,7 +35,7 @@ const StudentDashboard = () => {
   const completedCredits = 142;
   const totalCredits = 180;
 
-  const monthlyAttendance = [
+  const attendanceData = [
     { month: 'Aug', attendance: 92 },
     { month: 'Sep', attendance: 88 },
     { month: 'Oct', attendance: 85 },
@@ -364,7 +364,7 @@ const StudentDashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={monthlyAttendance}>
+              <LineChart data={attendanceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[70, 100]} stroke="hsl(var(--muted-foreground))" />

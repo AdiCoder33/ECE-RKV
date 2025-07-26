@@ -227,17 +227,17 @@ const AdminDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground" variant="default">
+            <Button className="w-full justify-start" onClick={() => window.location.href = '/dashboard/users'}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Add New Student
+              Manage Users
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start" variant="outline" onClick={() => window.location.href = '/dashboard/groups'}>
               <GraduationCap className="h-4 w-4 mr-2" />
-              Manage Professors
+              Chat Groups
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start" variant="outline" onClick={() => window.location.href = '/dashboard/timetable'}>
               <BookOpen className="h-4 w-4 mr-2" />
-              Course Management
+              Timetable
             </Button>
             <Button className="w-full justify-start" variant="outline">
               <BarChart3 className="h-4 w-4 mr-2" />
