@@ -14,7 +14,7 @@ import ProfessorDashboard from './components/dashboard/ProfessorDashboard';
 import AlumniDashboard from './components/dashboard/AlumniDashboard';
 import UserManagement from './components/users/UserManagement';
 import GroupManagement from './components/groups/GroupManagement';
-import TimetableManagement from './components/timetable/TimetableManagement';
+import TimetableRouter from './components/timetable/TimetableRouter';
 import ClassManagement from './components/classes/ClassManagement';
 import ClassStudents from './pages/ClassStudents';
 import SubjectManagement from './components/subjects/SubjectManagement';
@@ -49,7 +49,7 @@ function App() {
                 <Route path="alumni" element={<AlumniDashboard />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="groups" element={<GroupManagement />} />
-                <Route path="timetable" element={<TimetableManagement />} />
+                <Route path="timetable" element={<TimetableRouter />} />
                 <Route path="classes" element={<ClassManagement />} />
                 <Route path="classes/:classId/students" element={<ClassStudents />} />
                 <Route path="subjects" element={<SubjectManagement />} />
