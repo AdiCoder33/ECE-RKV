@@ -125,18 +125,29 @@ CREATE TABLE chat_messages (
 -- Timetable table
 CREATE TABLE timetable (
     id int IDENTITY(1,1) PRIMARY KEY,
-    day_of_week nvarchar(20) NOT NULL,
-    time_slot nvarchar(20) NOT NULL,
-    subject_id int NOT NULL,
-    faculty_id int NOT NULL,
+    day nvarchar(20) NOT NULL,
+    time nvarchar(20) NOT NULL,
+    subject nvarchar(100) NOT NULL,
+    faculty nvarchar(100) NOT NULL,
     room nvarchar(50) NOT NULL,
     year int NOT NULL,
     section nvarchar(10) NOT NULL,
-    created_at datetime2 DEFAULT GETDATE(),
-    FOREIGN KEY (subject_id) REFERENCES subjects(id),
-    FOREIGN KEY (faculty_id) REFERENCES users(id),
-    UNIQUE(day_of_week, time_slot, year, section)
+    created_at datetime2 DEFAULT GETDATE()
 );
+
+-- Insert demo timetable data
+INSERT INTO timetable (day, time, subject, faculty, room, year, section) VALUES
+('Monday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
+('Monday', '11:00-12:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
+('Monday', '14:00-15:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
+('Tuesday', '10:00-11:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
+('Tuesday', '13:00-14:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
+('Wednesday', '09:00-10:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
+('Wednesday', '11:00-12:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
+('Thursday', '10:00-11:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
+('Thursday', '15:00-16:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
+('Friday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
+('Friday', '14:00-15:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B');
 
 -- Create indexes for better performance
 CREATE INDEX idx_users_role ON users(role);

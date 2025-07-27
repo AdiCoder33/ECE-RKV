@@ -37,6 +37,10 @@ const AttendanceManager = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('1');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Check if user has access based on role
+  const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
+  const isProfessor = user?.role === 'professor';
+
   // Generate students based on selected year and section with sequential roll numbers
   const [students, setStudents] = useState<AttendanceStudent[]>(() => {
     const generatedStudents: AttendanceStudent[] = [];
@@ -54,8 +58,12 @@ const AttendanceManager = () => {
     return generatedStudents;
   });
 
-  const years = ['1', '2', '3', '4'];
-  const sections = ['A', 'B', 'C', 'D', 'E'];
+  // Filter years and sections based on professor's assigned classes
+  const getAllowedYears = () => hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']; // Professor demo: years 3-4
+  const getAllowedSections = () => hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']; // Professor demo: sections A-B
+
+  const years = getAllowedYears();
+  const sections = getAllowedSections();
   const periods = [
     { value: '1', label: 'Period 1 (9:00 AM - 10:00 AM)' },
     { value: '2', label: 'Period 2 (10:00 AM - 11:00 AM)' },
@@ -153,6 +161,13 @@ const AttendanceManager = () => {
       {/* Class and Date Selection */}
       <Card>
         <CardContent className="p-6">
+          {isProfessor && (
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>Professor Access:</strong> You can only mark attendance for your assigned classes and subjects.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year-select">Year</Label>

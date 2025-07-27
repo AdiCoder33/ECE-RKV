@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +13,19 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  FileText
+  FileText,
+  MapPin,
+  Play
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProfessorDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const totalStudents = 156;
   const activeClasses = 4;
   const avgAttendance = 84;
@@ -44,6 +53,86 @@ const ProfessorDashboard = () => {
     { grade: 'B', count: 31, color: '#ef4444' },
     { grade: 'C+', count: 20, color: '#8b5cf6' }
   ];
+
+  // Demo today's schedule
+  const demoSchedule = [
+    {
+      id: 1,
+      day: 'Monday',
+      time: '09:00-10:00',
+      subject: 'Data Structures',
+      room: 'CS-101',
+      year: 3,
+      section: 'A',
+      current: true
+    },
+    {
+      id: 2,
+      day: 'Monday',
+      time: '11:00-12:00',
+      subject: 'Database Systems',
+      room: 'CS-102',
+      year: 3,
+      section: 'B',
+      current: false
+    },
+    {
+      id: 3,
+      day: 'Monday',
+      time: '14:00-15:00',
+      subject: 'Operating Systems',
+      room: 'CS-103',
+      year: 4,
+      section: 'A',
+      current: false
+    }
+  ];
+
+  useEffect(() => {
+    fetchTodaySchedule();
+  }, []);
+
+  const fetchTodaySchedule = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      
+      const response = await fetch(`http://localhost:5000/api/timetable?faculty=${user?.name}&day=${today}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const schedule = await response.json();
+        setTodaySchedule(schedule);
+      } else {
+        // Use demo data if API fails
+        setTodaySchedule(demoSchedule);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+      // Use demo data on error
+      setTodaySchedule(demoSchedule);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCurrentTime = () => {
+    const now = new Date();
+    return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+  };
+
+  const isCurrentClass = (timeSlot) => {
+    const currentTime = getCurrentTime();
+    const [startTime] = timeSlot.split('-');
+    return currentTime >= startTime && currentTime <= timeSlot.split('-')[1];
+  };
+
+  const handleClassClick = (classItem) => {
+    navigate(`/dashboard/attendance?year=${classItem.year}&section=${classItem.section}&subject=${classItem.subject}`);
+  };
 
   const recentActivities = [
     {
@@ -217,29 +306,84 @@ const ProfessorDashboard = () => {
         </Card>
       </div>
 
-      {/* Activity and Actions */}
+      {/* Today's Schedule and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        {/* Recent Activities */}
+        {/* Today's Schedule */}
         <Card className="lg:col-span-2 border-border">
           <CardHeader>
-            <CardTitle className="text-foreground">Recent Activities</CardTitle>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Today's Schedule
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Latest updates from your classes
+              Your classes for today
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-64 lg:max-h-80 overflow-y-auto">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="w-2 h-2 bg-primary rounded-full" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.details}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{activity.time}</span>
-                </div>
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : todaySchedule.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No classes scheduled for today</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todaySchedule.map((classItem) => {
+                  const isCurrent = isCurrentClass(classItem.time);
+                  return (
+                    <div 
+                      key={classItem.id} 
+                      className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                        isCurrent 
+                          ? 'bg-primary/10 border-primary shadow-sm' 
+                          : 'bg-muted/30 border-border hover:bg-muted/50'
+                      }`}
+                      onClick={() => handleClassClick(classItem)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-foreground">{classItem.subject}</h4>
+                            {isCurrent && (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                <Play className="h-3 w-3 mr-1" />
+                                Live
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {classItem.time}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {classItem.room}
+                            </span>
+                            <Badge variant="outline">
+                              {classItem.year}-{classItem.section}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Button 
+                          variant={isCurrent ? "default" : "outline"} 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleClassClick(classItem);
+                          }}
+                        >
+                          {isCurrent ? "Mark Attendance" : "View Class"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -252,11 +396,19 @@ const ProfessorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 lg:space-y-3">
-            <Button className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground text-xs lg:text-sm h-8 lg:h-10" variant="default">
+            <Button 
+              className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground text-xs lg:text-sm h-8 lg:h-10" 
+              variant="default"
+              onClick={() => navigate('/dashboard/attendance')}
+            >
               <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Mark Attendance
             </Button>
-            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+            <Button 
+              className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" 
+              variant="outline"
+              onClick={() => navigate('/dashboard/marks-upload')}
+            >
               <FileText className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Upload Marks
             </Button>
@@ -271,6 +423,30 @@ const ProfessorDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Activities */}
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground">Recent Activities</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Latest updates from your classes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {recentActivities.map((activity) => (
+              <div key={activity.id} className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="w-2 h-2 bg-primary rounded-full" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                  <p className="text-xs text-muted-foreground">{activity.details}</p>
+                </div>
+                <span className="text-xs text-muted-foreground">{activity.time}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Class Details */}
       <Card className="border-border">

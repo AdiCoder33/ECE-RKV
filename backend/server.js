@@ -56,6 +56,7 @@ app.use('/api/resumes', require('./routes/resumes'));
 app.use('/api/alumni', require('./routes/alumni'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/marks', require('./routes/marks'));
+app.use('/api/timetable', require('./routes/timetable'));
 
 // Health check route
 app.get('/api/health', (req, res) => {

@@ -6,7 +6,7 @@ const router = express.Router();
 // Get timetable
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { year, section, faculty } = req.query;
+    const { year, section, faculty, day } = req.query;
     let query = 'SELECT * FROM timetable WHERE 1=1';
     let params = [];
     
@@ -23,6 +23,11 @@ router.get('/', authenticateToken, async (req, res) => {
     if (faculty) {
       query += ' AND faculty = ?';
       params.push(faculty);
+    }
+    
+    if (day) {
+      query += ' AND day = ?';
+      params.push(day);
     }
     
     query += ' ORDER BY day, time';
