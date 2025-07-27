@@ -63,6 +63,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'users', label: 'User Management', icon: Users, path: '/dashboard/users' },
           { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/dashboard/classes' },
           { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
+          { id: 'timetable', label: 'Timetable', icon: Clock, path: '/dashboard/timetable' },
           { id: 'attendance', label: 'Attendance Manager', icon: Calendar, path: '/dashboard/attendance' },
           { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/dashboard/analytics' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
