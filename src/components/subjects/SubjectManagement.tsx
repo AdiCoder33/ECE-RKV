@@ -311,12 +311,12 @@ const SubjectManagement = () => {
               </div>
 
               <div className="pt-2 border-t">
-                <p className="text-sm text-muted-foreground mb-2">Professor</p>
+                <p className="text-sm text-muted-foreground mb-2">Max Marks</p>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <User className="h-3 w-3 text-primary-foreground" />
+                    <Award className="h-3 w-3 text-primary-foreground" />
                   </div>
-                  <span className="text-sm font-medium">{subject.professorName}</span>
+                  <span className="text-sm font-medium">{subject.maxMarks}</span>
                 </div>
               </div>
 

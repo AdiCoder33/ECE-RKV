@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,10 +11,13 @@ import {
   Edit,
   Trash2,
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  Save,
+  X
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from "@/hooks/use-toast";
 
 interface TimeSlot {
   id: string;
@@ -29,9 +32,13 @@ interface TimeSlot {
 
 const TimetableManagement = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('3');
   const [selectedSection, setSelectedSection] = useState('A');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingSlot, setEditingSlot] = useState<string | null>(null);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [professors, setProfessors] = useState<any[]>([]);
   const [newSlot, setNewSlot] = useState({
     day: '',
     time: '',
@@ -42,59 +49,97 @@ const TimetableManagement = () => {
     section: 'A'
   });
 
-  // Mock timetable data
-  const [timetable, setTimetable] = useState<TimeSlot[]>([
-    {
-      id: '1',
-      day: 'Monday',
-      time: '09:00-10:00',
-      subject: 'Digital Signal Processing',
-      faculty: 'Dr. Rajesh Kumar',
-      room: 'ECE-301',
-      year: 3,
-      section: 'A'
-    },
-    {
-      id: '2',
-      day: 'Monday',
-      time: '10:00-11:00',
-      subject: 'Microprocessors',
-      faculty: 'Prof. Priya Sharma',
-      room: 'ECE-302',
-      year: 3,
-      section: 'A'
-    },
-    {
-      id: '3',
-      day: 'Tuesday',
-      time: '09:00-10:00',
-      subject: 'Communication Systems',
-      faculty: 'Dr. Suresh Patel',
-      room: 'ECE-301',
-      year: 3,
-      section: 'A'
-    },
-    {
-      id: '4',
-      day: 'Wednesday',
-      time: '09:00-10:00',
-      subject: 'Digital Signal Processing',
-      faculty: 'Dr. Rajesh Kumar',
-      room: 'ECE-301',
-      year: 3,
-      section: 'A'
-    },
-    {
-      id: '5',
-      day: 'Thursday',
-      time: '10:00-11:00',
-      subject: 'Lab - DSP',
-      faculty: 'Dr. Rajesh Kumar',
-      room: 'ECE-Lab1',
-      year: 3,
-      section: 'A'
+  const [timetable, setTimetable] = useState<TimeSlot[]>([]);
+
+  // Fetch timetable data
+  useEffect(() => {
+    fetchTimetable();
+    fetchSubjects();
+    fetchProfessors();
+  }, [selectedYear, selectedSection]);
+
+  const fetchTimetable = async () => {
+    try {
+      const response = await fetch(`/api/timetable?year=${selectedYear}&section=${selectedSection}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTimetable(data);
+      }
+    } catch (error) {
+      console.error('Error fetching timetable:', error);
+      // Mock data for demo
+      setTimetable([
+        {
+          id: '1',
+          day: 'Monday',
+          time: '09:00-10:00',
+          subject: 'Digital Signal Processing',
+          faculty: 'Dr. Rajesh Kumar',
+          room: 'ECE-301',
+          year: 3,
+          section: 'A'
+        },
+        {
+          id: '2',
+          day: 'Monday',
+          time: '10:00-11:00',
+          subject: 'Microprocessors',
+          faculty: 'Prof. Priya Sharma',
+          room: 'ECE-302',
+          year: 3,
+          section: 'A'
+        }
+      ]);
     }
-  ]);
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const response = await fetch('/api/subjects', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSubjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      // Mock data
+      setSubjects([
+        { id: '1', name: 'Digital Signal Processing', code: 'ECE301' },
+        { id: '2', name: 'Microprocessors', code: 'ECE302' },
+        { id: '3', name: 'Communication Systems', code: 'ECE303' }
+      ]);
+    }
+  };
+
+  const fetchProfessors = async () => {
+    try {
+      const response = await fetch('/api/users?role=professor', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfessors(data);
+      }
+    } catch (error) {
+      console.error('Error fetching professors:', error);
+      // Mock data
+      setProfessors([
+        { id: '1', name: 'Dr. Rajesh Kumar' },
+        { id: '2', name: 'Prof. Priya Sharma' },
+        { id: '3', name: 'Dr. Suresh Patel' }
+      ]);
+    }
+  };
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const timeSlots = [
@@ -106,23 +151,95 @@ const TimetableManagement = () => {
     slot.year === parseInt(selectedYear) && slot.section === selectedSection
   );
 
-  const handleAddSlot = () => {
-    if (!newSlot.day || !newSlot.time || !newSlot.subject) return;
+  const handleAddSlot = async () => {
+    if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.faculty) return;
     
-    const slot: TimeSlot = {
-      id: String(timetable.length + 1),
-      ...newSlot,
-      year: parseInt(selectedYear),
-      section: selectedSection
-    };
-    
-    setTimetable([...timetable, slot]);
-    setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, section: 'A' });
-    setIsAddModalOpen(false);
+    try {
+      const response = await fetch('/api/timetable', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          ...newSlot,
+          year: parseInt(selectedYear),
+          section: selectedSection
+        })
+      });
+
+      if (response.ok) {
+        fetchTimetable();
+        setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, section: 'A' });
+        setIsAddModalOpen(false);
+        toast({
+          title: "Success",
+          description: "Timetable slot added successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding slot:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add timetable slot",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteSlot = (slotId: string) => {
-    setTimetable(timetable.filter(slot => slot.id !== slotId));
+  const handleDeleteSlot = async (slotId: string) => {
+    try {
+      const response = await fetch(`/api/timetable/${slotId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        fetchTimetable();
+        toast({
+          title: "Success",
+          description: "Timetable slot deleted successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting slot:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete timetable slot",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditSlot = async (slotId: string, updatedData: any) => {
+    try {
+      const response = await fetch(`/api/timetable/${slotId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (response.ok) {
+        fetchTimetable();
+        setEditingSlot(null);
+        toast({
+          title: "Success",
+          description: "Timetable slot updated successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating slot:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update timetable slot",
+        variant: "destructive"
+      });
+    }
   };
 
   const getSlotForTime = (day: string, time: string) => {
@@ -194,19 +311,29 @@ const TimetableManagement = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Subject</label>
-                    <Input
-                      value={newSlot.subject}
-                      onChange={(e) => setNewSlot({ ...newSlot, subject: e.target.value })}
-                      placeholder="Subject name"
-                    />
+                    <Select value={newSlot.subject} onValueChange={(value) => setNewSlot({ ...newSlot, subject: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjects.map(subject => (
+                          <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Faculty</label>
-                    <Input
-                      value={newSlot.faculty}
-                      onChange={(e) => setNewSlot({ ...newSlot, faculty: e.target.value })}
-                      placeholder="Faculty name"
-                    />
+                    <Select value={newSlot.faculty} onValueChange={(value) => setNewSlot({ ...newSlot, faculty: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select faculty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {professors.map(professor => (
+                          <SelectItem key={professor.id} value={professor.name}>{professor.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Room</label>
@@ -306,34 +433,68 @@ const TimetableManagement = () => {
                         </td>
                         {days.map(day => {
                           const slot = getSlotForTime(day, time);
+                          const slotKey = `${day}-${time}`;
+                          const isEditing = editingSlot === slotKey;
                           return (
-                            <td key={`${day}-${time}`} className="p-2">
+                            <td key={slotKey} className="p-2">
                               {slot ? (
                                 <div className="bg-primary/10 rounded-lg p-2 min-h-[60px] relative group">
-                                  <div className="text-xs font-medium text-primary mb-1 break-words">
-                                    {slot.subject}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground break-words">
-                                    {slot.faculty}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground break-words">
-                                    {slot.room}
-                                  </div>
-                                  {(user?.role === 'admin' || user?.role === 'hod') && (
-                                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                        onClick={() => handleDeleteSlot(slot.id)}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
+                                  {isEditing ? (
+                                    <EditSlotForm 
+                                      slot={slot}
+                                      subjects={subjects}
+                                      professors={professors}
+                                      onSave={(data) => handleEditSlot(slot.id, data)}
+                                      onCancel={() => setEditingSlot(null)}
+                                    />
+                                  ) : (
+                                    <>
+                                      <div className="text-xs font-medium text-primary mb-1 break-words">
+                                        {slot.subject}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground break-words">
+                                        {slot.faculty}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground break-words">
+                                        {slot.room}
+                                      </div>
+                                      {(user?.role === 'admin' || user?.role === 'hod') && (
+                                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700"
+                                            onClick={() => setEditingSlot(slotKey)}
+                                          >
+                                            <Edit className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                            onClick={() => handleDeleteSlot(slot.id)}
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               ) : (
-                                <div className="min-h-[60px] bg-gray-50 rounded-lg"></div>
+                                <div 
+                                  className="min-h-[60px] bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center"
+                                  onClick={() => {
+                                    if (user?.role === 'admin' || user?.role === 'hod') {
+                                      setNewSlot({ ...newSlot, day, time });
+                                      setIsAddModalOpen(true);
+                                    }
+                                  }}
+                                >
+                                  {(user?.role === 'admin' || user?.role === 'hod') && (
+                                    <Plus className="h-4 w-4 text-gray-400" />
+                                  )}
+                                </div>
                               )}
                             </td>
                           );
@@ -384,6 +545,61 @@ const TimetableManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// Inline edit form component
+const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: any) => {
+  const [editData, setEditData] = useState({
+    subject: slot.subject,
+    faculty: slot.faculty,
+    room: slot.room
+  });
+
+  const handleSave = () => {
+    onSave(editData);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Select value={editData.subject} onValueChange={(value) => setEditData({ ...editData, subject: value })}>
+        <SelectTrigger className="h-6 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {subjects.map((subject: any) => (
+            <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      
+      <Select value={editData.faculty} onValueChange={(value) => setEditData({ ...editData, faculty: value })}>
+        <SelectTrigger className="h-6 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {professors.map((professor: any) => (
+            <SelectItem key={professor.id} value={professor.name}>{professor.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      
+      <Input 
+        value={editData.room}
+        onChange={(e) => setEditData({ ...editData, room: e.target.value })}
+        placeholder="Room"
+        className="h-6 text-xs"
+      />
+      
+      <div className="flex gap-1">
+        <Button size="sm" onClick={handleSave} className="h-6 px-2 text-xs">
+          <Save className="h-3 w-3" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel} className="h-6 px-2 text-xs">
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
     </div>
   );
 };
