@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, GraduationCap } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LoginForm = () => {
@@ -32,13 +32,7 @@ const LoginForm = () => {
     }
   };
 
-  const demoCredentials = [
-    { role: 'Admin', email: 'admin@college.edu' },
-    { role: 'HOD', email: 'hod@college.edu' },
-    { role: 'Professor', email: 'prof@college.edu' },
-    { role: 'Student', email: 'student@college.edu' },
-    { role: 'Alumni', email: 'alumni@college.edu' }
-  ];
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -89,27 +83,6 @@ const LoginForm = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-muted/50">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Demo Credentials
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              {demoCredentials.map((cred) => (
-                <div key={cred.role} className="flex justify-between">
-                  <span className="font-medium">{cred.role}:</span>
-                  <span className="text-muted-foreground">{cred.email}</span>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground mt-2">
-                Password: <code className="bg-background px-1 rounded">password</code>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
