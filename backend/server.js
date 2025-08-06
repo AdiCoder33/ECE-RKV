@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -18,6 +19,7 @@ const announcementRoutes = require('./routes/announcements');
 const analyticsRoutes = require('./routes/analytics');
 const classRoutes = require('./routes/classes');
 const studentRoutes = require('./routes/students');
+const notificationRoutes = require('./routes/notifications');
 
 // Middleware
 app.use(cors({
@@ -27,12 +29,12 @@ app.use(cors({
 app.use(express.json());
 
 // Database connection
-const db = require('./config/database');
+const { connectDB } = require('./config/database');
 
 async function connectToDatabase() {
   try {
-    await db.execute('SELECT 1');
-    console.log('Connected to MySQL database');
+    await connectDB();
+    console.log('Connected to MSSQL database');
   } catch (error) {
     console.error('Database connection failed:', error);
     process.exit(1);
@@ -52,6 +54,7 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/resumes', require('./routes/resumes'));
 app.use('/api/alumni', require('./routes/alumni'));
 app.use('/api/messages', require('./routes/messages'));

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Bell, 
   GraduationCap, 
   LogOut, 
   Menu, 
@@ -44,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import ChatSidebar from '@/components/chat/ChatSidebar';
+import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -242,17 +241,7 @@ const DashboardLayout: React.FC = () => {
               </Button>
 
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                  >
-                    {unreadNotifications}
-                  </Badge>
-                )}
-              </Button>
+              <NotificationDropdown />
 
               {/* Profile Dropdown */}
               <DropdownMenu>
