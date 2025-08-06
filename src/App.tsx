@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -33,48 +34,60 @@ import MarksUpload from './components/marks/MarksUpload';
 import ChatSystem from './components/chat/ChatSystem';
 import './App.css';
 
+// Create a client instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 3,
+    },
+  },
+});
+
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AuthProvider>
-        <Router>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/login" element={<LoginForm />} />
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="student" element={<StudentDashboard />} />
-                <Route path="professor" element={<ProfessorDashboard />} />
-                <Route path="alumni" element={<AlumniDashboard />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="groups" element={<GroupManagement />} />
-                <Route path="timetable" element={<TimetableRouter />} />
-                <Route path="classes" element={<ClassManagement />} />
-                <Route path="classes/:classId/students" element={<ClassStudents />} />
-                <Route path="subjects" element={<SubjectManagement />} />
-                <Route path="my-subjects" element={<StudentSubjects />} />
-                <Route path="attendance" element={<AttendanceManager />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="announcements" element={<Announcements />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="profile/student/:studentId" element={<StudentProfile studentId="" />} />
-                <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
-                <Route path="student-attendance" element={<StudentAttendance />} />
-                <Route path="alumni" element={<AlumniDirectory />} />
-                <Route path="alumni/profile" element={<AlumniProfile />} />
-                <Route path="contact-alumni" element={<ContactAlumni />} />
-                <Route path="resume" element={<ResumeBuilder />} />
-                <Route path="my-marks" element={<StudentMarks />} />
-                <Route path="marks-upload" element={<MarksUpload />} />
-                <Route path="chat" element={<ChatSystem />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-            </Routes>
-          </div>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <AuthProvider>
+          <Router>
+            <div className="min-h-screen bg-background">
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/login" element={<LoginForm />} />
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="student" element={<StudentDashboard />} />
+                  <Route path="professor" element={<ProfessorDashboard />} />
+                  <Route path="alumni" element={<AlumniDashboard />} />
+                  <Route path="users" element={<UserManagement />} />
+                  <Route path="groups" element={<GroupManagement />} />
+                  <Route path="timetable" element={<TimetableRouter />} />
+                  <Route path="classes" element={<ClassManagement />} />
+                  <Route path="classes/:classId/students" element={<ClassStudents />} />
+                  <Route path="subjects" element={<SubjectManagement />} />
+                  <Route path="my-subjects" element={<StudentSubjects />} />
+                  <Route path="attendance" element={<AttendanceManager />} />
+                  <Route path="analytics" element={<Analytics />} />
+                  <Route path="announcements" element={<Announcements />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="profile/student/:studentId" element={<StudentProfile studentId="" />} />
+                  <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
+                  <Route path="student-attendance" element={<StudentAttendance />} />
+                  <Route path="alumni" element={<AlumniDirectory />} />
+                  <Route path="alumni/profile" element={<AlumniProfile />} />
+                  <Route path="contact-alumni" element={<ContactAlumni />} />
+                  <Route path="resume" element={<ResumeBuilder />} />
+                  <Route path="my-marks" element={<StudentMarks />} />
+                  <Route path="marks-upload" element={<MarksUpload />} />
+                  <Route path="chat" element={<ChatSystem />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+              </Routes>
+            </div>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
