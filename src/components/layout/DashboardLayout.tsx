@@ -20,7 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  UserCheck
+  UserCheck,
+  Bell
 } from 'lucide-react';
 import {
   SidebarProvider,
