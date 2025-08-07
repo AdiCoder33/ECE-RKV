@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -46,10 +47,15 @@ const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const [unreadNotifications] = useState(3);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const [chatOpen, setChatOpen] = useState(!isMobile);
   const [chatExpanded, setChatExpanded] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  useEffect(() => {
+    setChatOpen(!isMobile);
+  }, [isMobile]);
 
   const currentPage = location.pathname.split('/').pop() || 'dashboard';
 
@@ -260,22 +266,24 @@ const DashboardLayout: React.FC = () => {
             <div className="flex-1" />
 
             {/* Chat Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setChatOpen(!chatOpen)}
-              className="relative"
-            >
-              <MessageSquare className="h-5 w-5" />
-              {unreadNotifications > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  {unreadNotifications}
-                </Badge>
-              )}
-            </Button>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setChatOpen(!chatOpen)}
+                className="relative"
+              >
+                <MessageSquare className="h-5 w-5" />
+                {unreadNotifications > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadNotifications}
+                  </Badge>
+                )}
+              </Button>
+            )}
 
             {/* Notifications */}
             <NotificationDropdown />
