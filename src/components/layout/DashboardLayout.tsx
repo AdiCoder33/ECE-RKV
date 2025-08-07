@@ -248,7 +248,7 @@ const DashboardLayout: React.FC = () => {
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)} />}
 
       <div
-        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} ml-0`}
+        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} ml-0 ${chatMargin}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -335,7 +335,7 @@ const DashboardLayout: React.FC = () => {
           </div>
         </header>
 
-        <main className={`flex-1 p-2 md:p-4 lg:p-6 transition-all duration-300 ${chatMargin}`}>
+        <main className={`flex-1 p-2 md:p-4 lg:p-6 transition-all duration-300`}>
           <Outlet />
         </main>
       </div>
