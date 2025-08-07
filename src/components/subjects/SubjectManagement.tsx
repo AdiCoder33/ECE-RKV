@@ -155,7 +155,7 @@ const SubjectManagement = () => {
   };
 
   return (
-    <div className="space-y-6 bg-background text-foreground">
+    <div className="space-y-6 bg-background text-foreground px-4 sm:px-6 md:px-0">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Subject Management</h1>

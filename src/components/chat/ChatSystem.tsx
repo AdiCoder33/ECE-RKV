@@ -160,7 +160,7 @@ const ChatSystem = () => {
   ];
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4">
+    <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 px-4 sm:px-6 md:px-0">
       {/* Channels Sidebar */}
       <Card className="w-full md:w-80 flex flex-col md:max-h-full max-h-48">
         <CardHeader className="pb-3">
