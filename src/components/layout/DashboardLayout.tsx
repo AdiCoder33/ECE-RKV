@@ -147,9 +147,10 @@ const DashboardLayout: React.FC = () => {
     if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
 
     if (window.innerWidth < 768) {
-      if (!sidebarOpen && touchStartX <= 30 && deltaX > 50 && Math.abs(deltaY) < 30) {
+      const half = window.innerWidth / 2;
+      if (!sidebarOpen && touchStartX > half && deltaX > 80 && Math.abs(deltaY) < 30) {
         setSidebarOpen(true);
-      } else if (sidebarOpen && deltaX < -50 && Math.abs(deltaY) < 30) {
+      } else if (sidebarOpen && deltaX < -80 && Math.abs(deltaY) < 30) {
         setSidebarOpen(false);
       }
     }
