@@ -4,6 +4,11 @@ const jwt = require('jsonwebtoken');
 const { executeQuery } = require('../config/database');
 const router = express.Router();
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('JWT_SECRET is not defined');
+}
+
 // Login route
 router.post('/login', async (req, res) => {
   try {
@@ -23,7 +28,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'fallback_secret',
+      jwtSecret,
       { expiresIn: '24h' }
     );
 
