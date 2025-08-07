@@ -86,7 +86,7 @@ const StudentTimetable = () => {
   const nextClass = getNextClass();
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 px-4 py-4 sm:px-6">
       <div>
         <h1 className="text-3xl font-bold">My Timetable</h1>
         <p className="text-muted-foreground">

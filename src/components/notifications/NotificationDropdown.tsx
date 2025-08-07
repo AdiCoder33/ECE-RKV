@@ -21,7 +21,7 @@ interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   is_read: boolean;
   created_at: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 const NotificationDropdown: React.FC = () => {

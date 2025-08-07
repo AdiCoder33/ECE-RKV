@@ -37,8 +37,9 @@ const TimetableManagement = () => {
   const [selectedSection, setSelectedSection] = useState('A');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [professors, setProfessors] = useState<any[]>([]);
+  interface Option { id: string; name: string }
+  const [subjects, setSubjects] = useState<Option[]>([]);
+  const [professors, setProfessors] = useState<Option[]>([]);
   const [newSlot, setNewSlot] = useState({
     day: '',
     time: '',
@@ -213,7 +214,7 @@ const TimetableManagement = () => {
     }
   };
 
-  const handleEditSlot = async (slotId: string, updatedData: any) => {
+  const handleEditSlot = async (slotId: string, updatedData: unknown) => {
     try {
       const response = await fetch(`/api/timetable/${slotId}`, {
         method: 'PUT',
@@ -252,7 +253,7 @@ const TimetableManagement = () => {
     : filteredTimetable;
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 px-4 py-4 sm:px-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Timetable Management</h1>
@@ -550,8 +551,20 @@ const TimetableManagement = () => {
 };
 
 // Inline edit form component
-const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: any) => {
-  const [editData, setEditData] = useState({
+interface Slot {
+  subject: string;
+  faculty: string;
+  room: string;
+}
+interface EditSlotFormProps {
+  slot: Slot;
+  subjects: Option[];
+  professors: Option[];
+  onSave: (data: Slot) => void;
+  onCancel: () => void;
+}
+const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlotFormProps) => {
+  const [editData, setEditData] = useState<Slot>({
     subject: slot.subject,
     faculty: slot.faculty,
     room: slot.room
@@ -568,7 +581,7 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: any) => 
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {subjects.map((subject: any) => (
+          {subjects.map((subject) => (
             <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
           ))}
         </SelectContent>
@@ -579,7 +592,7 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: any) => 
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {professors.map((professor: any) => (
+          {professors.map((professor) => (
             <SelectItem key={professor.id} value={professor.name}>{professor.name}</SelectItem>
           ))}
         </SelectContent>

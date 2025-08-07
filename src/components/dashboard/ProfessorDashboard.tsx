@@ -166,7 +166,7 @@ const ProfessorDashboard = () => {
   ];
 
   return (
-    <div className="space-y-4 lg:space-y-6 p-4 lg:p-0">
+    <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 lg:px-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

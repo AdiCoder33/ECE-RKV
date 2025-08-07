@@ -99,7 +99,7 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
   user_id: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export interface AcademicRecord {
