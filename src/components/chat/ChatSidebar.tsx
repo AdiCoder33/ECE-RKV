@@ -250,6 +250,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </Card>
       ) : isOpen ? (
         <div className="flex flex-col items-center py-4 space-y-4">
+          <Button variant="ghost" size="icon" onClick={onToggle}>
+            <MessageSquare className="h-5 w-5" />
+          </Button>
           {channels.map((channel) => (
             <Button
               key={channel.id}
