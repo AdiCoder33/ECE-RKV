@@ -19,7 +19,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { User } from '@/types';
-import AddUserModal from './AddUserModal';
+import UserModal from './UserModal';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -27,11 +27,12 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [addUserError, setAddUserError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -86,7 +87,7 @@ const UserManagement = () => {
 
   const handleAddUser = async (newUser: Omit<User, 'id'> & { password: string }) => {
     try {
-      setAddUserError(null);
+      setModalError(null);
       const response = await fetch(`${apiBase}/users`, {
         method: 'POST',
         headers: {
@@ -100,9 +101,10 @@ const UserManagement = () => {
       }
       const createdUser: User = await response.json();
       setUsers([...users, createdUser]);
-      setIsAddModalOpen(false);
+      setIsModalOpen(false);
+      setEditingUser(null);
     } catch (err) {
-      setAddUserError((err as Error).message);
+      setModalError((err as Error).message);
       throw err;
     }
   };
@@ -122,8 +124,12 @@ const UserManagement = () => {
       }
       const savedUser: User = await response.json();
       setUsers(users.map(u => (u.id === savedUser.id ? savedUser : u)));
+      setIsModalOpen(false);
+      setEditingUser(null);
     } catch (err) {
       console.error(err);
+      setModalError((err as Error).message);
+      throw err;
     }
   };
 
@@ -165,7 +171,7 @@ const UserManagement = () => {
             <span className="hidden sm:inline">Import Excel</span>
             <span className="sm:hidden">Import</span>
           </Button>
-          <Button onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto">
+          <Button onClick={() => { setEditingUser(null); setIsModalOpen(true); }} className="w-full sm:w-auto">
             <UserPlus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Add User</span>
             <span className="sm:hidden">Add</span>
@@ -332,7 +338,7 @@ const UserManagement = () => {
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleUpdateUser(user)}>
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingUser(user); setIsModalOpen(true); }}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -405,7 +411,7 @@ const UserManagement = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handleUpdateUser(user)}
+                  onClick={() => { setEditingUser(user); setIsModalOpen(true); }}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
@@ -424,14 +430,17 @@ const UserManagement = () => {
         ))}
       </div>
 
-      <AddUserModal
-        isOpen={isAddModalOpen}
+      <UserModal
+        isOpen={isModalOpen}
         onClose={() => {
-          setIsAddModalOpen(false);
-          setAddUserError(null);
+          setIsModalOpen(false);
+          setEditingUser(null);
+          setModalError(null);
         }}
-        onAddUser={handleAddUser}
-        error={addUserError}
+        mode={editingUser ? 'edit' : 'add'}
+        initialUser={editingUser ?? undefined}
+        onSubmit={editingUser ? handleUpdateUser : handleAddUser}
+        error={modalError}
       />
     </div>
   );

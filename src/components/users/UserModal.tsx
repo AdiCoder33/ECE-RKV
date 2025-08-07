@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,32 +13,51 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User } from '@/types';
 
-interface AddUserModalProps {
+interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddUser: (user: Omit<User, 'id'> & { password: string }) => Promise<void>;
+  mode: 'add' | 'edit';
+  initialUser?: User;
+  onSubmit: (user: Omit<User, 'id'> & { id?: string; password?: string }) => Promise<void>;
   error?: string | null;
 }
 
-const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) => {
-  const initialForm = {
-    name: '',
-    email: '',
-    role: 'student' as 'admin' | 'hod' | 'professor' | 'student' | 'alumni',
-    year: 1,
-    section: 'A',
-    rollNumber: '',
-    phone: '',
-    password: 'password' // Default password
-  };
+const initialForm = {
+  name: '',
+  email: '',
+  role: 'student' as 'admin' | 'hod' | 'professor' | 'student' | 'alumni',
+  year: 1,
+  section: 'A',
+  rollNumber: '',
+  phone: '',
+  password: 'password',
+};
 
+const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: UserModalProps) => {
   const [formData, setFormData] = useState(initialForm);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && initialUser) {
+        setFormData({
+          ...initialForm,
+          ...initialUser,
+          year: initialUser.year ?? initialForm.year,
+          section: initialUser.section ?? initialForm.section,
+          rollNumber: initialUser.rollNumber ?? initialForm.rollNumber,
+          phone: initialUser.phone ?? initialForm.phone,
+        });
+      } else {
+        setFormData(initialForm);
+      }
+    }
+  }, [isOpen, mode, initialUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await onAddUser({
+      const payload: Omit<User, 'id'> & { id?: string; password?: string } = {
         name: formData.name,
         email: formData.email,
         role: formData.role,
@@ -46,13 +65,19 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
         section: formData.role === 'student' ? formData.section : undefined,
         rollNumber: formData.role === 'student' ? formData.rollNumber : undefined,
         phone: formData.phone,
-        password: formData.password
-      });
+      };
 
-      // Reset form on success
+      if (mode === 'add') {
+        payload.password = formData.password;
+      } else if (initialUser?.id) {
+        payload.id = initialUser.id;
+      }
+
+      await onSubmit(payload);
+
       setFormData(initialForm);
     } catch {
-      // Error is handled via error prop
+      // error handled via prop
     }
   };
 
@@ -64,9 +89,11 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{mode === 'edit' ? 'Edit User' : 'Add New User'}</DialogTitle>
           <DialogDescription>
-            Create a new user account for the ECE department.
+            {mode === 'edit'
+              ? 'Update user details for the ECE department.'
+              : 'Create a new user account for the ECE department.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -99,7 +126,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select onValueChange={(value) => handleInputChange('role', value)}>
+              <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -139,7 +166,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="year">Year</Label>
-                <Select onValueChange={(value) => handleInputChange('year', parseInt(value))}>
+                <Select value={formData.year?.toString()} onValueChange={(value) => handleInputChange('year', parseInt(value))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
@@ -181,7 +208,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
               Cancel
             </Button>
             <Button type="submit">
-              Add User
+              {mode === 'edit' ? 'Save Changes' : 'Add User'}
             </Button>
           </DialogFooter>
         </form>
@@ -190,4 +217,5 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
   );
 };
 
-export default AddUserModal;
+export default UserModal;
+
