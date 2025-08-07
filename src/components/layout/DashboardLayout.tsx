@@ -270,7 +270,11 @@ const DashboardLayout: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setChatOpen(!chatOpen)}
+                onClick={() => {
+                  const newOpen = !chatOpen;
+                  setChatOpen(newOpen);
+                  setChatExpanded(newOpen);
+                }}
                 className="relative"
               >
                 <MessageSquare className="h-5 w-5" />
@@ -344,7 +348,11 @@ const DashboardLayout: React.FC = () => {
       <ChatSidebar
         isOpen={chatOpen}
         expanded={chatExpanded}
-        onToggle={() => setChatOpen(!chatOpen)}
+        onToggle={() => {
+          const newOpen = !chatOpen;
+          setChatOpen(newOpen);
+          setChatExpanded(newOpen);
+        }}
         onExpandedChange={setChatExpanded}
       />
     </SidebarProvider>
