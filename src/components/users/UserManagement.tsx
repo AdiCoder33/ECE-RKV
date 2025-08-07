@@ -31,6 +31,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addUserError, setAddUserError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -83,12 +84,27 @@ const UserManagement = () => {
     alumni: users.filter(u => u.role === 'alumni').length
   };
 
-  const handleAddUser = (newUser: Omit<User, 'id'>) => {
-    const user: User = {
-      ...newUser,
-      id: String(users.length + 1)
-    };
-    setUsers([...users, user]);
+  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
+    try {
+      setAddUserError(null);
+      const response = await fetch(`${apiBase}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ ...newUser, password: 'password' })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add user');
+      }
+      const createdUser: User = await response.json();
+      setUsers([...users, createdUser]);
+      setIsAddModalOpen(false);
+    } catch (err) {
+      setAddUserError((err as Error).message);
+      throw err;
+    }
   };
 
   if (loading) {
@@ -358,8 +374,12 @@ const UserManagement = () => {
 
       <AddUserModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setAddUserError(null);
+        }}
         onAddUser={handleAddUser}
+        error={addUserError}
       />
     </div>
   );
