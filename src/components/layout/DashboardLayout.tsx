@@ -170,7 +170,7 @@ const DashboardLayout: React.FC = () => {
       <Sidebar
         onMouseEnter={() => setSidebarOpen(true)}
         onMouseLeave={() => setSidebarOpen(false)}
-        className={`fixed inset-y-0 left-0 z-40 border-r transition-[width] duration-300 overflow-hidden ${sidebarOpen ? 'w-64' : 'w-0 md:w-16'}`}
+        className={`fixed inset-y-0 left-0 z-40 border-r transition-[width] duration-300 overflow-hidden ${sidebarOpen ? 'w-60' : 'w-0 md:w-16'}`}
         collapsible="none"
       >
         <SidebarHeader className="border-b p-4 flex items-center justify-between">
@@ -248,7 +248,7 @@ const DashboardLayout: React.FC = () => {
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)} />}
 
       <div
-        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} ml-0 ${chatMargin}`}
+        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'md:ml-60' : 'md:ml-16'} ml-0 ${chatMargin}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
