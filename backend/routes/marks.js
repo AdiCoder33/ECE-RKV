@@ -1,10 +1,10 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get marks for a student
-router.get('/student/:studentId', auth, async (req, res) => {
+router.get('/student/:studentId', authenticateToken, async (req, res) => {
   try {
     const { studentId } = req.params;
     const { subjectId, type } = req.query;
@@ -38,7 +38,7 @@ router.get('/student/:studentId', auth, async (req, res) => {
 });
 
 // Get all marks (for faculty)
-router.get('/', auth, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { subjectId, studentId, type } = req.query;
     let query = `
@@ -76,7 +76,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Bulk enter marks
-router.post('/bulk', auth, async (req, res) => {
+router.post('/bulk', authenticateToken, async (req, res) => {
   try {
     const { subjectId, type, marksData, maxMarks, date, enteredBy } = req.body;
     

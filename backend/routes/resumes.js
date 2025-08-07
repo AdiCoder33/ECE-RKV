@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { executeQuery } = require('../config/database');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Get resume by student ID
-router.get('/:studentId', auth, async (req, res) => {
+router.get('/:studentId', authenticateToken, async (req, res) => {
   try {
     const { studentId } = req.params;
     
@@ -35,7 +35,7 @@ router.get('/:studentId', auth, async (req, res) => {
 });
 
 // Create or update resume
-router.post('/', auth, async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { personalInfo, education, experience, projects, skills } = req.body;
     const studentId = req.user.id;
@@ -90,7 +90,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Delete resume
-router.delete('/:studentId', auth, async (req, res) => {
+router.delete('/:studentId', authenticateToken, async (req, res) => {
   try {
     const { studentId } = req.params;
     
