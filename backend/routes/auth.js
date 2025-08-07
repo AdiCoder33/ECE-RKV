@@ -10,7 +10,7 @@ if (!jwtSecret) {
 }
 
 // Login route
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -40,8 +40,8 @@ router.post('/login', async (req, res) => {
       user: userWithoutPassword
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Auth login error:', error);
+    next(error);
   }
 });
 

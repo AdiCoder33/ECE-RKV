@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all subjects
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const result = await executeQuery(`
       SELECT s.id, s.name, s.code, s.year, s.semester, s.credits, s.type, s.max_marks, s.created_at
@@ -13,13 +13,13 @@ router.get('/', authenticateToken, async (req, res) => {
     `);
     res.json(result.recordset);
   } catch (error) {
-    console.error('Get subjects error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Subjects fetch error:', error);
+    next(error);
   }
 });
 
 // Create subject
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { name, code, year, semester, credits, type, maxMarks } = req.body;
     
@@ -31,12 +31,12 @@ router.post('/', authenticateToken, async (req, res) => {
     res.status(201).json({ id: result.recordset[0]?.id, message: 'Subject created successfully' });
   } catch (error) {
     console.error('Create subject error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Update subject
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, code, year, semester, credits, type, maxMarks } = req.body;
@@ -53,12 +53,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Subject updated successfully' });
   } catch (error) {
     console.error('Update subject error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Delete subject
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     
@@ -71,7 +71,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Subject deleted successfully' });
   } catch (error) {
     console.error('Delete subject error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

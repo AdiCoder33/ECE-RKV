@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get analytics overview
-router.get('/overview', authenticateToken, async (req, res) => {
+router.get('/overview', authenticateToken, async (req, res, next) => {
   try {
     const [userStats] = await db.execute('SELECT role, COUNT(*) as count FROM users GROUP BY role');
     const [subjectStats] = await db.execute('SELECT COUNT(*) as total_subjects FROM subjects');
@@ -21,8 +21,8 @@ router.get('/overview', authenticateToken, async (req, res) => {
       avgAttendance: Math.round(attendanceStats[0].avg_attendance * 100) / 100
     });
   } catch (error) {
-    console.error('Get analytics error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Analytics overview error:', error);
+    next(error);
   }
 });
 

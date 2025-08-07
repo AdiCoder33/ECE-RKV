@@ -4,7 +4,7 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get all alumni profiles
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const query = `
       SELECT u.id, u.name, u.email, u.phone, u.created_at,
@@ -42,13 +42,13 @@ router.get('/', async (req, res) => {
     res.json(alumni);
     
   } catch (error) {
-    console.error('Error fetching alumni:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Alumni list error:', error);
+    next(error);
   }
 });
 
 // Get alumni profile by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     
@@ -92,13 +92,13 @@ router.get('/:id', async (req, res) => {
     res.json(alumni);
     
   } catch (error) {
-    console.error('Error fetching alumni profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Alumni profile fetch error:', error);
+    next(error);
   }
 });
 
 // Update alumni profile
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const {
@@ -154,13 +154,13 @@ router.put('/profile', authenticateToken, async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Error updating alumni profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Alumni profile update error:', error);
+    next(error);
   }
 });
 
 // Delete alumni profile
-router.delete('/profile', authenticateToken, async (req, res) => {
+router.delete('/profile', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     
@@ -172,8 +172,8 @@ router.delete('/profile', authenticateToken, async (req, res) => {
     res.json({ message: 'Profile deleted successfully' });
     
   } catch (error) {
-    console.error('Error deleting alumni profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Alumni profile delete error:', error);
+    next(error);
   }
 });
 

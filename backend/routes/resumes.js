@@ -4,7 +4,7 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get resume by student ID
-router.get('/:studentId', authenticateToken, async (req, res) => {
+router.get('/:studentId', authenticateToken, async (req, res, next) => {
   try {
     const { studentId } = req.params;
     
@@ -29,13 +29,13 @@ router.get('/:studentId', authenticateToken, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error fetching resume:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Resume fetch error:', error);
+    next(error);
   }
 });
 
 // Create or update resume
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { personalInfo, education, experience, projects, skills } = req.body;
     const studentId = req.user.id;
@@ -84,13 +84,13 @@ router.post('/', authenticateToken, async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Error saving resume:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Resume save error:', error);
+    next(error);
   }
 });
 
 // Delete resume
-router.delete('/:studentId', authenticateToken, async (req, res) => {
+router.delete('/:studentId', authenticateToken, async (req, res, next) => {
   try {
     const { studentId } = req.params;
     
@@ -102,8 +102,8 @@ router.delete('/:studentId', authenticateToken, async (req, res) => {
     res.json({ message: 'Resume deleted successfully' });
     
   } catch (error) {
-    console.error('Error deleting resume:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Resume delete error:', error);
+    next(error);
   }
 });
 

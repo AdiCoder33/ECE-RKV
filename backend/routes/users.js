@@ -5,20 +5,20 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all users
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const result = await executeQuery(
       'SELECT id, name, email, role, department, year, section, roll_number, phone, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.recordset || []);
   } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Users fetch error:', error);
+    next(error);
   }
 });
 
 // Create user
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { name, email, password, role, department, year, section, rollNumber, phone } = req.body;
     
@@ -33,15 +33,14 @@ router.post('/', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Create user error:', error);
     if (error.message.includes('duplicate') || error.message.includes('UNIQUE')) {
-      res.status(400).json({ error: 'Email or roll number already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
+      error.status = 400;
     }
+    next(error);
   }
 });
 
 // Update user
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, email, role, department, year, section, rollNumber } = req.body;
@@ -53,25 +52,25 @@ router.put('/:id', authenticateToken, async (req, res) => {
     
     res.json({ message: 'User updated successfully' });
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Update user error:', error);
+    next(error);
   }
 });
 
 // Delete user
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     await executeQuery('DELETE FROM users WHERE id = ?', [id]);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Delete user error:', error);
+    next(error);
   }
 });
 
 // Transfer HOD role
-router.put('/:id/transfer-hod', authenticateToken, async (req, res) => {
+router.put('/:id/transfer-hod', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { currentHodId } = req.body;
@@ -102,8 +101,8 @@ router.put('/:id/transfer-hod', authenticateToken, async (req, res) => {
     
     res.json({ message: 'HOD role transferred successfully' });
   } catch (error) {
-    console.error('Error transferring HOD role:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Transfer HOD role error:', error);
+    next(error);
   }
 });
 
