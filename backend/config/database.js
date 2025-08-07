@@ -38,16 +38,19 @@ const executeQuery = async (query, params = []) => {
     const poolConnection = await connectDB();
     const request = poolConnection.request();
     
-    // Add parameters if provided
+    // Add parameters with explicit type handling for null or undefined values
     params.forEach((param, index) => {
-      if (param !== undefined && param !== null) {
+      if (param === null || param === undefined) {
+        // Default to NVARCHAR for null/undefined; adjust type as needed
+        request.input(`param${index}`, sql.NVarChar, null);
+      } else {
         request.input(`param${index}`, param);
       }
     });
     
     // Replace ? placeholders with @param syntax for MSSQL
     let mssqlQuery = query;
-    params.forEach((param, index) => {
+    params.forEach((_, index) => {
       mssqlQuery = mssqlQuery.replace('?', `@param${index}`);
     });
     
