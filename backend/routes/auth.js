@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const { executeQuery } = require('../config/database');
 const router = express.Router();
 
 // Login route
@@ -9,18 +9,15 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Mock users for demo
-    const mockUsers = [
-      { id: 1, email: 'admin@college.edu', name: 'Admin User', role: 'admin', department: 'ECE', password: 'password' },
-      { id: 2, email: 'hod@college.edu', name: 'Dr. Smith', role: 'hod', department: 'ECE', password: 'password' },
-      { id: 3, email: 'prof@college.edu', name: 'Prof. Johnson', role: 'professor', department: 'ECE', password: 'password' },
-      { id: 4, email: 'student@college.edu', name: 'John Doe', role: 'student', department: 'ECE', year: 3, section: 'A', rollNumber: '20EC001', password: 'password' },
-      { id: 5, email: 'alumni@college.edu', name: 'Jane Smith', role: 'alumni', department: 'ECE', graduationYear: 2020, password: 'password' }
-    ];
+    const result = await executeQuery('SELECT * FROM users WHERE email = ?', [email]);
+    const user = result.recordset && result.recordset[0];
 
-    const user = mockUsers.find(u => u.email === email && u.password === password);
-    
     if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -31,7 +28,7 @@ router.post('/login', async (req, res) => {
     );
 
     const { password: _, ...userWithoutPassword } = user;
-    
+
     res.json({
       message: 'Login successful',
       token,
