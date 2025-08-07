@@ -144,7 +144,7 @@ const AlumniDirectory = () => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 p-2 md:p-4 lg:p-6">
+    <div className="space-y-4 md:space-y-6 px-2 py-2 md:px-4 md:py-4 lg:px-6 lg:py-6">
       {/* Header */}
       <div className="flex items-center gap-3 md:gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

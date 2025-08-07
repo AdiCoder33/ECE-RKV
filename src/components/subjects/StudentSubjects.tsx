@@ -89,7 +89,7 @@ const StudentSubjects = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-0">
+    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Subjects</h1>

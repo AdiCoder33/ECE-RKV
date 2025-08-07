@@ -96,7 +96,7 @@ const GroupManagement = () => {
   };
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 px-4 py-4 sm:px-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Chat Groups</h1>
@@ -145,7 +145,7 @@ const GroupManagement = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Type</label>
-                  <Select value={newGroup.type} onValueChange={(value: any) => setNewGroup({ ...newGroup, type: value })}>
+                  <Select value={newGroup.type} onValueChange={(value) => setNewGroup({ ...newGroup, type: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
