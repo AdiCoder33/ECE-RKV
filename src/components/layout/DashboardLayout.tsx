@@ -27,7 +27,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -45,7 +44,7 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadNotifications] = useState(3);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
   const currentPage = location.pathname.split('/').pop() || 'dashboard';
@@ -129,6 +128,8 @@ const DashboardLayout: React.FC = () => {
   return (
     <SidebarProvider>
       <Sidebar
+        onMouseEnter={() => setSidebarOpen(true)}
+        onMouseLeave={() => setSidebarOpen(false)}
         className={`fixed inset-y-0 left-0 border-r transition-[width] duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}
         collapsible="none"
       >
@@ -144,7 +145,6 @@ const DashboardLayout: React.FC = () => {
               </div>
             )}
           </div>
-          <SidebarTrigger onClick={() => setSidebarOpen(!sidebarOpen)} />
         </SidebarHeader>
 
         <SidebarContent className={`flex-1 ${sidebarOpen ? 'p-4' : 'p-2'} overflow-y-auto`}>
