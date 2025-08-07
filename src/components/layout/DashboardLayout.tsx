@@ -47,6 +47,7 @@ const DashboardLayout: React.FC = () => {
   const [unreadNotifications] = useState(3);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatExpanded, setChatExpanded] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
 
@@ -155,6 +156,8 @@ const DashboardLayout: React.FC = () => {
       }
     }
   };
+
+  const chatMargin = chatOpen ? (chatExpanded ? 'mr-80' : 'mr-16') : '';
 
   return (
     <SidebarProvider>
@@ -324,13 +327,18 @@ const DashboardLayout: React.FC = () => {
           </div>
         </header>
 
-        <main className={`flex-1 p-2 md:p-4 lg:p-6 transition-all duration-300 ${chatOpen ? 'mr-80' : ''}`}>
+        <main className={`flex-1 p-2 md:p-4 lg:p-6 transition-all duration-300 ${chatMargin}`}>
           <Outlet />
         </main>
       </div>
 
       {/* Chat Sidebar */}
-      <ChatSidebar isOpen={chatOpen} onToggle={() => setChatOpen(!chatOpen)} />
+      <ChatSidebar
+        isOpen={chatOpen}
+        expanded={chatExpanded}
+        onToggle={() => setChatOpen(!chatOpen)}
+        onExpandedChange={setChatExpanded}
+      />
     </SidebarProvider>
   );
 };
