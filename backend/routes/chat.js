@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get chat messages
-router.get('/messages', authenticateToken, async (req, res) => {
+router.get('/messages', authenticateToken, async (req, res, next) => {
   try {
     const { channel, chatType = 'section' } = req.query;
     const userRole = req.user.role;
@@ -49,13 +49,13 @@ router.get('/messages', authenticateToken, async (req, res) => {
     
     res.json(formattedMessages);
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Chat messages fetch error:', error);
+    next(error);
   }
 });
 
 // Send chat message
-router.post('/messages', authenticateToken, async (req, res) => {
+router.post('/messages', authenticateToken, async (req, res, next) => {
   try {
     const { content, chatType = 'section' } = req.body;
     const userId = req.user.id;
@@ -102,8 +102,8 @@ router.post('/messages', authenticateToken, async (req, res) => {
     
     res.status(201).json(formattedMessage);
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Chat message send error:', error);
+    next(error);
   }
 });
 

@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get marks for a student
-router.get('/student/:studentId', authenticateToken, async (req, res) => {
+router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
   try {
     const { studentId } = req.params;
     const { subjectId, type } = req.query;
@@ -33,12 +33,12 @@ router.get('/student/:studentId', authenticateToken, async (req, res) => {
     res.json(result.recordset);
   } catch (error) {
     console.error('Get student marks error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Get all marks (for faculty)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const { subjectId, studentId, type } = req.query;
     let query = `
@@ -71,12 +71,12 @@ router.get('/', authenticateToken, async (req, res) => {
     res.json(result.recordset);
   } catch (error) {
     console.error('Get marks error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Bulk enter marks
-router.post('/bulk', authenticateToken, async (req, res) => {
+router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
     const { subjectId, type, marksData, maxMarks, date, enteredBy } = req.body;
     
@@ -97,7 +97,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     res.json({ message: 'Marks entered successfully' });
   } catch (error) {
     console.error('Enter marks error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

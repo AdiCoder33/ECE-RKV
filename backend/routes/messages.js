@@ -4,7 +4,7 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get conversations for a user
-router.get('/conversations', authenticateToken, async (req, res) => {
+router.get('/conversations', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     
@@ -45,13 +45,13 @@ router.get('/conversations', authenticateToken, async (req, res) => {
     res.json(result.recordset);
     
   } catch (error) {
-    console.error('Error fetching conversations:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Messages conversations fetch error:', error);
+    next(error);
   }
 });
 
 // Get messages between two users
-router.get('/conversation/:contactId', authenticateToken, async (req, res) => {
+router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
@@ -84,13 +84,13 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res) => {
     res.json(result.recordset.reverse());
     
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Messages fetch error:', error);
+    next(error);
   }
 });
 
 // Send a message
-router.post('/send', authenticateToken, async (req, res) => {
+router.post('/send', authenticateToken, async (req, res, next) => {
   try {
     const senderId = req.user.id;
     const { receiverId, content, messageType = 'text' } = req.body;
@@ -119,13 +119,13 @@ router.post('/send', authenticateToken, async (req, res) => {
     res.status(201).json(messageResult.recordset[0]);
     
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Send message error:', error);
+    next(error);
   }
 });
 
 // Mark messages as read
-router.put('/mark-read/:contactId', authenticateToken, async (req, res) => {
+router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
@@ -140,13 +140,13 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res) => {
     res.json({ message: 'Messages marked as read' });
     
   } catch (error) {
-    console.error('Error marking messages as read:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Mark messages read error:', error);
+    next(error);
   }
 });
 
 // Delete a message
-router.delete('/:messageId', authenticateToken, async (req, res) => {
+router.delete('/:messageId', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -165,9 +165,10 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
     res.json({ message: 'Message deleted successfully' });
     
   } catch (error) {
-    console.error('Error deleting message:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Delete message error:', error);
+    next(error);
   }
 });
 
 module.exports = router;
+

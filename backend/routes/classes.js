@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all classes with student counts
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const query = `
       SELECT 
@@ -32,13 +32,13 @@ router.get('/', authenticateToken, async (req, res) => {
       students: []  // Will be populated separately if needed
     })));
   } catch (error) {
-    console.error('Get classes error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Classes fetch error:', error);
+    next(error);
   }
 });
 
 // Create new class
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { year, semester, section, hodId } = req.body;
     
@@ -87,12 +87,12 @@ router.post('/', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Create class error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Get students in a specific class
-router.get('/:classId/students', authenticateToken, async (req, res) => {
+router.get('/:classId/students', authenticateToken, async (req, res, next) => {
   try {
     const { classId } = req.params;
     
@@ -132,13 +132,13 @@ router.get('/:classId/students', authenticateToken, async (req, res) => {
       cgpa: student.cgpa || 0
     })));
   } catch (error) {
-    console.error('Get class students error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Class students fetch error:', error);
+    next(error);
   }
 });
 
 // Update class
-router.put('/:classId', authenticateToken, async (req, res) => {
+router.put('/:classId', authenticateToken, async (req, res, next) => {
   try {
     const { classId } = req.params;
     const { year, semester, section, hodId } = req.body;
@@ -155,12 +155,12 @@ router.put('/:classId', authenticateToken, async (req, res) => {
     res.json({ message: 'Class updated successfully' });
   } catch (error) {
     console.error('Update class error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Delete class
-router.delete('/:classId', authenticateToken, async (req, res) => {
+router.delete('/:classId', authenticateToken, async (req, res, next) => {
   try {
     const { classId } = req.params;
     
@@ -179,12 +179,12 @@ router.delete('/:classId', authenticateToken, async (req, res) => {
     res.json({ message: 'Class deleted successfully' });
   } catch (error) {
     console.error('Delete class error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Promote students to next year
-router.post('/promote', authenticateToken, async (req, res) => {
+router.post('/promote', authenticateToken, async (req, res, next) => {
   try {
     const connection = await db.getConnection();
     await connection.beginTransaction();
@@ -247,12 +247,12 @@ router.post('/promote', authenticateToken, async (req, res) => {
     }
   } catch (error) {
     console.error('Promote students error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Initialize default classes (4 years, 5 sections each)
-router.post('/initialize', authenticateToken, async (req, res) => {
+router.post('/initialize', authenticateToken, async (req, res, next) => {
   try {
     const classes = [];
     
@@ -290,7 +290,7 @@ router.post('/initialize', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Initialize classes error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

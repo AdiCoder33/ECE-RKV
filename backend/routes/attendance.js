@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get attendance records
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const { subjectId, date, studentId, classId, startDate, endDate } = req.query;
     let query = `
@@ -70,13 +70,13 @@ router.get('/', authenticateToken, async (req, res) => {
       createdAt: row.created_at
     })));
   } catch (error) {
-    console.error('Get attendance error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Attendance fetch error:', error);
+    next(error);
   }
 });
 
 // Get attendance summary
-router.get('/summary', authenticateToken, async (req, res) => {
+router.get('/summary', authenticateToken, async (req, res, next) => {
   try {
     const { subjectId, classId, startDate, endDate } = req.query;
     
@@ -126,13 +126,13 @@ router.get('/summary', authenticateToken, async (req, res) => {
       attendancePercentage: row.attendance_percentage || 0
     })));
   } catch (error) {
-    console.error('Get attendance summary error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Attendance summary error:', error);
+    next(error);
   }
 });
 
 // Bulk mark attendance
-router.post('/bulk', authenticateToken, async (req, res) => {
+router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
     const { subjectId, date, period, attendanceData, markedBy } = req.body;
     
@@ -155,7 +155,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     res.json({ message: 'Attendance marked successfully' });
   } catch (error) {
     console.error('Mark attendance error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 // Get all students with filtering
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const { classId, year, section } = req.query;
     
@@ -66,13 +66,13 @@ router.get('/', authenticateToken, async (req, res) => {
       cgpa: student.cgpa || 0
     })));
   } catch (error) {
-    console.error('Get students error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Students fetch error:', error);
+    next(error);
   }
 });
 
 // Get student's subjects
-router.get('/:studentId/subjects', authenticateToken, async (req, res) => {
+router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => {
   try {
     const { studentId } = req.params;
     
@@ -106,13 +106,13 @@ router.get('/:studentId/subjects', authenticateToken, async (req, res) => {
     
     res.json(formattedSubjects);
   } catch (error) {
-    console.error('Get student subjects error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Student subjects fetch error:', error);
+    next(error);
   }
 });
 
 // Get classmates
-router.get('/classmates', authenticateToken, async (req, res) => {
+router.get('/classmates', authenticateToken, async (req, res, next) => {
   try {
     const { year, section } = req.query;
     
@@ -147,13 +147,13 @@ router.get('/classmates', authenticateToken, async (req, res) => {
       attendancePercentage: Math.round(student.attendance_percentage || 0)
     })));
   } catch (error) {
-    console.error('Get classmates error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Classmates fetch error:', error);
+    next(error);
   }
 });
 
 // Get alumni
-router.get('/alumni', authenticateToken, async (req, res) => {
+router.get('/alumni', authenticateToken, async (req, res, next) => {
   try {
     const result = await executeQuery(
       'SELECT id, name, email, department, graduation_year, phone, linkedin_profile, current_company, current_position FROM users WHERE role = ? ORDER BY graduation_year DESC',
@@ -162,8 +162,8 @@ router.get('/alumni', authenticateToken, async (req, res) => {
     
     res.json(result.recordset || []);
   } catch (error) {
-    console.error('Error fetching alumni:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Alumni fetch error:', error);
+    next(error);
   }
 });
 

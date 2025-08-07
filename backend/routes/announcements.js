@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get announcements
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const [rows] = await db.execute(`
       SELECT a.*, u.name as author_name 
@@ -15,13 +15,13 @@ router.get('/', authenticateToken, async (req, res) => {
     `);
     res.json(rows);
   } catch (error) {
-    console.error('Get announcements error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Announcements fetch error:', error);
+    next(error);
   }
 });
 
 // Create announcement
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { title, content, targetRole, targetSection, targetYear, priority } = req.body;
     
@@ -33,7 +33,7 @@ router.post('/', authenticateToken, async (req, res) => {
     res.status(201).json({ id: result.insertId, message: 'Announcement created successfully' });
   } catch (error) {
     console.error('Create announcement error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

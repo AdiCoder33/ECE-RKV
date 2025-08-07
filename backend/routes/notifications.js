@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get notifications for the current user
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const { recordset } = await executeQuery(`
       SELECT 
@@ -23,13 +23,13 @@ router.get('/', authenticateToken, async (req, res) => {
     
     res.json(recordset);
   } catch (error) {
-    console.error('Get notifications error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Notifications fetch error:', error);
+    next(error);
   }
 });
 
 // Mark notification as read
-router.put('/:id/read', authenticateToken, async (req, res) => {
+router.put('/:id/read', authenticateToken, async (req, res, next) => {
   try {
     await executeQuery(
       'UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?',
@@ -38,13 +38,13 @@ router.put('/:id/read', authenticateToken, async (req, res) => {
     
     res.json({ message: 'Notification marked as read' });
   } catch (error) {
-    console.error('Mark notification as read error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Mark notification read error:', error);
+    next(error);
   }
 });
 
 // Mark all notifications as read
-router.put('/mark-all-read', authenticateToken, async (req, res) => {
+router.put('/mark-all-read', authenticateToken, async (req, res, next) => {
   try {
     await executeQuery(
       'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
@@ -53,13 +53,13 @@ router.put('/mark-all-read', authenticateToken, async (req, res) => {
     
     res.json({ message: 'All notifications marked as read' });
   } catch (error) {
-    console.error('Mark all notifications as read error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Mark all notifications read error:', error);
+    next(error);
   }
 });
 
 // Create notification (for system use)
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { title, message, type, userId, data } = req.body;
     
@@ -74,12 +74,12 @@ router.post('/', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Create notification error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // Delete notification
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res, next) => {
   try {
     await executeQuery(
       'DELETE FROM notifications WHERE id = ? AND user_id = ?',
@@ -89,7 +89,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Notification deleted successfully' });
   } catch (error) {
     console.error('Delete notification error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

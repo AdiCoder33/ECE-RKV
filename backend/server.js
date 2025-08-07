@@ -66,6 +66,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({ error: err.message || 'Server error' });
+});
+
 // Start server
 connectToDatabase().then(() => {
   app.listen(PORT, () => {
