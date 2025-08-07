@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,49 +21,39 @@ import {
 import { User } from '@/types';
 import AddUserModal from './AddUserModal';
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - replace with actual API calls
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      name: 'Dr. Rajesh Kumar',
-      email: 'rajesh.kumar@college.edu',
-      role: 'hod',
-      phone: '+91 9876543210'
-    },
-    {
-      id: '2',
-      name: 'Prof. Priya Sharma',
-      email: 'priya.sharma@college.edu',
-      role: 'professor',
-      phone: '+91 9876543211'
-    },
-    {
-      id: '3',
-      name: 'Aarav Patel',
-      email: 'aarav.patel@student.edu',
-      role: 'student',
-      year: 3,
-      section: 'A',
-      rollNumber: '20ECE001',
-      phone: '+91 9876543212'
-    },
-    {
-      id: '4',
-      name: 'Diya Singh',
-      email: 'diya.singh@student.edu',
-      role: 'student',
-      year: 2,
-      section: 'B',
-      rollNumber: '21ECE045',
-      phone: '+91 9876543213'
-    }
-  ]);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${apiBase}/users`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const data: User[] = await response.json();
+        setUsers(data);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -100,6 +90,14 @@ const UserManagement = () => {
     };
     setUsers([...users, user]);
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-0">
