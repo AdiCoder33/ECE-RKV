@@ -40,7 +40,7 @@ const Homepage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-primary">ECE Department</h1>
+              <h1 className="text-xl font-bold text-primary">RKValley ECE Department</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" asChild>
