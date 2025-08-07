@@ -107,6 +107,43 @@ const UserManagement = () => {
     }
   };
 
+  const handleUpdateUser = async (updatedUser: User) => {
+    try {
+      const response = await fetch(`${apiBase}/users/${updatedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(updatedUser)
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+      const savedUser: User = await response.json();
+      setUsers(users.map(u => (u.id === savedUser.id ? savedUser : u)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    try {
+      const response = await fetch(`${apiBase}/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
+      }
+      setUsers(users.filter(user => user.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -295,10 +332,15 @@ const UserManagement = () => {
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleUpdateUser(user)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDeleteUser(user.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -359,11 +401,21 @@ const UserManagement = () => {
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleUpdateUser(user)}
+                >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700"
+                  onClick={() => handleDeleteUser(user.id)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
