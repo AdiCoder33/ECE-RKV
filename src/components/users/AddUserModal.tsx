@@ -16,7 +16,7 @@ import { User } from '@/types';
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddUser: (user: Omit<User, 'id'>) => Promise<void>;
+  onAddUser: (user: Omit<User, 'id'> & { password: string }) => Promise<void>;
   error?: string | null;
 }
 
@@ -45,7 +45,8 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
         year: formData.role === 'student' ? formData.year : undefined,
         section: formData.role === 'student' ? formData.section : undefined,
         rollNumber: formData.role === 'student' ? formData.rollNumber : undefined,
-        phone: formData.phone
+        phone: formData.phone,
+        password: formData.password
       });
 
       // Reset form on success
@@ -121,6 +122,17 @@ const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) 
                 placeholder="Enter phone number"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => handleInputChange('password', e.target.value)}
+              placeholder="Default is 'password'"
+            />
           </div>
 
           {formData.role === 'student' && (

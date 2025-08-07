@@ -84,7 +84,7 @@ const UserManagement = () => {
     alumni: users.filter(u => u.role === 'alumni').length
   };
 
-  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
+  const handleAddUser = async (newUser: Omit<User, 'id'> & { password: string }) => {
     try {
       setAddUserError(null);
       const response = await fetch(`${apiBase}/users`, {
@@ -93,7 +93,7 @@ const UserManagement = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ ...newUser, password: 'password' })
+        body: JSON.stringify(newUser)
       });
       if (!response.ok) {
         throw new Error('Failed to add user');
