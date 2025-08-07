@@ -16,11 +16,12 @@ import { User } from '@/types';
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddUser: (user: Omit<User, 'id'>) => void;
+  onAddUser: (user: Omit<User, 'id'>) => Promise<void>;
+  error?: string | null;
 }
 
-const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) => {
-  const [formData, setFormData] = useState({
+const AddUserModal = ({ isOpen, onClose, onAddUser, error }: AddUserModalProps) => {
+  const initialForm = {
     name: '',
     email: '',
     role: 'student' as 'admin' | 'hod' | 'professor' | 'student' | 'alumni',
@@ -29,37 +30,32 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) => {
     rollNumber: '',
     phone: '',
     password: 'password' // Default password
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    onAddUser({
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      year: formData.role === 'student' ? formData.year : undefined,
-      section: formData.role === 'student' ? formData.section : undefined,
-      rollNumber: formData.role === 'student' ? formData.rollNumber : undefined,
-      phone: formData.phone
-    });
-
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      role: 'student',
-      year: 1,
-      section: 'A',
-      rollNumber: '',
-      phone: '',
-      password: 'password'
-    });
-
-    onClose();
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const [formData, setFormData] = useState(initialForm);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await onAddUser({
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        year: formData.role === 'student' ? formData.year : undefined,
+        section: formData.role === 'student' ? formData.section : undefined,
+        rollNumber: formData.role === 'student' ? formData.rollNumber : undefined,
+        phone: formData.phone
+      });
+
+      // Reset form on success
+      setFormData(initialForm);
+    } catch {
+      // Error is handled via error prop
+    }
+  };
+
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -165,6 +161,8 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }: AddUserModalProps) => {
               </div>
             </div>
           )}
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
