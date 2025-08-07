@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -19,7 +18,6 @@ import {
   User,
   Clock,
   Bell,
-  PanelLeft,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -50,8 +48,6 @@ const DashboardLayout: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
-
-  const isMobile = useIsMobile();
 
   const currentPage = location.pathname.split('/').pop() || 'dashboard';
 
@@ -161,9 +157,9 @@ const DashboardLayout: React.FC = () => {
   return (
     <SidebarProvider>
       <Sidebar
-        onMouseEnter={!isMobile ? () => setSidebarOpen(true) : undefined}
-        onMouseLeave={!isMobile ? () => setSidebarOpen(false) : undefined}
-        className={`fixed inset-y-0 left-0 z-40 border-r transition-[width] duration-300 ${sidebarOpen ? 'w-64' : isMobile ? 'w-0' : 'w-16'}`}
+        onMouseEnter={() => setSidebarOpen(true)}
+        onMouseLeave={() => setSidebarOpen(false)}
+        className={`fixed inset-y-0 left-0 border-r transition-[width] duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}
         collapsible="none"
       >
         <SidebarHeader className="border-b p-4 flex items-center justify-between">
@@ -238,25 +234,13 @@ const DashboardLayout: React.FC = () => {
         </div>
       </Sidebar>
 
-      {isMobile && sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       <div
-        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'ml-64' : isMobile ? 'ml-0' : 'ml-16'}`}
+        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
-            {isMobile && (
-              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
-                <PanelLeft className="h-5 w-5" />
-              </Button>
-            )}
             <div className="flex-1" />
 
             {/* Chat Toggle */}
