@@ -46,6 +46,8 @@ const DashboardLayout: React.FC = () => {
   const [unreadNotifications] = useState(3);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
 
   const currentPage = location.pathname.split('/').pop() || 'dashboard';
 
@@ -123,6 +125,33 @@ const DashboardLayout: React.FC = () => {
 
   const handleNavigation = (path: string) => {
     navigate(path);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null || touchStartY === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+
+    setTouchStartX(null);
+    setTouchStartY(null);
+
+    if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    if (window.innerWidth < 768) {
+      if (!sidebarOpen && touchStartX <= 30 && deltaX > 50 && Math.abs(deltaY) < 30) {
+        setSidebarOpen(true);
+      } else if (sidebarOpen && deltaX < -50 && Math.abs(deltaY) < 30) {
+        setSidebarOpen(false);
+      }
+    }
   };
 
   return (
@@ -207,6 +236,8 @@ const DashboardLayout: React.FC = () => {
 
       <div
         className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
