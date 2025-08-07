@@ -125,7 +125,7 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 p-2 md:p-0">
+    <div className="space-y-4 md:space-y-6 px-4 py-2 sm:px-6 md:px-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

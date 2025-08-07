@@ -253,7 +253,7 @@ const TimetableManagement = () => {
     : filteredTimetable;
 
   return (
-    <div className="space-y-6 px-4 py-4 sm:px-6">
+    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Timetable Management</h1>

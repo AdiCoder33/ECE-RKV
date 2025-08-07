@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   GraduationCap,
   LogOut,
-  Menu,
   MessageSquare,
   Settings,
   Users,
@@ -17,7 +16,6 @@ import {
   FileText,
   Home,
   User,
-  ChevronLeft,
   Clock,
   Bell,
 } from 'lucide-react';
@@ -29,6 +27,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -130,10 +129,10 @@ const DashboardLayout: React.FC = () => {
   return (
     <SidebarProvider>
       <Sidebar
-        className={`fixed inset-y-0 left-0 border-r transition-[width] duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'}`}
+        className={`fixed inset-y-0 left-0 border-r transition-[width] duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}
         collapsible="none"
       >
-        <SidebarHeader className="border-b p-4">
+        <SidebarHeader className="border-b p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary rounded-lg">
               <GraduationCap className="h-6 w-6 text-primary-foreground" />
@@ -145,85 +144,72 @@ const DashboardLayout: React.FC = () => {
               </div>
             )}
           </div>
+          <SidebarTrigger onClick={() => setSidebarOpen(!sidebarOpen)} />
         </SidebarHeader>
 
-        {sidebarOpen && (
-          <>
-            <SidebarContent className="flex-1 p-4">
-              <div className="mb-6">
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                    <span className="text-sm font-medium text-primary-foreground">
-                      {user?.name?.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{user?.name}</p>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className={`text-white ${getRoleBadgeColor(user?.role || '')}`}
-                      >
-                        {user?.role?.toUpperCase()}
-                      </Badge>
-                    </div>
+        <SidebarContent className={`flex-1 ${sidebarOpen ? 'p-4' : 'p-2'} overflow-y-auto`}>
+          {sidebarOpen && (
+            <div className="mb-6">
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                  <span className="text-sm font-medium text-primary-foreground">
+                    {user?.name?.charAt(0)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{user?.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className={`text-white ${getRoleBadgeColor(user?.role || '')}`}
+                    >
+                      {user?.role?.toUpperCase()}
+                    </Badge>
                   </div>
                 </div>
               </div>
-
-              <SidebarMenu>
-                {getMenuItems().map((item) => {
-                  const isActive = currentPage === item.id ||
-                    (item.id === 'dashboard' && currentPage === 'dashboard') ||
-                    (item.id === user?.role && currentPage === user?.role);
-
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        onClick={() => handleNavigation(item.path)}
-                        isActive={isActive}
-                        className="w-full justify-start gap-3"
-                      >
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarContent>
-
-            <div className="border-t p-4">
-              <Button
-                variant="ghost"
-                onClick={logout}
-                className="w-full gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 justify-start"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Sign Out</span>
-              </Button>
             </div>
-          </>
-        )}
+          )}
+
+          <SidebarMenu>
+            {getMenuItems().map((item) => {
+              const isActive = currentPage === item.id ||
+                (item.id === 'dashboard' && currentPage === 'dashboard') ||
+                (item.id === user?.role && currentPage === user?.role);
+
+              return (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    onClick={() => handleNavigation(item.path)}
+                    isActive={isActive}
+                    className={`w-full ${sidebarOpen ? 'justify-start gap-3' : 'justify-center'}`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {sidebarOpen && <span>{item.label}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarContent>
+
+        <div className={`border-t ${sidebarOpen ? 'p-4' : 'p-2'}`}>
+          <Button
+            variant="ghost"
+            onClick={logout}
+            className={`w-full text-red-600 hover:text-red-700 hover:bg-red-50 ${sidebarOpen ? 'gap-3 justify-start' : 'justify-center'}`}
+          >
+            <LogOut className="h-5 w-5" />
+            {sidebarOpen && <span>Sign Out</span>}
+          </Button>
+        </div>
       </Sidebar>
 
       <div
-        className={`min-h-screen flex flex-col w-full transition-[margin-left] duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}
+        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}
       >
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-              {sidebarOpen ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <Menu className="h-4 w-4" />
-              )}
-              <span className="sr-only">Toggle Sidebar</span>
-            </Button>
             <div className="flex-1" />
 
             {/* Chat Toggle */}

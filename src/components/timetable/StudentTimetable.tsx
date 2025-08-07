@@ -73,7 +73,7 @@ const StudentTimetable = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-4">
+      <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="h-32 bg-muted rounded"></div>
@@ -86,7 +86,7 @@ const StudentTimetable = () => {
   const nextClass = getNextClass();
 
   return (
-    <div className="space-y-6 px-4 py-4 sm:px-6">
+    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
       <div>
         <h1 className="text-3xl font-bold">My Timetable</h1>
         <p className="text-muted-foreground">

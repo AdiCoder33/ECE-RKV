@@ -215,7 +215,7 @@ const ContactAlumni = () => {
   const companies = [...new Set(demoAlumni.map(a => a.company).filter(Boolean))].sort();
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 px-4 sm:px-6 md:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Contact Alumni</h2>
