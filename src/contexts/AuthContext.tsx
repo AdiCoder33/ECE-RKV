@@ -22,6 +22,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   useEffect(() => {
     // Check for stored authentication
@@ -33,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(`${apiBase}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
