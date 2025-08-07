@@ -18,6 +18,7 @@ import {
   User,
   Clock,
   Bell,
+  Menu,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -241,6 +242,15 @@ const DashboardLayout: React.FC = () => {
       >
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle sidebar</span>
+            </Button>
             <div className="flex-1" />
 
             {/* Chat Toggle */}
