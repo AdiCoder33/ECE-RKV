@@ -1,11 +1,11 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 // Get all students with filtering
-router.get('/', auth, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { classId, year, section } = req.query;
     
@@ -72,7 +72,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Get student's subjects
-router.get('/:studentId/subjects', auth, async (req, res) => {
+router.get('/:studentId/subjects', authenticateToken, async (req, res) => {
   try {
     const { studentId } = req.params;
     
@@ -112,7 +112,7 @@ router.get('/:studentId/subjects', auth, async (req, res) => {
 });
 
 // Get classmates
-router.get('/classmates', auth, async (req, res) => {
+router.get('/classmates', authenticateToken, async (req, res) => {
   try {
     const { year, section } = req.query;
     
@@ -153,7 +153,7 @@ router.get('/classmates', auth, async (req, res) => {
 });
 
 // Get alumni
-router.get('/alumni', auth, async (req, res) => {
+router.get('/alumni', authenticateToken, async (req, res) => {
   try {
     const result = await executeQuery(
       'SELECT id, name, email, department, graduation_year, phone, linkedin_profile, current_company, current_position FROM users WHERE role = ? ORDER BY graduation_year DESC',

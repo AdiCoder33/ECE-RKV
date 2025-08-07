@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { executeQuery } = require('../config/database');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Get all alumni profiles
 router.get('/', async (req, res) => {
@@ -98,7 +98,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update alumni profile
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const {
@@ -160,7 +160,7 @@ router.put('/profile', auth, async (req, res) => {
 });
 
 // Delete alumni profile
-router.delete('/profile', auth, async (req, res) => {
+router.delete('/profile', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     

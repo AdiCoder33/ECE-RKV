@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { executeQuery } = require('../config/database');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Get conversations for a user
-router.get('/conversations', auth, async (req, res) => {
+router.get('/conversations', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
@@ -51,7 +51,7 @@ router.get('/conversations', auth, async (req, res) => {
 });
 
 // Get messages between two users
-router.get('/conversation/:contactId', auth, async (req, res) => {
+router.get('/conversation/:contactId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
@@ -90,7 +90,7 @@ router.get('/conversation/:contactId', auth, async (req, res) => {
 });
 
 // Send a message
-router.post('/send', auth, async (req, res) => {
+router.post('/send', authenticateToken, async (req, res) => {
   try {
     const senderId = req.user.id;
     const { receiverId, content, messageType = 'text' } = req.body;
@@ -125,7 +125,7 @@ router.post('/send', auth, async (req, res) => {
 });
 
 // Mark messages as read
-router.put('/mark-read/:contactId', auth, async (req, res) => {
+router.put('/mark-read/:contactId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
@@ -146,7 +146,7 @@ router.put('/mark-read/:contactId', auth, async (req, res) => {
 });
 
 // Delete a message
-router.delete('/:messageId', auth, async (req, res) => {
+router.delete('/:messageId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
