@@ -36,7 +36,6 @@ const ClassManagement = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newClassName, setNewClassName] = useState('');
   const [newClassYear, setNewClassYear] = useState(1);
   const [newClassSection, setNewClassSection] = useState('A');
   const { toast } = useToast()
@@ -94,7 +93,6 @@ const ClassManagement = () => {
         const createdClass: Class = await response.json();
         setClasses(prev => [...prev, createdClass]);
         setIsCreateModalOpen(false);
-        setNewClassName('');
         setNewClassYear(1);
         setNewClassSection('A');
         toast({
@@ -331,12 +329,6 @@ const ClassManagement = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input id="name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} className="col-span-3" />
-            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year" className="text-right">
                 Year
