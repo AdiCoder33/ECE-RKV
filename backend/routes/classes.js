@@ -246,40 +246,29 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
 
       // Update students' years (promote 1->2, 2->3, 3->4) and their class assignments
       for (const student of studentsToPromote) {
-        const nextYear = student.year + 1;
-
         await runQuery(
           'UPDATE users SET year = ? WHERE id = ?',
-          [nextYear, student.id]
+          [student.year + 1, student.id]
         );
 
-        // Remove old class link
-        await runQuery(
-          'DELETE FROM student_classes WHERE student_id = ?',
-          [student.id]
-        );
-
-        // Find or create the class for the next year/section
+        // Move student to the corresponding class for the next year
         const nextClassResult = await runQuery(
           'SELECT id FROM classes WHERE year = ? AND section = ?',
-          [nextYear, student.section]
+          [student.year + 1, student.section]
         );
-
-        let nextClassId;
         if (nextClassResult.recordset.length > 0) {
-          nextClassId = nextClassResult.recordset[0].id;
-        } else {
-          const createdClassResult = await runQuery(
-            'INSERT INTO classes (year, semester, section) OUTPUT INSERTED.id VALUES (?, ?, ?)',
-            [nextYear, nextYear * 2 - 1, student.section]
+          const nextClassId = nextClassResult.recordset[0].id;
+          await runQuery(
+            'UPDATE student_classes SET class_id = ? WHERE student_id = ?',
+            [nextClassId, student.id]
           );
-          nextClassId = createdClassResult.recordset[0].id;
+        } else {
+          // If no class exists for next year, remove any existing mapping
+          await runQuery(
+            'DELETE FROM student_classes WHERE student_id = ?',
+            [student.id]
+          );
         }
-
-        await runQuery(
-          'INSERT INTO student_classes (class_id, student_id) VALUES (?, ?)',
-          [nextClassId, student.id]
-        );
       }
 
       // Graduate final year students (convert to alumni)
