@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ interface Class {
 }
 
 const ClassStudents = () => {
-  const apiBase = import.meta.env.VITE_API_URL || '/api';
   const { classId } = useParams();
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
@@ -39,48 +38,71 @@ const ClassStudents = () => {
   useEffect(() => {
     fetchClassData();
     fetchStudents();
-  }, [fetchClassData, fetchStudents]);
+  }, [classId]);
 
-  const fetchClassData = useCallback(async () => {
+  const fetchClassData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/classes/${classId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Mock class data - in real app, fetch from API
+      setClassData({
+        id: classId!,
+        year: 3,
+        section: 'A',
+        totalStrength: 45
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch class data');
-      }
-      const data: Class = await response.json();
-      setClassData(data);
     } catch (error) {
       console.error('Error fetching class data:', error);
       toast.error('Failed to fetch class data');
     }
-  }, [apiBase, classId]);
+  };
 
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/classes/${classId}/students`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      // Mock students data - in real app, fetch from API using classId
+      const mockStudents: Student[] = [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john.doe@student.edu',
+          rollNumber: '20EC001',
+          phone: '+91-9876543210',
+          dateOfBirth: '2002-05-15',
+          attendancePercentage: 85,
+          cgpa: 8.5,
+          profileImage: undefined
         },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch students');
-      }
-      const data: Student[] = await response.json();
-      setStudents(data);
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane.smith@student.edu',
+          rollNumber: '20EC002',
+          phone: '+91-9876543211',
+          dateOfBirth: '2002-07-20',
+          attendancePercentage: 92,
+          cgpa: 9.1,
+          profileImage: undefined
+        },
+        {
+          id: '3',
+          name: 'Mike Johnson',
+          email: 'mike.johnson@student.edu',
+          rollNumber: '20EC003',
+          phone: '+91-9876543212',
+          dateOfBirth: '2002-03-10',
+          attendancePercentage: 78,
+          cgpa: 7.8,
+          profileImage: undefined
+        }
+      ];
+      
+      setStudents(mockStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to fetch students');
     } finally {
       setLoading(false);
     }
-  }, [apiBase, classId]);
+  };
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
