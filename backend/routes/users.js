@@ -50,12 +50,33 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     return res.status(400).json({ error: 'Users array is required' });
   }
   const results = [];
+  const allowedRoles = ['admin', 'hod', 'professor', 'student', 'alumni'];
   const pool = await connectDB();
   const transaction = new sql.Transaction(pool);
   try {
     await transaction.begin();
     for (let i = 0; i < users.length; i++) {
       const u = users[i];
+      const errs = [];
+      if (!Number.isInteger(u.year) || u.year <= 0) {
+        errs.push('year must be a positive integer');
+      }
+      if (!u.section || !u.section.trim()) {
+        errs.push('section is required');
+      }
+      if (!u.rollNumber || !u.rollNumber.trim()) {
+        errs.push('rollNumber is required');
+      }
+      if (!u.phone || !u.phone.trim()) {
+        errs.push('phone is required');
+      }
+      if (!allowedRoles.includes(u.role)) {
+        errs.push('invalid role');
+      }
+      if (errs.length) {
+        results.push({ index: i, error: errs.join(', ') });
+        continue;
+      }
       const savepoint = `sp${i}`;
       await new sql.Request(transaction).query(`SAVE TRANSACTION ${savepoint}`);
       try {
@@ -68,9 +89,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           .input('role', u.role)
           .input('department', u.department || null)
           .input('year', u.year || null)
-          .input('section', u.section || null)
-          .input('rollNumber', u.rollNumber || null)
-          .input('phone', u.phone || null)
+          .input('section', u.section)
+          .input('rollNumber', u.rollNumber)
+          .input('phone', u.phone)
           .query(
             'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
           );
