@@ -17,10 +17,12 @@ interface ImportUsersModalProps {
 const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, onImportUsers }) => {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [rowErrors, setRowErrors] = useState<string[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     setFile(selected || null);
+    setRowErrors([]);
   };
 
   const handleImport = async () => {
@@ -60,6 +62,37 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         password: String(row[indexMap['Password']] ?? '')
       }));
 
+      const allowedRoles: User['role'][] = ['admin', 'hod', 'professor', 'student', 'alumni'];
+      const validationErrors: string[] = [];
+      parsed.forEach((u, idx) => {
+        const errs: string[] = [];
+        if (!Number.isInteger(u.year) || (u.year as number) <= 0) {
+          errs.push('Year must be a positive integer');
+        }
+        if (!u.section.trim()) {
+          errs.push('Section is required');
+        }
+        if (!u.rollNumber.trim()) {
+          errs.push('Roll number is required');
+        }
+        if (!u.phone.trim()) {
+          errs.push('Phone is required');
+        }
+        if (!allowedRoles.includes(u.role as User['role'])) {
+          errs.push('Invalid role');
+        }
+        if (errs.length) {
+          validationErrors.push(`Row ${idx + 2}: ${errs.join(', ')}`);
+        }
+      });
+
+      if (validationErrors.length) {
+        setRowErrors(validationErrors);
+        return;
+      }
+
+      setRowErrors([]);
+
       const { success, errors } = await onImportUsers(parsed);
       if (success > 0) {
         toast.success(`Successfully imported ${success} users`);
@@ -82,6 +115,13 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         </DialogHeader>
         <div className="space-y-4">
           <Input type="file" accept=".xlsx" onChange={handleFileChange} />
+          {rowErrors.length > 0 && (
+            <div className="max-h-40 overflow-y-auto text-sm text-red-600 space-y-1">
+              {rowErrors.map((err, idx) => (
+                <p key={idx}>{err}</p>
+              ))}
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={importing}>Cancel</Button>
