@@ -40,6 +40,22 @@ router.post('/', authenticateToken, async (req, res, next) => {
     );
 
     const created = result.recordset[0];
+
+    // Link student to class if applicable
+    if (role === 'student' && year !== undefined && section !== undefined) {
+      const classRes = await executeQuery(
+        'SELECT id FROM classes WHERE year = ? AND section = ?',
+        [year, section]
+      );
+      if (classRes.recordset.length > 0) {
+        const classId = classRes.recordset[0].id;
+        await executeQuery(
+          'IF NOT EXISTS (SELECT 1 FROM student_classes WHERE class_id = ? AND student_id = ?) INSERT INTO student_classes (class_id, student_id) VALUES (?, ?)',
+          [classId, created.id, classId, created.id]
+        );
+      }
+    }
+
     res.status(201).json({
       id: created.id,
       name: created.name,
@@ -108,6 +124,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
             'SELECT id, name, role, department, year, section, roll_number, phone, password FROM users WHERE email = @email'
           );
 
+        let userId;
         if (existing.recordset.length) {
           const ex = existing.recordset[0];
           const req = new sql.Request(transaction).input('email', u.email);
@@ -157,6 +174,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
             await req.query(`UPDATE users SET ${updates.join(', ')} WHERE email = @email`);
           }
           results.push({ index: i, id: ex.id, action: 'updated' });
+          userId = ex.id;
         } else {
           const hashedPassword = await bcrypt.hash(u.password, 10);
           const request = new sql.Request(transaction);
@@ -173,7 +191,25 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
             .query(
               'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
             );
-          results.push({ index: i, id: result.recordset[0].id, action: 'inserted' });
+          const insertedId = result.recordset[0].id;
+          results.push({ index: i, id: insertedId, action: 'inserted' });
+          userId = insertedId;
+        }
+
+        if (u.role === 'student') {
+          const classRes = await new sql.Request(transaction)
+            .input('year', u.year)
+            .input('section', u.section)
+            .query('SELECT id FROM classes WHERE year = @year AND section = @section');
+          if (classRes.recordset.length) {
+            const classId = classRes.recordset[0].id;
+            await new sql.Request(transaction)
+              .input('classId', classId)
+              .input('studentId', userId)
+              .query(
+                'IF NOT EXISTS (SELECT 1 FROM student_classes WHERE class_id = @classId AND student_id = @studentId) INSERT INTO student_classes (class_id, student_id) VALUES (@classId, @studentId)'
+              );
+          }
         }
       } catch (err) {
         await transaction.rollback(savepoint);
