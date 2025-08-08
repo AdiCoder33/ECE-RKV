@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,40 +37,41 @@ const UserManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`${apiBase}/users`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${apiBase}/users`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
         }
-        const data: Array<Record<string, unknown>> = await response.json();
-        const mapped: User[] = data.map((u) => {
-          const { roll_number, created_at, ...rest } = u;
-          return {
-            ...(rest as Omit<User, 'rollNumber' | 'createdAt'>),
-            rollNumber:
-              ((u as Record<string, unknown>).rollNumber as string | undefined) ??
-              (roll_number as string | undefined),
-            createdAt:
-              ((u as Record<string, unknown>).createdAt as string | undefined) ??
-              (created_at as string | undefined),
-          };
-        });
-        setUsers(mapped);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
       }
-    };
-
-    fetchUsers();
+      const data: Array<Record<string, unknown>> = await response.json();
+      const mapped: User[] = data.map((u) => {
+        const { roll_number, created_at, ...rest } = u;
+        return {
+          ...(rest as Omit<User, 'rollNumber' | 'createdAt'>),
+          rollNumber:
+            ((u as Record<string, unknown>).rollNumber as string | undefined) ??
+            (roll_number as string | undefined),
+          createdAt:
+            ((u as Record<string, unknown>).createdAt as string | undefined) ??
+            (created_at as string | undefined),
+        };
+      });
+      setUsers(mapped);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -115,9 +116,10 @@ const UserManagement = () => {
         throw new Error('Failed to add user');
       }
       const createdUser: User = await response.json();
-      setUsers([...users, createdUser]);
+      setUsers(prev => [...prev, createdUser]);
       setIsModalOpen(false);
       setEditingUser(null);
+      await fetchUsers();
     } catch (err) {
       setModalError((err as Error).message);
       throw err;
@@ -165,6 +167,7 @@ const UserManagement = () => {
           return [...replaced, ...insertedUsers];
         });
       }
+      await fetchUsers();
       return { inserted, updated, errors };
     } catch (err) {
       console.error('Import users error:', err);
@@ -186,9 +189,10 @@ const UserManagement = () => {
         throw new Error('Failed to update user');
       }
       const savedUser: User = await response.json();
-      setUsers(users.map(u => (u.id === savedUser.id ? savedUser : u)));
+      setUsers(prev => prev.map(u => (u.id === savedUser.id ? savedUser : u)));
       setIsModalOpen(false);
       setEditingUser(null);
+      await fetchUsers();
     } catch (err) {
       console.error(err);
       setModalError((err as Error).message);
@@ -207,7 +211,8 @@ const UserManagement = () => {
       if (!response.ok) {
         throw new Error('Failed to delete user');
       }
-      setUsers(users.filter(user => user.id !== id));
+      setUsers(prev => prev.filter(user => user.id !== id));
+      await fetchUsers();
     } catch (err) {
       console.error(err);
     }
