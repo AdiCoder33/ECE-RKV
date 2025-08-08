@@ -109,6 +109,50 @@ router.post('/', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get a specific class with student count
+router.get('/:classId', authenticateToken, async (req, res, next) => {
+  try {
+    const { classId } = req.params;
+
+    const query = `
+      SELECT c.id, c.year, c.semester, c.section, c.hod_id,
+             h.name AS hod_name,
+             ISNULL(s.total_students, 0) AS total_students
+      FROM classes c
+      LEFT JOIN users h ON c.hod_id = h.id
+      LEFT JOIN (
+        SELECT class_id, COUNT(*) AS total_students
+        FROM student_classes
+        GROUP BY class_id
+      ) s ON c.id = s.class_id
+      WHERE c.id = ?
+    `;
+
+    const result = await executeQuery(query, [classId]);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    const cls = result.recordset[0];
+
+    res.json({
+      id: cls.id.toString(),
+      year: cls.year,
+      semester: cls.semester,
+      section: cls.section,
+      hodId: cls.hod_id?.toString(),
+      hodName: cls.hod_name,
+      totalStrength: cls.total_students,
+      subjects: [],
+      students: []
+    });
+  } catch (error) {
+    console.error('Class fetch error:', error);
+    next(error);
+  }
+});
+
 // Get students in a specific class
 router.get('/:classId/students', authenticateToken, async (req, res, next) => {
   try {
