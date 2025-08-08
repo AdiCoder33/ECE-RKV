@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Search, User, Phone, Mail, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 interface Student {
   id: string;
@@ -17,6 +19,23 @@ interface Student {
   dateOfBirth?: string;
   attendancePercentage: number;
   cgpa: number;
+  profileImage?: string;
+}
+
+interface StudentResponse {
+  id?: string;
+  _id?: string;
+  name: string;
+  email: string;
+  rollNumber?: string;
+  roll_number?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  date_of_birth?: string;
+  attendancePercentage?: number;
+  attendance_percentage?: number;
+  cgpa?: number;
+  gpa?: number;
   profileImage?: string;
 }
 
@@ -42,12 +61,21 @@ const ClassStudents = () => {
 
   const fetchClassData = async () => {
     try {
-      // Mock class data - in real app, fetch from API
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/classes/${classId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (!res.ok) {
+        throw new Error('Failed to fetch class data');
+      }
+      const data = await res.json();
       setClassData({
-        id: classId!,
-        year: 3,
-        section: 'A',
-        totalStrength: 45
+        id: data.id || data._id || classId!,
+        year: data.year,
+        section: data.section,
+        totalStrength: data.totalStrength || data.total_strength || 0
       });
     } catch (error) {
       console.error('Error fetching class data:', error);
@@ -58,44 +86,28 @@ const ClassStudents = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      // Mock students data - in real app, fetch from API using classId
-      const mockStudents: Student[] = [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john.doe@student.edu',
-          rollNumber: '20EC001',
-          phone: '+91-9876543210',
-          dateOfBirth: '2002-05-15',
-          attendancePercentage: 85,
-          cgpa: 8.5,
-          profileImage: undefined
-        },
-        {
-          id: '2',
-          name: 'Jane Smith',
-          email: 'jane.smith@student.edu',
-          rollNumber: '20EC002',
-          phone: '+91-9876543211',
-          dateOfBirth: '2002-07-20',
-          attendancePercentage: 92,
-          cgpa: 9.1,
-          profileImage: undefined
-        },
-        {
-          id: '3',
-          name: 'Mike Johnson',
-          email: 'mike.johnson@student.edu',
-          rollNumber: '20EC003',
-          phone: '+91-9876543212',
-          dateOfBirth: '2002-03-10',
-          attendancePercentage: 78,
-          cgpa: 7.8,
-          profileImage: undefined
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/classes/${classId}/students`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
-      ];
-      
-      setStudents(mockStudents);
+      });
+      if (!res.ok) {
+        throw new Error('Failed to fetch students');
+      }
+      const data: StudentResponse[] = await res.json();
+      const mapped: Student[] = data.map((s) => ({
+        id: s.id || s._id || '',
+        name: s.name,
+        email: s.email,
+        rollNumber: s.rollNumber || s.roll_number || '',
+        phone: s.phone,
+        dateOfBirth: s.dateOfBirth || s.date_of_birth,
+        attendancePercentage: s.attendancePercentage ?? s.attendance_percentage ?? 0,
+        cgpa: s.cgpa ?? s.gpa ?? 0,
+        profileImage: s.profileImage
+      }));
+      setStudents(mapped);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to fetch students');
