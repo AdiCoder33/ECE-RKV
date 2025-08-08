@@ -109,17 +109,18 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
     const { classId } = req.params;
     
     const query = `
-      SELECT 
-        u.*,
-        sc.enrollment_date,
-        AVG(a.present) * 100 as attendance_percentage,
-        ar.cgpa
+      SELECT u.*, sc.enrollment_date,
+             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             ar.cgpa
       FROM users u
       JOIN student_classes sc ON u.id = sc.student_id
-      LEFT JOIN attendance a ON u.id = a.student_id
+      LEFT JOIN (
+        SELECT student_id, AVG(present) * 100 AS attendance_percentage
+        FROM attendance
+        GROUP BY student_id
+      ) att ON u.id = att.student_id
       LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
       WHERE sc.class_id = ? AND u.role = 'student'
-      GROUP BY u.id
       ORDER BY u.roll_number
     `;
     
