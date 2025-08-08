@@ -9,14 +9,15 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_students, 0) AS total_students
+             ISNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
-        SELECT class_id, COUNT(*) AS total_students
-        FROM student_classes
-        GROUP BY class_id
-      ) s ON c.id = s.class_id
+        SELECT year, section, COUNT(*) AS total_strength
+        FROM users
+        WHERE role = 'student'
+        GROUP BY year, section
+      ) s ON c.year = s.year AND c.section = s.section
       ORDER BY c.year, c.section
     `;
     
@@ -30,7 +31,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       section: cls.section,
       hodId: cls.hod_id?.toString(),
       hodName: cls.hod_name,
-      totalStrength: cls.total_students,
+      totalStrength: cls.total_strength,
       subjects: [], // Will be populated separately if needed
       students: []  // Will be populated separately if needed
     })));
@@ -77,14 +78,15 @@ router.post('/', authenticateToken, async (req, res, next) => {
       `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_students, 0) AS total_students
+             ISNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
-        SELECT class_id, COUNT(*) AS total_students
-        FROM student_classes
-        GROUP BY class_id
-      ) s ON c.id = s.class_id
+        SELECT year, section, COUNT(*) AS total_strength
+        FROM users
+        WHERE role = 'student'
+        GROUP BY year, section
+      ) s ON c.year = s.year AND c.section = s.section
       WHERE c.id = ?
     `,
       [newId]
@@ -99,7 +101,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       section: newClass.section,
       hodId: newClass.hod_id?.toString(),
       hodName: newClass.hod_name,
-      totalStrength: newClass.total_students,
+      totalStrength: newClass.total_strength,
       subjects: [],
       students: []
     });
@@ -117,14 +119,15 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_students, 0) AS total_students
+             ISNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
-        SELECT class_id, COUNT(*) AS total_students
-        FROM student_classes
-        GROUP BY class_id
-      ) s ON c.id = s.class_id
+        SELECT year, section, COUNT(*) AS total_strength
+        FROM users
+        WHERE role = 'student'
+        GROUP BY year, section
+      ) s ON c.year = s.year AND c.section = s.section
       WHERE c.id = ?
     `;
 
@@ -143,7 +146,7 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
       section: cls.section,
       hodId: cls.hod_id?.toString(),
       hodName: cls.hod_name,
-      totalStrength: cls.total_students,
+      totalStrength: cls.total_strength,
       subjects: [],
       students: []
     });
