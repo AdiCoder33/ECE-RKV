@@ -9,14 +9,14 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             (
-               SELECT COUNT(*) FROM users u
-               WHERE u.role = 'student'
-                 AND u.year = c.year
-                 AND u.section = c.section
-             ) AS total_students
+             ISNULL(s.total_students, 0) AS total_students
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
+      LEFT JOIN (
+        SELECT class_id, COUNT(*) AS total_students
+        FROM student_classes
+        GROUP BY class_id
+      ) s ON c.id = s.class_id
       ORDER BY c.year, c.section
     `;
     
@@ -75,20 +75,20 @@ router.post('/', authenticateToken, async (req, res, next) => {
     // Fetch the created class
     const createdResult = await executeQuery(
       `
-        SELECT c.id, c.year, c.semester, c.section, c.hod_id,
-               h.name AS hod_name,
-               (
-                 SELECT COUNT(*) FROM users u
-                 WHERE u.role = 'student'
-                   AND u.year = c.year
-                   AND u.section = c.section
-               ) AS total_students
-        FROM classes c
-        LEFT JOIN users h ON c.hod_id = h.id
-        WHERE c.id = ?
-      `,
-        [newId]
-      );
+      SELECT c.id, c.year, c.semester, c.section, c.hod_id,
+             h.name AS hod_name,
+             ISNULL(s.total_students, 0) AS total_students
+      FROM classes c
+      LEFT JOIN users h ON c.hod_id = h.id
+      LEFT JOIN (
+        SELECT class_id, COUNT(*) AS total_students
+        FROM student_classes
+        GROUP BY class_id
+      ) s ON c.id = s.class_id
+      WHERE c.id = ?
+    `,
+      [newId]
+    );
 
     const newClass = createdResult.recordset[0];
 
@@ -115,20 +115,20 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
     const { classId } = req.params;
     
     const query = `
-        SELECT u.*,
-               ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
-               ar.cgpa
-        FROM users u
-        JOIN classes c ON u.year = c.year AND u.section = c.section
-        LEFT JOIN (
-          SELECT student_id, AVG(present) * 100 AS attendance_percentage
-          FROM attendance
-          GROUP BY student_id
-        ) att ON u.id = att.student_id
-        LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
-        WHERE c.id = ? AND u.role = 'student'
-        ORDER BY u.roll_number
-      `;
+      SELECT u.*, sc.enrollment_date,
+             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             ar.cgpa
+      FROM users u
+      JOIN student_classes sc ON u.id = sc.student_id
+      LEFT JOIN (
+        SELECT student_id, AVG(present) * 100 AS attendance_percentage
+        FROM attendance
+        GROUP BY student_id
+      ) att ON u.id = att.student_id
+      LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
+      WHERE sc.class_id = ? AND u.role = 'student'
+      ORDER BY u.roll_number
+    `;
     
     const result = await executeQuery(query, [classId]);
     const students = result.recordset || [];
