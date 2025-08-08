@@ -232,7 +232,12 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, email, role, department, year, section, rollNumber } = req.body;
-    
+    const prevRes = await executeQuery(
+      'SELECT role, year, section FROM users WHERE id = ?',
+      [id]
+    );
+    const prev = prevRes.recordset[0];
+
     const result = await executeQuery(
       'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, section = ?, roll_number = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at WHERE id = ?',
       [
@@ -248,6 +253,29 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     );
 
     const updated = result.recordset[0];
+
+    if (updated.role === 'student' && updated.year !== null && updated.section !== null) {
+      const classRes = await executeQuery(
+        'SELECT id FROM classes WHERE year = ? AND section = ?',
+        [updated.year, updated.section]
+      );
+      if (classRes.recordset.length > 0) {
+        const classId = classRes.recordset[0].id;
+        await executeQuery(
+          'IF EXISTS (SELECT 1 FROM student_classes WHERE student_id = ?) UPDATE student_classes SET class_id = ? WHERE student_id = ? ELSE INSERT INTO student_classes (class_id, student_id) VALUES (?, ?)',
+          [id, classId, id, classId, id]
+        );
+      }
+    }
+
+    if (
+      prev &&
+      prev.role === 'student' &&
+      (updated.role !== 'student' || updated.year === null || updated.section === null)
+    ) {
+      await executeQuery('DELETE FROM student_classes WHERE student_id = ?', [id]);
+    }
+
     res.json({
       id: updated.id,
       name: updated.name,
