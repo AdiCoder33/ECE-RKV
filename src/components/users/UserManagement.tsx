@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { User } from '@/types';
 import UserModal from './UserModal';
+import ImportUsersModal from './ImportUsersModal';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -28,6 +29,7 @@ const UserManagement = () => {
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,7 @@ const UserManagement = () => {
           <p className="text-muted-foreground">Manage users in ECE Department</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsImportModalOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Import Excel</span>
             <span className="sm:hidden">Import</span>
@@ -441,6 +443,11 @@ const UserManagement = () => {
         initialUser={editingUser ?? undefined}
         onSubmit={editingUser ? handleUpdateUser : handleAddUser}
         error={modalError}
+      />
+      <ImportUsersModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onAddUser={handleAddUser}
       />
     </div>
   );
