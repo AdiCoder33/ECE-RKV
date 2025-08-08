@@ -114,7 +114,7 @@ const UserManagement = () => {
 
   const handleImportUsers = async (
     bulkUsers: (Omit<User, 'id'> & { password: string })[]
-  ): Promise<{ success: number; errors: string[] }> => {
+  ): Promise<{ inserted: number; updated: number; errors: string[] }> => {
     try {
       const response = await fetch(`${apiBase}/users/bulk`, {
         method: 'POST',
@@ -127,24 +127,36 @@ const UserManagement = () => {
       if (!response.ok) {
         throw new Error('Failed to import users');
       }
-      type BulkResult = { id?: string; error?: string };
+      type BulkResult = { id?: string; action?: 'inserted' | 'updated'; error?: string };
       const data: { results: BulkResult[] } = await response.json();
-      const created: User[] = [];
       const errors: string[] = [];
+      const insertedUsers: User[] = [];
+      const updatedUsers = new Map<string, User>();
+      let inserted = 0;
+      let updated = 0;
       data.results.forEach((item, idx) => {
-        if (item.id) {
-          created.push({ id: String(item.id), ...bulkUsers[idx] });
+        if (item.id && item.action === 'inserted') {
+          const { password, ...rest } = bulkUsers[idx];
+          insertedUsers.push({ id: String(item.id), ...rest });
+          inserted++;
+        } else if (item.id && item.action === 'updated') {
+          const { password, ...rest } = bulkUsers[idx];
+          updatedUsers.set(String(item.id), { id: String(item.id), ...rest });
+          updated++;
         } else if (item.error) {
           errors.push(`Row ${idx + 2}: ${item.error}`);
         }
       });
-      if (created.length) {
-        setUsers([...users, ...created]);
+      if (inserted || updated) {
+        setUsers(prev => {
+          const replaced = prev.map(u => updatedUsers.get(u.id) ?? u);
+          return [...replaced, ...insertedUsers];
+        });
       }
-      return { success: created.length, errors };
+      return { inserted, updated, errors };
     } catch (err) {
       console.error('Import users error:', err);
-      return { success: 0, errors: [(err as Error).message] };
+      return { inserted: 0, updated: 0, errors: [(err as Error).message] };
     }
   };
 

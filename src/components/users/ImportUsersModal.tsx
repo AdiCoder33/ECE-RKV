@@ -11,7 +11,7 @@ interface ImportUsersModalProps {
   onClose: () => void;
   onImportUsers: (
     users: (Omit<User, 'id'> & { password: string })[]
-  ) => Promise<{ success: number; errors: string[] }>;
+  ) => Promise<{ inserted: number; updated: number; errors: string[] }>;
 }
 
 const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, onImportUsers }) => {
@@ -97,9 +97,10 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       setRowErrors([]);
 
       try {
-        const { success, errors } = await onImportUsers(parsed);
-        if (success > 0) {
-          toast.success(`Successfully imported ${success} users`);
+        const { inserted, updated, errors } = await onImportUsers(parsed);
+        const total = inserted + updated;
+        if (total > 0) {
+          toast.success(`Inserted ${inserted} and updated ${updated} users`);
           onClose();
         }
         errors.forEach((e) => toast.error(e));

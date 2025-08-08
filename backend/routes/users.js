@@ -90,22 +90,79 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       const savepoint = `sp${i}`;
       await new sql.Request(transaction).query(`SAVE TRANSACTION ${savepoint}`);
       try {
-        const hashedPassword = await bcrypt.hash(u.password, 10);
-        const request = new sql.Request(transaction);
-        const result = await request
-          .input('name', u.name)
+        const existing = await new sql.Request(transaction)
           .input('email', u.email)
-          .input('password', hashedPassword)
-          .input('role', u.role)
-          .input('department', u.department === undefined ? null : u.department)
-          .input('year', u.year === undefined ? null : u.year)
-          .input('section', u.section)
-          .input('rollNumber', u.rollNumber)
-          .input('phone', u.phone)
           .query(
-            'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
+            'SELECT id, name, role, department, year, section, roll_number, phone, password FROM users WHERE email = @email'
           );
-        results.push({ index: i, id: result.recordset[0].id });
+
+        if (existing.recordset.length) {
+          const ex = existing.recordset[0];
+          const req = new sql.Request(transaction).input('email', u.email);
+          const updates = [];
+          if (ex.name !== u.name) {
+            updates.push('name = @name');
+            req.input('name', u.name);
+          }
+          if (ex.role !== u.role) {
+            updates.push('role = @role');
+            req.input('role', u.role);
+          }
+          const dept = u.department === undefined ? null : u.department;
+          if (ex.department !== dept) {
+            updates.push('department = @department');
+            req.input('department', dept);
+          }
+          const yr = u.year === undefined ? null : u.year;
+          if (ex.year !== yr) {
+            updates.push('year = @year');
+            req.input('year', yr);
+          }
+          const sec = u.section === undefined ? null : u.section;
+          if (ex.section !== sec) {
+            updates.push('section = @section');
+            req.input('section', sec);
+          }
+          const roll = u.rollNumber === undefined ? null : u.rollNumber;
+          if (ex.roll_number !== roll) {
+            updates.push('roll_number = @rollNumber');
+            req.input('rollNumber', roll);
+          }
+          const ph = u.phone === undefined ? null : u.phone;
+          if (ex.phone !== ph) {
+            updates.push('phone = @phone');
+            req.input('phone', ph);
+          }
+          if (u.password) {
+            const same = await bcrypt.compare(u.password, ex.password);
+            if (!same) {
+              const hashed = await bcrypt.hash(u.password, 10);
+              updates.push('password = @password');
+              req.input('password', hashed);
+            }
+          }
+          if (updates.length) {
+            await req.query(`UPDATE users SET ${updates.join(', ')} WHERE email = @email`);
+          }
+          results.push({ index: i, id: ex.id, action: 'updated' });
+        } else {
+          const hashedPassword = await bcrypt.hash(u.password, 10);
+          const request = new sql.Request(transaction);
+          const result = await request
+            .input('name', u.name)
+            .input('email', u.email)
+            .input('password', hashedPassword)
+            .input('role', u.role)
+            .input('department', u.department === undefined ? null : u.department)
+            .input('year', u.year === undefined ? null : u.year)
+            .input('section', u.section)
+            .input('rollNumber', u.rollNumber)
+            .input('phone', u.phone)
+            .query(
+              'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
+            );
+          results.push({ index: i, id: result.recordset[0].id, action: 'inserted' });
+        }
       } catch (err) {
         await transaction.rollback(savepoint);
         results.push({ index: i, error: err.message });
@@ -114,7 +171,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     await transaction.commit();
     res.status(201).json({ results });
   } catch (error) {
-    await transaction.rollback();
+    if (transaction._state === 'started') {
+      await transaction.rollback();
+    }
     console.error('Bulk user creation error:', error);
     next(error);
   }
