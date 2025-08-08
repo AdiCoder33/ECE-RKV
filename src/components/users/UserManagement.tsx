@@ -189,10 +189,12 @@ const UserManagement = () => {
       Name: user.name,
       Email: user.email,
       Role: user.role,
+      Department: user.department ?? '',
       Year: user.year ?? '',
       Section: user.section ?? '',
       RollNumber: user.rollNumber ?? '',
-      Phone: user.phone ?? ''
+      Phone: user.phone ?? '',
+      Password: ''
     }));
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();

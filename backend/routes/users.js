@@ -41,7 +41,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
 /**
  * Bulk create users.
- * Expects payload: { users: [{ name, email, password, role, department, year?, section?, rollNumber?, phone? }] }
+ * Expects payload: { users: [{ name, email, password, role, department?, year?, section?, rollNumber?, phone? }] }
  * Returns array with created record IDs or per-row error messages.
  */
 router.post('/bulk', authenticateToken, async (req, res, next) => {
@@ -66,7 +66,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           .input('email', u.email)
           .input('password', hashedPassword)
           .input('role', u.role)
-          .input('department', u.department)
+          .input('department', u.department || null)
           .input('year', u.year || null)
           .input('section', u.section || null)
           .input('rollNumber', u.rollNumber || null)
