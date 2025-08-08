@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { executeQuery } = require('../config/database');
+const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -35,6 +35,55 @@ router.post('/', authenticateToken, async (req, res, next) => {
     if (error.message.includes('duplicate') || error.message.includes('UNIQUE')) {
       error.status = 400;
     }
+    next(error);
+  }
+});
+
+/**
+ * Bulk create users.
+ * Expects payload: { users: [{ name, email, password, role, department, year?, section?, rollNumber?, phone? }] }
+ * Returns array with created record IDs or per-row error messages.
+ */
+router.post('/bulk', authenticateToken, async (req, res, next) => {
+  const users = req.body?.users;
+  if (!Array.isArray(users)) {
+    return res.status(400).json({ error: 'Users array is required' });
+  }
+  const results = [];
+  const pool = await connectDB();
+  const transaction = new sql.Transaction(pool);
+  try {
+    await transaction.begin();
+    for (let i = 0; i < users.length; i++) {
+      const u = users[i];
+      await transaction.save(`sp${i}`);
+      try {
+        const hashedPassword = await bcrypt.hash(u.password, 10);
+        const request = new sql.Request(transaction);
+        const result = await request
+          .input('name', u.name)
+          .input('email', u.email)
+          .input('password', hashedPassword)
+          .input('role', u.role)
+          .input('department', u.department)
+          .input('year', u.year || null)
+          .input('section', u.section || null)
+          .input('rollNumber', u.rollNumber || null)
+          .input('phone', u.phone || null)
+          .query(
+            'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
+          );
+        results.push({ index: i, id: result.recordset[0].id });
+      } catch (err) {
+        await transaction.rollback(`sp${i}`);
+        results.push({ index: i, error: err.message });
+      }
+    }
+    await transaction.commit();
+    res.status(201).json({ results });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Bulk user creation error:', error);
     next(error);
   }
 });
