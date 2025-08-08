@@ -298,6 +298,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
 router.delete('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
+    await executeQuery('DELETE FROM student_classes WHERE student_id = ?', [id]);
     await executeQuery('DELETE FROM users WHERE id = ?', [id]);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {

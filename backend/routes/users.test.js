@@ -99,4 +99,18 @@ describe('users routes handle falsy-but-valid values', () => {
       ]
     );
   });
+
+  it('deletes user and cleans up student classes', async () => {
+    await request(app).delete('/users/1').expect(200);
+    expect(executeQuery).toHaveBeenNthCalledWith(
+      1,
+      'DELETE FROM student_classes WHERE student_id = ?',
+      ['1']
+    );
+    expect(executeQuery).toHaveBeenNthCalledWith(
+      2,
+      'DELETE FROM users WHERE id = ?',
+      ['1']
+    );
+  });
 });
