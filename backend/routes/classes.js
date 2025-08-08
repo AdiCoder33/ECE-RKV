@@ -7,14 +7,16 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const query = `
-      SELECT 
-        c.*,
-        h.name as hod_name,
-        COUNT(sc.student_id) as total_students
+      SELECT c.id, c.year, c.semester, c.section, c.hod_id,
+             h.name AS hod_name,
+             ISNULL(s.total_students, 0) AS total_students
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
-      LEFT JOIN student_classes sc ON c.id = sc.class_id
-      GROUP BY c.id
+      LEFT JOIN (
+        SELECT class_id, COUNT(*) AS total_students
+        FROM student_classes
+        GROUP BY class_id
+      ) s ON c.id = s.class_id
       ORDER BY c.year, c.section
     `;
     
@@ -67,15 +69,17 @@ router.post('/', authenticateToken, async (req, res, next) => {
     // Fetch the created class
     const createdResult = await executeQuery(
       `
-      SELECT
-        c.*,
-        h.name as hod_name,
-        COUNT(sc.student_id) as total_students
+      SELECT c.id, c.year, c.semester, c.section, c.hod_id,
+             h.name AS hod_name,
+             ISNULL(s.total_students, 0) AS total_students
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
-      LEFT JOIN student_classes sc ON c.id = sc.class_id
+      LEFT JOIN (
+        SELECT class_id, COUNT(*) AS total_students
+        FROM student_classes
+        GROUP BY class_id
+      ) s ON c.id = s.class_id
       WHERE c.id = ?
-      GROUP BY c.id
     `,
       [newId]
     );
