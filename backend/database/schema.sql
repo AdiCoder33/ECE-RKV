@@ -47,6 +47,14 @@ CREATE TABLE classes (
     UNIQUE(year, section, department)
 );
 
+-- Student Classes table to track student enrollments
+CREATE TABLE student_classes (
+    class_id INT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    student_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    enrollment_date DATETIME2 DEFAULT GETDATE(),
+    PRIMARY KEY (class_id, student_id)
+);
+
 -- Attendance table
 CREATE TABLE attendance (
     id int IDENTITY(1,1) PRIMARY KEY,
