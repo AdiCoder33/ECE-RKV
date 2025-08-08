@@ -66,6 +66,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const newId = insertResult.recordset[0].id;
 
+    // Link existing students of the same year and section to this class
+    await executeQuery(
+      "INSERT INTO student_classes (class_id, student_id) SELECT ?, id FROM users WHERE role='student' AND year=? AND section=?",
+      [newId, year, section]
+    );
+
     // Fetch the created class
     const createdResult = await executeQuery(
       `
@@ -238,12 +244,31 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
       `);
       const graduatingStudents = graduatingResult.recordset;
 
-      // Update students' years (promote 1->2, 2->3, 3->4)
+      // Update students' years (promote 1->2, 2->3, 3->4) and their class assignments
       for (const student of studentsToPromote) {
         await runQuery(
           'UPDATE users SET year = ? WHERE id = ?',
           [student.year + 1, student.id]
         );
+
+        // Move student to the corresponding class for the next year
+        const nextClassResult = await runQuery(
+          'SELECT id FROM classes WHERE year = ? AND section = ?',
+          [student.year + 1, student.section]
+        );
+        if (nextClassResult.recordset.length > 0) {
+          const nextClassId = nextClassResult.recordset[0].id;
+          await runQuery(
+            'UPDATE student_classes SET class_id = ? WHERE student_id = ?',
+            [nextClassId, student.id]
+          );
+        } else {
+          // If no class exists for next year, remove any existing mapping
+          await runQuery(
+            'DELETE FROM student_classes WHERE student_id = ?',
+            [student.id]
+          );
+        }
       }
 
       // Graduate final year students (convert to alumni)
