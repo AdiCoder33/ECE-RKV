@@ -31,25 +31,45 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, { header: 1 });
+
+      const headers = rows[0]?.map((h) => String(h).trim());
+      const required = ['Name', 'Email', 'Role', 'Password'];
+      const missing = required.filter((h) => !headers?.includes(h));
+      if (missing.length) {
+        toast.error(`Missing required column(s): ${missing.join(', ')}`);
+        return;
+      }
+
+      const indexMap: Record<string, number> = {};
+      headers.forEach((h, i) => {
+        indexMap[h] = i;
+      });
+
       const parsed = rows.slice(1).map((row) => ({
-        name: String(row[0] ?? ''),
-        email: String(row[1] ?? ''),
-        role: String(row[2] ?? ''),
-        year: row[3] !== undefined && row[3] !== '' ? Number(row[3]) : undefined,
-        section: String(row[4] ?? ''),
-        rollNumber: String(row[5] ?? ''),
-        phone: String(row[6] ?? ''),
-        password: String(row[7] ?? '')
+        name: String(row[indexMap['Name']] ?? ''),
+        email: String(row[indexMap['Email']] ?? ''),
+        role: String(row[indexMap['Role']] ?? ''),
+        department: String(row[indexMap['Department']] ?? ''),
+        year:
+          row[indexMap['Year']] !== undefined && row[indexMap['Year']] !== ''
+            ? Number(row[indexMap['Year']])
+            : undefined,
+        section: String(row[indexMap['Section']] ?? ''),
+        rollNumber: String(row[indexMap['RollNumber']] ?? ''),
+        phone: String(row[indexMap['Phone']] ?? ''),
+        password: String(row[indexMap['Password']] ?? '')
       }));
 
       const { success, errors } = await onImportUsers(parsed);
       if (success > 0) {
         toast.success(`Successfully imported ${success} users`);
+        onClose();
       }
       errors.forEach((e) => toast.error(e));
+    } catch (err) {
+      console.error(err);
     } finally {
       setImporting(false);
-      onClose();
     }
   };
 
