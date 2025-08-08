@@ -112,14 +112,37 @@ const ClassManagement = () => {
     }
   };
 
-  const handleEditClass = (id: string, updatedClass: Omit<Class, 'id'>) => {
-    setClasses(prev => prev.map(cls => 
-      cls.id === id ? { ...updatedClass, id } : cls
-    ));
-    toast({
-      title: "Class Updated",
-      description: "Class has been updated successfully",
-    });
+  const handleEditClass = async (id: string, updatedClass: Omit<Class, 'id'>) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedClass),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update class');
+      }
+
+      const updatedClassData: Class = await response.json();
+      setClasses(prev =>
+        prev.map(cls => (cls.id === id ? updatedClassData : cls))
+      );
+      toast({
+        title: "Class Updated",
+        description: "Class has been updated successfully",
+      });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update class',
+      });
+    }
   };
 
   const handleDeleteClass = (classId: string) => {
