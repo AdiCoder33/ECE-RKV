@@ -9,10 +9,12 @@ import { User } from '@/types';
 interface ImportUsersModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddUser: (user: Omit<User, 'id'> & { password: string }) => Promise<void>;
+  onImportUsers: (
+    users: (Omit<User, 'id'> & { password: string })[]
+  ) => Promise<{ success: number; errors: string[] }>;
 }
 
-const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, onAddUser }) => {
+const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, onImportUsers }) => {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -40,17 +42,7 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         password: String(row[7] ?? '')
       }));
 
-      let success = 0;
-      const errors: string[] = [];
-      for (let i = 0; i < parsed.length; i++) {
-        try {
-          await onAddUser(parsed[i]);
-          success++;
-        } catch (err) {
-          errors.push(`Row ${i + 2}: ${(err as Error).message}`);
-        }
-      }
-
+      const { success, errors } = await onImportUsers(parsed);
       if (success > 0) {
         toast.success(`Successfully imported ${success} users`);
       }
