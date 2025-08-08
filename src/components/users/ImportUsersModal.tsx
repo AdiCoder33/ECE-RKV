@@ -38,7 +38,9 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       const required = ['Name', 'Email', 'Role', 'Password'];
       const missing = required.filter((h) => !headers?.includes(h));
       if (missing.length) {
-        toast.error(`Missing required column(s): ${missing.join(', ')}`);
+        const message = `Missing required column(s): ${missing.join(', ')}`;
+        console.error(message);
+        toast.error(message);
         return;
       }
 
@@ -87,18 +89,25 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       });
 
       if (validationErrors.length) {
+        console.error('Validation errors:', validationErrors);
         setRowErrors(validationErrors);
         return;
       }
 
       setRowErrors([]);
 
-      const { success, errors } = await onImportUsers(parsed);
-      if (success > 0) {
-        toast.success(`Successfully imported ${success} users`);
-        onClose();
+      try {
+        const { success, errors } = await onImportUsers(parsed);
+        if (success > 0) {
+          toast.success(`Successfully imported ${success} users`);
+          onClose();
+        }
+        errors.forEach((e) => toast.error(e));
+      } catch (err) {
+        const message = (err as Error).message || 'Import failed';
+        toast.error(message);
+        throw err;
       }
-      errors.forEach((e) => toast.error(e));
     } catch (err) {
       console.error(err);
     } finally {

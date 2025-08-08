@@ -115,32 +115,37 @@ const UserManagement = () => {
   const handleImportUsers = async (
     bulkUsers: (Omit<User, 'id'> & { password: string })[]
   ): Promise<{ success: number; errors: string[] }> => {
-    const response = await fetch(`${apiBase}/users/bulk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ users: bulkUsers })
-    });
-    if (!response.ok) {
-      throw new Error('Failed to import users');
-    }
-    type BulkResult = { id?: string; error?: string };
-    const data: { results: BulkResult[] } = await response.json();
-    const created: User[] = [];
-    const errors: string[] = [];
-    data.results.forEach((item, idx) => {
-      if (item.id) {
-        created.push({ id: String(item.id), ...bulkUsers[idx] });
-      } else if (item.error) {
-        errors.push(`Row ${idx + 2}: ${item.error}`);
+    try {
+      const response = await fetch(`${apiBase}/users/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ users: bulkUsers })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to import users');
       }
-    });
-    if (created.length) {
-      setUsers([...users, ...created]);
+      type BulkResult = { id?: string; error?: string };
+      const data: { results: BulkResult[] } = await response.json();
+      const created: User[] = [];
+      const errors: string[] = [];
+      data.results.forEach((item, idx) => {
+        if (item.id) {
+          created.push({ id: String(item.id), ...bulkUsers[idx] });
+        } else if (item.error) {
+          errors.push(`Row ${idx + 2}: ${item.error}`);
+        }
+      });
+      if (created.length) {
+        setUsers([...users, ...created]);
+      }
+      return { success: created.length, errors };
+    } catch (err) {
+      console.error('Import users error:', err);
+      return { success: 0, errors: [(err as Error).message] };
     }
-    return { success: created.length, errors };
   };
 
   const handleUpdateUser = async (updatedUser: User) => {
