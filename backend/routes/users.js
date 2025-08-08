@@ -56,7 +56,8 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     await transaction.begin();
     for (let i = 0; i < users.length; i++) {
       const u = users[i];
-      await transaction.save(`sp${i}`);
+      const savepoint = `sp${i}`;
+      await new sql.Request(transaction).query(`SAVE TRANSACTION ${savepoint}`);
       try {
         const hashedPassword = await bcrypt.hash(u.password, 10);
         const request = new sql.Request(transaction);
@@ -75,7 +76,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           );
         results.push({ index: i, id: result.recordset[0].id });
       } catch (err) {
-        await transaction.rollback(`sp${i}`);
+        await transaction.rollback(savepoint);
         results.push({ index: i, error: err.message });
       }
     }
