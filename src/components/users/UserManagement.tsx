@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -183,6 +184,22 @@ const UserManagement = () => {
     }
   };
 
+  const handleExportUsers = () => {
+    const data = filteredUsers.map(user => ({
+      Name: user.name,
+      Email: user.email,
+      Role: user.role,
+      Year: user.year ?? '',
+      Section: user.section ?? '',
+      RollNumber: user.rollNumber ?? '',
+      Phone: user.phone ?? ''
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+    XLSX.writeFile(workbook, 'users.xlsx');
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -312,7 +329,7 @@ const UserManagement = () => {
                 <option value="4">4th Year</option>
               </select>
 
-              <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={handleExportUsers}>
                 <Download className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Export</span>
               </Button>
