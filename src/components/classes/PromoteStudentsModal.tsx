@@ -16,7 +16,7 @@ import { GraduationCap, Users, AlertTriangle } from 'lucide-react';
 interface PromoteStudentsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPromote: () => void;
+  onPromote: () => Promise<void>;
 }
 
 const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsModalProps) => {
@@ -31,12 +31,7 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
 
   const handlePromote = async () => {
     setIsPromoting(true);
-    
-    // Simulate promotion process
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    console.log('Promoting students to next year');
-    onPromote();
+    await onPromote();
     setIsPromoting(false);
     onClose();
   };

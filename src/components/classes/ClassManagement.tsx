@@ -44,30 +44,29 @@ const ClassManagement = () => {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch classes');
+      }
+      const data: Class[] = await response.json();
+      setClasses(data);
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load classes',
+      });
+    }
+  };
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${apiBase}/classes`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch classes');
-        }
-        const data: Class[] = await response.json();
-        setClasses(data);
-      } catch {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load classes',
-        });
-      }
-    };
-
     fetchClasses();
   }, [toast]);
 
@@ -186,9 +185,40 @@ const ClassManagement = () => {
     setIsEditModalOpen(true);
   };
 
-  const handlePromoteStudents = () => {
-    console.log('Students promoted successfully');
-    // Logic to update student years would go here
+  const handlePromoteStudents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes/promote`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.message || 'Failed to promote students';
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: message,
+        });
+        return;
+      }
+
+      const data = await response.json();
+      toast({
+        title: 'Promotion Complete',
+        description: `${data.promoted} students promoted, ${data.graduated} students graduated`,
+      });
+      fetchClasses();
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to promote students',
+      });
+    }
   };
 
   const handleClassClick = (cls: Class) => {
