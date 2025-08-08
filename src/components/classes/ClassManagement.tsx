@@ -145,13 +145,40 @@ const ClassManagement = () => {
     }
   };
 
-  const handleDeleteClass = (classId: string) => {
-    setClasses(classes.filter(c => c.id !== classId));
-    toast({
-      variant: "destructive",
-      title: "Class Deleted",
-      description: "Your class has been deleted successfully",
-    })
+  const handleDeleteClass = async (classId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes/${classId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.message || 'Failed to delete class';
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: message,
+        });
+        return;
+      }
+
+      setClasses(prev => prev.filter(c => c.id !== classId));
+      toast({
+        variant: 'destructive',
+        title: 'Class Deleted',
+        description: 'Your class has been deleted successfully',
+      });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete class',
+      });
+    }
   };
 
   const handleEditClick = (cls: Class) => {
