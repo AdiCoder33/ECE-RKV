@@ -220,7 +220,8 @@ const ClassManagement = () => {
   };
 
   const handleClassClick = (cls: Class) => {
-    navigate(`/dashboard/classes/${cls.id}/students`);
+    setSelectedClass(cls);
+    setIsStudentsModalOpen(true);
   };
 
   const handleStudentClick = (studentId: string) => {
