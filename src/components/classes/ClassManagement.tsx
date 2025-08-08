@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,13 +30,11 @@ import ClassStudentsModal from './ClassStudentsModal';
 import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const ClassManagement = () => {
   const navigate = useNavigate();
-  const [classes, setClasses] = useState<Class[]>([
-    { id: '1', year: 1, semester: 1, section: 'A', subjects: [], students: [], totalStrength: 60 },
-    { id: '2', year: 2, semester: 3, section: 'B', subjects: [], students: [], totalStrength: 55 },
-    { id: '3', year: 3, semester: 5, section: 'C', subjects: [], students: [], totalStrength: 48 },
-  ]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newClassName, setNewClassName] = useState('');
   const [newClassYear, setNewClassYear] = useState(1);
@@ -46,6 +44,32 @@ const ClassManagement = () => {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/classes`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch classes');
+        }
+        const data: Class[] = await response.json();
+        setClasses(data);
+      } catch {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load classes',
+        });
+      }
+    };
+
+    fetchClasses();
+  }, [toast]);
 
   const handleCreateClass = () => {
     if (newClassYear && newClassSection) {
