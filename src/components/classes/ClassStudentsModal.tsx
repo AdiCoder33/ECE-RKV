@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, User, Mail, Phone, Calendar, GraduationCap } from 'lucide-react';
 import { Class, User as UserType } from '@/types';
-import { toast } from 'sonner';
 
 interface ClassStudentsModalProps {
   isOpen: boolean;
@@ -22,34 +21,59 @@ interface ClassStudentsModalProps {
 }
 
 const ClassStudentsModal = ({ isOpen, onClose, classData, onStudentClick }: ClassStudentsModalProps) => {
-  const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [searchTerm, setSearchTerm] = useState('');
-  const [students, setStudents] = useState<(UserType & { attendance: number; gpa: number })[]>([]);
 
-  useEffect(() => {
-    if (!classData || !isOpen) return;
-
-    const fetchStudents = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${apiBase}/classes/${classData.id}/students`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch students');
-        }
-        const data: (UserType & { attendance: number; gpa: number })[] = await response.json();
-        setStudents(data);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-        toast.error('Failed to fetch students');
-      }
-    };
-
-    fetchStudents();
-  }, [classData, isOpen]);
+  // Mock student data for the class
+  const students: (UserType & { attendance: number; gpa: number })[] = [
+    {
+      id: '1',
+      name: 'Aarav Patel',
+      email: 'aarav.patel@student.edu',
+      role: 'student',
+      year: classData?.year || 1,
+      section: classData?.section || 'A',
+      rollNumber: '20ECE001',
+      phone: '+91 9876543210',
+      attendance: 87,
+      gpa: 8.4
+    },
+    {
+      id: '2',
+      name: 'Diya Singh',
+      email: 'diya.singh@student.edu',
+      role: 'student',
+      year: classData?.year || 1,
+      section: classData?.section || 'A',
+      rollNumber: '20ECE002',
+      phone: '+91 9876543211',
+      attendance: 92,
+      gpa: 8.8
+    },
+    {
+      id: '3',
+      name: 'Arjun Kumar',
+      email: 'arjun.kumar@student.edu',
+      role: 'student',
+      year: classData?.year || 1,
+      section: classData?.section || 'A',
+      rollNumber: '20ECE003',
+      phone: '+91 9876543212',
+      attendance: 78,
+      gpa: 7.2
+    },
+    {
+      id: '4',
+      name: 'Priya Sharma',
+      email: 'priya.sharma@student.edu',
+      role: 'student',
+      year: classData?.year || 1,
+      section: classData?.section || 'A',
+      rollNumber: '20ECE004',
+      phone: '+91 9876543213',
+      attendance: 95,
+      gpa: 9.1
+    }
+  ];
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
