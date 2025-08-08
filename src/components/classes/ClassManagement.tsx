@@ -71,26 +71,44 @@ const ClassManagement = () => {
     fetchClasses();
   }, [toast]);
 
-  const handleCreateClass = () => {
+  const handleCreateClass = async () => {
     if (newClassYear && newClassSection) {
-      const newClass: Class = {
-        id: String(classes.length + 1),
-        year: newClassYear,
-        semester: newClassYear * 2 - 1, // Calculate semester based on year
-        section: newClassSection,
-        subjects: [],
-        students: [],
-        totalStrength: 0,
-      };
-      setClasses([...classes, newClass]);
-      setIsCreateModalOpen(false);
-      setNewClassName('');
-      setNewClassYear(1);
-      setNewClassSection('A');
-      toast({
-        title: "Class Created",
-        description: "Your class has been created successfully",
-      })
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/classes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            year: newClassYear,
+            semester: newClassYear * 2 - 1,
+            section: newClassSection,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create class');
+        }
+
+        const createdClass: Class = await response.json();
+        setClasses(prev => [...prev, createdClass]);
+        setIsCreateModalOpen(false);
+        setNewClassName('');
+        setNewClassYear(1);
+        setNewClassSection('A');
+        toast({
+          title: "Class Created",
+          description: "Your class has been created successfully",
+        });
+      } catch {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to create class',
+        });
+      }
     }
   };
 
