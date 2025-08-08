@@ -10,6 +10,7 @@ export interface User {
   rollNumber?: string;
   profileImage?: string;
   phone?: string;
+  createdAt?: string;
   dateOfBirth?: string;
   address?: string;
   parentContact?: string;

@@ -6,7 +6,23 @@ jest.mock('../middleware/auth', () => ({
 }));
 
 jest.mock('../config/database', () => ({
-  executeQuery: jest.fn().mockResolvedValue({ rowsAffected: [1] }),
+  executeQuery: jest.fn().mockResolvedValue({
+    recordset: [
+      {
+        id: 1,
+        name: '',
+        email: '',
+        role: '',
+        department: null,
+        year: null,
+        section: null,
+        roll_number: null,
+        phone: null,
+        created_at: null,
+      },
+    ],
+    rowsAffected: [1],
+  }),
   connectDB: jest.fn(),
   sql: {},
 }));

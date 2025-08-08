@@ -48,8 +48,20 @@ const UserManagement = () => {
         if (!response.ok) {
           throw new Error('Failed to fetch users');
         }
-        const data: User[] = await response.json();
-        setUsers(data);
+        const data: Array<Record<string, unknown>> = await response.json();
+        const mapped: User[] = data.map((u) => {
+          const { roll_number, created_at, ...rest } = u;
+          return {
+            ...(rest as Omit<User, 'rollNumber' | 'createdAt'>),
+            rollNumber:
+              ((u as Record<string, unknown>).rollNumber as string | undefined) ??
+              (roll_number as string | undefined),
+            createdAt:
+              ((u as Record<string, unknown>).createdAt as string | undefined) ??
+              (created_at as string | undefined),
+          };
+        });
+        setUsers(mapped);
       } catch (err) {
         setError((err as Error).message);
       } finally {
