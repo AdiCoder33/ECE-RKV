@@ -26,7 +26,17 @@ router.post('/', authenticateToken, async (req, res, next) => {
     
     const result = await executeQuery(
       'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, role, department, year, section, rollNumber, phone]
+      [
+        name,
+        email,
+        hashedPassword,
+        role,
+        department === undefined ? null : department,
+        year === undefined ? null : year,
+        section === undefined ? null : section,
+        rollNumber === undefined ? null : rollNumber,
+        phone === undefined ? null : phone,
+      ]
     );
     
     res.status(201).json({ id: result.rowsAffected[0], message: 'User created successfully' });
@@ -87,8 +97,8 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           .input('email', u.email)
           .input('password', hashedPassword)
           .input('role', u.role)
-          .input('department', u.department || null)
-          .input('year', u.year || null)
+          .input('department', u.department === undefined ? null : u.department)
+          .input('year', u.year === undefined ? null : u.year)
           .input('section', u.section)
           .input('rollNumber', u.rollNumber)
           .input('phone', u.phone)
@@ -118,7 +128,16 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     
     await executeQuery(
       'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, section = ?, roll_number = ? WHERE id = ?',
-      [name, email, role, department, year || null, section || null, rollNumber || null, id]
+      [
+        name,
+        email,
+        role,
+        department === undefined ? null : department,
+        year === undefined ? null : year,
+        section === undefined ? null : section,
+        rollNumber === undefined ? null : rollNumber,
+        id,
+      ]
     );
     
     res.json({ message: 'User updated successfully' });
