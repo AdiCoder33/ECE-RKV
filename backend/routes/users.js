@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const result = await executeQuery(
-      'SELECT id, name, email, role, department, year, section, roll_number, phone, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, name, email, role, department, year, section, roll_number AS rollNumber, phone, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.recordset || []);
   } catch (error) {
@@ -25,7 +25,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const result = await executeQuery(
-      'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name,
         email,
@@ -38,8 +38,20 @@ router.post('/', authenticateToken, async (req, res, next) => {
         phone === undefined ? null : phone,
       ]
     );
-    
-    res.status(201).json({ id: result.rowsAffected[0], message: 'User created successfully' });
+
+    const created = result.recordset[0];
+    res.status(201).json({
+      id: created.id,
+      name: created.name,
+      email: created.email,
+      role: created.role,
+      department: created.department,
+      year: created.year,
+      section: created.section,
+      rollNumber: created.roll_number,
+      phone: created.phone,
+      createdAt: created.created_at,
+    });
   } catch (error) {
     console.error('Create user error:', error);
     if (error.message.includes('duplicate') || error.message.includes('UNIQUE')) {
@@ -185,8 +197,8 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     const { id } = req.params;
     const { name, email, role, department, year, section, rollNumber } = req.body;
     
-    await executeQuery(
-      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, section = ?, roll_number = ? WHERE id = ?',
+    const result = await executeQuery(
+      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, section = ?, roll_number = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at WHERE id = ?',
       [
         name,
         email,
@@ -198,8 +210,20 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
         id,
       ]
     );
-    
-    res.json({ message: 'User updated successfully' });
+
+    const updated = result.recordset[0];
+    res.json({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
+      department: updated.department,
+      year: updated.year,
+      section: updated.section,
+      rollNumber: updated.roll_number,
+      phone: updated.phone,
+      createdAt: updated.created_at,
+    });
   } catch (error) {
     console.error('Update user error:', error);
     next(error);
