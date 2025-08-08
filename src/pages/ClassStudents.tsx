@@ -53,6 +53,7 @@ const ClassStudents = () => {
   const [classData, setClassData] = useState<Class | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClassData();
@@ -86,6 +87,7 @@ const ClassStudents = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const token = localStorage.getItem('token');
       const res = await fetch(`${apiBase}/classes/${classId}/students`, {
         headers: {
@@ -110,6 +112,7 @@ const ClassStudents = () => {
       setStudents(mapped);
     } catch (error) {
       console.error('Error fetching students:', error);
+      setError('Failed to load students');
       toast.error('Failed to fetch students');
     } finally {
       setLoading(false);
@@ -189,16 +192,22 @@ const ClassStudents = () => {
         <Card>
           <CardContent className="py-12 text-center">
             <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No students found</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {error ? 'Failed to load students' : 'No students found'}
+            </h3>
             <p className="text-muted-foreground">
-              {searchTerm ? 'Try adjusting your search criteria' : 'No students enrolled in this class'}
+              {error ? 'Please try again later.' : searchTerm ? 'Try adjusting your search criteria' : 'No students enrolled in this class'}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStudents.map((student) => (
-            <Card key={student.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={student.id}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleStudentClick(student.id)}
+            >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4 mb-4">
                   <Avatar className="h-12 w-12">
@@ -232,7 +241,7 @@ const ClassStudents = () => {
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2">
                   <Badge className={getAttendanceBadge(student.attendancePercentage)}>
                     {student.attendancePercentage}% Attendance
                   </Badge>
@@ -240,15 +249,6 @@ const ClassStudents = () => {
                     {student.cgpa} CGPA
                   </Badge>
                 </div>
-
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => handleStudentClick(student.id)}
-                >
-                  View Profile
-                </Button>
               </CardContent>
             </Card>
           ))}
