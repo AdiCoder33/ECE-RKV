@@ -11,17 +11,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { GraduationCap, Users, AlertTriangle } from 'lucide-react';
 
 interface PromoteStudentsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPromote: () => Promise<boolean>;
+  onPromote: (currentSemester: number) => Promise<boolean>;
 }
 
 const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsModalProps) => {
   const [isPromoting, setIsPromoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [promotionType, setPromotionType] = useState(1); // 1: sem1->2, 2: sem2->next year
   const [promotionData, setPromotionData] = useState<
     { fromYear: number; toYear?: number; status?: string; students: number; sections: number }[]
   >([]);
@@ -52,10 +55,12 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
       }
     };
 
-    if (isOpen) {
+    if (isOpen && promotionType === 2) {
       fetchPromotionSummary();
+    } else if (promotionType === 1) {
+      setPromotionData([]);
     }
-  }, [isOpen, apiBase]);
+  }, [isOpen, promotionType, apiBase]);
 
   const handleClose = () => {
     setError(null);
@@ -64,7 +69,7 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
 
   const handlePromote = async () => {
     setIsPromoting(true);
-    const success = await onPromote();
+    const success = await onPromote(promotionType);
     setIsPromoting(false);
     if (success) {
       setError(null);
@@ -80,46 +85,66 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5" />
-            Promote Students to Next Academic Year
+            Promote Students
           </DialogTitle>
           <DialogDescription>
-            This will promote all students to the next year and graduate final year students.
+            {promotionType === 1
+              ? 'This will update all students and classes to semester 2.'
+              : 'This will promote all students to the next year and graduate final year students.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Promotion Summary */}
-          <div className="bg-blue-50 p-4 rounded-lg border">
-            <h3 className="font-semibold text-blue-900 mb-2">Promotion Summary</h3>
-            <div className="space-y-2">
-              {promotionData.map((data, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm">
-                      {data.fromYear}
-                      {data.fromYear === 1 ? 'st' : data.fromYear === 2 ? 'nd' : data.fromYear === 3 ? 'rd' : 'th'} Year
-                      ({data.sections} sections)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">{data.students} students</span>
-                    <span className="text-sm">→</span>
-                    {data.status === 'Graduate' ? (
-                      <Badge variant="default" className="bg-green-100 text-green-800">
-                        Graduate
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        {data.toYear}
-                        {data.toYear === 1 ? 'st' : data.toYear === 2 ? 'nd' : data.toYear === 3 ? 'rd' : 'th'} Year
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+          {/* Promotion Type Selection */}
+          <RadioGroup
+            value={promotionType.toString()}
+            onValueChange={(value) => setPromotionType(parseInt(value))}
+            className="flex flex-col gap-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="1" id="sem1" />
+              <Label htmlFor="sem1">Semester 1 → Semester 2</Label>
             </div>
-          </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="2" id="sem2" />
+              <Label htmlFor="sem2">Semester 2 → Next Year</Label>
+            </div>
+          </RadioGroup>
+
+          {/* Promotion Summary */}
+          {promotionType === 2 && (
+            <div className="bg-blue-50 p-4 rounded-lg border">
+              <h3 className="font-semibold text-blue-900 mb-2">Promotion Summary</h3>
+              <div className="space-y-2">
+                {promotionData.map((data, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm">
+                        {data.fromYear}
+                        {data.fromYear === 1 ? 'st' : data.fromYear === 2 ? 'nd' : data.fromYear === 3 ? 'rd' : 'th'} Year
+                        ({data.sections} sections)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">{data.students} students</span>
+                      <span className="text-sm">→</span>
+                      {data.status === 'Graduate' ? (
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          Graduate
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          {data.toYear}
+                          {data.toYear === 1 ? 'st' : data.toYear === 2 ? 'nd' : data.toYear === 3 ? 'rd' : 'th'} Year
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Warning */}
           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
@@ -128,8 +153,9 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
               <div>
                 <h4 className="font-medium text-yellow-900">Important Notice</h4>
                 <p className="text-sm text-yellow-800 mt-1">
-                  This action cannot be undone. Students will be moved to their respective next year classes. 
-                  Final year students will be marked as graduated and moved to alumni records.
+                  {promotionType === 1
+                    ? 'This action cannot be undone. Students and classes will be moved to semester 2.'
+                    : 'This action cannot be undone. Students will be moved to their respective next year classes. Final year students will be marked as graduated and moved to alumni records.'}
                 </p>
               </div>
             </div>
