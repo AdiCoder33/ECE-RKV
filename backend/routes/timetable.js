@@ -49,7 +49,17 @@ router.get('/', authenticateToken, async (req, res, next) => {
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { day, time, subject, faculty, room, year, semester, section } = req.body;
-    
+
+    const clash = await executeQuery(
+      'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ?',
+      [day, time, faculty]
+    );
+    if (clash.recordset[0].cnt > 0) {
+      return res
+        .status(409)
+        .json({ message: 'Faculty already assigned to another slot at this time' });
+    }
+
     const result = await executeQuery(
       'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) OUTPUT INSERTED.id AS id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [day, time, subject, faculty, room, year, semester, section]
@@ -68,12 +78,22 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { day, time, subject, faculty, room, year, semester, section } = req.body;
-    
+
+    const clash = await executeQuery(
+      'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ? AND id <> ?',
+      [day, time, faculty, id]
+    );
+    if (clash.recordset[0].cnt > 0) {
+      return res
+        .status(409)
+        .json({ message: 'Faculty already assigned to another slot at this time' });
+    }
+
     await executeQuery(
       'UPDATE timetable SET day = ?, time = ?, subject = ?, faculty = ?, room = ?, year = ?, semester = ?, section = ? WHERE id = ?',
       [day, time, subject, faculty, room, year, semester, section, id]
     );
-    
+
     res.json({ message: 'Timetable slot updated successfully' });
   } catch (error) {
     console.error('Update timetable slot error:', error);
