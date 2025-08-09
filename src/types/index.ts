@@ -28,7 +28,6 @@ export interface Subject {
   semester: 1 | 2;
   credits: number;
   type: 'theory' | 'lab' | 'elective';
-  maxMarks: number;
 }
 
 export interface Attendance {

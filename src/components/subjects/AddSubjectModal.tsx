@@ -27,8 +27,7 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
     year: 1,
     semester: 1 as 1 | 2,
     credits: 1,
-    type: 'theory',
-    maxMarks: 100
+    type: 'theory'
   });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,8 +41,7 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
       year: 1,
       semester: 1 as 1 | 2,
       credits: 1,
-      type: 'theory',
-      maxMarks: 100
+      type: 'theory'
     });
 
     onClose();
@@ -121,7 +119,7 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="credits">Credits</Label>
               <Input
@@ -148,19 +146,6 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
                 <option value="lab">Lab</option>
                 <option value="elective">Elective</option>
               </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="maxMarks">Max Marks</Label>
-              <Input
-                id="maxMarks"
-                type="number"
-                min={50}
-                max={100}
-                value={formData.maxMarks}
-                onChange={(e) => handleInputChange('maxMarks', parseInt(e.target.value))}
-                required
-              />
             </div>
           </div>
 

@@ -41,7 +41,6 @@ CREATE TABLE subjects (
     semester int NOT NULL,
     credits int NOT NULL,
     type nvarchar(50) DEFAULT 'theory',
-    max_marks int DEFAULT 100,
     created_at datetime2 DEFAULT GETDATE()
 );
 

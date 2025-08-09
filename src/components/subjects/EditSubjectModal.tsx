@@ -32,8 +32,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
     year: 1,
     semester: 1 as 1 | 2,
     credits: 3,
-    type: 'theory',
-    maxMarks: 100
+    type: 'theory'
   });
 
   useEffect(() => {
@@ -44,8 +43,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
         year: subject.year,
         semester: subject.semester,
         credits: subject.credits,
-        type: subject.type,
-        maxMarks: subject.maxMarks
+        type: subject.type
       });
     }
   }, [subject]);
@@ -162,20 +160,6 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
             </Select>
           </div>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="maxMarks" className="text-right">Max Marks</Label>
-            <Input
-              id="maxMarks"
-              type="number"
-              min="25"
-              max="100"
-              value={formData.maxMarks}
-              onChange={(e) => setFormData({ ...formData, maxMarks: parseInt(e.target.value) })}
-              className="col-span-3"
-              required
-            />
-          </div>
-
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
