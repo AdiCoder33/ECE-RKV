@@ -41,6 +41,35 @@ router.get('/', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get promotion summary by year
+router.get('/promotion-summary', authenticateToken, async (req, res, next) => {
+  try {
+    const query = `
+      SELECT year,
+             COUNT(*) AS student_count,
+             COUNT(DISTINCT section) AS section_count
+      FROM users
+      WHERE role = 'student'
+      GROUP BY year
+      ORDER BY year
+    `;
+
+    const result = await executeQuery(query);
+    const summary = result.recordset || [];
+
+    res.json(
+      summary.map(row => ({
+        year: row.year,
+        students: row.student_count,
+        sections: row.section_count
+      }))
+    );
+  } catch (error) {
+    console.error('Promotion summary fetch error:', error);
+    next(error);
+  }
+});
+
 // Create new class
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
