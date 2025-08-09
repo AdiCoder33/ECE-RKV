@@ -1,6 +1,7 @@
 -- MSSQL Database Schema for College Management System
 
 -- Users table
+-- For existing deployments, run: ALTER TABLE users ADD semester INT NULL;
 CREATE TABLE users (
     id int IDENTITY(1,1) PRIMARY KEY,
     name nvarchar(255) NOT NULL,
@@ -9,6 +10,7 @@ CREATE TABLE users (
     role nvarchar(50) NOT NULL CHECK (role IN ('admin', 'hod', 'professor', 'student', 'alumni')),
     department nvarchar(100),
     year int,
+    semester int,
     section nvarchar(10),
     roll_number nvarchar(50) UNIQUE,
     phone nvarchar(20),

@@ -7,12 +7,13 @@ const router = express.Router();
 // Get all students with filtering
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { classId, year, section } = req.query;
+    const { classId, year, semester, section } = req.query;
     
     let query = `
       SELECT 
         u.*,
         c.year as class_year,
+        c.semester as class_semester,
         c.section as class_section,
         AVG(CAST(a.status AS int)) * 100 as attendance_percentage,
         ar.cgpa
@@ -35,13 +36,18 @@ router.get('/', authenticateToken, async (req, res, next) => {
       query += ' AND u.year = ?';
       params.push(year);
     }
-    
+
+    if (semester) {
+      query += ' AND u.semester = ?';
+      params.push(semester);
+    }
+
     if (section) {
       query += ' AND u.section = ?';
       params.push(section);
     }
     
-    query += ' GROUP BY u.id, u.name, u.email, u.role, u.department, u.year, u.section, u.roll_number, u.phone, u.date_of_birth, u.address, u.parent_contact, u.blood_group, u.admission_year, u.profile_image, c.year, c.section, ar.cgpa ORDER BY u.year, u.section, u.roll_number';
+    query += ' GROUP BY u.id, u.name, u.email, u.role, u.department, u.year, u.semester, u.section, u.roll_number, u.phone, u.date_of_birth, u.address, u.parent_contact, u.blood_group, u.admission_year, u.profile_image, c.year, c.semester, c.section, ar.cgpa ORDER BY u.year, u.semester, u.section, u.roll_number';
     
     const result = await executeQuery(query, params);
     const students = result.recordset || [];
@@ -53,6 +59,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       role: student.role,
       department: student.department,
       year: student.year,
+      semester: student.semester,
       section: student.section,
       rollNumber: student.roll_number,
       phone: student.phone,
@@ -89,7 +96,7 @@ router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => 
       FROM subjects s
       LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = ?
       LEFT JOIN attendance a ON a.student_id = ? AND a.subject_id = s.id
-      INNER JOIN users u ON u.id = ? AND s.year = u.year
+      INNER JOIN users u ON u.id = ? AND s.year = u.year AND s.semester = u.semester
       GROUP BY s.id, s.name, s.code, s.credits, s.type
     `, [studentId, studentId, studentId]);
     
@@ -114,14 +121,14 @@ router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => 
 // Get classmates
 router.get('/classmates', authenticateToken, async (req, res, next) => {
   try {
-    const { year, section } = req.query;
-    
-    if (!year || !section) {
-      return res.status(400).json({ error: 'Year and section are required' });
+    const { year, semester, section } = req.query;
+
+    if (!year || !semester || !section) {
+      return res.status(400).json({ error: 'Year, semester, and section are required' });
     }
-    
+
     const result = await executeQuery(`
-      SELECT 
+      SELECT
         u.id,
         u.name,
         u.email,
@@ -131,10 +138,10 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
         AVG(CASE WHEN a.status = 'present' THEN 1.0 ELSE 0.0 END) * 100 as attendance_percentage
       FROM users u
       LEFT JOIN attendance a ON u.id = a.student_id
-      WHERE u.role = ? AND u.year = ? AND u.section = ?
+      WHERE u.role = ? AND u.year = ? AND u.semester = ? AND u.section = ?
       GROUP BY u.id, u.name, u.email, u.roll_number, u.phone, u.profile_image
       ORDER BY u.roll_number
-    `, ['student', year, section]);
+    `, ['student', year, semester, section]);
     
     const classmates = result.recordset || [];
     res.json(classmates.map(student => ({
