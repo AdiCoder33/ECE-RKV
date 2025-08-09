@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Clock, Calendar, BookOpen, MapPin, User, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 interface TimeSlot {
   id: string;
   day: string;
@@ -37,7 +39,7 @@ const StudentTimetable = () => {
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`/api/timetable?year=${studentYear}&semester=${studentSemester}&section=${studentSection}`, {
+      const response = await fetch(`${apiBase}/timetable?year=${studentYear}&semester=${studentSemester}&section=${studentSection}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
