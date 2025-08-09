@@ -227,7 +227,7 @@ const UserManagement = () => {
       Role: user.role,
       Department: user.department ?? '',
       Year: user.year ?? '',
-      Semester: user.semester ?? '',
+      Semester: user.semester ?? '', // include semester in export
       Section: user.section ?? '',
       RollNumber: user.rollNumber ?? '',
       Phone: user.phone ?? '',
