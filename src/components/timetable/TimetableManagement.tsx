@@ -157,7 +157,11 @@ const TimetableManagement = () => {
         setTimetable(data);
       }
     } catch (error) {
-      console.error('Error fetching timetable:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load timetable data",
+      });
       // Mock data for demo
       setTimetable([
         {
@@ -201,7 +205,11 @@ const TimetableManagement = () => {
         setSubjects(data);
       }
     } catch (error) {
-      console.error('Error fetching subjects:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load timetable data",
+      });
       // Mock data
       setSubjects([
         { id: '1', name: 'Digital Signal Processing', code: 'ECE301' },
@@ -224,7 +232,11 @@ const TimetableManagement = () => {
         setProfessors(mapped);
       }
     } catch (error) {
-      console.error('Error fetching professors:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load timetable data",
+      });
       // Mock data
       setProfessors([
         { id: '1', name: 'Dr. Rajesh Kumar' },
