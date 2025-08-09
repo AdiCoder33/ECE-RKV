@@ -320,7 +320,6 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         JOIN classes curr ON sc.class_id = curr.id
         JOIN classes nextc ON nextc.year = curr.year + 1
                            AND nextc.section = curr.section
-                           AND nextc.department = curr.department
         JOIN users u ON sc.student_id = u.id
         WHERE u.role = 'student' AND curr.year BETWEEN 1 AND 3;
       `);
