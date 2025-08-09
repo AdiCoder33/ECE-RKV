@@ -1,12 +1,14 @@
 const express = require('express');
-const { executeQuery } = require('../config/database');
+const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all subjects
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(`
+    const { year, semester } = req.query;
+
+    let query = `
       SELECT s.id,
              s.name,
              s.code,
@@ -16,9 +18,22 @@ router.get('/', authenticateToken, async (req, res, next) => {
              s.type,
              s.created_at
       FROM subjects s
-      ORDER BY s.year, s.semester, s.name
-    `);
-    res.json(result.recordset);
+    `;
+
+    if (year && semester) {
+      const pool = await connectDB();
+      const request = pool
+        .request()
+        .input('year', sql.Int, Number(year))
+        .input('semester', sql.Int, Number(semester));
+      const result = await request.query(
+        query + ' WHERE s.year = @year AND s.semester = @semester ORDER BY s.year, s.semester, s.name'
+      );
+      res.json(result.recordset);
+    } else {
+      const result = await executeQuery(query + ' ORDER BY s.year, s.semester, s.name');
+      res.json(result.recordset);
+    }
   } catch (error) {
     console.error('Subjects fetch error:', error);
     next(error);
