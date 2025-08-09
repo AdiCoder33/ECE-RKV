@@ -365,7 +365,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         UPDATE users
         SET year = year + 1,
             semester = 1
-        WHERE role = 'student';
+        WHERE role = 'student' AND semester = 2;
       `);
 
       // Move promoted students to next year's semester 1 classes
@@ -378,7 +378,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
                            AND nextc.section = curr.section
                            AND nextc.semester = 1
         JOIN users u ON sc.student_id = u.id
-        WHERE u.role = 'student' AND curr.semester = 2;
+        WHERE u.role = 'student' AND u.semester = 1 AND curr.semester = 2;
       `);
 
       await new sql.Request(transaction).query(
