@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ interface AddSubjectModalProps {
   onAddSubject: (subject: Omit<Subject, 'id'>) => Promise<void>;
 }
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps) => {
   const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
@@ -32,24 +34,37 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
     type: 'theory',
     maxMarks: 100
   });
+  const [professors, setProfessors] = useState<Array<{ id: string; name: string }>>([]);
 
-  const professors = [
-    { id: '1', name: 'Prof. John Doe' },
-    { id: '2', name: 'Prof. Priya Sharma' },
-    { id: '3', name: 'Prof. Amit Kumar' },
-    { id: '4', name: 'Prof. Neha Gupta' },
-    { id: '5', name: 'Prof. Ravi Patel' },
-  ];
+  useEffect(() => {
+    const fetchProfessors = async () => {
+      try {
+        const response = await fetch(`${apiBase}/users?role=professor`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch professors');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        setProfessors(
+          data.map((p) => ({
+            id: String(p.id ?? ''),
+            name: String(p.name ?? ''),
+          }))
+        );
+      } catch (err) {
+        console.error('Error fetching professors:', err);
+      }
+    };
+    fetchProfessors();
+  }, []);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.professorId) return;
 
-    const selectedProfessor = professors.find(p => p.id === formData.professorId);
-    if (!selectedProfessor) return;
-
-    await onAddSubject({
-      ...formData,
-      professorName: selectedProfessor.name
-    });
+    await onAddSubject(formData);
 
     // Reset form
     setFormData({
@@ -187,7 +202,15 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
             <select
               id="professor"
               value={formData.professorId}
-              onChange={(e) => handleInputChange('professorId', e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                const prof = professors.find(p => p.id === value);
+                setFormData(prev => ({
+                  ...prev,
+                  professorId: value,
+                  professorName: prof ? prof.name : '',
+                }));
+              }}
               className="w-full p-2 border rounded-md bg-background"
               required
             >
