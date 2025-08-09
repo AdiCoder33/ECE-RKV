@@ -102,7 +102,13 @@ function mockHandleQuery(state, q) {
     q.startsWith('INSERT INTO classes (year, semester, section, hod_id)') &&
     q.includes('SELECT 1, 1, s.section, NULL')
   ) {
-    const sections = Array.from(new Set(state.classes.map(c => c.section)));
+    const sections = Array.from(
+      new Set(
+        state.classes
+          .filter(c => c.section !== 'GRADUATED' && c.year <= 4)
+          .map(c => c.section)
+      )
+    );
     let count = 0;
     sections.forEach(section => {
       if (!state.classes.some(c => c.year === 1 && c.semester === 1 && c.section === section)) {
@@ -164,11 +170,21 @@ describe('class promotion', () => {
     await request(app).post('/classes/promote').send({ currentSemester: 2 }).expect(200);
 
     expect(mockDbState.classes.filter(c => c.year === 5).length).toBe(1);
+    expect(
+      mockDbState.classes.some(
+        c => c.year === 1 && c.semester === 1 && c.section === 'GRADUATED'
+      )
+    ).toBe(false);
 
     await request(app).post('/classes/promote').send({ currentSemester: 2 }).expect(200);
 
     expect(mockDbState.classes.some(c => c.year >= 6)).toBe(false);
     expect(mockDbState.classes.filter(c => c.year === 5).length).toBe(0);
+    expect(
+      mockDbState.classes.some(
+        c => c.year === 1 && c.semester === 1 && c.section === 'GRADUATED'
+      )
+    ).toBe(false);
   });
 });
 
