@@ -56,6 +56,11 @@ const SubjectManagement = () => {
         setSubjects(mapped);
       } catch (error) {
         console.error('Error fetching subjects:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load subjects",
+        });
       }
     };
     fetchSubjects();
