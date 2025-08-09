@@ -36,6 +36,7 @@ const initialForm = {
 
 const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: UserModalProps) => {
   const [formData, setFormData] = useState(initialForm);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,6 +59,12 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (formData.role === 'student' && isNaN(Number(formData.semester))) {
+      setValidationError('Semester is required');
+      return;
+    }
+    setValidationError(null);
+
     try {
       const payload: Omit<User, 'id'> & { id?: string; password?: string } = {
         name: formData.name,
@@ -79,6 +86,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
       await onSubmit(payload);
 
       setFormData(initialForm);
+      setValidationError(null);
     } catch {
       // error handled via prop
     }
@@ -171,7 +179,9 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                 <Label htmlFor="year">Year</Label>
                 <Select
                   value={formData.year?.toString()}
-                  onValueChange={(value) => handleInputChange('year', parseInt(value))}
+                  onValueChange={(value) =>
+                    handleInputChange('year', value ? parseInt(value) : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select year" />
@@ -189,7 +199,9 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                 <Label htmlFor="semester">Semester</Label>
                 <Select
                   value={formData.semester?.toString()}
-                  onValueChange={(value) => handleInputChange('semester', parseInt(value))}
+                  onValueChange={(value) =>
+                    handleInputChange('semester', value ? parseInt(value) : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select semester" />
@@ -223,7 +235,9 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
             </div>
           )}
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {(error || validationError) && (
+            <p className="text-red-500 text-sm">{validationError ?? error}</p>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
