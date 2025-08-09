@@ -157,23 +157,24 @@ CREATE TABLE timetable (
     faculty nvarchar(100) NOT NULL,
     room nvarchar(50) NOT NULL,
     year int NOT NULL,
+    semester int NOT NULL CHECK (semester IN (1,2)),
     section nvarchar(10) NOT NULL,
     created_at datetime2 DEFAULT GETDATE()
 );
 
 -- Insert demo timetable data
-INSERT INTO timetable (day, time, subject, faculty, room, year, section) VALUES
-('Monday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Monday', '11:00-12:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
-('Monday', '14:00-15:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
-('Tuesday', '10:00-11:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Tuesday', '13:00-14:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
-('Wednesday', '09:00-10:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
-('Wednesday', '11:00-12:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Thursday', '10:00-11:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
-('Thursday', '15:00-16:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
-('Friday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Friday', '14:00-15:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B');
+INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) VALUES
+('Monday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Monday', '11:00-12:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B'),
+('Monday', '14:00-15:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 1, 'A'),
+('Tuesday', '10:00-11:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Tuesday', '13:00-14:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B'),
+('Wednesday', '09:00-10:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 1, 'A'),
+('Wednesday', '11:00-12:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Thursday', '10:00-11:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B'),
+('Thursday', '15:00-16:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 1, 'A'),
+('Friday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Friday', '14:00-15:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B');
 
 -- Create indexes for better performance
 CREATE INDEX idx_users_role ON users(role);
@@ -183,7 +184,7 @@ CREATE INDEX idx_users_year_sem_section ON users(year, semester, section);
 CREATE INDEX idx_attendance_student_date ON attendance(student_id, date);
 CREATE INDEX idx_marks_student_subject ON marks(student_id, subject_id);
 CREATE INDEX idx_chat_messages_group ON chat_messages(group_id);
-CREATE INDEX idx_timetable_year_section ON timetable(year, section);
+CREATE INDEX idx_timetable_year_semester_section ON timetable(year, semester, section);
 
 -- Internal Marks table
 CREATE TABLE InternalMarks (

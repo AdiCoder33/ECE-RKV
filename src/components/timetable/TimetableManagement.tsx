@@ -304,7 +304,10 @@ const TimetableManagement = () => {
     }
   };
 
-  const handleEditSlot = async (slotId: string, updatedData: unknown) => {
+  const handleEditSlot = async (slotId: string, updatedData: Slot) => {
+    const slot = timetable.find(s => s.id === slotId);
+    if (!slot) return;
+
     try {
       const response = await fetch(`/api/timetable/${slotId}`, {
         method: 'PUT',
@@ -312,7 +315,14 @@ const TimetableManagement = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify({
+          day: slot.day,
+          time: slot.time,
+          year: slot.year,
+          semester: slot.semester,
+          section: slot.section,
+          ...updatedData
+        })
       });
 
       if (response.ok) {
