@@ -10,7 +10,7 @@ CREATE TABLE users (
     role nvarchar(50) NOT NULL CHECK (role IN ('admin', 'hod', 'professor', 'student', 'alumni')),
     department nvarchar(100),
     year int,
-    semester int,
+    semester int CHECK (semester IN (1,2) OR semester IS NULL),
     section nvarchar(10),
     roll_number nvarchar(50) UNIQUE,
     phone nvarchar(20),
@@ -46,7 +46,7 @@ CREATE TABLE subjects (
 CREATE TABLE classes (
     id int IDENTITY(1,1) PRIMARY KEY,
     year int NOT NULL,
-    semester int NOT NULL,
+    semester int NOT NULL CHECK (semester IN (1,2)),
     section nvarchar(10) NOT NULL,
     department nvarchar(100) NOT NULL,
     hod_id int,
