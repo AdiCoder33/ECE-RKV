@@ -131,12 +131,6 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
               <SelectContent>
                 <SelectItem value="1">1st Semester</SelectItem>
                 <SelectItem value="2">2nd Semester</SelectItem>
-                <SelectItem value="3">3rd Semester</SelectItem>
-                <SelectItem value="4">4th Semester</SelectItem>
-                <SelectItem value="5">5th Semester</SelectItem>
-                <SelectItem value="6">6th Semester</SelectItem>
-                <SelectItem value="7">7th Semester</SelectItem>
-                <SelectItem value="8">8th Semester</SelectItem>
               </SelectContent>
             </Select>
           </div>
