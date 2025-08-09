@@ -21,7 +21,11 @@ router.get('/', authenticateToken, async (req, res, next) => {
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { name, email, password, role, department, year, semester, section, rollNumber, phone } = req.body;
-    
+
+    if (role === 'student' && (semester === undefined || typeof semester !== 'number' || isNaN(semester))) {
+      return res.status(400).json({ error: 'Semester must be a number' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const result = await executeQuery(
