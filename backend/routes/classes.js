@@ -377,47 +377,49 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
   }
 });
 
-// Initialize default classes (4 years, 5 sections each)
-router.post('/initialize', authenticateToken, async (req, res, next) => {
-  try {
-    const classes = [];
-    
-    // Create classes for 4 years (1-4) and 5 sections (A-E)
-    for (let year = 1; year <= 4; year++) {
-      for (let sectionIndex = 0; sectionIndex < 5; sectionIndex++) {
-        const section = String.fromCharCode(65 + sectionIndex); // A, B, C, D, E
-        
-        // Check if class already exists
-        const existingResult = await executeQuery(
-          'SELECT id FROM classes WHERE year = ? AND section = ?',
-          [year, section]
-        );
+  // Initialize default classes (4 years, 5 sections, 2 semesters each)
+  router.post('/initialize', authenticateToken, async (req, res, next) => {
+    try {
+      const classes = [];
 
-        if (existingResult.recordset.length === 0) {
-          const insertResult = await executeQuery(
-            'INSERT INTO classes (year, semester, section) OUTPUT INSERTED.id VALUES (?, ?, ?)',
-            [year, year * 2 - 1, section] // Semester is calculated as year*2-1 for odd semester
-          );
+      // Create classes for years 1-4, sections A-E, semesters 1 and 2
+      for (let year = 1; year <= 4; year++) {
+        for (let sectionIndex = 0; sectionIndex < 5; sectionIndex++) {
+          const section = String.fromCharCode(65 + sectionIndex); // A, B, C, D, E
 
-          classes.push({
-            id: insertResult.recordset[0].id,
-            year,
-            semester: year * 2 - 1,
-            section,
-            totalStrength: 0
-          });
+          for (let semester = 1; semester <= 2; semester++) {
+            // Check if class already exists
+            const existingResult = await executeQuery(
+              'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
+              [year, semester, section]
+            );
+
+            if (existingResult.recordset.length === 0) {
+              const insertResult = await executeQuery(
+                'INSERT INTO classes (year, semester, section) OUTPUT INSERTED.id VALUES (?, ?, ?)',
+                [year, semester, section]
+              );
+
+              classes.push({
+                id: insertResult.recordset[0].id,
+                year,
+                semester,
+                section,
+                totalStrength: 0
+              });
+            }
+          }
         }
       }
+
+      res.json({
+        message: 'Default classes initialized successfully',
+        createdClasses: classes.length
+      });
+    } catch (error) {
+      console.error('Initialize classes error:', error);
+      next(error);
     }
-    
-    res.json({
-      message: 'Default classes initialized successfully',
-      createdClasses: classes.length
-    });
-  } catch (error) {
-    console.error('Initialize classes error:', error);
-    next(error);
-  }
-});
+  });
 
 module.exports = router;
