@@ -304,7 +304,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
 
     try {
       if (semester === 1) {
-        // Move all students and classes to semester 2
+        // Move all students to semester 2 and reassign them to matching classes
         const promotedResult = await new sql.Request(transaction).query(`
           UPDATE users
           SET semester = 2
@@ -312,9 +312,15 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         `);
 
         await new sql.Request(transaction).query(`
-          UPDATE classes
-          SET semester = 2
-          WHERE semester = 1;
+          UPDATE sc
+          SET class_id = nextc.id
+          FROM student_classes sc
+          JOIN classes curr ON sc.class_id = curr.id
+          JOIN classes nextc ON nextc.year = curr.year
+                             AND nextc.section = curr.section
+                             AND nextc.semester = 2
+          JOIN users u ON sc.student_id = u.id
+          WHERE u.role = 'student' AND curr.semester = 1;
         `);
 
         await transaction.commit();
