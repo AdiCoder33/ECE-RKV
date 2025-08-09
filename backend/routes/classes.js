@@ -411,7 +411,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
       await new sql.Request(transaction).query(`
         INSERT INTO classes (year, semester, section, hod_id)
         SELECT 1, 1, s.section, NULL
-        FROM (SELECT DISTINCT section FROM classes) s
+        FROM (SELECT DISTINCT section FROM classes WHERE section <> 'GRADUATED' AND year <= 4) s
         WHERE NOT EXISTS (
           SELECT 1 FROM classes c2
           WHERE c2.year = 1 AND c2.semester = 1 AND c2.section = s.section
