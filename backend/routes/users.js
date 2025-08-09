@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const { role } = req.query;
-    let query = 'SELECT id, name FROM users';
+    let query = 'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, created_at FROM users';
     const params = [];
     if (role) {
       query += ' WHERE role = ?';
