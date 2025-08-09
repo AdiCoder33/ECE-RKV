@@ -51,11 +51,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const { day, time, subject, faculty, room, year, semester, section } = req.body;
     
     const result = await executeQuery(
-      'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) OUTPUT INSERTED.id AS id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [day, time, subject, faculty, room, year, semester, section]
     );
-    
-    res.status(201).json({ id: result.recordset[0].id, message: 'Timetable slot created successfully' });
+
+    const newId = result.recordset?.[0]?.id;
+    res.status(201).json({ id: newId, message: 'Timetable slot created successfully' });
   } catch (error) {
     console.error('Create timetable slot error:', error);
     next(error);
