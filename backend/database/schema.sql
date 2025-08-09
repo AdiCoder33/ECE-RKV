@@ -52,7 +52,7 @@ CREATE TABLE subjects (
 --   ALTER TABLE classes ADD semester INT NOT NULL DEFAULT 1;
 --   -- Drop existing unique constraint on (year, section, department) before adding the new one
 --   ALTER TABLE classes DROP CONSTRAINT UQ_classes_year_section_department;
---   ALTER TABLE classes ADD CONSTRAINT UQ_classes_year_semester_section_department UNIQUE (year, semester, section, department);
+--   ALTER TABLE classes ADD CONSTRAINT UQ_classes_year_semester_section UNIQUE (year, semester, section);
 CREATE TABLE classes (
     id int IDENTITY(1,1) PRIMARY KEY,
     year int NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE classes (
     hod_id int,
     created_at datetime2 DEFAULT GETDATE(),
     FOREIGN KEY (hod_id) REFERENCES users(id),
-    UNIQUE(year, semester, section, department)
+    UNIQUE(year, semester, section)
 );
 
 -- Student Classes table
