@@ -324,6 +324,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
           JOIN classes nextc ON nextc.year = curr.year
                              AND nextc.section = curr.section
                              AND nextc.semester = 2
+                             AND nextc.department = curr.department
           JOIN users u ON sc.student_id = u.id
           WHERE u.role = 'student' AND curr.semester = 1;
         `);
@@ -377,6 +378,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         JOIN classes nextc ON nextc.year = curr.year + 1
                            AND nextc.section = curr.section
                            AND nextc.semester = 1
+                           AND nextc.department = curr.department
         JOIN users u ON sc.student_id = u.id
         WHERE u.role = 'student' AND u.semester = 1 AND curr.semester = 2;
       `);
@@ -398,11 +400,12 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
       } catch (rollbackError) {
         console.error('Rollback failed:', rollbackError);
       }
+      console.error('Promotion transaction error:', error);
       throw error;
     }
   } catch (error) {
     console.error('Promote students error:', error);
-    next(error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
