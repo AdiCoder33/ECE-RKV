@@ -104,6 +104,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       if (!Number.isInteger(u.semester) || u.semester <= 0) {
         errs.push('semester must be a positive integer');
       }
+      if (u.role === 'student' && u.semester !== undefined && u.semester !== 1 && u.semester !== 2) {
+        errs.push('semester must be 1 or 2');
+      }
       if (!u.section || !u.section.trim()) {
         errs.push('section is required');
       }
