@@ -13,12 +13,12 @@ router.get('/', authenticateToken, async (req, res, next) => {
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
-        SELECT year, section, COUNT(*) AS total_strength
+        SELECT year, semester, section, COUNT(*) AS total_strength
         FROM users
         WHERE role = 'student'
-        GROUP BY year, section
-      ) s ON c.year = s.year AND c.section = s.section
-      ORDER BY c.year, c.section
+        GROUP BY year, semester, section
+      ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
+      ORDER BY c.year, c.semester, c.section
     `;
     
     const result = await executeQuery(query);
@@ -96,10 +96,10 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const newId = insertResult.recordset[0].id;
 
-    // Link existing students of the same year and section to this class
+    // Link existing students of the same year, semester, and section to this class
     await executeQuery(
-      "INSERT INTO student_classes (class_id, student_id) SELECT ?, id FROM users WHERE role='student' AND year=? AND section=?",
-      [newId, year, section]
+      "INSERT INTO student_classes (class_id, student_id) SELECT ?, id FROM users WHERE role='student' AND year=? AND semester=? AND section=?",
+      [newId, year, semester, section]
     );
 
     // Fetch the created class
@@ -111,11 +111,11 @@ router.post('/', authenticateToken, async (req, res, next) => {
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
-        SELECT year, section, COUNT(*) AS total_strength
+        SELECT year, semester, section, COUNT(*) AS total_strength
         FROM users
         WHERE role = 'student'
-        GROUP BY year, section
-      ) s ON c.year = s.year AND c.section = s.section
+        GROUP BY year, semester, section
+      ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
       WHERE c.id = ?
     `,
       [newId]
@@ -152,11 +152,11 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
-        SELECT year, section, COUNT(*) AS total_strength
+        SELECT year, semester, section, COUNT(*) AS total_strength
         FROM users
         WHERE role = 'student'
-        GROUP BY year, section
-      ) s ON c.year = s.year AND c.section = s.section
+        GROUP BY year, semester, section
+      ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
       WHERE c.id = ?
     `;
 
