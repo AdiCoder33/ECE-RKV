@@ -302,6 +302,23 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
     await transaction.begin();
 
     try {
+      // Convert any existing fifth-year students to alumni before promotion
+      await new sql.Request(transaction).query(`
+        UPDATE users
+        SET role = 'alumni',
+            year = NULL,
+            semester = NULL,
+            section = NULL
+        WHERE role = 'student' AND year = 5;
+      `);
+
+      await new sql.Request(transaction).query(`
+        DELETE sc
+        FROM student_classes sc
+        JOIN users u ON sc.student_id = u.id
+        WHERE u.role = 'alumni';
+      `);
+
       if (semester === 1) {
         // Move all semester 1 classes and students to semester 2
         await new sql.Request(transaction).query(`
@@ -325,7 +342,15 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         });
       }
 
-      // Move all semester 2 classes to next year semester 1
+      // Move final year semester 2 classes to graduated year 5 semester 1
+      await new sql.Request(transaction).query(`
+        UPDATE classes
+        SET year = 5,
+            semester = 1
+        WHERE year = 4 AND semester = 2;
+      `);
+
+      // Move remaining semester 2 classes to next year semester 1
       await new sql.Request(transaction).query(`
         UPDATE classes
         SET year = year + 1,
@@ -333,23 +358,13 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         WHERE semester = 2;
       `);
 
-      // Graduate final year students (semester 2)
+      // Mark final year students as graduated but keep as students
       const graduatedResult = await new sql.Request(transaction).query(`
         UPDATE users
-        SET role = 'alumni',
-            graduation_year = YEAR(GETDATE()),
-            year = NULL,
-            semester = NULL,
-            section = NULL
+        SET year = 5,
+            semester = 1,
+            graduation_year = YEAR(GETDATE())
         WHERE role = 'student' AND year = 4 AND semester = 2;
-      `);
-
-      // Remove class mappings for alumni
-      await new sql.Request(transaction).query(`
-        DELETE sc
-        FROM student_classes sc
-        JOIN users u ON sc.student_id = u.id
-        WHERE u.role = 'alumni';
       `);
 
       // Promote remaining students to next year, semester 1
