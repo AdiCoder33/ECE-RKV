@@ -282,7 +282,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
     try {
       // Get all students in years 1-3
       const studentsResult = await runQuery(`
-        SELECT u.*, c.id as class_id, c.year, c.section
+        SELECT u.id, u.year, u.section, u.department, u.roll_number, c.id as class_id
         FROM users u
         JOIN student_classes sc ON u.id = sc.student_id
         JOIN classes c ON sc.class_id = c.id
@@ -310,8 +310,8 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
 
         // Move student to the corresponding class for the next year
         const nextClassResult = await runQuery(
-          'SELECT id FROM classes WHERE year = ? AND section = ?',
-          [student.year + 1, student.section]
+          'SELECT id FROM classes WHERE year = ? AND section = ? AND department = ?',
+          [student.year + 1, student.section, student.department]
         );
         if (nextClassResult.recordset.length > 0) {
           const nextClassId = nextClassResult.recordset[0].id;
