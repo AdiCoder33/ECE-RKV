@@ -27,7 +27,7 @@ interface TimeSlot {
   faculty: string;
   room: string;
   year: number;
-  semester: number;
+  semester: 1 | 2;
   section: string;
 }
 
@@ -49,7 +49,7 @@ const TimetableManagement = () => {
     faculty: '',
     room: '',
     year: 3,
-    semester: 1,
+    semester: 1 as 1 | 2,
     section: 'A'
   });
 
@@ -172,7 +172,7 @@ const TimetableManagement = () => {
         body: JSON.stringify({
           ...newSlot,
           year: parseInt(selectedYear),
-          semester: parseInt(selectedSemester),
+          semester: parseInt(selectedSemester) as 1 | 2,
           section: selectedSection
         })
       });

@@ -27,7 +27,7 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     year: 1,
-    semester: 1,
+    semester: 1 as 1 | 2,
     section: 'A',
     subjects: [],
     students: [],
@@ -97,7 +97,7 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
             <Select
               value={formData.semester.toString()}
               onValueChange={(value) =>
-                setFormData({ ...formData, semester: parseInt(value) })
+                setFormData({ ...formData, semester: parseInt(value) as 1 | 2 })
               }
             >
               <SelectTrigger className="col-span-3">
