@@ -282,19 +282,49 @@ router.delete('/:classId', authenticateToken, async (req, res, next) => {
 // Promote students to next year
 router.post('/promote', authenticateToken, async (req, res, next) => {
   try {
+    let semester = parseInt(req.body?.currentSemester, 10);
+    if (![1, 2].includes(semester)) {
+      const result = await executeQuery('SELECT TOP 1 semester FROM classes');
+      semester = result.recordset?.[0]?.semester || 1;
+    }
+
     const pool = await connectDB();
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
 
     try {
-      // Graduate final year students
+      if (semester === 1) {
+        // Move all students and classes to semester 2
+        const promotedResult = await new sql.Request(transaction).query(`
+          UPDATE users
+          SET semester = 2
+          WHERE role = 'student' AND semester = 1;
+        `);
+
+        await new sql.Request(transaction).query(`
+          UPDATE classes
+          SET semester = 2
+          WHERE semester = 1;
+        `);
+
+        await transaction.commit();
+
+        return res.json({
+          message: 'Students moved to semester 2',
+          promoted: promotedResult.rowsAffected[0],
+          graduated: 0
+        });
+      }
+
+      // Graduate final year students (semester 2)
       const graduatedResult = await new sql.Request(transaction).query(`
         UPDATE users
         SET role = 'alumni',
             graduation_year = YEAR(GETDATE()),
             year = NULL,
+            semester = NULL,
             section = NULL
-        WHERE role = 'student' AND year = 4;
+        WHERE role = 'student' AND year = 4 AND semester = 2;
       `);
 
       // Remove class mappings for alumni
@@ -305,14 +335,15 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         WHERE u.role = 'alumni';
       `);
 
-      // Promote remaining students (years 1-3)
+      // Promote remaining students to next year, semester 1
       const promotedResult = await new sql.Request(transaction).query(`
         UPDATE users
-        SET year = year + 1
-        WHERE role = 'student' AND year BETWEEN 1 AND 3;
+        SET year = year + 1,
+            semester = 1
+        WHERE role = 'student';
       `);
 
-      // Move promoted students to next year's classes
+      // Move promoted students to next year's semester 1 classes
       await new sql.Request(transaction).query(`
         UPDATE sc
         SET class_id = nextc.id
@@ -320,8 +351,9 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         JOIN classes curr ON sc.class_id = curr.id
         JOIN classes nextc ON nextc.year = curr.year + 1
                            AND nextc.section = curr.section
+                           AND nextc.semester = 1
         JOIN users u ON sc.student_id = u.id
-        WHERE u.role = 'student' AND curr.year BETWEEN 1 AND 3;
+        WHERE u.role = 'student' AND curr.semester = 2;
       `);
 
       await transaction.commit();
