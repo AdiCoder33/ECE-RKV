@@ -256,109 +256,60 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
     const pool = await connectDB();
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
-    const runQuery = async (query, params = []) => {
-      let finalQuery = query;
-      const request = new sql.Request(transaction);
-      params.forEach((param, index) => {
-        if (param === null || param === undefined) {
-          request.input(`param${index}`, sql.NVarChar, null);
-        } else {
-          request.input(`param${index}`, param);
-        }
-        finalQuery = finalQuery.replace('?', `@param${index}`);
-      });
-      console.log('Executing query:', finalQuery, 'with params:', params);
-      try {
-        const result = await request.query(finalQuery);
-        console.log('Query succeeded');
-        return result;
-      } catch (err) {
-        console.error('Query failed:', finalQuery, err);
-        throw err;
-      }
-    };
 
-    let originalError;
     try {
-      // Get all students in years 1-3
-      const studentsResult = await runQuery(`
-        SELECT u.id, u.year, u.section, u.department, u.roll_number, c.id as class_id
-        FROM users u
-        JOIN student_classes sc ON u.id = sc.student_id
-        JOIN classes c ON sc.class_id = c.id
-        WHERE u.role = 'student' AND u.year IN (1, 2, 3)
-        ORDER BY u.year, u.section, u.roll_number
+      // Graduate final year students
+      const graduatedResult = await new sql.Request(transaction).query(`
+        UPDATE users
+        SET role = 'alumni',
+            graduation_year = YEAR(GETDATE()),
+            year = NULL,
+            section = NULL
+        WHERE role = 'student' AND year = 4;
       `);
-      const studentsToPromote = studentsResult.recordset;
 
-      // Get final year students (year 4) for graduation
-      const graduatingResult = await runQuery(`
-        SELECT u.*, c.id as class_id
-        FROM users u
-        JOIN student_classes sc ON u.id = sc.student_id
-        JOIN classes c ON sc.class_id = c.id
-        WHERE u.role = 'student' AND u.year = 4
+      // Remove class mappings for alumni
+      await new sql.Request(transaction).query(`
+        DELETE sc
+        FROM student_classes sc
+        JOIN users u ON sc.student_id = u.id
+        WHERE u.role = 'alumni';
       `);
-      const graduatingStudents = graduatingResult.recordset;
 
-      // Update students' years (promote 1->2, 2->3, 3->4) and their class assignments
-      for (const student of studentsToPromote) {
-        await runQuery(
-          'UPDATE users SET year = ? WHERE id = ?',
-          [student.year + 1, student.id]
-        );
+      // Promote remaining students (years 1-3)
+      const promotedResult = await new sql.Request(transaction).query(`
+        UPDATE users
+        SET year = year + 1
+        WHERE role = 'student' AND year BETWEEN 1 AND 3;
+      `);
 
-        // Move student to the corresponding class for the next year
-        const nextClassResult = await runQuery(
-          'SELECT id FROM classes WHERE year = ? AND section = ? AND department = ?',
-          [student.year + 1, student.section, student.department]
-        );
-        if (nextClassResult.recordset.length > 0) {
-          const nextClassId = nextClassResult.recordset[0].id;
-          await runQuery(
-            'UPDATE student_classes SET class_id = ? WHERE student_id = ?',
-            [nextClassId, student.id]
-          );
-        } else {
-          // If no class exists for next year, remove any existing mapping
-          await runQuery(
-            'DELETE FROM student_classes WHERE student_id = ?',
-            [student.id]
-          );
-        }
-      }
-
-      // Graduate final year students (convert to alumni)
-      for (const student of graduatingStudents) {
-        await runQuery(
-          `UPDATE users
-          SET role = 'alumni', graduation_year = YEAR(GETDATE()), year = NULL, section = NULL
-          WHERE id = ?`,
-          [student.id]
-        );
-
-        // Remove from student_classes
-        await runQuery(
-          'DELETE FROM student_classes WHERE student_id = ?',
-          [student.id]
-        );
-      }
+      // Move promoted students to next year's classes
+      await new sql.Request(transaction).query(`
+        UPDATE sc
+        SET class_id = nextc.id
+        FROM student_classes sc
+        JOIN classes curr ON sc.class_id = curr.id
+        JOIN classes nextc ON nextc.year = curr.year + 1
+                           AND nextc.section = curr.section
+                           AND nextc.department = curr.department
+        JOIN users u ON sc.student_id = u.id
+        WHERE u.role = 'student' AND curr.year BETWEEN 1 AND 3;
+      `);
 
       await transaction.commit();
 
       res.json({
         message: 'Students promoted successfully',
-        promoted: studentsToPromote.length,
-        graduated: graduatingStudents.length
+        promoted: promotedResult.rowsAffected[0],
+        graduated: graduatedResult.rowsAffected[0]
       });
     } catch (error) {
-      originalError = error;
       try {
         await transaction.rollback();
       } catch (rollbackError) {
         console.error('Rollback failed:', rollbackError);
       }
-      throw originalError;
+      throw error;
     }
   } catch (error) {
     console.error('Promote students error:', error);
