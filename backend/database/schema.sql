@@ -47,6 +47,17 @@ CREATE TABLE classes (
     UNIQUE(year, section, department)
 );
 
+-- Student Classes table
+CREATE TABLE student_classes (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    class_id int NOT NULL,
+    student_id int NOT NULL,
+    enrollment_date datetime2,
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (student_id) REFERENCES users(id),
+    UNIQUE(class_id, student_id)
+);
+
 -- Attendance table
 CREATE TABLE attendance (
     id int IDENTITY(1,1) PRIMARY KEY,
