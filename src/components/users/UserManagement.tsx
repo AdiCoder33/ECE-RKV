@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
+import {
   Users, 
   UserPlus, 
   Search, 
@@ -22,6 +22,7 @@ import {
 import { User } from '@/types';
 import UserModal from './UserModal';
 import ImportUsersModal from './ImportUsersModal';
+import { useToast } from '@/components/ui/use-toast';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -37,6 +38,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -65,10 +67,15 @@ const UserManagement = () => {
       setUsers(mapped);
     } catch (err) {
       setError((err as Error).message);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchUsers();
@@ -122,8 +129,17 @@ const UserManagement = () => {
       setIsModalOpen(false);
       setEditingUser(null);
       await fetchUsers();
+      toast({
+        title: 'Success',
+        description: 'User added successfully',
+      });
     } catch (err) {
       setModalError((err as Error).message);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
       throw err;
     }
   };
@@ -170,9 +186,25 @@ const UserManagement = () => {
         });
       }
       await fetchUsers();
+      toast({
+        title: 'Import Results',
+        description: `Inserted: ${inserted}, Updated: ${updated}`,
+      });
+      if (errors.length) {
+        toast({
+          variant: 'destructive',
+          title: 'Import Errors',
+          description: errors.join('\n'),
+        });
+      }
       return { inserted, updated, errors };
     } catch (err) {
       console.error('Import users error:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
       return { inserted: 0, updated: 0, errors: [(err as Error).message] };
     }
   };
@@ -195,9 +227,18 @@ const UserManagement = () => {
       setIsModalOpen(false);
       setEditingUser(null);
       await fetchUsers();
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+      });
     } catch (err) {
       console.error(err);
       setModalError((err as Error).message);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
       throw err;
     }
   };
@@ -215,8 +256,17 @@ const UserManagement = () => {
       }
       setUsers(prev => prev.filter(user => user.id !== id));
       await fetchUsers();
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
     } catch (err) {
       console.error(err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
     }
   };
 
