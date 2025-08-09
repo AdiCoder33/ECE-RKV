@@ -14,7 +14,6 @@ router.get('/', authenticateToken, async (req, res, next) => {
              s.semester,
              s.credits,
              s.type,
-             s.max_marks,
              s.created_at
       FROM subjects s
       ORDER BY s.year, s.semester, s.name
@@ -29,15 +28,15 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create subject
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { name, code, year, semester, credits, type, maxMarks } = req.body;
+    const { name, code, year, semester, credits, type } = req.body;
 
     if (![1, 2].includes(Number(semester))) {
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
     const result = await executeQuery(
-      'INSERT INTO subjects (name, code, year, semester, credits, type, max_marks) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, code, year, semester, credits, type, maxMarks]
+      'INSERT INTO subjects (name, code, year, semester, credits, type) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)',
+      [name, code, year, semester, credits, type]
     );
 
     const insertedId = result.recordset?.[0]?.id;
@@ -56,15 +55,15 @@ router.post('/', authenticateToken, async (req, res, next) => {
 router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, code, year, semester, credits, type, maxMarks } = req.body;
+    const { name, code, year, semester, credits, type } = req.body;
 
     if (![1, 2].includes(Number(semester))) {
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
     const result = await executeQuery(
-      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ?, max_marks = ? WHERE id = ?',
-      [name, code, year, semester, credits, type, maxMarks, id]
+      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ? WHERE id = ?',
+      [name, code, year, semester, credits, type, id]
     );
     
     if (result.rowsAffected[0] === 0) {

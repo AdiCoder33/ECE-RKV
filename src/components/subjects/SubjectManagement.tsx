@@ -52,7 +52,6 @@ const SubjectManagement = () => {
           semester: Number(s.semester ?? 1) as 1 | 2,
           credits: Number(s.credits ?? 0),
           type: (s.type ?? 'theory') as 'theory' | 'lab' | 'elective',
-          maxMarks: Number((s as Record<string, unknown>).maxMarks ?? (s as Record<string, unknown>).max_marks ?? 0),
         }));
         setSubjects(mapped);
       } catch (error) {
@@ -345,20 +344,10 @@ const SubjectManagement = () => {
                 </div>
               </div>
 
-              <div className="pt-2 border-t">
-                <p className="text-sm text-muted-foreground mb-2">Max Marks</p>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <Award className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                  <span className="text-sm font-medium">{subject.maxMarks}</span>
-                </div>
-              </div>
-
               <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="flex-1"
                   onClick={() => handleEditClick(subject)}
                 >
