@@ -3,15 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Calendar, 
-  Clock, 
-  Plus, 
+import {
+  Calendar,
+  Plus,
   Edit,
   Trash2,
   ArrowLeft,
-  BookOpen,
   Save,
   X
 } from 'lucide-react';
@@ -255,11 +252,6 @@ const TimetableManagement = () => {
     return filteredTimetable.find(slot => slot.day === day && slot.time === time);
   };
 
-  // Faculty view - show only their subjects
-  const facultyTimetable = user?.role === 'professor' 
-    ? timetable.filter(slot => slot.faculty === user.name)
-    : filteredTimetable;
-
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -268,8 +260,8 @@ const TimetableManagement = () => {
           <p className="text-muted-foreground">Manage class schedules and timetables</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => window.history.back()}
             className="w-full sm:w-auto"
           >
@@ -367,205 +359,155 @@ const TimetableManagement = () => {
         </div>
       </div>
 
-      <Tabs defaultValue={user?.role === 'professor' ? 'my-schedule' : 'view'}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="view">
-            {user?.role === 'professor' ? 'All Schedules' : 'View Timetable'}
-          </TabsTrigger>
-          <TabsTrigger value="my-schedule">
-            {user?.role === 'professor' ? 'My Schedule' : 'My Timetable'}
-          </TabsTrigger>
-        </TabsList>
+      {user?.role !== 'professor' && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium">Year</label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <label className="text-sm font-medium">Semester</label>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Sem 1</SelectItem>
+                    <SelectItem value="2">Sem 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <label className="text-sm font-medium">Section</label>
+                <Select value={selectedSection} onValueChange={setSelectedSection}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A">Section A</SelectItem>
+                    <SelectItem value="B">Section B</SelectItem>
+                    <SelectItem value="C">Section C</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        <TabsContent value="view" className="space-y-4">
-          {user?.role !== 'professor' && (
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="text-sm font-medium">Year</label>
-                    <Select value={selectedYear} onValueChange={setSelectedYear}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-sm font-medium">Semester</label>
-                    <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Sem 1</SelectItem>
-                        <SelectItem value="2">Sem 2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-sm font-medium">Section</label>
-                    <Select value={selectedSection} onValueChange={setSelectedSection}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A">Section A</SelectItem>
-                        <SelectItem value="B">Section B</SelectItem>
-                        <SelectItem value="C">Section C</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Timetable - Year {selectedYear}, Sem {selectedSemester}, Section {selectedSection}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Time</th>
-                      {days.map(day => (
-                        <th key={day} className="text-left p-3 font-medium min-w-[120px]">
-                          {day}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeSlots.map(time => (
-                      <tr key={time} className="border-b">
-                        <td className="p-3 font-medium text-sm bg-muted/30">
-                          {time}
-                        </td>
-                        {days.map(day => {
-                          const slot = getSlotForTime(day, time);
-                          const slotKey = `${day}-${time}`;
-                          const isEditing = editingSlot === slotKey;
-                          return (
-                            <td key={slotKey} className="p-2">
-                              {slot ? (
-                                <div className="bg-primary/10 rounded-lg p-2 min-h-[60px] relative group">
-                                  {isEditing ? (
-                                    <EditSlotForm 
-                                      slot={slot}
-                                      subjects={subjects}
-                                      professors={professors}
-                                      onSave={(data) => handleEditSlot(slot.id, data)}
-                                      onCancel={() => setEditingSlot(null)}
-                                    />
-                                  ) : (
-                                    <>
-                                      <div className="text-xs font-medium text-primary mb-1 break-words">
-                                        {slot.subject}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground break-words">
-                                        {slot.faculty}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground break-words">
-                                        {slot.room}
-                                      </div>
-                                      {(user?.role === 'admin' || user?.role === 'hod') && (
-                                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700"
-                                            onClick={() => setEditingSlot(slotKey)}
-                                          >
-                                            <Edit className="h-3 w-3" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                            onClick={() => handleDeleteSlot(slot.id)}
-                                          >
-                                            <Trash2 className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Timetable - Year {selectedYear}, Sem {selectedSemester}, Section {selectedSection}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-3 font-medium">Time</th>
+                  {days.map(day => (
+                    <th key={day} className="text-left p-3 font-medium min-w-[120px]">
+                      {day}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {timeSlots.map(time => (
+                  <tr key={time} className="border-b">
+                    <td className="p-3 font-medium text-sm bg-muted/30">
+                      {time}
+                    </td>
+                    {days.map(day => {
+                      const slot = getSlotForTime(day, time);
+                      const slotKey = `${day}-${time}`;
+                      const isEditing = editingSlot === slotKey;
+                      return (
+                        <td key={slotKey} className="p-2">
+                          {slot ? (
+                            <div className="bg-primary/10 rounded-lg p-2 min-h-[60px] relative group">
+                              {isEditing ? (
+                                <EditSlotForm
+                                  slot={slot}
+                                  subjects={subjects}
+                                  professors={professors}
+                                  onSave={(data) => handleEditSlot(slot.id, data)}
+                                  onCancel={() => setEditingSlot(null)}
+                                />
                               ) : (
-                                <div 
-                                  className="min-h-[60px] bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center"
-                                  onClick={() => {
-                                    if (user?.role === 'admin' || user?.role === 'hod') {
-                                      setNewSlot({ ...newSlot, day, time });
-                                      setIsAddModalOpen(true);
-                                    }
-                                  }}
-                                >
+                                <>
+                                  <div className="text-xs font-medium text-primary mb-1 break-words">
+                                    {slot.subject}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground break-words">
+                                    {slot.faculty}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground break-words">
+                                    {slot.room}
+                                  </div>
                                   {(user?.role === 'admin' || user?.role === 'hod') && (
-                                    <Plus className="h-4 w-4 text-gray-400" />
+                                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700"
+                                        onClick={() => setEditingSlot(slotKey)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                        onClick={() => handleDeleteSlot(slot.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   )}
-                                </div>
+                                </>
                               )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="my-schedule" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                My Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {facultyTimetable.map(slot => (
-                  <div key={slot.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{slot.subject}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {slot.day}, {slot.time} • Room: {slot.room}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Year {slot.year}, Section {slot.section}
-                      </p>
-                    </div>
-                  </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="min-h-[60px] bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center"
+                              onClick={() => {
+                                if (user?.role === 'admin' || user?.role === 'hod') {
+                                  setNewSlot({ ...newSlot, day, time });
+                                  setIsAddModalOpen(true);
+                                }
+                              }}
+                            >
+                              {(user?.role === 'admin' || user?.role === 'hod') && (
+                                <Plus className="h-4 w-4 text-gray-400" />
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 ))}
-                {facultyTimetable.length === 0 && (
-                  <div className="text-center py-8">
-                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No classes scheduled</h3>
-                    <p className="text-muted-foreground">
-                      Your schedule will appear here once classes are assigned.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
