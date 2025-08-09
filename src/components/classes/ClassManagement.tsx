@@ -37,7 +37,7 @@ const ClassManagement = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newClassYear, setNewClassYear] = useState(1);
-  const [newClassSemester, setNewClassSemester] = useState(1);
+  const [newClassSemester, setNewClassSemester] = useState<1 | 2>(1);
   const [newClassSection, setNewClassSection] = useState('A');
   const { toast } = useToast()
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -366,7 +366,7 @@ const ClassManagement = () => {
               <Label htmlFor="semester" className="text-right">
                 Semester
               </Label>
-              <Select onValueChange={(value) => setNewClassSemester(parseInt(value))}>
+      <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select a semester" />
                 </SelectTrigger>

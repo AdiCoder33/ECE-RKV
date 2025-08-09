@@ -11,7 +11,7 @@ interface TimeSlot {
   faculty: string;
   room: string;
   year: number;
-  semester: number;
+  semester: 1 | 2;
   section: string;
 }
 

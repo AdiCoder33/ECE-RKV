@@ -21,15 +21,15 @@ interface AddSubjectModalProps {
 }
 
 const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
     code: '',
     year: 1,
-    semester: 1,
+    semester: 1 as 1 | 2,
     credits: 1,
     professorId: '',
     professorName: '',
-    type: 'theory' as 'theory' | 'lab' | 'elective',
+    type: 'theory',
     maxMarks: 100
   });
 
@@ -57,7 +57,7 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
       name: '',
       code: '',
       year: 1,
-      semester: 1,
+      semester: 1 as 1 | 2,
       credits: 1,
       professorId: '',
       professorName: '',
@@ -129,7 +129,7 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
               <select
                 id="semester"
                 value={formData.semester}
-                onChange={(e) => handleInputChange('semester', parseInt(e.target.value))}
+                onChange={(e) => handleInputChange('semester', parseInt(e.target.value) as 1 | 2)}
                 className="w-full p-2 border rounded-md bg-background"
                 required
               >

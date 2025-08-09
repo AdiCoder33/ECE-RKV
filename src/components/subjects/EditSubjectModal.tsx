@@ -26,15 +26,15 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
   onEditSubject, 
   subject 
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
     code: '',
     year: 1,
-    semester: 1,
+    semester: 1 as 1 | 2,
     credits: 3,
     professorId: '',
     professorName: '',
-    type: 'theory' as 'theory' | 'lab' | 'elective',
+    type: 'theory',
     maxMarks: 100
   });
 
@@ -123,7 +123,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
             <Label htmlFor="semester" className="text-right">Semester</Label>
             <Select
               value={formData.semester.toString()}
-              onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) })}
+              onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) as 1 | 2 })}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue />

@@ -60,7 +60,7 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
             : undefined,
         semester:
           row[indexMap['Semester']] !== undefined && row[indexMap['Semester']] !== ''
-            ? Number(row[indexMap['Semester']])
+            ? (Number(row[indexMap['Semester']]) as 1 | 2)
             : undefined,
         section: String(row[indexMap['Section']] ?? ''),
         rollNumber: String(row[indexMap['RollNumber']] ?? ''),
@@ -75,11 +75,8 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         if (!Number.isInteger(u.year) || (u.year as number) <= 0) {
           errs.push('Year must be a positive integer');
         }
-        if (!Number.isInteger(u.semester) || (u.semester as number) <= 0) {
-          errs.push('Semester must be a positive integer');
-        }
-        if (u.role === 'student' && u.semester !== undefined && u.semester !== 1 && u.semester !== 2) {
-          errs.push('Semester must be 1 or 2 for student role');
+        if (u.semester !== undefined && u.semester !== 1 && u.semester !== 2) {
+          errs.push('Semester must be 1 or 2');
         }
         if (!u.section.trim()) {
           errs.push('Section is required');

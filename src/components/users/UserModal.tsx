@@ -22,12 +22,12 @@ interface UserModalProps {
   error?: string | null;
 }
 
-const initialForm = {
+const initialForm: Omit<User, 'id'> & { password: string } = {
   name: '',
   email: '',
-  role: 'student' as 'admin' | 'hod' | 'professor' | 'student' | 'alumni',
+  role: 'student',
   year: 1,
-  semester: 1,
+  semester: 1 as 1 | 2,
   section: 'A',
   rollNumber: '',
   phone: '',
@@ -59,7 +59,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.role === 'student' && isNaN(Number(formData.semester))) {
+    if (formData.role === 'student' && formData.semester === undefined) {
       setValidationError('Semester is required');
       return;
     }
@@ -200,7 +200,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                 <Select
                   value={formData.semester?.toString()}
                   onValueChange={(value) =>
-                    handleInputChange('semester', value ? parseInt(value) : value)
+                    handleInputChange('semester', value ? (parseInt(value) as 1 | 2) : value)
                   }
                 >
                   <SelectTrigger>
