@@ -22,6 +22,16 @@ CREATE TABLE users (
     updated_at datetime2 DEFAULT GETDATE()
 );
 
+-- Settings table
+-- Stores global configuration values like the current semester
+CREATE TABLE settings (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    current_semester int NOT NULL CHECK (current_semester IN (1,2)),
+    updated_at datetime2 DEFAULT GETDATE()
+);
+
+INSERT INTO settings (current_semester) VALUES (1);
+
 -- Subjects table
 CREATE TABLE subjects (
     id int IDENTITY(1,1) PRIMARY KEY,
