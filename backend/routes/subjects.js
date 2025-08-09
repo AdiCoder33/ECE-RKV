@@ -15,11 +15,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
              s.credits,
              s.type,
              s.max_marks,
-             u.id AS professorId,
-             u.name AS professorName,
              s.created_at
       FROM subjects s
-      LEFT JOIN users u ON s.professor_id = u.id
       ORDER BY s.year, s.semester, s.name
     `);
     res.json(result.recordset);
@@ -32,15 +29,15 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create subject
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { name, code, year, semester, credits, type, maxMarks, professorId } = req.body;
+    const { name, code, year, semester, credits, type, maxMarks } = req.body;
 
     if (![1, 2].includes(Number(semester))) {
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
     const result = await executeQuery(
-      'INSERT INTO subjects (name, code, year, semester, credits, type, max_marks, professor_id) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, code, year, semester, credits, type, maxMarks, professorId]
+      'INSERT INTO subjects (name, code, year, semester, credits, type, max_marks) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, code, year, semester, credits, type, maxMarks]
     );
 
     const insertedId = result.recordset?.[0]?.id;
@@ -59,15 +56,15 @@ router.post('/', authenticateToken, async (req, res, next) => {
 router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, code, year, semester, credits, type, maxMarks, professorId } = req.body;
+    const { name, code, year, semester, credits, type, maxMarks } = req.body;
 
     if (![1, 2].includes(Number(semester))) {
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
     const result = await executeQuery(
-      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ?, max_marks = ?, professor_id = ? WHERE id = ?',
-      [name, code, year, semester, credits, type, maxMarks, professorId, id]
+      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ?, max_marks = ? WHERE id = ?',
+      [name, code, year, semester, credits, type, maxMarks, id]
     );
     
     if (result.rowsAffected[0] === 0) {

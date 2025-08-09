@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,8 +20,6 @@ interface AddSubjectModalProps {
   onAddSubject: (subject: Omit<Subject, 'id'>) => Promise<void>;
 }
 
-const apiBase = import.meta.env.VITE_API_URL || '/api';
-
 const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps) => {
   const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
@@ -29,40 +27,11 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
     year: 1,
     semester: 1 as 1 | 2,
     credits: 1,
-    professorId: '',
-    professorName: '',
     type: 'theory',
     maxMarks: 100
   });
-  const [professors, setProfessors] = useState<Array<{ id: string; name: string }>>([]);
-
-  useEffect(() => {
-    const fetchProfessors = async () => {
-      try {
-        const response = await fetch(`${apiBase}/users?role=professor`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch professors');
-        }
-        const data: Array<Record<string, unknown>> = await response.json();
-        setProfessors(
-          data.map((p) => ({
-            id: String(p.id ?? ''),
-            name: String(p.name ?? ''),
-          }))
-        );
-      } catch (err) {
-        console.error('Error fetching professors:', err);
-      }
-    };
-    fetchProfessors();
-  }, []);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.professorId) return;
 
     await onAddSubject(formData);
 
@@ -73,8 +42,6 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
       year: 1,
       semester: 1 as 1 | 2,
       credits: 1,
-      professorId: '',
-      professorName: '',
       type: 'theory',
       maxMarks: 100
     });
@@ -195,30 +162,6 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="professor">Assign Professor</Label>
-            <select
-              id="professor"
-              value={formData.professorId}
-              onChange={(e) => {
-                const value = e.target.value;
-                const prof = professors.find(p => p.id === value);
-                setFormData(prev => ({
-                  ...prev,
-                  professorId: value,
-                  professorName: prof ? prof.name : '',
-                }));
-              }}
-              className="w-full p-2 border rounded-md bg-background"
-              required
-            >
-              <option value="">Select Professor</option>
-              {professors.map(prof => (
-                <option key={prof.id} value={prof.id}>{prof.name}</option>
-              ))}
-            </select>
           </div>
 
           <div className="flex items-center gap-2">
