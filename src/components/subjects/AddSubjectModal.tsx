@@ -133,7 +133,7 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
                 className="w-full p-2 border rounded-md bg-background"
                 required
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                {[1, 2].map(sem => (
                   <option key={sem} value={sem}>Semester {sem}</option>
                 ))}
               </select>

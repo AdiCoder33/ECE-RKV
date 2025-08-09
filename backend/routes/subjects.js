@@ -22,7 +22,11 @@ router.get('/', authenticateToken, async (req, res, next) => {
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { name, code, year, semester, credits, type, maxMarks } = req.body;
-    
+
+    if (![1, 2].includes(Number(semester))) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
+
     const result = await executeQuery(
       'INSERT INTO subjects (name, code, year, semester, credits, type, max_marks) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, code, year, semester, credits, type, maxMarks]
@@ -40,7 +44,11 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, code, year, semester, credits, type, maxMarks } = req.body;
-    
+
+    if (![1, 2].includes(Number(semester))) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
+
     const result = await executeQuery(
       'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ?, max_marks = ? WHERE id = ?',
       [name, code, year, semester, credits, type, maxMarks, id]
