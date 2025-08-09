@@ -167,7 +167,6 @@ const ClassManagement = () => {
 
       setClasses(prev => prev.filter(c => c.id !== classId));
       toast({
-        variant: 'destructive',
         title: 'Class Deleted',
         description: 'Your class has been deleted successfully',
       });
