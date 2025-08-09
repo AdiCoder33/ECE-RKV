@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ import AddSubjectModal from './AddSubjectModal';
 import EditSubjectModal from './EditSubjectModal';
 import { useToast } from "@/hooks/use-toast";
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const SubjectManagement = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,98 +31,123 @@ const SubjectManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
-  const [subjects, setSubjects] = useState<Subject[]>([
-    {
-      id: '1',
-      name: 'Engineering Mathematics I',
-      code: 'ECE101',
-      year: 1,
-      semester: 1,
-      credits: 4,
-      professorId: '2',
-      professorName: 'Prof. Priya Sharma',
-      type: 'theory',
-      maxMarks: 100
-    },
-    {
-      id: '2',
-      name: 'Basic Electronics Engineering',
-      code: 'ECE102',
-      year: 1,
-      semester: 1,
-      credits: 3,
-      professorId: '3',
-      professorName: 'Prof. Amit Kumar',
-      type: 'theory',
-      maxMarks: 100
-    },
-    {
-      id: '3',
-      name: 'Electronics Workshop',
-      code: 'ECE103',
-      year: 1,
-      semester: 1,
-      credits: 2,
-      professorId: '4',
-      professorName: 'Prof. Neha Gupta',
-      type: 'lab',
-      maxMarks: 50
-    },
-    {
-      id: '4',
-      name: 'Digital Signal Processing',
-      code: 'ECE301',
-      year: 3,
-      semester: 1,
-      credits: 4,
-      professorId: '2',
-      professorName: 'Prof. Priya Sharma',
-      type: 'theory',
-      maxMarks: 100
-    },
-    {
-      id: '5',
-      name: 'VLSI Design',
-      code: 'ECE302',
-      year: 3,
-      semester: 2,
-      credits: 3,
-      professorId: '5',
-      professorName: 'Prof. Ravi Patel',
-      type: 'elective',
-      maxMarks: 100
-    }
-  ]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
 
-  const handleAddSubject = (newSubject: Omit<Subject, 'id'>) => {
-    const subject: Subject = {
-      ...newSubject,
-      id: (subjects.length + 1).toString()
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch(`${apiBase}/subjects`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch subjects');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        const mapped: Subject[] = data.map((s) => ({
+          id: String(s.id ?? ''),
+          name: (s.name ?? '') as string,
+          code: (s.code ?? '') as string,
+          year: Number(s.year ?? 0),
+          semester: Number(s.semester ?? 1) as 1 | 2,
+          credits: Number(s.credits ?? 0),
+          professorId: String((s as Record<string, unknown>).professorId ?? (s as Record<string, unknown>).professor_id ?? ''),
+          professorName: String((s as Record<string, unknown>).professorName ?? (s as Record<string, unknown>).professor_name ?? ''),
+          type: (s.type ?? 'theory') as 'theory' | 'lab' | 'elective',
+          maxMarks: Number((s as Record<string, unknown>).maxMarks ?? (s as Record<string, unknown>).max_marks ?? 0),
+        }));
+        setSubjects(mapped);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
     };
-    setSubjects(prev => [...prev, subject]);
-    toast({
-      title: "Subject Added",
-      description: "Subject has been created successfully",
-    });
+    fetchSubjects();
+  }, []);
+
+  const handleAddSubject = async (newSubject: Omit<Subject, 'id'>) => {
+    try {
+      const response = await fetch(`${apiBase}/subjects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(newSubject),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add subject');
+      }
+      const data = await response.json();
+      const subject: Subject = {
+        ...newSubject,
+        id: String(data.id ?? ''),
+      };
+      setSubjects((prev) => [...prev, subject]);
+      toast({
+        title: "Subject Added",
+        description: "Subject has been created successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      });
+    }
   };
 
-  const handleEditSubject = (id: string, updatedSubject: Omit<Subject, 'id'>) => {
-    setSubjects(prev => prev.map(subject => 
-      subject.id === id ? { ...updatedSubject, id } : subject
-    ));
-    toast({
-      title: "Subject Updated",
-      description: "Subject has been updated successfully",
-    });
+  const handleEditSubject = async (id: string, updatedSubject: Omit<Subject, 'id'>) => {
+    try {
+      const response = await fetch(`${apiBase}/subjects/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(updatedSubject),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update subject');
+      }
+      setSubjects((prev) => prev.map((subject) => (subject.id === id ? { ...updatedSubject, id } : subject)));
+      toast({
+        title: "Subject Updated",
+        description: "Subject has been updated successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      });
+    }
   };
 
-  const handleDeleteSubject = (subjectId: string) => {
-    setSubjects(prev => prev.filter(subject => subject.id !== subjectId));
-    toast({
-      variant: "destructive",
-      title: "Subject Deleted",
-      description: "Subject has been removed successfully",
-    });
+  const handleDeleteSubject = async (subjectId: string) => {
+    try {
+      const response = await fetch(`${apiBase}/subjects/${subjectId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete subject');
+      }
+      setSubjects((prev) => prev.filter((subject) => subject.id !== subjectId));
+      toast({
+        variant: "destructive",
+        title: "Subject Deleted",
+        description: "Subject has been removed successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      });
+    }
   };
 
   const handleEditClick = (subject: Subject) => {
