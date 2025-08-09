@@ -134,7 +134,8 @@ const TimetableManagement = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setProfessors(data);
+        const mapped = data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
+        setProfessors(mapped);
       }
     } catch (error) {
       console.error('Error fetching professors:', error);
