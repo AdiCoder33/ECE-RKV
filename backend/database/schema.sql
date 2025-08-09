@@ -166,6 +166,7 @@ INSERT INTO timetable (day, time, subject, faculty, room, year, section) VALUES
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_department ON users(department);
 CREATE INDEX idx_users_year_section ON users(year, section);
+CREATE INDEX idx_users_year_sem_section ON users(year, semester, section);
 CREATE INDEX idx_attendance_student_date ON attendance(student_id, date);
 CREATE INDEX idx_marks_student_subject ON marks(student_id, subject_id);
 CREATE INDEX idx_chat_messages_group ON chat_messages(group_id);
