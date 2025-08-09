@@ -7,9 +7,15 @@ const router = express.Router();
 // Get all users
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(
-      'SELECT id, name, email, role, department, year, semester, section, roll_number AS rollNumber, phone, created_at FROM users ORDER BY created_at DESC'
-    );
+    const { role } = req.query;
+    let query = 'SELECT id, name FROM users';
+    const params = [];
+    if (role) {
+      query += ' WHERE role = ?';
+      params.push(role);
+    }
+    query += ' ORDER BY created_at DESC';
+    const result = await executeQuery(query, params);
     res.json(result.recordset || []);
   } catch (error) {
     console.error('Users fetch error:', error);
