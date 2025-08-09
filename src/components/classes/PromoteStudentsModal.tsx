@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,13 +21,40 @@ interface PromoteStudentsModalProps {
 
 const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsModalProps) => {
   const [isPromoting, setIsPromoting] = useState(false);
-  
-  const promotionData = [
-    { fromYear: 1, toYear: 2, students: 300, sections: 5 },
-    { fromYear: 2, toYear: 3, students: 285, sections: 5 },
-    { fromYear: 3, toYear: 4, students: 270, sections: 5 },
-    { fromYear: 4, status: 'Graduate', students: 255, sections: 5 }
-  ];
+  const [promotionData, setPromotionData] = useState<
+    { fromYear: number; toYear?: number; status?: string; students: number; sections: number }[]
+  >([]);
+
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+  useEffect(() => {
+    const fetchPromotionSummary = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/classes/promotion-summary`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data: { year: number; students: number; sections: number }[] = await response.json();
+        const mapped = data.map(item =>
+          item.year === 4
+            ? { fromYear: item.year, status: 'Graduate', students: item.students, sections: item.sections }
+            : { fromYear: item.year, toYear: item.year + 1, students: item.students, sections: item.sections }
+        );
+        setPromotionData(mapped);
+      } catch {
+        // Ignore errors for now
+      }
+    };
+
+    if (isOpen) {
+      fetchPromotionSummary();
+    }
+  }, [isOpen, apiBase]);
 
   const handlePromote = async () => {
     setIsPromoting(true);
