@@ -27,6 +27,7 @@ const SubjectManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -169,8 +170,9 @@ const SubjectManagement = () => {
                          subject.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesYear = selectedYear === 'all' || subject.year.toString() === selectedYear;
     const matchesType = selectedType === 'all' || subject.type === selectedType;
-    
-    return matchesSearch && matchesYear && matchesType;
+    const matchesSemester = selectedSemester === 'all' || subject.semester.toString() === selectedSemester;
+
+    return matchesSearch && matchesYear && matchesType && matchesSemester;
   });
 
   const subjectStats = {
@@ -293,6 +295,16 @@ const SubjectManagement = () => {
               <option value="2">2nd Year</option>
               <option value="3">3rd Year</option>
               <option value="4">4th Year</option>
+            </select>
+
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="px-3 py-2 border rounded-md bg-background text-foreground"
+            >
+              <option value="all">All Semesters</option>
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
             </select>
 
             <select
