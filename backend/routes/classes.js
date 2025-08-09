@@ -257,6 +257,7 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
     const runQuery = async (query, params = []) => {
+      let finalQuery = query;
       const request = new sql.Request(transaction);
       params.forEach((param, index) => {
         if (param === null || param === undefined) {
@@ -264,11 +265,20 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         } else {
           request.input(`param${index}`, param);
         }
-        query = query.replace('?', `@param${index}`);
+        finalQuery = finalQuery.replace('?', `@param${index}`);
       });
-      return request.query(query);
+      console.log('Executing query:', finalQuery, 'with params:', params);
+      try {
+        const result = await request.query(finalQuery);
+        console.log('Query succeeded');
+        return result;
+      } catch (err) {
+        console.error('Query failed:', finalQuery, err);
+        throw err;
+      }
     };
 
+    let originalError;
     try {
       // Get all students in years 1-3
       const studentsResult = await runQuery(`
@@ -342,8 +352,13 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         graduated: graduatingStudents.length
       });
     } catch (error) {
-      await transaction.rollback();
-      throw error;
+      originalError = error;
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        console.error('Rollback failed:', rollbackError);
+      }
+      throw originalError;
     }
   } catch (error) {
     console.error('Promote students error:', error);
