@@ -27,6 +27,7 @@ const initialForm = {
   email: '',
   role: 'student' as 'admin' | 'hod' | 'professor' | 'student' | 'alumni',
   year: 1,
+  semester: 1,
   section: 'A',
   rollNumber: '',
   phone: '',
@@ -43,6 +44,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
           ...initialForm,
           ...initialUser,
           year: initialUser.year ?? initialForm.year,
+          semester: initialUser.semester ?? initialForm.semester,
           section: initialUser.section ?? initialForm.section,
           rollNumber: initialUser.rollNumber ?? initialForm.rollNumber,
           phone: initialUser.phone ?? initialForm.phone,
@@ -62,6 +64,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
         email: formData.email,
         role: formData.role,
         year: formData.role === 'student' ? formData.year : undefined,
+        semester: formData.role === 'student' ? formData.semester : undefined,
         section: formData.role === 'student' ? formData.section : undefined,
         rollNumber: formData.role === 'student' ? formData.rollNumber : undefined,
         phone: formData.phone,
@@ -163,10 +166,13 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
           </div>
 
           {formData.role === 'student' && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="year">Year</Label>
-                <Select value={formData.year?.toString()} onValueChange={(value) => handleInputChange('year', parseInt(value))}>
+                <Select
+                  value={formData.year?.toString()}
+                  onValueChange={(value) => handleInputChange('year', parseInt(value))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
@@ -175,6 +181,22 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                     <SelectItem value="2">2nd Year</SelectItem>
                     <SelectItem value="3">3rd Year</SelectItem>
                     <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="semester">Semester</Label>
+                <Select
+                  value={formData.semester?.toString()}
+                  onValueChange={(value) => handleInputChange('semester', parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

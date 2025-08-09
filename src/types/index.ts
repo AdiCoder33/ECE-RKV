@@ -6,6 +6,7 @@ export interface User {
   role: 'admin' | 'hod' | 'professor' | 'student' | 'alumni';
   department?: string;
   year?: number;
+  semester?: number;
   section?: string;
   rollNumber?: string;
   profileImage?: string;

@@ -11,6 +11,7 @@ interface TimeSlot {
   faculty: string;
   room: string;
   year: number;
+  semester: number;
   section: string;
 }
 
@@ -27,6 +28,7 @@ const StudentTimetable = () => {
 
   // Mock student data - replace with actual user data
   const studentYear = user?.year || 3;
+  const studentSemester = user?.semester || 1;
   const studentSection = user?.section || 'A';
 
   useEffect(() => {
@@ -35,7 +37,7 @@ const StudentTimetable = () => {
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`/api/timetable?year=${studentYear}&section=${studentSection}`, {
+      const response = await fetch(`/api/timetable?year=${studentYear}&semester=${studentSemester}&section=${studentSection}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -90,7 +92,7 @@ const StudentTimetable = () => {
       <div>
         <h1 className="text-3xl font-bold">My Timetable</h1>
         <p className="text-muted-foreground">
-          Class schedule for Year {studentYear}, Section {studentSection}
+          Class schedule for Year {studentYear}, Sem {studentSemester}, Section {studentSection}
         </p>
       </div>
 
