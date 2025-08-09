@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 interface Option { id: string; name: string }
 
 interface ProfessorComboboxProps {
@@ -142,11 +144,14 @@ const TimetableManagement = () => {
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`/api/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+        const response = await fetch(
+          `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
       if (response.ok) {
         const data = await response.json();
         setTimetable(data);
@@ -183,14 +188,14 @@ const TimetableManagement = () => {
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch(
-        `/api/subjects?year=${selectedYear}&semester=${selectedSemester}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        const response = await fetch(
+          `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
           }
-        }
-      );
+        );
       if (response.ok) {
         const data = await response.json();
         setSubjects(data);
@@ -208,11 +213,11 @@ const TimetableManagement = () => {
 
   const fetchProfessors = async () => {
     try {
-      const response = await fetch('/api/users?role=professor', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+        const response = await fetch(`${apiBase}/users?role=professor`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
@@ -245,11 +250,11 @@ const TimetableManagement = () => {
     if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.faculty) return;
     
     try {
-      const response = await fetch('/api/timetable', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        const response = await fetch(`${apiBase}/timetable`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           ...newSlot,
@@ -280,12 +285,12 @@ const TimetableManagement = () => {
 
   const handleDeleteSlot = async (slotId: string) => {
     try {
-      const response = await fetch(`/api/timetable/${slotId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
 
       if (response.ok) {
         fetchTimetable();
@@ -309,11 +314,11 @@ const TimetableManagement = () => {
     if (!slot) return;
 
     try {
-      const response = await fetch(`/api/timetable/${slotId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           day: slot.day,
