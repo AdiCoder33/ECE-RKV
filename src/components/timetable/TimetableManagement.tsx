@@ -248,7 +248,7 @@ const TimetableManagement = () => {
 
   const handleAddSlot = async () => {
     if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.faculty) return;
-    
+
     try {
         const response = await fetch(`${apiBase}/timetable`, {
           method: 'POST',
@@ -263,16 +263,23 @@ const TimetableManagement = () => {
           section: selectedSection
         })
       });
-
-      if (response.ok) {
-        fetchTimetable();
-        setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, semester: 1, section: 'A' });
-        setIsAddModalOpen(false);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         toast({
-          title: "Success",
-          description: "Timetable slot added successfully",
+          title: 'Error',
+          description: data.message || 'Failed to add timetable slot',
+          variant: 'destructive'
         });
+        return;
       }
+
+      fetchTimetable();
+      setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, semester: 1, section: 'A' });
+      setIsAddModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Timetable slot added successfully",
+      });
     } catch (error) {
       console.error('Error adding slot:', error);
       toast({
@@ -329,15 +336,22 @@ const TimetableManagement = () => {
           ...updatedData
         })
       });
-
-      if (response.ok) {
-        fetchTimetable();
-        setEditingSlot(null);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         toast({
-          title: "Success",
-          description: "Timetable slot updated successfully",
+          title: 'Error',
+          description: data.message || 'Failed to update timetable slot',
+          variant: 'destructive'
         });
+        return;
       }
+
+      fetchTimetable();
+      setEditingSlot(null);
+      toast({
+        title: "Success",
+        description: "Timetable slot updated successfully",
+      });
     } catch (error) {
       console.error('Error updating slot:', error);
       toast({
