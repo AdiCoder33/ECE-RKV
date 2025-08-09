@@ -183,7 +183,7 @@ const ClassManagement = () => {
     setIsEditModalOpen(true);
   };
 
-  const handlePromoteStudents = async () => {
+  const handlePromoteStudents = async (): Promise<boolean> => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/classes/promote`, {
@@ -201,7 +201,7 @@ const ClassManagement = () => {
           title: 'Error',
           description: message,
         });
-        return;
+        return false;
       }
 
       const data = await response.json();
@@ -209,13 +209,15 @@ const ClassManagement = () => {
         title: 'Promotion Complete',
         description: `${data.promoted} students promoted, ${data.graduated} students graduated`,
       });
-      fetchClasses();
+      await fetchClasses();
+      return true;
     } catch {
       toast({
         variant: 'destructive',
         title: 'Error',
         description: 'Failed to promote students',
       });
+      return false;
     }
   };
 
