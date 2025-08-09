@@ -17,7 +17,7 @@ import { Subject } from '@/types';
 interface AddSubjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddSubject: (subject: Omit<Subject, 'id'>) => void;
+  onAddSubject: (subject: Omit<Subject, 'id'>) => Promise<void>;
 }
 
 const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps) => {
@@ -40,14 +40,13 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
     { id: '4', name: 'Prof. Neha Gupta' },
     { id: '5', name: 'Prof. Ravi Patel' },
   ];
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const selectedProfessor = professors.find(p => p.id === formData.professorId);
     if (!selectedProfessor) return;
 
-    onAddSubject({
+    await onAddSubject({
       ...formData,
       professorName: selectedProfessor.name
     });

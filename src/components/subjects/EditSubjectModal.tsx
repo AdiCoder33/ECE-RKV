@@ -16,7 +16,7 @@ import { Subject } from '@/types';
 interface EditSubjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onEditSubject: (id: string, subject: Omit<Subject, 'id'>) => void;
+  onEditSubject: (id: string, subject: Omit<Subject, 'id'>) => Promise<void>;
   subject: Subject | null;
 }
 
@@ -54,10 +54,10 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
     }
   }, [subject]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (subject) {
-      onEditSubject(subject.id, formData);
+      await onEditSubject(subject.id, formData);
       onClose();
     }
   };
