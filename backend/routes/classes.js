@@ -303,23 +303,17 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
 
     try {
       if (semester === 1) {
-        // Move all students to semester 2 and reassign them to matching classes
+        // Move all semester 1 classes and students to semester 2
+        await new sql.Request(transaction).query(`
+          UPDATE classes
+          SET semester = 2
+          WHERE semester = 1;
+        `);
+
         const promotedResult = await new sql.Request(transaction).query(`
           UPDATE users
           SET semester = 2
           WHERE role = 'student' AND semester = 1;
-        `);
-
-        await new sql.Request(transaction).query(`
-          UPDATE sc
-          SET class_id = nextc.id
-          FROM student_classes sc
-          JOIN classes curr ON sc.class_id = curr.id
-          JOIN classes nextc ON nextc.year = curr.year
-                             AND nextc.section = curr.section
-                             AND nextc.semester = 2
-          JOIN users u ON sc.student_id = u.id
-          WHERE u.role = 'student' AND curr.semester = 1;
         `);
 
         await transaction.commit();
@@ -330,6 +324,14 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
           graduated: 0
         });
       }
+
+      // Move all semester 2 classes to next year semester 1
+      await new sql.Request(transaction).query(`
+        UPDATE classes
+        SET year = year + 1,
+            semester = 1
+        WHERE semester = 2;
+      `);
 
       // Graduate final year students (semester 2)
       const graduatedResult = await new sql.Request(transaction).query(`
@@ -358,17 +360,15 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         WHERE role = 'student' AND semester = 2;
       `);
 
-      // Move promoted students to next year's semester 1 classes
+      // Create new first year classes for next intake if not present
       await new sql.Request(transaction).query(`
-        UPDATE sc
-        SET class_id = nextc.id
-        FROM student_classes sc
-        JOIN classes curr ON sc.class_id = curr.id
-        JOIN classes nextc ON nextc.year = curr.year + 1
-                           AND nextc.section = curr.section
-                           AND nextc.semester = 1
-        JOIN users u ON sc.student_id = u.id
-        WHERE u.role = 'student' AND u.semester = 1 AND curr.semester = 2;
+        INSERT INTO classes (year, semester, section, hod_id)
+        SELECT 1, 1, s.section, NULL
+        FROM (SELECT DISTINCT section FROM classes) s
+        WHERE NOT EXISTS (
+          SELECT 1 FROM classes c2
+          WHERE c2.year = 1 AND c2.semester = 1 AND c2.section = s.section
+        );
       `);
 
       await transaction.commit();
