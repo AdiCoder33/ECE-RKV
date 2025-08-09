@@ -27,6 +27,7 @@ interface TimeSlot {
   faculty: string;
   room: string;
   year: number;
+  semester: number;
   section: string;
 }
 
@@ -34,6 +35,7 @@ const TimetableManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('3');
+  const [selectedSemester, setSelectedSemester] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
@@ -47,6 +49,7 @@ const TimetableManagement = () => {
     faculty: '',
     room: '',
     year: 3,
+    semester: 1,
     section: 'A'
   });
 
@@ -57,11 +60,11 @@ const TimetableManagement = () => {
     fetchTimetable();
     fetchSubjects();
     fetchProfessors();
-  }, [selectedYear, selectedSection]);
+  }, [selectedYear, selectedSemester, selectedSection]);
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`/api/timetable?year=${selectedYear}&section=${selectedSection}`, {
+      const response = await fetch(`/api/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -82,6 +85,7 @@ const TimetableManagement = () => {
           faculty: 'Dr. Rajesh Kumar',
           room: 'ECE-301',
           year: 3,
+          semester: 1,
           section: 'A'
         },
         {
@@ -92,6 +96,7 @@ const TimetableManagement = () => {
           faculty: 'Prof. Priya Sharma',
           room: 'ECE-302',
           year: 3,
+          semester: 1,
           section: 'A'
         }
       ]);
@@ -148,8 +153,10 @@ const TimetableManagement = () => {
     '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'
   ];
 
-  const filteredTimetable = timetable.filter(slot => 
-    slot.year === parseInt(selectedYear) && slot.section === selectedSection
+  const filteredTimetable = timetable.filter(slot =>
+    slot.year === parseInt(selectedYear) &&
+    slot.semester === parseInt(selectedSemester) &&
+    slot.section === selectedSection
   );
 
   const handleAddSlot = async () => {
@@ -165,13 +172,14 @@ const TimetableManagement = () => {
         body: JSON.stringify({
           ...newSlot,
           year: parseInt(selectedYear),
+          semester: parseInt(selectedSemester),
           section: selectedSection
         })
       });
 
       if (response.ok) {
         fetchTimetable();
-        setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, section: 'A' });
+        setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, semester: 1, section: 'A' });
         setIsAddModalOpen(false);
         toast({
           title: "Success",
@@ -389,6 +397,18 @@ const TimetableManagement = () => {
                     </Select>
                   </div>
                   <div className="flex-1">
+                    <label className="text-sm font-medium">Semester</label>
+                    <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Sem 1</SelectItem>
+                        <SelectItem value="2">Sem 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
                     <label className="text-sm font-medium">Section</label>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
                       <SelectTrigger>
@@ -410,7 +430,7 @@ const TimetableManagement = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Timetable - Year {selectedYear}, Section {selectedSection}
+                Timetable - Year {selectedYear}, Sem {selectedSemester}, Section {selectedSection}
               </CardTitle>
             </CardHeader>
             <CardContent>

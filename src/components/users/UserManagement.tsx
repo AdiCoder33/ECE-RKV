@@ -29,6 +29,7 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -90,8 +91,9 @@ const UserManagement = () => {
                          user.rollNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
     const matchesYear = selectedYear === 'all' || user.year?.toString() === selectedYear;
-    
-    return matchesSearch && matchesRole && matchesYear;
+    const matchesSemester = selectedSemester === 'all' || user.semester?.toString() === selectedSemester;
+
+    return matchesSearch && matchesRole && matchesYear && matchesSemester;
   });
 
   const userStats = {
@@ -225,6 +227,7 @@ const UserManagement = () => {
       Role: user.role,
       Department: user.department ?? '',
       Year: user.year ?? '',
+      Semester: user.semester ?? '',
       Section: user.section ?? '',
       RollNumber: user.rollNumber ?? '',
       Phone: user.phone ?? '',
@@ -365,6 +368,16 @@ const UserManagement = () => {
                 <option value="4">4th Year</option>
               </select>
 
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              >
+                <option value="all">All Semesters</option>
+                <option value="1">Sem 1</option>
+                <option value="2">Sem 2</option>
+              </select>
+
               <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={handleExportUsers}>
                 <Download className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Export</span>
@@ -387,7 +400,7 @@ const UserManagement = () => {
                   <th className="text-left p-3">Name</th>
                   <th className="text-left p-3">Email</th>
                   <th className="text-left p-3">Role</th>
-                  <th className="text-left p-3">Year/Section</th>
+                  <th className="text-left p-3">Year/Sem/Section</th>
                   <th className="text-left p-3">Roll Number</th>
                   <th className="text-left p-3">Phone</th>
                   <th className="text-left p-3">Actions</th>
@@ -415,7 +428,7 @@ const UserManagement = () => {
                       </Badge>
                     </td>
                     <td className="p-3">
-                      {user.year && user.section ? `${user.year}-${user.section}` : '-'}
+                      {user.year && user.semester && user.section ? `${user.year}/${user.semester}/${user.section}` : '-'}
                     </td>
                     <td className="p-3">{user.rollNumber || '-'}</td>
                     <td className="p-3">{user.phone || '-'}</td>
@@ -468,10 +481,10 @@ const UserManagement = () => {
               </div>
               
               <div className="space-y-2 text-sm">
-                {user.year && user.section && (
+                {user.year && user.semester && user.section && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Year/Section:</span>
-                    <span>{user.year}-{user.section}</span>
+                    <span className="text-muted-foreground">Year/Sem/Section:</span>
+                    <span>{user.year}/{user.semester}/{user.section}</span>
                   </div>
                 )}
                 {user.rollNumber && (
