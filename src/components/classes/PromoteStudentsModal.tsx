@@ -18,13 +18,13 @@ import { GraduationCap, Users, AlertTriangle } from 'lucide-react';
 interface PromoteStudentsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPromote: (currentSemester: number) => Promise<boolean>;
+  onPromote: (currentSemester: 1 | 2) => Promise<boolean>;
 }
 
 const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsModalProps) => {
   const [isPromoting, setIsPromoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [promotionType, setPromotionType] = useState(1); // 1: sem1->2, 2: sem2->next year
+  const [promotionType, setPromotionType] = useState<1 | 2>(1); // 1: sem1->2, 2: sem2->next year
   const [promotionData, setPromotionData] = useState<
     { fromYear: number; toYear?: number; status?: string; students: number; sections: number }[]
   >([]);
@@ -98,7 +98,7 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
           {/* Promotion Type Selection */}
           <RadioGroup
             value={promotionType.toString()}
-            onValueChange={(value) => setPromotionType(parseInt(value))}
+            onValueChange={(value) => setPromotionType(parseInt(value) as 1 | 2)}
             className="flex flex-col gap-2"
           >
             <div className="flex items-center space-x-2">
