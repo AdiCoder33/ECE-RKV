@@ -74,15 +74,20 @@ router.get('/promotion-summary', authenticateToken, async (req, res, next) => {
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { year, semester, section, hodId } = req.body;
-    
+
     if (!year || !semester || !section) {
       return res.status(400).json({ error: 'Year, semester, and section are required' });
     }
-    
+
+    const sem = Number(semester);
+    if (![1, 2].includes(sem)) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
+
     // Check if class already exists
     const existingResult = await executeQuery(
       'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
-      [year, semester, section]
+      [year, sem, section]
     );
 
     if (existingResult.recordset.length > 0) {
@@ -91,7 +96,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const insertResult = await executeQuery(
       'INSERT INTO classes (year, semester, section, hod_id) OUTPUT INSERTED.id VALUES (?, ?, ?, ?)',
-      [year, semester, section, hodId || null]
+      [year, sem, section, hodId || null]
     );
 
     const newId = insertResult.recordset[0].id;
@@ -99,7 +104,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
     // Link existing students of the same year, semester, and section to this class
     await executeQuery(
       "INSERT INTO student_classes (class_id, student_id) SELECT ?, id FROM users WHERE role='student' AND year=? AND semester=? AND section=?",
-      [newId, year, semester, section]
+      [newId, year, sem, section]
     );
 
     // Fetch the created class
@@ -238,10 +243,15 @@ router.put('/:classId', authenticateToken, async (req, res, next) => {
   try {
     const { classId } = req.params;
     const { year, semester, section, hodId } = req.body;
-    
+
+    const sem = Number(semester);
+    if (![1, 2].includes(sem)) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
+
     const result = await executeQuery(
       'UPDATE classes SET year = ?, semester = ?, section = ?, hod_id = ? WHERE id = ?',
-      [year, semester, section, hodId, classId]
+      [year, sem, section, hodId, classId]
     );
 
     if (result.rowsAffected[0] === 0) {
