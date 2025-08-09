@@ -294,8 +294,13 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
   try {
     let semester = parseInt(req.body?.currentSemester, 10);
     if (![1, 2].includes(semester)) {
-      const result = await executeQuery('SELECT TOP 1 semester FROM classes');
-      semester = result.recordset?.[0]?.semester || 1;
+      const result = await executeQuery('SELECT TOP 1 current_semester FROM settings');
+      if (result.recordset.length === 0) {
+        await executeQuery('INSERT INTO settings (current_semester) VALUES (1)');
+        semester = 1;
+      } else {
+        semester = result.recordset[0].current_semester;
+      }
     }
 
     const pool = await connectDB();
@@ -322,6 +327,10 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
           JOIN users u ON sc.student_id = u.id
           WHERE u.role = 'student' AND curr.semester = 1;
         `);
+
+        await new sql.Request(transaction).query(
+          'UPDATE settings SET current_semester = 2'
+        );
 
         await transaction.commit();
 
@@ -371,6 +380,10 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         JOIN users u ON sc.student_id = u.id
         WHERE u.role = 'student' AND curr.semester = 2;
       `);
+
+      await new sql.Request(transaction).query(
+        'UPDATE settings SET current_semester = 1'
+      );
 
       await transaction.commit();
 
