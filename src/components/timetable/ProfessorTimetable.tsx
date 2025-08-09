@@ -19,6 +19,8 @@ const ProfessorTimetable = () => {
   const [timetable, setTimetable] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const timeSlots = [
     '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
@@ -31,7 +33,7 @@ const ProfessorTimetable = () => {
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`/api/timetable?faculty=${encodeURIComponent(user?.name || '')}`, {
+      const response = await fetch(`${apiBase}/timetable?faculty=${encodeURIComponent(user?.name || '')}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
