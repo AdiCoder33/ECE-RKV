@@ -35,7 +35,7 @@ jest.mock('bcryptjs', () => ({
 const usersRouter = require('./users');
 const { executeQuery } = require('../config/database');
 
-describe('users routes handle falsy-but-valid values', () => {
+describe('users routes handle values correctly', () => {
   let app;
   beforeEach(() => {
     app = express();
@@ -44,7 +44,7 @@ describe('users routes handle falsy-but-valid values', () => {
     executeQuery.mockClear();
   });
 
-  it('creates user with falsy values intact', async () => {
+  it('creates user with valid semester and falsy values intact', async () => {
     const payload = {
       name: 'John',
       email: 'john@example.com',
@@ -52,7 +52,7 @@ describe('users routes handle falsy-but-valid values', () => {
       role: 'student',
       department: '',
       year: 0,
-      semester: 0,
+      semester: 1,
       section: '',
       rollNumber: '0',
       phone: '',
@@ -68,7 +68,7 @@ describe('users routes handle falsy-but-valid values', () => {
         payload.role,
         '',
         0,
-        0,
+        1,
         '',
         '0',
         '',
@@ -76,14 +76,14 @@ describe('users routes handle falsy-but-valid values', () => {
     );
   });
 
-  it('updates user with falsy values intact', async () => {
+  it('updates user with valid semester and falsy values intact', async () => {
     const payload = {
       name: 'Jane',
       email: 'jane@example.com',
       role: 'student',
       department: '',
       year: 0,
-      semester: 0,
+      semester: 2,
       section: '',
       rollNumber: '0',
     };
@@ -97,12 +97,37 @@ describe('users routes handle falsy-but-valid values', () => {
         payload.role,
         '',
         0,
-        0,
+        2,
         '',
         '0',
         '1',
       ]
     );
+  });
+
+  it('rejects student creation with invalid semester', async () => {
+    const payload = {
+      name: 'Bad',
+      email: 'bad@example.com',
+      password: 'secret',
+      role: 'student',
+      semester: 3,
+    };
+
+    await request(app).post('/users').send(payload).expect(400);
+    expect(executeQuery).not.toHaveBeenCalled();
+  });
+
+  it('rejects student update with invalid semester', async () => {
+    const payload = {
+      name: 'Bad',
+      email: 'bad@example.com',
+      role: 'student',
+      semester: 0,
+    };
+
+    await request(app).put('/users/1').send(payload).expect(400);
+    expect(executeQuery).not.toHaveBeenCalled();
   });
 
   it('deletes user and cleans up student classes', async () => {

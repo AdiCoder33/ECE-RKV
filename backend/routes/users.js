@@ -21,9 +21,10 @@ router.get('/', authenticateToken, async (req, res, next) => {
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { name, email, password, role, department, year, semester, section, rollNumber, phone } = req.body;
+    const sem = semester === undefined ? undefined : Number(semester);
 
-    if (role === 'student' && (semester === undefined || typeof semester !== 'number' || isNaN(semester))) {
-      return res.status(400).json({ error: 'Semester must be a number' });
+    if (role === 'student' && ![1, 2].includes(sem)) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -37,7 +38,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
         role,
         department === undefined ? null : department,
         year === undefined ? null : year,
-        semester === undefined ? null : semester,
+        sem === undefined ? null : sem,
         section === undefined ? null : section,
         rollNumber === undefined ? null : rollNumber,
         phone === undefined ? null : phone,
@@ -47,10 +48,10 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const created = result.recordset[0];
 
     // Link student to class if applicable
-    if (role === 'student' && year !== undefined && semester !== undefined && section !== undefined) {
+    if (role === 'student' && year !== undefined && sem !== undefined && section !== undefined) {
       const classRes = await executeQuery(
         'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
-        [year, semester, section]
+        [year, sem, section]
       );
       if (classRes.recordset.length > 0) {
         const classId = classRes.recordset[0].id;
@@ -251,6 +252,10 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, email, role, department, year, semester, section, rollNumber } = req.body;
+    const sem = semester === undefined ? undefined : Number(semester);
+    if (role === 'student' && ![1, 2].includes(sem)) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
     const prevRes = await executeQuery(
       'SELECT role, year, semester, section FROM users WHERE id = ?',
       [id]
@@ -265,7 +270,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
         role,
         department === undefined ? null : department,
         year === undefined ? null : year,
-        semester === undefined ? null : semester,
+        sem === undefined ? null : sem,
         section === undefined ? null : section,
         rollNumber === undefined ? null : rollNumber,
         id,
