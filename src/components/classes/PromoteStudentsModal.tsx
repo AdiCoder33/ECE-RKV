@@ -16,11 +16,12 @@ import { GraduationCap, Users, AlertTriangle } from 'lucide-react';
 interface PromoteStudentsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPromote: () => Promise<void>;
+  onPromote: () => Promise<boolean>;
 }
 
 const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsModalProps) => {
   const [isPromoting, setIsPromoting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [promotionData, setPromotionData] = useState<
     { fromYear: number; toYear?: number; status?: string; students: number; sections: number }[]
   >([]);
@@ -56,15 +57,25 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
     }
   }, [isOpen, apiBase]);
 
-  const handlePromote = async () => {
-    setIsPromoting(true);
-    await onPromote();
-    setIsPromoting(false);
+  const handleClose = () => {
+    setError(null);
     onClose();
   };
 
+  const handlePromote = async () => {
+    setIsPromoting(true);
+    const success = await onPromote();
+    setIsPromoting(false);
+    if (success) {
+      setError(null);
+      onClose();
+    } else {
+      setError('Failed to promote students. Please try again.');
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -136,12 +147,14 @@ const PromoteStudentsModal = ({ isOpen, onClose, onPromote }: PromoteStudentsMod
           )}
         </div>
 
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPromoting}>
+          <Button variant="outline" onClick={handleClose} disabled={isPromoting}>
             Cancel
           </Button>
-          <Button 
-            onClick={handlePromote} 
+          <Button
+            onClick={handlePromote}
             disabled={isPromoting}
             className="bg-primary hover:bg-primary/90"
           >
