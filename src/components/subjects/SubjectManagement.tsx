@@ -1,19 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BookOpen, 
+import {
+  BookOpen,
   Plus,
   Edit,
   Trash2,
   Search,
   Clock,
-  Award,
-  User
+  Award
 } from 'lucide-react';
 import { Subject } from '@/types';
 import AddSubjectModal from './AddSubjectModal';
@@ -53,8 +51,6 @@ const SubjectManagement = () => {
           year: Number(s.year ?? 0),
           semester: Number(s.semester ?? 1) as 1 | 2,
           credits: Number(s.credits ?? 0),
-          professorId: String((s as Record<string, unknown>).professorId ?? (s as Record<string, unknown>).professor_id ?? ''),
-          professorName: String((s as Record<string, unknown>).professorName ?? (s as Record<string, unknown>).professor_name ?? ''),
           type: (s.type ?? 'theory') as 'theory' | 'lab' | 'elective',
           maxMarks: Number((s as Record<string, unknown>).maxMarks ?? (s as Record<string, unknown>).max_marks ?? 0),
         }));

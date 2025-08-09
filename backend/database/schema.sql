@@ -40,11 +40,9 @@ CREATE TABLE subjects (
     year int NOT NULL,
     semester int NOT NULL,
     credits int NOT NULL,
-    professor_id int,
     type nvarchar(50) DEFAULT 'theory',
     max_marks int DEFAULT 100,
-    created_at datetime2 DEFAULT GETDATE(),
-    FOREIGN KEY (professor_id) REFERENCES users(id)
+    created_at datetime2 DEFAULT GETDATE()
 );
 
 -- Classes table

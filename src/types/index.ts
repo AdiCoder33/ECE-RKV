@@ -27,8 +27,6 @@ export interface Subject {
   year: number;
   semester: 1 | 2;
   credits: number;
-  professorId: string;
-  professorName: string;
   type: 'theory' | 'lab' | 'elective';
   maxMarks: number;
 }
