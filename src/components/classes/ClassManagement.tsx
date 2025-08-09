@@ -37,6 +37,7 @@ const ClassManagement = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newClassYear, setNewClassYear] = useState(1);
+  const [newClassSemester, setNewClassSemester] = useState(1);
   const [newClassSection, setNewClassSection] = useState('A');
   const { toast } = useToast()
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -70,7 +71,7 @@ const ClassManagement = () => {
   }, [toast]);
 
   const handleCreateClass = async () => {
-    if (newClassYear && newClassSection) {
+    if (newClassYear && newClassSemester && newClassSection) {
       try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${apiBase}/classes`, {
@@ -81,7 +82,7 @@ const ClassManagement = () => {
           },
           body: JSON.stringify({
             year: newClassYear,
-            semester: newClassYear * 2 - 1,
+            semester: newClassSemester,
             section: newClassSection,
           }),
         });
@@ -94,6 +95,7 @@ const ClassManagement = () => {
         setClasses(prev => [...prev, createdClass]);
         setIsCreateModalOpen(false);
         setNewClassYear(1);
+        setNewClassSemester(1);
         setNewClassSection('A');
         toast({
           title: "Class Created",
@@ -262,6 +264,7 @@ const ClassManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[100px]">Year</TableHead>
+                <TableHead>Semester</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead className="text-right">Total Students</TableHead>
@@ -270,31 +273,41 @@ const ClassManagement = () => {
             </TableHeader>
             <TableBody>
               {classes.map((cls) => (
-                 <TableRow key={cls.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleClassClick(cls)}>
-                   <TableCell className="font-medium">{cls.year}</TableCell>
-                   <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
-                   <TableCell>{cls.section}</TableCell>
-                   <TableCell className="text-right">{cls.totalStrength}</TableCell>
-                   <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                     <div className="flex items-center justify-center space-x-2">
-                       <Button 
-                         variant="outline" 
-                         size="icon"
-                         onClick={() => handleEditClick(cls)}
-                       >
-                         <Edit className="h-4 w-4" />
-                       </Button>
-                       <Button variant="outline" size="icon" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteClass(cls.id)}>
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
-                     </div>
-                   </TableCell>
+                <TableRow
+                  key={cls.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleClassClick(cls)}
+                >
+                  <TableCell className="font-medium">{cls.year}</TableCell>
+                  <TableCell>{cls.semester}</TableCell>
+                  <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
+                  <TableCell>{cls.section}</TableCell>
+                  <TableCell className="text-right">{cls.totalStrength}</TableCell>
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEditClick(cls)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteClass(cls.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={4}>Total</TableCell>
+                <TableCell colSpan={5}>Total</TableCell>
                 <TableCell className="text-right">{classes.length}</TableCell>
               </TableRow>
             </TableFooter>
@@ -344,6 +357,20 @@ const ClassManagement = () => {
                   <SelectItem value="2">2nd Year</SelectItem>
                   <SelectItem value="3">3rd Year</SelectItem>
                   <SelectItem value="4">4th Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="semester" className="text-right">
+                Semester
+              </Label>
+              <Select onValueChange={(value) => setNewClassSemester(parseInt(value))}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
                 </SelectContent>
               </Select>
             </div>
