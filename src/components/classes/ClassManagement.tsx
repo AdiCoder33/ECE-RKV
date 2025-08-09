@@ -185,7 +185,7 @@ const ClassManagement = () => {
     setIsEditModalOpen(true);
   };
 
-  const handlePromoteStudents = async (currentSemester: number): Promise<boolean> => {
+  const handlePromoteStudents = async (currentSemester: 1 | 2): Promise<boolean> => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/classes/promote`, {
