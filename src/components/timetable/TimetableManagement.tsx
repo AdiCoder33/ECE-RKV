@@ -105,11 +105,14 @@ const TimetableManagement = () => {
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch('/api/subjects', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(
+        `/api/subjects?year=${selectedYear}&semester=${selectedSemester}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
+      );
       if (response.ok) {
         const data = await response.json();
         setSubjects(data);
