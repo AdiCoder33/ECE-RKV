@@ -20,11 +20,11 @@ interface EditSubjectModalProps {
   subject: Subject | null;
 }
 
-const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onEditSubject, 
-  subject 
+const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
+  isOpen,
+  onClose,
+  onEditSubject,
+  subject
 }) => {
   const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
@@ -37,6 +37,8 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
     type: 'theory',
     maxMarks: 100
   });
+  const [professors, setProfessors] = useState<Array<{ id: string; name: string }>>([]);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   useEffect(() => {
     if (subject) {
@@ -53,6 +55,31 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
       });
     }
   }, [subject]);
+
+  useEffect(() => {
+    const fetchProfessors = async () => {
+      try {
+        const response = await fetch(`${apiBase}/users?role=professor`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch professors');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        setProfessors(
+          data.map((p) => ({
+            id: String(p.id ?? ''),
+            name: String(p.name ?? ''),
+          }))
+        );
+      } catch (err) {
+        console.error('Error fetching professors:', err);
+      }
+    };
+    fetchProfessors();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,17 +206,29 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="professorName" className="text-right">Professor</Label>
-            <Input
-              id="professorName"
-              value={formData.professorName}
-              onChange={(e) => setFormData({ ...formData, professorName: e.target.value })}
-              className="col-span-3"
-              placeholder="Professor name"
-              required
-            />
+            <Label htmlFor="professor" className="text-right">Professor</Label>
+            <Select
+              value={formData.professorId}
+              onValueChange={(value) => {
+                const prof = professors.find(p => p.id === value);
+                setFormData({
+                  ...formData,
+                  professorId: value,
+                  professorName: prof ? prof.name : '',
+                });
+              }}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select professor" />
+              </SelectTrigger>
+              <SelectContent>
+                {professors.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <DialogFooter>
