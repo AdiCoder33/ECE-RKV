@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const result = await executeQuery(
-      'SELECT id, name, email, role, department, year, section, roll_number AS rollNumber, phone, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, name, email, role, department, year, semester, section, roll_number AS rollNumber, phone, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.recordset || []);
   } catch (error) {
@@ -20,12 +20,12 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create user
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { name, email, password, role, department, year, section, rollNumber, phone } = req.body;
+    const { name, email, password, role, department, year, semester, section, rollNumber, phone } = req.body;
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const result = await executeQuery(
-      'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone) OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name,
         email,
@@ -33,6 +33,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
         role,
         department === undefined ? null : department,
         year === undefined ? null : year,
+        semester === undefined ? null : semester,
         section === undefined ? null : section,
         rollNumber === undefined ? null : rollNumber,
         phone === undefined ? null : phone,
@@ -42,10 +43,10 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const created = result.recordset[0];
 
     // Link student to class if applicable
-    if (role === 'student' && year !== undefined && section !== undefined) {
+    if (role === 'student' && year !== undefined && semester !== undefined && section !== undefined) {
       const classRes = await executeQuery(
-        'SELECT id FROM classes WHERE year = ? AND section = ?',
-        [year, section]
+        'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
+        [year, semester, section]
       );
       if (classRes.recordset.length > 0) {
         const classId = classRes.recordset[0].id;
@@ -63,6 +64,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       role: created.role,
       department: created.department,
       year: created.year,
+      semester: created.semester,
       section: created.section,
       rollNumber: created.roll_number,
       phone: created.phone,
@@ -79,7 +81,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
 /**
  * Bulk create users.
- * Expects payload: { users: [{ name, email, password, role, department?, year?, section?, rollNumber?, phone? }] }
+ * Expects payload: { users: [{ name, email, password, role, department?, year?, semester?, section?, rollNumber?, phone? }] }
  * Returns array with created record IDs or per-row error messages.
  */
 router.post('/bulk', authenticateToken, async (req, res, next) => {
@@ -98,6 +100,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       const errs = [];
       if (!Number.isInteger(u.year) || u.year <= 0) {
         errs.push('year must be a positive integer');
+      }
+      if (!Number.isInteger(u.semester) || u.semester <= 0) {
+        errs.push('semester must be a positive integer');
       }
       if (!u.section || !u.section.trim()) {
         errs.push('section is required');
@@ -121,7 +126,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         const existing = await new sql.Request(transaction)
           .input('email', u.email)
           .query(
-            'SELECT id, name, role, department, year, section, roll_number, phone, password FROM users WHERE email = @email'
+            'SELECT id, name, role, department, year, semester, section, roll_number, phone, password FROM users WHERE email = @email'
           );
 
         let userId;
@@ -146,6 +151,11 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           if (ex.year !== yr) {
             updates.push('year = @year');
             req.input('year', yr);
+          }
+          const sem = u.semester === undefined ? null : u.semester;
+          if (ex.semester !== sem) {
+            updates.push('semester = @semester');
+            req.input('semester', sem);
           }
           const sec = u.section === undefined ? null : u.section;
           if (ex.section !== sec) {
@@ -177,20 +187,21 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           userId = ex.id;
         } else {
           const hashedPassword = await bcrypt.hash(u.password, 10);
-          const request = new sql.Request(transaction);
-          const result = await request
-            .input('name', u.name)
-            .input('email', u.email)
-            .input('password', hashedPassword)
-            .input('role', u.role)
-            .input('department', u.department === undefined ? null : u.department)
-            .input('year', u.year === undefined ? null : u.year)
-            .input('section', u.section)
-            .input('rollNumber', u.rollNumber)
-            .input('phone', u.phone)
-            .query(
-              'INSERT INTO users (name, email, password, role, department, year, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
-            );
+            const request = new sql.Request(transaction);
+            const result = await request
+              .input('name', u.name)
+              .input('email', u.email)
+              .input('password', hashedPassword)
+              .input('role', u.role)
+              .input('department', u.department === undefined ? null : u.department)
+              .input('year', u.year === undefined ? null : u.year)
+              .input('semester', u.semester === undefined ? null : u.semester)
+              .input('section', u.section)
+              .input('rollNumber', u.rollNumber)
+              .input('phone', u.phone)
+              .query(
+              'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @semester, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
+              );
           const insertedId = result.recordset[0].id;
           results.push({ index: i, id: insertedId, action: 'inserted' });
           userId = insertedId;
@@ -199,8 +210,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         if (u.role === 'student') {
           const classRes = await new sql.Request(transaction)
             .input('year', u.year)
+            .input('semester', u.semester)
             .input('section', u.section)
-            .query('SELECT id FROM classes WHERE year = @year AND section = @section');
+            .query('SELECT id FROM classes WHERE year = @year AND semester = @semester AND section = @section');
           if (classRes.recordset.length) {
             const classId = classRes.recordset[0].id;
             await new sql.Request(transaction)
@@ -231,21 +243,22 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
 router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, email, role, department, year, section, rollNumber } = req.body;
+    const { name, email, role, department, year, semester, section, rollNumber } = req.body;
     const prevRes = await executeQuery(
-      'SELECT role, year, section FROM users WHERE id = ?',
+      'SELECT role, year, semester, section FROM users WHERE id = ?',
       [id]
     );
     const prev = prevRes.recordset[0];
 
     const result = await executeQuery(
-      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, section = ?, roll_number = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at WHERE id = ?',
+      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, semester = ?, section = ?, roll_number = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at WHERE id = ?',
       [
         name,
         email,
         role,
         department === undefined ? null : department,
         year === undefined ? null : year,
+        semester === undefined ? null : semester,
         section === undefined ? null : section,
         rollNumber === undefined ? null : rollNumber,
         id,
@@ -254,10 +267,10 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
 
     const updated = result.recordset[0];
 
-    if (updated.role === 'student' && updated.year !== null && updated.section !== null) {
+    if (updated.role === 'student' && updated.year !== null && updated.semester !== null && updated.section !== null) {
       const classRes = await executeQuery(
-        'SELECT id FROM classes WHERE year = ? AND section = ?',
-        [updated.year, updated.section]
+        'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
+        [updated.year, updated.semester, updated.section]
       );
       if (classRes.recordset.length > 0) {
         const classId = classRes.recordset[0].id;
@@ -271,7 +284,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     if (
       prev &&
       prev.role === 'student' &&
-      (updated.role !== 'student' || updated.year === null || updated.section === null)
+      (updated.role !== 'student' || updated.year === null || updated.semester === null || updated.section === null)
     ) {
       await executeQuery('DELETE FROM student_classes WHERE student_id = ?', [id]);
     }
@@ -283,6 +296,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       role: updated.role,
       department: updated.department,
       year: updated.year,
+      semester: updated.semester,
       section: updated.section,
       rollNumber: updated.roll_number,
       phone: updated.phone,
