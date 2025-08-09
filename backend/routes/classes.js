@@ -312,11 +312,14 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         WHERE role = 'student' AND year = 5;
       `);
 
+      // Clean up any remaining links and classes from previous fifth years
       await new sql.Request(transaction).query(`
-        DELETE sc
-        FROM student_classes sc
-        JOIN users u ON sc.student_id = u.id
-        WHERE u.role = 'alumni';
+        DELETE FROM student_classes
+        WHERE class_id IN (SELECT id FROM classes WHERE year = 5);
+      `);
+
+      await new sql.Request(transaction).query(`
+        DELETE FROM classes WHERE year = 5;
       `);
 
       if (semester === 1) {
@@ -342,30 +345,59 @@ router.post('/promote', authenticateToken, async (req, res, next) => {
         });
       }
 
-      // Move final year semester 2 classes to graduated year 5 semester 1
-      await new sql.Request(transaction).query(`
-        UPDATE classes
-        SET year = 5,
-            semester = 1
-        WHERE year = 4 AND semester = 2;
-      `);
-
-      // Move remaining semester 2 classes to next year semester 1
+      // Update non-final-year semester 2 classes to next year semester 1
       await new sql.Request(transaction).query(`
         UPDATE classes
         SET year = year + 1,
             semester = 1
-        WHERE semester = 2;
+        WHERE semester = 2 AND year < 4;
       `);
 
-      // Mark final year students as graduated but keep as students
-      const graduatedResult = await new sql.Request(transaction).query(`
-        UPDATE users
-        SET year = 5,
-            semester = 1,
-            graduation_year = YEAR(GETDATE())
-        WHERE role = 'student' AND year = 4 AND semester = 2;
+      // Handle final year students
+      let graduatedResult = { rowsAffected: [0] };
+      const finalYearStudents = await new sql.Request(transaction).query(`
+        SELECT id FROM users WHERE role = 'student' AND year = 4 AND semester = 2;
       `);
+
+      if (finalYearStudents.recordset.length > 0) {
+        // Create a single class to hold all graduating students
+        const graduatedClassResult = await new sql.Request(transaction).query(`
+          INSERT INTO classes (year, semester, section, hod_id)
+          OUTPUT INSERTED.id
+          VALUES (5, 1, 'GRADUATED', NULL);
+        `);
+        const graduatedClassId = graduatedClassResult.recordset[0].id;
+
+        // Move final year students into the graduated class
+        graduatedResult = await new sql.Request(transaction).query(`
+          UPDATE users
+          SET year = 5,
+              semester = 1,
+              section = 'GRADUATED',
+              graduation_year = YEAR(GETDATE())
+          WHERE role = 'student' AND year = 4 AND semester = 2;
+        `);
+
+        // Rebuild student_classes for graduated students
+        await new sql.Request(transaction).query(`
+          DELETE sc
+          FROM student_classes sc
+          JOIN users u ON sc.student_id = u.id
+          WHERE u.role = 'student' AND u.year = 5 AND u.semester = 1 AND u.section = 'GRADUATED';
+        `);
+
+        await new sql.Request(transaction).query(`
+          INSERT INTO student_classes (class_id, student_id)
+          SELECT ${graduatedClassId} AS class_id, u.id
+          FROM users u
+          WHERE u.role = 'student' AND u.year = 5 AND u.semester = 1 AND u.section = 'GRADUATED';
+        `);
+
+        // Remove old fourth-year semester 2 classes
+        await new sql.Request(transaction).query(`
+          DELETE FROM classes WHERE year = 4 AND semester = 2;
+        `);
+      }
 
       // Promote remaining students to next year, semester 1
       const promotedResult = await new sql.Request(transaction).query(`
