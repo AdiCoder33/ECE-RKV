@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,11 +10,93 @@ import {
   Trash2,
   ArrowLeft,
   Save,
-  X
+  X,
+  ChevronsUpDown,
+  Check
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
+
+interface Option { id: string; name: string }
+
+interface ProfessorComboboxProps {
+  value: string;
+  onChange: (value: string) => void;
+  professors: Option[];
+  buttonClassName?: string;
+  placeholder?: string;
+}
+
+const ProfessorCombobox = ({
+  value,
+  onChange,
+  professors,
+  buttonClassName,
+  placeholder = 'Select faculty'
+}: ProfessorComboboxProps) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const filtered = professors.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn('w-full justify-between', buttonClassName)}
+        >
+          {value ? value : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0">
+        <Command>
+          <CommandInput
+            placeholder="Search faculty..."
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            <CommandEmpty>No faculty found.</CommandEmpty>
+            {filtered.map((prof) => (
+              <CommandItem
+                key={prof.id}
+                value={prof.name}
+                onSelect={(currentValue) => {
+                  onChange(currentValue);
+                  setOpen(false);
+                  setSearch('');
+                }}
+              >
+                <Check
+                  className={cn(
+                    'mr-2 h-4 w-4',
+                    value === prof.name ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+                {prof.name}
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 interface TimeSlot {
   id: string;
@@ -36,7 +118,6 @@ const TimetableManagement = () => {
   const [selectedSection, setSelectedSection] = useState('A');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
-  interface Option { id: string; name: string }
   const [subjects, setSubjects] = useState<Option[]>([]);
   const [professors, setProfessors] = useState<Option[]>([]);
   const [newSlot, setNewSlot] = useState({
@@ -329,16 +410,11 @@ const TimetableManagement = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Faculty</label>
-                    <Select value={newSlot.faculty} onValueChange={(value) => setNewSlot({ ...newSlot, faculty: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select faculty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {professors.map(professor => (
-                          <SelectItem key={professor.id} value={professor.name}>{professor.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ProfessorCombobox
+                      value={newSlot.faculty}
+                      onChange={(value) => setNewSlot({ ...newSlot, faculty: value })}
+                      professors={professors}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Room</label>
@@ -553,16 +629,13 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlot
         </SelectContent>
       </Select>
       
-      <Select value={editData.faculty} onValueChange={(value) => setEditData({ ...editData, faculty: value })}>
-        <SelectTrigger className="h-6 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {professors.map((professor) => (
-            <SelectItem key={professor.id} value={professor.name}>{professor.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <ProfessorCombobox
+        value={editData.faculty}
+        onChange={(value) => setEditData({ ...editData, faculty: value })}
+        professors={professors}
+        buttonClassName="h-6 text-xs"
+        placeholder="Faculty"
+      />
       
       <Input 
         value={editData.room}
