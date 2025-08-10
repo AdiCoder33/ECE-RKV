@@ -119,6 +119,41 @@ const AttendanceManager = () => {
     }
   }, [subjects, selectedSubject]);
 
+  const fetchAttendance = React.useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
+      if (selectedSubject) {
+        url += `&subjectId=${selectedSubject}`;
+      }
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch attendance');
+      }
+      type AttendanceRecord = {
+        studentId: string;
+        present: boolean | number;
+        period: string | number;
+      };
+      const data: AttendanceRecord[] = await response.json();
+      const periodRecords = data.filter(r => r.period?.toString() === selectedPeriod);
+      setStudents(prev =>
+        prev.map(student => {
+          const record = periodRecords.find(r => r.studentId === student.id);
+          return record
+            ? { ...student, present: Boolean(record.present) }
+            : { ...student, present: false };
+        })
+      );
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+    }
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -205,41 +240,6 @@ const AttendanceManager = () => {
 
     fetchData();
   }, [selectedYear, selectedSection, selectedSubject, fetchAttendance]);
-
-  const fetchAttendance = React.useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
-      if (selectedSubject) {
-        url += `&subjectId=${selectedSubject}`;
-      }
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch attendance');
-      }
-      type AttendanceRecord = {
-        studentId: string;
-        present: boolean | number;
-        period: string | number;
-      };
-      const data: AttendanceRecord[] = await response.json();
-      const periodRecords = data.filter(r => r.period?.toString() === selectedPeriod);
-      setStudents(prev =>
-        prev.map(student => {
-          const record = periodRecords.find(r => r.studentId === student.id);
-          return record
-            ? { ...student, present: Boolean(record.present) }
-            : { ...student, present: false };
-        })
-      );
-    } catch (error) {
-      console.error('Error fetching attendance:', error);
-    }
-  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
 
   React.useEffect(() => {
     fetchAttendance();
