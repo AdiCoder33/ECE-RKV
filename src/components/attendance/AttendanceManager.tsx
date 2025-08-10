@@ -46,12 +46,14 @@ const AttendanceManager = () => {
   const { user } = useAuth();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const subjectId = searchParams.get('subject') || undefined;
+  const initialSubject = searchParams.get('subject') || '';
   const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPeriod, setSelectedPeriod] = useState('1');
+  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState(initialSubject);
   const [searchTerm, setSearchTerm] = useState('');
   const [api, setApi] = React.useState<CarouselApi | null>(null);
   const isDesktop = useMediaQuery('(min-width:768px)');
@@ -77,6 +79,37 @@ const AttendanceManager = () => {
     { value: '5', label: 'Period 5 (3:00 PM - 4:00 PM)' },
     { value: '6', label: 'Period 6 (4:00 PM - 5:00 PM)' }
   ];
+
+  const getCurrentSemester = () => {
+    const month = new Date().getMonth() + 1;
+    return month >= 6 && month <= 11 ? '1' : '2';
+  };
+  const currentSemester = getCurrentSemester();
+
+  React.useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${apiBase}/subjects?year=${selectedYear}&semester=${currentSemester}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch subjects');
+        }
+        const data: { id: string; name: string }[] = await response.json();
+        setSubjects(data);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
+    };
+
+    fetchSubjects();
+  }, [selectedYear, currentSemester]);
 
   React.useEffect(() => {
     const fetchStudents = async () => {
@@ -119,8 +152,8 @@ const AttendanceManager = () => {
     try {
       const token = localStorage.getItem('token');
       let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
-      if (subjectId) {
-        url += `&subjectId=${subjectId}`;
+      if (selectedSubject) {
+        url += `&subjectId=${selectedSubject}`;
       }
       const response = await fetch(url, {
         headers: {
@@ -148,7 +181,7 @@ const AttendanceManager = () => {
     } catch (error) {
       console.error('Error fetching attendance:', error);
     }
-  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjectId]);
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
 
   React.useEffect(() => {
     fetchAttendance();
@@ -204,6 +237,44 @@ const AttendanceManager = () => {
     return { variant: 'destructive' as const, label: 'Critical' };
   };
 
+  React.useEffect(() => {
+    const autofillSubject = async () => {
+      if (selectedSubject) return;
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${apiBase}/timetable?year=${selectedYear}&semester=${currentSemester}&section=${selectedSection}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) return;
+        type TimetableSlot = { day: string; time: string; subject: string };
+        const data: TimetableSlot[] = await response.json();
+        const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+        const periodTimes: Record<string, string> = {
+          '1': '09:00-10:00',
+          '2': '10:00-11:00',
+          '3': '11:00-12:00',
+          '4': '14:00-15:00',
+          '5': '15:00-16:00',
+          '6': '16:00-17:00'
+        };
+        const slot = data.find((s) => s.day === day && s.time === periodTimes[selectedPeriod]);
+        if (slot) {
+          const matched = subjects.find(sub => sub.name === slot.subject);
+          if (matched) setSelectedSubject(matched.id);
+        }
+      } catch (error) {
+        console.error('Error auto-filling subject:', error);
+      }
+    };
+
+    autofillSubject();
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjects, selectedSubject, currentSemester]);
+
   const handleSaveAttendance = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -215,7 +286,7 @@ const AttendanceManager = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          subjectId,
+          subjectId: selectedSubject,
           date: selectedDate,
           period: selectedPeriod,
           attendanceData,
@@ -269,7 +340,7 @@ const AttendanceManager = () => {
               </p>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year-select">Year</Label>
               <select 
@@ -310,7 +381,7 @@ const AttendanceManager = () => {
 
             <div className="space-y-2">
               <Label htmlFor="period-select">Period</Label>
-              <select 
+              <select
                 id="period-select"
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -320,6 +391,21 @@ const AttendanceManager = () => {
                   <option key={period.value} value={period.value}>
                     {period.label}
                   </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subject-select">Subject</Label>
+              <select
+                id="subject-select"
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="w-full p-2 border rounded-md bg-background text-foreground"
+              >
+                <option value="">Select Subject</option>
+                {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>{subject.name}</option>
                 ))}
               </select>
             </div>
