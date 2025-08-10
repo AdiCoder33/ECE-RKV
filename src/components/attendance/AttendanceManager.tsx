@@ -230,7 +230,7 @@ const AttendanceManager = () => {
       const periodRecords = data.filter(r => r.period?.toString() === selectedPeriod);
       setStudents(prev =>
         prev.map(student => {
-          const record = periodRecords.find(r => r.studentId === student.id);
+          const record = periodRecords.find(r => String(r.studentId) === student.id);
           return record
             ? { ...student, present: Boolean(record.present) }
             : { ...student, present: false };
@@ -346,7 +346,7 @@ const AttendanceManager = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const attendanceData = students.map(s => ({ studentId: s.id, present: s.present }));
+      const attendanceData = students.map(s => ({ studentId: Number(s.id), present: s.present }));
       const response = await fetch(`${apiBase}/attendance/bulk`, {
         method: 'POST',
         headers: {
