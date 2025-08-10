@@ -25,6 +25,7 @@ const ProfessorDashboard = () => {
   const navigate = useNavigate();
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const totalStudents = 156;
@@ -91,6 +92,7 @@ const ProfessorDashboard = () => {
 
   useEffect(() => {
     fetchTodaySchedule();
+    fetchSubjects();
   }, []);
 
   const fetchTodaySchedule = async () => {
@@ -120,6 +122,30 @@ const ProfessorDashboard = () => {
     }
   };
 
+  const fetchSubjects = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/subjects`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const map: Record<string, string> = data.reduce(
+          (acc: Record<string, string>, subj: { id: string; name: string }) => {
+            acc[subj.name] = subj.id;
+            return acc;
+          },
+          {}
+        );
+        setSubjectMap(map);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+    }
+  };
+
   const getCurrentTime = () => {
     const now = new Date();
     return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -132,7 +158,8 @@ const ProfessorDashboard = () => {
   };
 
   const handleClassClick = (classItem) => {
-    navigate(`/dashboard/attendance?year=${classItem.year}&section=${classItem.section}&subject=${classItem.subject}`);
+    const subjectId = subjectMap[classItem.subject] || classItem.subject;
+    navigate(`/dashboard/attendance?year=${classItem.year}&section=${classItem.section}&subject=${subjectId}`);
   };
 
   const recentActivities = [
