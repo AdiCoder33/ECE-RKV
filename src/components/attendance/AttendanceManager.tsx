@@ -165,9 +165,9 @@ const AttendanceManager = () => {
         setStudents(mapped);
 
         // Fetch attendance summary to update percentages
-        if (cid && subjectId) {
+        if (cid && selectedSubject) {
           const summaryRes = await fetch(
-            `${apiBase}/attendance/summary?classId=${cid}&subjectId=${subjectId}`,
+            `${apiBase}/attendance/summary?classId=${cid}&subjectId=${selectedSubject}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -196,7 +196,7 @@ const AttendanceManager = () => {
     };
 
     fetchData();
-  }, [selectedYear, selectedSection, subjectId]);
+  }, [selectedYear, selectedSection, selectedSubject]);
 
   const fetchAttendance = React.useCallback(async () => {
     try {
