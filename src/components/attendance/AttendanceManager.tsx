@@ -62,6 +62,7 @@ const AttendanceManager = () => {
   const isProfessor = user?.role === 'professor';
 
   const [students, setStudents] = useState<AttendanceStudent[]>([]);
+  const [classId, setClassId] = useState<string | null>(null);
 
   // Filter years and sections based on professor's assigned classes
   const getAllowedYears = () => hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']; // Professor demo: years 3-4
@@ -79,14 +80,36 @@ const AttendanceManager = () => {
   ];
 
   React.useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiBase}/students?year=${selectedYear}&section=${selectedSection}`, {
+
+        // Fetch class ID based on selected year and section
+        const classRes = await fetch(`${apiBase}/classes`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        if (!classRes.ok) {
+          throw new Error('Failed to fetch classes');
+        }
+        type ClassResponse = { id: string; year: number; section: string };
+        const classes: ClassResponse[] = await classRes.json();
+        const cls = classes.find(
+          (c) => c.year.toString() === selectedYear && c.section === selectedSection
+        );
+        const cid = cls?.id || null;
+        setClassId(cid);
+
+        // Fetch students for the selected class
+        const response = await fetch(
+          `${apiBase}/students?year=${selectedYear}&section=${selectedSection}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error('Failed to fetch students');
         }
@@ -107,13 +130,40 @@ const AttendanceManager = () => {
           present: false,
         }));
         setStudents(mapped);
+
+        // Fetch attendance summary to update percentages
+        if (cid && subjectId) {
+          const summaryRes = await fetch(
+            `${apiBase}/attendance/summary?classId=${cid}&subjectId=${subjectId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          if (summaryRes.ok) {
+            type SummaryResponse = {
+              studentId: string;
+              attendancePercentage: number;
+            };
+            const summary: SummaryResponse[] = await summaryRes.json();
+            setStudents((prev) =>
+              prev.map((student) => {
+                const rec = summary.find((s) => s.studentId === student.id);
+                return rec
+                  ? { ...student, attendancePercentage: Math.round(rec.attendancePercentage) }
+                  : student;
+              })
+            );
+          }
+        }
       } catch (error) {
         console.error('Error fetching students:', error);
       }
     };
 
-    fetchStudents();
-  }, [selectedYear, selectedSection]);
+    fetchData();
+  }, [selectedYear, selectedSection, subjectId]);
 
   const fetchAttendance = React.useCallback(async () => {
     try {
@@ -190,7 +240,13 @@ const AttendanceManager = () => {
 
   const presentCount = students.filter(s => s.present).length;
   const absentCount = students.length - presentCount;
-  const attendanceRate = Math.round((presentCount / students.length) * 100);
+  const attendanceRate =
+    students.length > 0
+      ? Math.round(
+          students.reduce((sum, s) => sum + s.attendancePercentage, 0) /
+            students.length
+        )
+      : 0;
 
   const getAttendanceColor = (percentage: number) => {
     if (percentage >= 85) return 'text-green-600';
