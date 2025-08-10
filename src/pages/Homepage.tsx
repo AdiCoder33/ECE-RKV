@@ -1,7 +1,7 @@
 // src/pages/LandingPage.tsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, Variants } from "framer-motion";
+import { motion, Variants, AnimatePresence } from "framer-motion";
 import Logo from "../Assets/rgukt.jpeg";
 import announcements from "../Assets/rgukt.jpeg";
 import aboutImage from "../Assets/hero3.jpeg"; // You'll need to add a relevant image
@@ -29,11 +29,6 @@ const floatVariant: Variants = {
     transition: { type: "spring", stiffness: 40, damping: 12, duration: 1.0 },
   },
 };
-const youtubeLinks = [
-  "https://www.youtube.com/embed/dQw4w9WgXcQ",
-  "https://www.youtube.com/embed/3JZ_D3ELwOQ",
-  "https://www.youtube.com/embed/L_jWHffIx5E",
-];
 
 // NEW: Theme switcher component
 const ThemeToggle: React.FC = () => {
@@ -255,7 +250,7 @@ const LandingPage: React.FC = () => {
   };
 
   const facultyList = [
-    { name: "Dr. A. Kumar", title: "Professor" },
+    { name: "MR.Y Arun Kumar", title: "HOD of the department" },
     { name: "Prof. S. Reddy", title: "Professor" },
     { name: "Dr. P. Sharma", title: "Professor" },
     { name: "Dr. M. Rao", title: "Associate Professor" },
@@ -413,8 +408,7 @@ const LandingPage: React.FC = () => {
           </button>
         </div>
       </motion.section>
-    );
-  };
+   ) };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -423,6 +417,129 @@ const LandingPage: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // NEW: Achievements Data for the carousel
+  const achievementsData = [
+    {
+      icon: "🏆",
+      title: "National-Level Hackathon Winners",
+      description: "Our student team 'Innovators' secured the first place in the National Smart India Hackathon.",
+      image: "https://via.placeholder.com/600x400/FF5722/FFFFFF?text=Hackathon+Winners",
+    },
+    {
+      icon: "🔬",
+      title: "Patents Filed by Faculty",
+      description: "Two of our faculty members have successfully filed patents for their research on IoT-based energy systems.",
+      image: "https://via.placeholder.com/600x400/4CAF50/FFFFFF?text=Faculty+Patents",
+    },
+    {
+      icon: "🚀",
+      title: "Record Placements in 2024",
+      description: "The ECE department achieved a record-high placement percentage of 98% in top-tier companies.",
+      image: "https://via.placeholder.com/600x400/2196F3/FFFFFF?text=Record+Placements",
+    },
+    {
+      icon: "🏅",
+      title: "GATE Top 100 Ranks",
+      description: "Three of our final-year students secured ranks within the top 100 in the highly competitive GATE examination.",
+      image: "https://via.placeholder.com/600x400/9C27B0/FFFFFF?text=GATE+Achievers",
+    },
+    {
+      icon: "💡",
+      title: "International Journal Publications",
+      description: "Students from our department published a total of 15 papers in various IEEE and Springer international journals.",
+      image: "https://via.placeholder.com/600x400/FFC107/FFFFFF?text=Journal+Publications",
+    },
+  ];
+
+  // NEW: Achievements Carousel Component
+  const AchievementsCarousel: React.FC = () => {
+    const [currentAchievement, setCurrentAchievement] = useState(0);
+    const achievementsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+      achievementsIntervalRef.current = setInterval(() => {
+        setCurrentAchievement((prev) => (prev + 1) % achievementsData.length);
+      }, 4000); // Change slide every 4 seconds
+
+      return () => {
+        if (achievementsIntervalRef.current) {
+          clearInterval(achievementsIntervalRef.current);
+        }
+      };
+    }, [achievementsData.length]);
+
+    const achievementVariants: Variants = {
+      enter: { opacity: 0, scale: 0.95, x: 100 },
+      center: { opacity: 1, scale: 1, x: 0 },
+      exit: { opacity: 0, scale: 0.95, x: -100 },
+    };
+
+    return (
+      <div className="relative w-full h-[420px] sm:h-[480px] md:h-[520px] lg:h-[560px] xl:h-[600px] overflow-hidden rounded-2xl shadow-2xl bg-gradient-to-br from-red-100 via-yellow-50 to-blue-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 flex flex-col justify-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentAchievement}
+            className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 sm:p-8"
+            variants={achievementVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "spring", stiffness: 200, damping: 25 }}
+          >
+            <img
+              src={achievementsData[currentAchievement].image}
+              alt={achievementsData[currentAchievement].title}
+              className="w-full h-[180px] sm:h-[260px] md:h-[320px] lg:h-[380px] xl:h-[420px] object-cover rounded-xl shadow-lg mb-4 border-4 border-white dark:border-gray-800"
+            />
+            <div className="text-5xl mb-2">{achievementsData[currentAchievement].icon}</div>
+            <h3 className="text-xl sm:text-2xl font-bold text-red-700 dark:text-yellow-300 mb-1">{achievementsData[currentAchievement].title}</h3>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-base sm:text-lg">{achievementsData[currentAchievement].description}</p>
+          </motion.div>
+        </AnimatePresence>
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+          {achievementsData.map((_, idx) => (
+            <button
+              key={idx}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                idx === currentAchievement ? "bg-red-700" : "bg-gray-400"
+              }`}
+              onClick={() => setCurrentAchievement(idx)}
+              aria-label={`Show achievement ${idx + 1}`}
+            />
+          ))}
+        </div>
+        {/* Creative sparkle effect */}
+        <div className="absolute top-2 right-2 animate-pulse">
+          <svg width="244" height="24" fill="none">
+            <circle cx="12" cy="12" r="3" fill="#FBBF24" opacity="0.7"/>
+            <circle cx="18" cy="6" r="1.5" fill="#F87171" opacity="0.7"/>
+            <circle cx="6" cy="18" r="1" fill="#60A5FA" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+    )};
+  
+  // NEW: Message from HOD component to fill the gap
+  const MessageFromHOD: React.FC = () => (
+    <motion.div 
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 transition-colors"
+      variants={floatVariant}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+    >
+      <h3 className="text-lg font-bold text-red-700 mb-2">Message from the HOD</h3>
+      <p className="text-sm text-gray-700 dark:text-gray-300">
+        "Our department is a hub of innovation and collaboration. We are committed to nurturing the next generation of engineers and leaders. We encourage every student to explore their potential and contribute to the world of technology."
+      </p>
+      <div className="mt-4 text-right">
+        <p className="font-semibold text-red-700">Dr. V. Prasad</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Head of Department, ECE</p>
+      </div>
+    </motion.div>
+  );
+
 
   return (
     // MODIFIED: Added dark mode class to the main container.
@@ -603,15 +720,16 @@ const LandingPage: React.FC = () => {
 
       {/* ANNOUNCEMENTS */}
       <main className="flex-grow w-full flex flex-col items-start px-2 sm:px-4 py-4 md:px-16">
-        {/* Remove motion.div and floating effect from Announcements section */}
         <div className="w-full max-w-6xl">
+          {/* Announcements and Quick Links stacked on mobile, side-by-side on desktop */}
           <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
             {/* Announcements - Left Side */}
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-700 mb-4 text-left">
                 Latest Announcements
               </h2>
-              {/* MODIFIED: Added ref, overflow, max-height, and event handlers for auto-scroll */}
+              {/* Quick Links directly below heading, above messages */}
+              
               <div
                 ref={announcementsRef}
                 className="space-y-4 sm:space-y-6 max-h-[550px] overflow-y-auto pr-2"
@@ -621,7 +739,7 @@ const LandingPage: React.FC = () => {
                 {announcementData.map((notice, index) => (
                   <div
                     key={index}
-                    className="bg-white dark:bg-gray-800 border-l-4 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 transition hover:shadow-xl text-left" // ADDED: dark mode class
+                    className="bg-white dark:bg-gray-800 border-l-4 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 transition hover:shadow-xl text-left"
                     style={{ borderLeftColor: notice.color }}
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-1">
@@ -651,11 +769,9 @@ const LandingPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            {/* Right Side Panel */}
-            <div className="w-full md:w-72 flex-shrink-0 flex flex-col gap-4 justify-center">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4 mt-8 md:mt-16">
-                {" "}
-                {/* ADDED: dark mode class */}
+            {/* Right Side Panel - only on desktop */}
+            <div className="w-full md:w-72 flex-shrink-0 flex-col gap-4 justify-start md:justify-center hidden md:flex">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4 mt-0">
                 <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
                   Quick Links
                 </h3>
@@ -695,47 +811,27 @@ const LandingPage: React.FC = () => {
                 </ul>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4">
-                {" "}
-                {/* ADDED: dark mode class */}
                 <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
                   Upcoming Events
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  {" "}
-                  {/* ADDED: dark mode class */}
                   <li>VLSI Seminar - 28/08/2025</li>
                   <li>Hackathon Registration - 01/09/2025</li>
                   <li>Lab Group Meeting - 05/09/2025</li>
                 </ul>
               </div>
-              {/* Creative Card */}
-              <div className="bg-gradient-to-r from-red-100 via-blue-100 to-green-100 dark:from-red-900 dark:via-blue-900 dark:to-green-900 rounded-xl shadow-lg p-4 flex flex-col items-center justify-center mt-2">
-                {" "}
-                {/* ADDED: dark mode class */}
-                <svg
-                  className="w-8 h-8 text-red-700 mb-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
-                  />
+              <div className="bg-gradient-to-r from-red-100 via-blue-100 to-green-100 rounded-xl shadow-lg p-4 flex flex-col items-center justify-center mt-2">
+                <svg className="w-8 h-8 text-red-700 mb-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
                 </svg>
-                <p className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  {" "}
-                  {/* ADDED: dark mode class */}
-                  "Empowering innovation and excellence in every student.{" "}
-                  <br className="hidden sm:block" /> Dream big, achieve bigger!"
+                <p className="text-center text-sm font-semibold text-gray-700">
+                  "Empowering innovation and excellence in every student.<br className='hidden sm:block'/> Dream big, achieve bigger!"
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </main>
+     </main>
 
       {/* COMBINED ABOUT & ACHIEVEMENTS SECTION */}
       <motion.section 
@@ -770,50 +866,19 @@ const LandingPage: React.FC = () => {
 
       {/* ACHIEVEMENTS SECTION */}
       <motion.section 
-        className="bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-8" 
+        className="bg-gray-50 dark:bg-gray-900 py-16 px-2 sm:px-16"
         variants={floatVariant} 
         initial="hidden" 
         whileInView="visible" 
         viewport={{ once: false, amount: 0.2 }}
       >
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
-           {/* Achievements Image - Left Side */}
-           <div>
-            <img 
-              src={achievementsImage} 
-              alt="Achievements" 
-              className="w-full h-auto object-cover rounded-lg shadow-xl" 
-            />
-          </div>
-          {/* Achievements - Right Side */}
-          <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold text-red-700 mb-6">Department Achievements</h2>
-            <ul className="list-none text-left space-y-4">
-              <li className="flex items-start">
-                <span className="text-red-700 text-2xl mr-3 font-bold">⭐</span>
-                <p className="text-gray-700 dark:text-gray-300">
-                  **Top Ranks in Competitive Exams:** Our students have consistently secured top ranks in national-level exams like **GATE**, **IES**, and others.
-                </p>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-700 text-2xl mr-3 font-bold">🏆</span>
-                <p className="text-gray-700 dark:text-gray-300">
-                  **Research and Publications:** Our faculty and students have published over 50 research papers in renowned international journals and conferences.
-                </p>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-700 text-2xl mr-3 font-bold">💡</span>
-                <p className="text-gray-700 dark:text-gray-300">
-                  **State-of-the-Art Labs:** We have established cutting-edge laboratories for **IoT**, **VLSI**, and **Signal Processing**, providing hands-on experience.
-                </p>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-700 text-2xl mr-3 font-bold">💻</span>
-                <p className="text-gray-700 dark:text-gray-300">
-                  **Innovation and Hackathons:** Active participation and victories in national hackathons and innovation contests, showcasing our students' problem-solving skills.
-                </p>
-              </li>
-            </ul>
+        <div className="max-w-[1200px] mx-auto flex flex-col items-center"> {/* Increased max width */}
+          <h2 className="text-4xl font-extrabold text-red-700 mb-10 text-center">Department Achievements</h2>
+          <div className="w-full flex justify-center">
+            {/* Make AchievementsCarousel wider */}
+            <div className="w-full max-w-[900px]">
+              <AchievementsCarousel />
+            </div>
           </div>
         </div>
       </motion.section>
