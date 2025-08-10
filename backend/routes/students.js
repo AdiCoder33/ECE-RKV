@@ -10,8 +10,23 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const { classId, year, semester, section } = req.query;
     
     let query = `
-      SELECT 
-        u.*,
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        u.department,
+        u.year,
+        u.semester,
+        u.section,
+        u.roll_number,
+        u.phone,
+        u.date_of_birth,
+        u.address,
+        u.parent_contact,
+        u.blood_group,
+        u.admission_year,
+        u.profile_image,
         c.year as class_year,
         c.semester as class_semester,
         c.section as class_section,
@@ -47,7 +62,28 @@ router.get('/', authenticateToken, async (req, res, next) => {
       params.push(section);
     }
     
-    query += ' GROUP BY u.id, u.name, u.email, u.role, u.department, u.year, u.semester, u.section, u.roll_number, u.phone, u.date_of_birth, u.address, u.parent_contact, u.blood_group, u.admission_year, u.profile_image, c.year, c.semester, c.section, ar.cgpa ORDER BY u.year, u.semester, u.section, u.roll_number';
+    query += ` GROUP BY
+      u.id,
+      u.name,
+      u.email,
+      u.role,
+      u.department,
+      u.year,
+      u.semester,
+      u.section,
+      u.roll_number,
+      u.phone,
+      u.date_of_birth,
+      u.address,
+      u.parent_contact,
+      u.blood_group,
+      u.admission_year,
+      u.profile_image,
+      c.year,
+      c.semester,
+      c.section,
+      ar.cgpa
+      ORDER BY u.year, u.semester, u.section, u.roll_number`;
     
     const result = await executeQuery(query, params);
     const students = result.recordset || [];
