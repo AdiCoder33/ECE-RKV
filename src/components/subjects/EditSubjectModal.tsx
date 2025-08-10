@@ -16,26 +16,23 @@ import { Subject } from '@/types';
 interface EditSubjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onEditSubject: (id: string, subject: Omit<Subject, 'id'>) => void;
+  onEditSubject: (id: string, subject: Omit<Subject, 'id'>) => Promise<void>;
   subject: Subject | null;
 }
 
-const EditSubjectModal: React.FC<EditSubjectModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onEditSubject, 
-  subject 
+const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
+  isOpen,
+  onClose,
+  onEditSubject,
+  subject
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
     code: '',
     year: 1,
-    semester: 1,
+    semester: 1 as 1 | 2,
     credits: 3,
-    professorId: '',
-    professorName: '',
-    type: 'theory' as 'theory' | 'lab' | 'elective',
-    maxMarks: 100
+    type: 'theory'
   });
 
   useEffect(() => {
@@ -46,18 +43,15 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
         year: subject.year,
         semester: subject.semester,
         credits: subject.credits,
-        professorId: subject.professorId,
-        professorName: subject.professorName,
-        type: subject.type,
-        maxMarks: subject.maxMarks
+        type: subject.type
       });
     }
   }, [subject]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (subject) {
-      onEditSubject(subject.id, formData);
+      await onEditSubject(subject.id, formData);
       onClose();
     }
   };
@@ -123,7 +117,7 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
             <Label htmlFor="semester" className="text-right">Semester</Label>
             <Select
               value={formData.semester.toString()}
-              onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) })}
+              onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) as 1 | 2 })}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue />
@@ -131,12 +125,6 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
               <SelectContent>
                 <SelectItem value="1">1st Semester</SelectItem>
                 <SelectItem value="2">2nd Semester</SelectItem>
-                <SelectItem value="3">3rd Semester</SelectItem>
-                <SelectItem value="4">4th Semester</SelectItem>
-                <SelectItem value="5">5th Semester</SelectItem>
-                <SelectItem value="6">6th Semester</SelectItem>
-                <SelectItem value="7">7th Semester</SelectItem>
-                <SelectItem value="8">8th Semester</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -170,32 +158,6 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
                 <SelectItem value="elective">Elective</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="maxMarks" className="text-right">Max Marks</Label>
-            <Input
-              id="maxMarks"
-              type="number"
-              min="25"
-              max="100"
-              value={formData.maxMarks}
-              onChange={(e) => setFormData({ ...formData, maxMarks: parseInt(e.target.value) })}
-              className="col-span-3"
-              required
-            />
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="professorName" className="text-right">Professor</Label>
-            <Input
-              id="professorName"
-              value={formData.professorName}
-              onChange={(e) => setFormData({ ...formData, professorName: e.target.value })}
-              className="col-span-3"
-              placeholder="Professor name"
-              required
-            />
           </div>
           
           <DialogFooter>

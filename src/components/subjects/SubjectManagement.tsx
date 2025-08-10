@@ -1,126 +1,154 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BookOpen, 
+import {
+  BookOpen,
   Plus,
   Edit,
   Trash2,
   Search,
   Clock,
-  Award,
-  User
+  Award
 } from 'lucide-react';
 import { Subject } from '@/types';
 import AddSubjectModal from './AddSubjectModal';
 import EditSubjectModal from './EditSubjectModal';
 import { useToast } from "@/hooks/use-toast";
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const SubjectManagement = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
-  const [subjects, setSubjects] = useState<Subject[]>([
-    {
-      id: '1',
-      name: 'Engineering Mathematics I',
-      code: 'ECE101',
-      year: 1,
-      semester: 1,
-      credits: 4,
-      professorId: '2',
-      professorName: 'Prof. Priya Sharma',
-      type: 'theory',
-      maxMarks: 100
-    },
-    {
-      id: '2',
-      name: 'Basic Electronics Engineering',
-      code: 'ECE102',
-      year: 1,
-      semester: 1,
-      credits: 3,
-      professorId: '3',
-      professorName: 'Prof. Amit Kumar',
-      type: 'theory',
-      maxMarks: 100
-    },
-    {
-      id: '3',
-      name: 'Electronics Workshop',
-      code: 'ECE103',
-      year: 1,
-      semester: 1,
-      credits: 2,
-      professorId: '4',
-      professorName: 'Prof. Neha Gupta',
-      type: 'lab',
-      maxMarks: 50
-    },
-    {
-      id: '4',
-      name: 'Digital Signal Processing',
-      code: 'ECE301',
-      year: 3,
-      semester: 5,
-      credits: 4,
-      professorId: '2',
-      professorName: 'Prof. Priya Sharma',
-      type: 'theory',
-      maxMarks: 100
-    },
-    {
-      id: '5',
-      name: 'VLSI Design',
-      code: 'ECE302',
-      year: 3,
-      semester: 5,
-      credits: 3,
-      professorId: '5',
-      professorName: 'Prof. Ravi Patel',
-      type: 'elective',
-      maxMarks: 100
-    }
-  ]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
 
-  const handleAddSubject = (newSubject: Omit<Subject, 'id'>) => {
-    const subject: Subject = {
-      ...newSubject,
-      id: (subjects.length + 1).toString()
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch(`${apiBase}/subjects`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch subjects');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        const mapped: Subject[] = data.map((s) => ({
+          id: String(s.id ?? ''),
+          name: (s.name ?? '') as string,
+          code: (s.code ?? '') as string,
+          year: Number(s.year ?? 0),
+          semester: Number(s.semester ?? 1) as 1 | 2,
+          credits: Number(s.credits ?? 0),
+          type: (s.type ?? 'theory') as 'theory' | 'lab' | 'elective',
+        }));
+        setSubjects(mapped);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load subjects",
+        });
+      }
     };
-    setSubjects(prev => [...prev, subject]);
-    toast({
-      title: "Subject Added",
-      description: "Subject has been created successfully",
-    });
+    fetchSubjects();
+  }, []);
+
+  const handleAddSubject = async (newSubject: Omit<Subject, 'id'>) => {
+    try {
+      const response = await fetch(`${apiBase}/subjects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(newSubject),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add subject');
+      }
+      const data = await response.json();
+      const subject: Subject = {
+        ...newSubject,
+        id: String(data.id ?? ''),
+      };
+      setSubjects((prev) => [...prev, subject]);
+      toast({
+        title: "Subject Added",
+        description: "Subject has been created successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      });
+    }
   };
 
-  const handleEditSubject = (id: string, updatedSubject: Omit<Subject, 'id'>) => {
-    setSubjects(prev => prev.map(subject => 
-      subject.id === id ? { ...updatedSubject, id } : subject
-    ));
-    toast({
-      title: "Subject Updated",
-      description: "Subject has been updated successfully",
-    });
+  const handleEditSubject = async (id: string, updatedSubject: Omit<Subject, 'id'>) => {
+    try {
+      const response = await fetch(`${apiBase}/subjects/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(updatedSubject),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update subject');
+      }
+      setSubjects((prev) => prev.map((subject) => (subject.id === id ? { ...updatedSubject, id } : subject)));
+      toast({
+        title: "Subject Updated",
+        description: "Subject has been updated successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      });
+    }
   };
 
-  const handleDeleteSubject = (subjectId: string) => {
-    setSubjects(prev => prev.filter(subject => subject.id !== subjectId));
-    toast({
-      variant: "destructive",
-      title: "Subject Deleted",
-      description: "Subject has been removed successfully",
-    });
+  const handleDeleteSubject = async (subjectId: string) => {
+    try {
+      const response = await fetch(`${apiBase}/subjects/${subjectId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete subject');
+      }
+      setSubjects((prev) => prev.filter((subject) => subject.id !== subjectId));
+      toast({
+        variant: "destructive",
+        title: "Subject Deleted",
+        description: "Subject has been removed successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (error as Error).message,
+      });
+    }
   };
 
   const handleEditClick = (subject: Subject) => {
@@ -142,8 +170,9 @@ const SubjectManagement = () => {
                          subject.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesYear = selectedYear === 'all' || subject.year.toString() === selectedYear;
     const matchesType = selectedType === 'all' || subject.type === selectedType;
-    
-    return matchesSearch && matchesYear && matchesType;
+    const matchesSemester = selectedSemester === 'all' || subject.semester.toString() === selectedSemester;
+
+    return matchesSearch && matchesYear && matchesType && matchesSemester;
   });
 
   const subjectStats = {
@@ -269,6 +298,16 @@ const SubjectManagement = () => {
             </select>
 
             <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="px-3 py-2 border rounded-md bg-background text-foreground"
+            >
+              <option value="all">All Semesters</option>
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
+            </select>
+
+            <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               className="px-3 py-2 border rounded-md bg-background text-foreground"
@@ -310,20 +349,10 @@ const SubjectManagement = () => {
                 </div>
               </div>
 
-              <div className="pt-2 border-t">
-                <p className="text-sm text-muted-foreground mb-2">Max Marks</p>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <Award className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                  <span className="text-sm font-medium">{subject.maxMarks}</span>
-                </div>
-              </div>
-
               <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="flex-1"
                   onClick={() => handleEditClick(subject)}
                 >

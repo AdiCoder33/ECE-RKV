@@ -6,10 +6,12 @@ export interface User {
   role: 'admin' | 'hod' | 'professor' | 'student' | 'alumni';
   department?: string;
   year?: number;
+  semester?: 1 | 2;
   section?: string;
   rollNumber?: string;
   profileImage?: string;
   phone?: string;
+  createdAt?: string;
   dateOfBirth?: string;
   address?: string;
   parentContact?: string;
@@ -23,12 +25,9 @@ export interface Subject {
   name: string;
   code: string;
   year: number;
-  semester: number;
+  semester: 1 | 2;
   credits: number;
-  professorId: string;
-  professorName: string;
   type: 'theory' | 'lab' | 'elective';
-  maxMarks: number;
 }
 
 export interface Attendance {
@@ -67,7 +66,7 @@ export interface ChatMessage {
 export interface Class {
   id: string;
   year: number;
-  semester: number;
+  semester: 1 | 2;
   section: string;
   hodId?: string;
   hodName?: string;
@@ -106,7 +105,7 @@ export interface AcademicRecord {
   id: string;
   studentId: string;
   year: number;
-  semester: number;
+  semester: 1 | 2;
   subjects: {
     subjectId: string;
     subjectName: string;

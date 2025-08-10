@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,63 +30,153 @@ import ClassStudentsModal from './ClassStudentsModal';
 import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const ClassManagement = () => {
   const navigate = useNavigate();
-  const [classes, setClasses] = useState<Class[]>([
-    { id: '1', year: 1, semester: 1, section: 'A', subjects: [], students: [], totalStrength: 60 },
-    { id: '2', year: 2, semester: 3, section: 'B', subjects: [], students: [], totalStrength: 55 },
-    { id: '3', year: 3, semester: 5, section: 'C', subjects: [], students: [], totalStrength: 48 },
-  ]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newClassName, setNewClassName] = useState('');
   const [newClassYear, setNewClassYear] = useState(1);
+  const [newClassSemester, setNewClassSemester] = useState<1 | 2>(1);
   const [newClassSection, setNewClassSection] = useState('A');
   const { toast } = useToast()
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const handleCreateClass = () => {
-    if (newClassYear && newClassSection) {
-      const newClass: Class = {
-        id: String(classes.length + 1),
-        year: newClassYear,
-        semester: newClassYear * 2 - 1, // Calculate semester based on year
-        section: newClassSection,
-        subjects: [],
-        students: [],
-        totalStrength: 0,
-      };
-      setClasses([...classes, newClass]);
-      setIsCreateModalOpen(false);
-      setNewClassName('');
-      setNewClassYear(1);
-      setNewClassSection('A');
+  const fetchClasses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch classes');
+      }
+      const data: Class[] = await response.json();
+      setClasses(data);
+    } catch {
       toast({
-        title: "Class Created",
-        description: "Your class has been created successfully",
-      })
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load classes',
+      });
     }
   };
 
-  const handleEditClass = (id: string, updatedClass: Omit<Class, 'id'>) => {
-    setClasses(prev => prev.map(cls => 
-      cls.id === id ? { ...updatedClass, id } : cls
-    ));
-    toast({
-      title: "Class Updated",
-      description: "Class has been updated successfully",
-    });
+  useEffect(() => {
+    fetchClasses();
+  }, [toast]);
+
+  const handleCreateClass = async () => {
+    if (newClassYear && newClassSemester && newClassSection) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/classes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            year: newClassYear,
+            semester: newClassSemester,
+            section: newClassSection,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create class');
+        }
+
+        const createdClass: Class = await response.json();
+        setClasses(prev => [...prev, createdClass]);
+        setIsCreateModalOpen(false);
+        setNewClassYear(1);
+        setNewClassSemester(1);
+        setNewClassSection('A');
+        toast({
+          title: "Class Created",
+          description: "Your class has been created successfully",
+        });
+      } catch {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to create class',
+        });
+      }
+    }
   };
 
-  const handleDeleteClass = (classId: string) => {
-    setClasses(classes.filter(c => c.id !== classId));
-    toast({
-      variant: "destructive",
-      title: "Class Deleted",
-      description: "Your class has been deleted successfully",
-    })
+  const handleEditClass = async (id: string, updatedClass: Omit<Class, 'id'>) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedClass),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update class');
+      }
+
+      const updatedClassData: Class = await response.json();
+      setClasses(prev =>
+        prev.map(cls => (cls.id === id ? updatedClassData : cls))
+      );
+      toast({
+        title: "Class Updated",
+        description: "Class has been updated successfully",
+      });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update class',
+      });
+    }
+  };
+
+  const handleDeleteClass = async (classId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes/${classId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.message || 'Failed to delete class';
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: message,
+        });
+        return;
+      }
+
+      setClasses(prev => prev.filter(c => c.id !== classId));
+      toast({
+        title: 'Class Deleted',
+        description: 'Your class has been deleted successfully',
+      });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete class',
+      });
+    }
   };
 
   const handleEditClick = (cls: Class) => {
@@ -94,9 +184,44 @@ const ClassManagement = () => {
     setIsEditModalOpen(true);
   };
 
-  const handlePromoteStudents = () => {
-    console.log('Students promoted successfully');
-    // Logic to update student years would go here
+  const handlePromoteStudents = async (currentSemester: 1 | 2): Promise<boolean> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes/promote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentSemester }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.message || 'Failed to promote students';
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: message,
+        });
+        return false;
+      }
+
+      const data = await response.json();
+      toast({
+        title: 'Promotion Complete',
+        description: `${data.promoted} students promoted, ${data.graduated} students graduated`,
+      });
+      await fetchClasses();
+      return true;
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to promote students',
+      });
+      return false;
+    }
   };
 
   const handleClassClick = (cls: Class) => {
@@ -140,6 +265,7 @@ const ClassManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[100px]">Year</TableHead>
+                <TableHead>Semester</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead className="text-right">Total Students</TableHead>
@@ -148,31 +274,41 @@ const ClassManagement = () => {
             </TableHeader>
             <TableBody>
               {classes.map((cls) => (
-                 <TableRow key={cls.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleClassClick(cls)}>
-                   <TableCell className="font-medium">{cls.year}</TableCell>
-                   <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
-                   <TableCell>{cls.section}</TableCell>
-                   <TableCell className="text-right">{cls.totalStrength}</TableCell>
-                   <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                     <div className="flex items-center justify-center space-x-2">
-                       <Button 
-                         variant="outline" 
-                         size="icon"
-                         onClick={() => handleEditClick(cls)}
-                       >
-                         <Edit className="h-4 w-4" />
-                       </Button>
-                       <Button variant="outline" size="icon" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteClass(cls.id)}>
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
-                     </div>
-                   </TableCell>
+                <TableRow
+                  key={cls.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleClassClick(cls)}
+                >
+                  <TableCell className="font-medium">{cls.year}</TableCell>
+                  <TableCell>{cls.semester}</TableCell>
+                  <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
+                  <TableCell>{cls.section}</TableCell>
+                  <TableCell className="text-right">{cls.totalStrength}</TableCell>
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEditClick(cls)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteClass(cls.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={4}>Total</TableCell>
+                <TableCell colSpan={5}>Total</TableCell>
                 <TableCell className="text-right">{classes.length}</TableCell>
               </TableRow>
             </TableFooter>
@@ -210,12 +346,6 @@ const ClassManagement = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input id="name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year" className="text-right">
                 Year
               </Label>
@@ -228,6 +358,20 @@ const ClassManagement = () => {
                   <SelectItem value="2">2nd Year</SelectItem>
                   <SelectItem value="3">3rd Year</SelectItem>
                   <SelectItem value="4">4th Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="semester" className="text-right">
+                Semester
+              </Label>
+      <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
                 </SelectContent>
               </Select>
             </div>

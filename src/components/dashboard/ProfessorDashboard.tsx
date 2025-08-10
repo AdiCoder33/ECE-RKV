@@ -26,6 +26,7 @@ const ProfessorDashboard = () => {
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
   const totalStudents = 156;
   const activeClasses = 4;
   const avgAttendance = 84;
@@ -97,7 +98,7 @@ const ProfessorDashboard = () => {
       const token = localStorage.getItem('token');
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
       
-      const response = await fetch(`http://localhost:5000/api/timetable?faculty=${user?.name}&day=${today}`, {
+      const response = await fetch(`${apiBase}/timetable?faculty=${user?.name}&day=${today}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

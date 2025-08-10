@@ -1,6 +1,7 @@
 -- MSSQL Database Schema for College Management System
 
 -- Users table
+-- For existing deployments, run: ALTER TABLE users ADD semester INT NULL;
 CREATE TABLE users (
     id int IDENTITY(1,1) PRIMARY KEY,
     name nvarchar(255) NOT NULL,
@@ -9,6 +10,7 @@ CREATE TABLE users (
     role nvarchar(50) NOT NULL CHECK (role IN ('admin', 'hod', 'professor', 'student', 'alumni')),
     department nvarchar(100),
     year int,
+    semester int CHECK (semester IN (1,2) OR semester IS NULL),
     section nvarchar(10),
     roll_number nvarchar(50) UNIQUE,
     phone nvarchar(20),
@@ -20,6 +22,16 @@ CREATE TABLE users (
     updated_at datetime2 DEFAULT GETDATE()
 );
 
+-- Settings table
+-- Stores global configuration values like the current semester
+CREATE TABLE settings (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    current_semester int NOT NULL CHECK (current_semester IN (1,2)),
+    updated_at datetime2 DEFAULT GETDATE()
+);
+
+INSERT INTO settings (current_semester) VALUES (1);
+
 -- Subjects table
 CREATE TABLE subjects (
     id int IDENTITY(1,1) PRIMARY KEY,
@@ -28,23 +40,37 @@ CREATE TABLE subjects (
     year int NOT NULL,
     semester int NOT NULL,
     credits int NOT NULL,
-    professor_id int,
     type nvarchar(50) DEFAULT 'theory',
-    max_marks int DEFAULT 100,
-    created_at datetime2 DEFAULT GETDATE(),
-    FOREIGN KEY (professor_id) REFERENCES users(id)
+    created_at datetime2 DEFAULT GETDATE()
 );
 
 -- Classes table
+-- For existing deployments, run:
+--   ALTER TABLE classes ADD semester INT NOT NULL DEFAULT 1;
+--   -- Drop existing unique constraint on (year, section, department) before adding the new one
+--   ALTER TABLE classes DROP CONSTRAINT UQ_classes_year_section_department;
+--   ALTER TABLE classes ADD CONSTRAINT UQ_classes_year_semester_section UNIQUE (year, semester, section);
 CREATE TABLE classes (
     id int IDENTITY(1,1) PRIMARY KEY,
     year int NOT NULL,
+    semester int NOT NULL CHECK (semester IN (1,2)),
     section nvarchar(10) NOT NULL,
     department nvarchar(100) NOT NULL,
     hod_id int,
     created_at datetime2 DEFAULT GETDATE(),
     FOREIGN KEY (hod_id) REFERENCES users(id),
-    UNIQUE(year, section, department)
+    UNIQUE(year, semester, section)
+);
+
+-- Student Classes table
+CREATE TABLE student_classes (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    class_id int NOT NULL,
+    student_id int NOT NULL,
+    enrollment_date datetime2,
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (student_id) REFERENCES users(id),
+    UNIQUE(class_id, student_id)
 );
 
 -- Attendance table
@@ -131,32 +157,34 @@ CREATE TABLE timetable (
     faculty nvarchar(100) NOT NULL,
     room nvarchar(50) NOT NULL,
     year int NOT NULL,
+    semester int NOT NULL CHECK (semester IN (1,2)),
     section nvarchar(10) NOT NULL,
     created_at datetime2 DEFAULT GETDATE()
 );
 
 -- Insert demo timetable data
-INSERT INTO timetable (day, time, subject, faculty, room, year, section) VALUES
-('Monday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Monday', '11:00-12:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
-('Monday', '14:00-15:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
-('Tuesday', '10:00-11:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Tuesday', '13:00-14:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
-('Wednesday', '09:00-10:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
-('Wednesday', '11:00-12:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Thursday', '10:00-11:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B'),
-('Thursday', '15:00-16:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 'A'),
-('Friday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 'A'),
-('Friday', '14:00-15:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 'B');
+INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) VALUES
+('Monday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Monday', '11:00-12:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B'),
+('Monday', '14:00-15:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 1, 'A'),
+('Tuesday', '10:00-11:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Tuesday', '13:00-14:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B'),
+('Wednesday', '09:00-10:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 1, 'A'),
+('Wednesday', '11:00-12:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Thursday', '10:00-11:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B'),
+('Thursday', '15:00-16:00', 'Operating Systems', 'Dr. Smith', 'CS-103', 4, 1, 'A'),
+('Friday', '09:00-10:00', 'Data Structures', 'Dr. Smith', 'CS-101', 3, 1, 'A'),
+('Friday', '14:00-15:00', 'Database Systems', 'Dr. Smith', 'CS-102', 3, 1, 'B');
 
 -- Create indexes for better performance
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_department ON users(department);
 CREATE INDEX idx_users_year_section ON users(year, section);
+CREATE INDEX idx_users_year_sem_section ON users(year, semester, section);
 CREATE INDEX idx_attendance_student_date ON attendance(student_id, date);
 CREATE INDEX idx_marks_student_subject ON marks(student_id, subject_id);
 CREATE INDEX idx_chat_messages_group ON chat_messages(group_id);
-CREATE INDEX idx_timetable_year_section ON timetable(year, section);
+CREATE INDEX idx_timetable_year_semester_section ON timetable(year, semester, section);
 
 -- Internal Marks table
 CREATE TABLE InternalMarks (

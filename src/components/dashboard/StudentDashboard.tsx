@@ -60,7 +60,7 @@ const StudentDashboard = () => {
         }
 
         // Fetch classmates
-        const classmatesResponse = await fetch(`/api/students/classmates?year=${user.year}&section=${user.section}`, {
+        const classmatesResponse = await fetch(`/api/students/classmates?year=${user.year}&semester=${user.semester}&section=${user.section}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -259,7 +259,7 @@ const StudentDashboard = () => {
               My Class
             </CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
-              {user?.year} Year - Section {user?.section}
+              {user?.year} Year - Sem {user?.semester} - Section {user?.section}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

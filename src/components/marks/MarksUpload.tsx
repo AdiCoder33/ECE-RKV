@@ -33,6 +33,7 @@ interface MarkEntry {
 
 const MarksUpload = () => {
   const [selectedClass, setSelectedClass] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [examType, setExamType] = useState('');
@@ -55,6 +56,11 @@ const MarksUpload = () => {
     { value: 'C', label: 'Section C' }
   ];
 
+  const semesters = [
+    { value: '1', label: 'Sem 1' },
+    { value: '2', label: 'Sem 2' }
+  ];
+
   const subjects = [
     { id: 'ece301', name: 'Digital Signal Processing' },
     { id: 'ece302', name: 'VLSI Design' },
@@ -71,13 +77,13 @@ const MarksUpload = () => {
     { value: 'quiz', label: 'Quiz' }
   ];
 
-  // Fetch students when class and section are selected
+  // Fetch students when class, semester and section are selected
   const fetchStudents = async () => {
-    if (!selectedClass || !selectedSection) return;
+    if (!selectedClass || !selectedSemester || !selectedSection) return;
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/students?year=${selectedClass}&section=${selectedSection}`);
+      const response = await fetch(`/api/students?year=${selectedClass}&semester=${selectedSemester}&section=${selectedSection}`);
       if (response.ok) {
         const studentsData = await response.json();
         setStudents(studentsData);
@@ -95,11 +101,11 @@ const MarksUpload = () => {
 
   useEffect(() => {
     fetchStudents();
-  }, [selectedClass, selectedSection]);
+  }, [selectedClass, selectedSemester, selectedSection]);
 
   const initializeMarks = () => {
-    if (!selectedClass || !selectedSection || !selectedSubject || !examType) {
-      toast.error('Please select class, section, subject and exam type first');
+    if (!selectedClass || !selectedSemester || !selectedSection || !selectedSubject || !examType) {
+      toast.error('Please select class, semester, section, subject and exam type first');
       return;
     }
     
@@ -267,7 +273,7 @@ const MarksUpload = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Class</label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -283,7 +289,23 @@ const MarksUpload = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Semester</label>
+              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  {semesters.map(sem => (
+                    <SelectItem key={sem.value} value={sem.value}>
+                      {sem.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">Section</label>
               <Select value={selectedSection} onValueChange={setSelectedSection}>
@@ -299,11 +321,11 @@ const MarksUpload = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium mb-2 block">Students</label>
               <div className="flex items-center h-10 px-3 py-2 text-sm bg-muted rounded-md">
-                {loading ? 'Loading...' : students.length > 0 ? `${students.length} students loaded` : 'Select class & section'}
+                {loading ? 'Loading...' : students.length > 0 ? `${students.length} students loaded` : 'Select class, semester & section'}
               </div>
             </div>
           </div>

@@ -5,6 +5,13 @@ if (!jwtSecret) {
   throw new Error('JWT_SECRET is not defined');
 }
 
+/**
+ * Verify JWT from Authorization header and attach decoded user to request.
+ *
+ * Protected routes like `POST /users/bulk` require a payload of the form:
+ * `{ users: [{ name, email, password, role, department, year?, section?, rollNumber?, phone? }] }`
+ * along with `Authorization: Bearer <token>` header.
+ */
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];

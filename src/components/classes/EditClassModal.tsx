@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -28,7 +27,7 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     year: 1,
-    semester: 1,
+    semester: 1 as 1 | 2,
     section: 'A',
     subjects: [],
     students: [],
@@ -77,11 +76,9 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
             <Label htmlFor="year" className="text-right">Year</Label>
             <Select
               value={formData.year.toString()}
-              onValueChange={(value) => setFormData({ 
-                ...formData, 
-                year: parseInt(value),
-                semester: parseInt(value) * 2 - 1 // Auto-calculate semester
-              })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, year: parseInt(value) })
+              }
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue />
@@ -94,16 +91,23 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="semester" className="text-right">Semester</Label>
-            <Input
-              id="semester"
-              type="number"
-              value={formData.semester}
-              className="col-span-3"
-              disabled
-            />
+            <Select
+              value={formData.semester.toString()}
+              onValueChange={(value) =>
+                setFormData({ ...formData, semester: parseInt(value) as 1 | 2 })
+              }
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">

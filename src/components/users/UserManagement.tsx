@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
+import {
   Users, 
   UserPlus, 
   Search, 
@@ -20,6 +21,8 @@ import {
 } from 'lucide-react';
 import { User } from '@/types';
 import UserModal from './UserModal';
+import ImportUsersModal from './ImportUsersModal';
+import { useToast } from '@/components/ui/use-toast';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -27,35 +30,56 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${apiBase}/users`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const data: Array<Record<string, unknown>> = await response.json();
+      const mapped: User[] = data.map((u) => {
+        const { roll_number, created_at, ...rest } = u;
+        return {
+          ...(rest as Omit<User, 'rollNumber' | 'createdAt'>),
+          rollNumber:
+            ((u as Record<string, unknown>).rollNumber as string | undefined) ??
+            (roll_number as string | undefined),
+          createdAt:
+            ((u as Record<string, unknown>).createdAt as string | undefined) ??
+            (created_at as string | undefined),
+        };
+      });
+      setUsers(mapped);
+    } catch (err) {
+      setError((err as Error).message);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`${apiBase}/users`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
-        }
-        const data: User[] = await response.json();
-        setUsers(data);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -74,8 +98,9 @@ const UserManagement = () => {
                          user.rollNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
     const matchesYear = selectedYear === 'all' || user.year?.toString() === selectedYear;
-    
-    return matchesSearch && matchesRole && matchesYear;
+    const matchesSemester = selectedSemester === 'all' || user.semester?.toString() === selectedSemester;
+
+    return matchesSearch && matchesRole && matchesYear && matchesSemester;
   });
 
   const userStats = {
@@ -100,12 +125,87 @@ const UserManagement = () => {
         throw new Error('Failed to add user');
       }
       const createdUser: User = await response.json();
-      setUsers([...users, createdUser]);
+      setUsers(prev => [...prev, createdUser]);
       setIsModalOpen(false);
       setEditingUser(null);
+      await fetchUsers();
+      toast({
+        title: 'Success',
+        description: 'User added successfully',
+      });
     } catch (err) {
       setModalError((err as Error).message);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
       throw err;
+    }
+  };
+
+  const handleImportUsers = async (
+    bulkUsers: (Omit<User, 'id'> & { password: string })[]
+  ): Promise<{ inserted: number; updated: number; errors: string[] }> => {
+    try {
+      const response = await fetch(`${apiBase}/users/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ users: bulkUsers })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to import users');
+      }
+      type BulkResult = { id?: string; action?: 'inserted' | 'updated'; error?: string };
+      const data: { results: BulkResult[] } = await response.json();
+      const errors: string[] = [];
+      const insertedUsers: User[] = [];
+      const updatedUsers = new Map<string, User>();
+      let inserted = 0;
+      let updated = 0;
+      data.results.forEach((item, idx) => {
+        if (item.id && item.action === 'inserted') {
+          const { password, ...rest } = bulkUsers[idx];
+          insertedUsers.push({ id: String(item.id), ...rest });
+          inserted++;
+        } else if (item.id && item.action === 'updated') {
+          const { password, ...rest } = bulkUsers[idx];
+          updatedUsers.set(String(item.id), { id: String(item.id), ...rest });
+          updated++;
+        } else if (item.error) {
+          errors.push(`Row ${idx + 2}: ${item.error}`);
+        }
+      });
+      if (inserted || updated) {
+        setUsers(prev => {
+          const replaced = prev.map(u => updatedUsers.get(u.id) ?? u);
+          return [...replaced, ...insertedUsers];
+        });
+      }
+      await fetchUsers();
+      toast({
+        title: 'Import Results',
+        description: `Inserted: ${inserted}, Updated: ${updated}`,
+      });
+      if (errors.length) {
+        toast({
+          variant: 'destructive',
+          title: 'Import Errors',
+          description: errors.join('\n'),
+        });
+      }
+      return { inserted, updated, errors };
+    } catch (err) {
+      console.error('Import users error:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
+      return { inserted: 0, updated: 0, errors: [(err as Error).message] };
     }
   };
 
@@ -123,12 +223,22 @@ const UserManagement = () => {
         throw new Error('Failed to update user');
       }
       const savedUser: User = await response.json();
-      setUsers(users.map(u => (u.id === savedUser.id ? savedUser : u)));
+      setUsers(prev => prev.map(u => (u.id === savedUser.id ? savedUser : u)));
       setIsModalOpen(false);
       setEditingUser(null);
+      await fetchUsers();
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+      });
     } catch (err) {
       console.error(err);
       setModalError((err as Error).message);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
       throw err;
     }
   };
@@ -144,10 +254,39 @@ const UserManagement = () => {
       if (!response.ok) {
         throw new Error('Failed to delete user');
       }
-      setUsers(users.filter(user => user.id !== id));
+      setUsers(prev => prev.filter(user => user.id !== id));
+      await fetchUsers();
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
     } catch (err) {
       console.error(err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: (err as Error).message,
+      });
     }
+  };
+
+  const handleExportUsers = () => {
+    const data = filteredUsers.map(user => ({
+      Name: user.name,
+      Email: user.email,
+      Role: user.role,
+      Department: user.department ?? '',
+      Year: user.year ?? '',
+      Semester: user.semester ?? '', // include semester in export
+      Section: user.section ?? '',
+      RollNumber: user.rollNumber ?? '',
+      Phone: user.phone ?? '',
+      Password: ''
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+    XLSX.writeFile(workbook, 'users.xlsx');
   };
 
   if (loading) {
@@ -166,7 +305,7 @@ const UserManagement = () => {
           <p className="text-muted-foreground">Manage users in ECE Department</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsImportModalOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Import Excel</span>
             <span className="sm:hidden">Import</span>
@@ -279,7 +418,17 @@ const UserManagement = () => {
                 <option value="4">4th Year</option>
               </select>
 
-              <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              >
+                <option value="all">All Semesters</option>
+                <option value="1">Sem 1</option>
+                <option value="2">Sem 2</option>
+              </select>
+
+              <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={handleExportUsers}>
                 <Download className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Export</span>
               </Button>
@@ -301,7 +450,7 @@ const UserManagement = () => {
                   <th className="text-left p-3">Name</th>
                   <th className="text-left p-3">Email</th>
                   <th className="text-left p-3">Role</th>
-                  <th className="text-left p-3">Year/Section</th>
+                  <th className="text-left p-3">Year/Sem/Section</th>
                   <th className="text-left p-3">Roll Number</th>
                   <th className="text-left p-3">Phone</th>
                   <th className="text-left p-3">Actions</th>
@@ -329,7 +478,7 @@ const UserManagement = () => {
                       </Badge>
                     </td>
                     <td className="p-3">
-                      {user.year && user.section ? `${user.year}-${user.section}` : '-'}
+                      {user.year && user.semester && user.section ? `${user.year}/${user.semester}/${user.section}` : '-'}
                     </td>
                     <td className="p-3">{user.rollNumber || '-'}</td>
                     <td className="p-3">{user.phone || '-'}</td>
@@ -382,10 +531,10 @@ const UserManagement = () => {
               </div>
               
               <div className="space-y-2 text-sm">
-                {user.year && user.section && (
+                {user.year && user.semester && user.section && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Year/Section:</span>
-                    <span>{user.year}-{user.section}</span>
+                    <span className="text-muted-foreground">Year/Sem/Section:</span>
+                    <span>{user.year}/{user.semester}/{user.section}</span>
                   </div>
                 )}
                 {user.rollNumber && (
@@ -441,6 +590,11 @@ const UserManagement = () => {
         initialUser={editingUser ?? undefined}
         onSubmit={editingUser ? handleUpdateUser : handleAddUser}
         error={modalError}
+      />
+      <ImportUsersModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportUsers={handleImportUsers}
       />
     </div>
   );

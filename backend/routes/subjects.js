@@ -1,17 +1,39 @@
 const express = require('express');
-const { executeQuery } = require('../config/database');
+const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all subjects
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(`
-      SELECT s.id, s.name, s.code, s.year, s.semester, s.credits, s.type, s.max_marks, s.created_at
-      FROM subjects s 
-      ORDER BY s.year, s.semester, s.name
-    `);
-    res.json(result.recordset);
+    const { year, semester } = req.query;
+
+    let query = `
+      SELECT s.id,
+             s.name,
+             s.code,
+             s.year,
+             s.semester,
+             s.credits,
+             s.type,
+             s.created_at
+      FROM subjects s
+    `;
+
+    if (year && semester) {
+      const pool = await connectDB();
+      const request = pool
+        .request()
+        .input('year', sql.Int, Number(year))
+        .input('semester', sql.Int, Number(semester));
+      const result = await request.query(
+        query + ' WHERE s.year = @year AND s.semester = @semester ORDER BY s.year, s.semester, s.name'
+      );
+      res.json(result.recordset);
+    } else {
+      const result = await executeQuery(query + ' ORDER BY s.year, s.semester, s.name');
+      res.json(result.recordset);
+    }
   } catch (error) {
     console.error('Subjects fetch error:', error);
     next(error);
@@ -21,14 +43,23 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create subject
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { name, code, year, semester, credits, type, maxMarks } = req.body;
-    
+    const { name, code, year, semester, credits, type } = req.body;
+
+    if (![1, 2].includes(Number(semester))) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
+
     const result = await executeQuery(
-      'INSERT INTO subjects (name, code, year, semester, credits, type, max_marks) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, code, year, semester, credits, type, maxMarks]
+      'INSERT INTO subjects (name, code, year, semester, credits, type) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)',
+      [name, code, year, semester, credits, type]
     );
-    
-    res.status(201).json({ id: result.recordset[0]?.id, message: 'Subject created successfully' });
+
+    const insertedId = result.recordset?.[0]?.id;
+    if (insertedId != null) {
+      res.status(201).json({ id: insertedId, message: 'Subject created successfully' });
+    } else {
+      res.status(201).json({ message: 'Subject created successfully' });
+    }
   } catch (error) {
     console.error('Create subject error:', error);
     next(error);
@@ -39,11 +70,15 @@ router.post('/', authenticateToken, async (req, res, next) => {
 router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, code, year, semester, credits, type, maxMarks } = req.body;
-    
+    const { name, code, year, semester, credits, type } = req.body;
+
+    if (![1, 2].includes(Number(semester))) {
+      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    }
+
     const result = await executeQuery(
-      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ?, max_marks = ? WHERE id = ?',
-      [name, code, year, semester, credits, type, maxMarks, id]
+      'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ? WHERE id = ?',
+      [name, code, year, semester, credits, type, id]
     );
     
     if (result.rowsAffected[0] === 0) {

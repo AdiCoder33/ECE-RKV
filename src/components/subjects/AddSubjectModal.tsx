@@ -17,52 +17,31 @@ import { Subject } from '@/types';
 interface AddSubjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddSubject: (subject: Omit<Subject, 'id'>) => void;
+  onAddSubject: (subject: Omit<Subject, 'id'>) => Promise<void>;
 }
 
 const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Subject, 'id'>>({
     name: '',
     code: '',
     year: 1,
-    semester: 1,
+    semester: 1 as 1 | 2,
     credits: 1,
-    professorId: '',
-    professorName: '',
-    type: 'theory' as 'theory' | 'lab' | 'elective',
-    maxMarks: 100
+    type: 'theory'
   });
-
-  const professors = [
-    { id: '1', name: 'Prof. John Doe' },
-    { id: '2', name: 'Prof. Priya Sharma' },
-    { id: '3', name: 'Prof. Amit Kumar' },
-    { id: '4', name: 'Prof. Neha Gupta' },
-    { id: '5', name: 'Prof. Ravi Patel' },
-  ];
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const selectedProfessor = professors.find(p => p.id === formData.professorId);
-    if (!selectedProfessor) return;
 
-    onAddSubject({
-      ...formData,
-      professorName: selectedProfessor.name
-    });
+    await onAddSubject(formData);
 
     // Reset form
     setFormData({
       name: '',
       code: '',
       year: 1,
-      semester: 1,
+      semester: 1 as 1 | 2,
       credits: 1,
-      professorId: '',
-      professorName: '',
-      type: 'theory',
-      maxMarks: 100
+      type: 'theory'
     });
 
     onClose();
@@ -129,18 +108,18 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
               <select
                 id="semester"
                 value={formData.semester}
-                onChange={(e) => handleInputChange('semester', parseInt(e.target.value))}
+                onChange={(e) => handleInputChange('semester', parseInt(e.target.value) as 1 | 2)}
                 className="w-full p-2 border rounded-md bg-background"
                 required
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                {[1, 2].map(sem => (
                   <option key={sem} value={sem}>Semester {sem}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="credits">Credits</Label>
               <Input
@@ -168,35 +147,6 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
                 <option value="elective">Elective</option>
               </select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="maxMarks">Max Marks</Label>
-              <Input
-                id="maxMarks"
-                type="number"
-                min={50}
-                max={100}
-                value={formData.maxMarks}
-                onChange={(e) => handleInputChange('maxMarks', parseInt(e.target.value))}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="professor">Assign Professor</Label>
-            <select
-              id="professor"
-              value={formData.professorId}
-              onChange={(e) => handleInputChange('professorId', e.target.value)}
-              className="w-full p-2 border rounded-md bg-background"
-              required
-            >
-              <option value="">Select Professor</option>
-              {professors.map(prof => (
-                <option key={prof.id} value={prof.id}>{prof.name}</option>
-              ))}
-            </select>
           </div>
 
           <div className="flex items-center gap-2">
