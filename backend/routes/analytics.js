@@ -1,19 +1,22 @@
 const express = require('express');
-const db = require('../config/database');
+const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get analytics overview
 router.get('/overview', authenticateToken, async (req, res, next) => {
   try {
-    const [userStats] = await db.execute('SELECT role, COUNT(*) as count FROM users GROUP BY role');
-    const [subjectStats] = await db.execute('SELECT COUNT(*) as total_subjects FROM subjects');
-    const [attendanceStats] = await db.execute(`
-      SELECT 
-        AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) as avg_attendance 
-      FROM attendance 
-      WHERE date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    const userResult = await executeQuery('SELECT role, COUNT(*) as count FROM users GROUP BY role');
+    const userStats = userResult.recordset;
+    const subjectResult = await executeQuery('SELECT COUNT(*) as total_subjects FROM subjects');
+    const subjectStats = subjectResult.recordset;
+    const attendanceResult = await executeQuery(`
+      SELECT
+        AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) as avg_attendance
+      FROM attendance
+      WHERE date >= DATEADD(DAY, -30, GETDATE())
     `);
+    const attendanceStats = attendanceResult.recordset;
     
     res.json({
       userStats,

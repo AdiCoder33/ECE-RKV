@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../config/database');
+const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -52,7 +52,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
     
     query += ' ORDER BY a.date DESC, a.period, u.roll_number';
     
-    const [rows] = await db.execute(query, params);
+    const result = await executeQuery(query, params);
+    const rows = result.recordset;
     
     res.json(rows.map(row => ({
       id: row.id,
@@ -115,7 +116,8 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     query += ' WHERE ' + whereConditions.join(' AND ');
     query += ' GROUP BY u.id ORDER BY u.roll_number';
     
-    const [rows] = await db.execute(query, params);
+    const result = await executeQuery(query, params);
+    const rows = result.recordset;
     
     res.json(rows.map(row => ({
       studentId: row.student_id,
@@ -137,14 +139,14 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     const { subjectId, date, period, attendanceData, markedBy } = req.body;
     
     // Delete existing attendance for the same subject, date, and period
-    await db.execute(
+    await executeQuery(
       'DELETE FROM attendance WHERE subject_id = ? AND date = ? AND period = ?',
       [subjectId, date, period]
     );
     
     // Insert new attendance records
     const insertPromises = attendanceData.map(record => {
-      return db.execute(
+      return executeQuery(
         'INSERT INTO attendance (student_id, subject_id, date, present, period, marked_by) VALUES (?, ?, ?, ?, ?, ?)',
         [record.studentId, subjectId, date, record.present, period, markedBy]
       );
