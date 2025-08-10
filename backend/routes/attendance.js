@@ -114,7 +114,8 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     }
     
     query += ' WHERE ' + whereConditions.join(' AND ');
-    query += ' GROUP BY u.id ORDER BY u.roll_number';
+    // Ensure all selected non-aggregated fields are included in the GROUP BY clause
+    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY u.roll_number';
     
     const result = await executeQuery(query, params);
     const rows = result.recordset;
