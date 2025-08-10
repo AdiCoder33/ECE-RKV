@@ -113,6 +113,13 @@ const AttendanceManager = () => {
   }, [selectedYear, currentSemester]);
 
   React.useEffect(() => {
+    if (subjects.length > 0 && selectedSubject && isNaN(Number(selectedSubject))) {
+      const match = subjects.find(s => s.name === selectedSubject);
+      setSelectedSubject(match ? match.id : '');
+    }
+  }, [subjects, selectedSubject]);
+
+  React.useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
