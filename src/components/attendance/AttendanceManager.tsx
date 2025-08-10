@@ -27,6 +27,7 @@ import {
   Save
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface AttendanceStudent {
   id: string;
@@ -45,6 +46,8 @@ const AttendanceManager = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('1');
   const [searchTerm, setSearchTerm] = useState('');
   const [api, setApi] = React.useState<CarouselApi | null>(null);
+  const isDesktop = useMediaQuery('(min-width:768px)');
+  const itemsPerPage = isDesktop ? 12 : 9;
 
   // Check if user has access based on role
   const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
@@ -123,15 +126,15 @@ const AttendanceManager = () => {
 
   const studentChunks = React.useMemo(() => {
     const chunks: AttendanceStudent[][] = [];
-    for (let i = 0; i < filteredStudents.length; i += 9) {
-      chunks.push(filteredStudents.slice(i, i + 9));
+    for (let i = 0; i < filteredStudents.length; i += itemsPerPage) {
+      chunks.push(filteredStudents.slice(i, i + itemsPerPage));
     }
     return chunks;
-  }, [filteredStudents]);
+  }, [filteredStudents, itemsPerPage]);
 
   React.useEffect(() => {
     api?.scrollTo(0);
-  }, [api, filteredStudents]);
+  }, [api, filteredStudents, itemsPerPage]);
 
   const presentCount = students.filter(s => s.present).length;
   const absentCount = students.length - presentCount;
@@ -346,7 +349,7 @@ const AttendanceManager = () => {
             <CarouselContent>
               {studentChunks.map((chunk, index) => (
                 <CarouselItem key={index}>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
                     {chunk.map((student) => {
                       const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
                       return (
