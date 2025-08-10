@@ -27,7 +27,7 @@ import {
   Save
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMediaQuery } from 'usehooks-ts';
 
 interface AttendanceStudent {
   id: string;
@@ -47,7 +47,7 @@ const AttendanceManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [api, setApi] = React.useState<CarouselApi | null>(null);
   const isDesktop = useMediaQuery('(min-width:768px)');
-  const itemsPerPage = isDesktop ? 12 : 9;
+  const itemsPerPage = isDesktop ? 15 : 9;
 
   // Check if user has access based on role
   const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
@@ -349,7 +349,7 @@ const AttendanceManager = () => {
             <CarouselContent>
               {studentChunks.map((chunk, index) => (
                 <CarouselItem key={index}>
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
                     {chunk.map((student) => {
                       const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
                       return (
@@ -386,7 +386,7 @@ const AttendanceManager = () => {
                               <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
                                 {student.attendancePercentage}%
                               </span>
-                              <Badge variant={attendanceBadge.variant} className="text-xs">
+                              <Badge variant={attendanceBadge.variant} className="hidden md:inline-flex text-xs">
                                 {attendanceBadge.label}
                               </Badge>
                             </div>
