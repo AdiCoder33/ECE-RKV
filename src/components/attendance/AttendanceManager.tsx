@@ -339,6 +339,10 @@ const AttendanceManager = () => {
   }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjects, selectedSubject, currentSemester]);
 
   const handleSaveAttendance = async () => {
+    if (!selectedSubject) {
+      toast({ variant: 'destructive', title: 'Select a subject first' });
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const attendanceData = students.map(s => ({ studentId: s.id, present: s.present }));
