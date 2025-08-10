@@ -94,7 +94,7 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     `;
     
     const params = [];
-    let whereConditions = ['u.role = "student"'];
+    let whereConditions = ["u.role = 'student'"];
     
     if (subjectId) {
       whereConditions.push('a.subject_id = ?');
