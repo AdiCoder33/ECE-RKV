@@ -170,6 +170,7 @@ const AttendanceManager = () => {
           present: false,
         }));
         setStudents(mapped);
+        await fetchAttendance();
 
         // Fetch attendance summary to update percentages
         if (cid && selectedSubject) {
@@ -203,7 +204,7 @@ const AttendanceManager = () => {
     };
 
     fetchData();
-  }, [selectedYear, selectedSection, selectedSubject]);
+  }, [selectedYear, selectedSection, selectedSubject, fetchAttendance]);
 
   const fetchAttendance = React.useCallback(async () => {
     try {
