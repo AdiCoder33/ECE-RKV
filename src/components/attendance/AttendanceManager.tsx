@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,29 +41,143 @@ interface AttendanceStudent {
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
-const AttendanceManager = () => {
+const AttendanceManager: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const initialSubject = searchParams.get('subject') || '';
   const { toast } = useToast();
-  const [selectedYear, setSelectedYear] = useState('1');
-  const [selectedSection, setSelectedSection] = useState('A');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedPeriod, setSelectedPeriod] = useState('1');
-  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
-  the selected class
+
+  const [selectedYear, setSelectedYear] = React.useState('1');
+  const [selectedSection, setSelectedSection] = React.useState('A');
+  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [selectedPeriod, setSelectedPeriod] = React.useState('1');
+  const [subjects, setSubjects] = React.useState<{ id: string; name: string }[]>([]);
+  const [selectedSubject, setSelectedSubject] = React.useState(initialSubject);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [api, setApi] = React.useState<CarouselApi | null>(null);
+
+  const isDesktop = useMediaQuery('(min-width:768px)');
+  const itemsPerPage = isDesktop ? 15 : 9;
+
+  // Access control
+  const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
+  const isProfessor = user?.role === 'professor';
+
+  const [students, setStudents] = React.useState<AttendanceStudent[]>([]);
+  const [classId, setClassId] = React.useState<string | null>(null);
+
+  // Filter years and sections based on professor's assigned classes (demo constraints)
+  const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
+  const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
+
+  const years = getAllowedYears();
+  const sections = getAllowedSections();
+
+  const periods = [
+    { value: '1', label: 'Period 1 (9:00 AM - 10:00 AM)' },
+    { value: '2', label: 'Period 2 (10:00 AM - 11:00 AM)' },
+    { value: '3', label: 'Period 3 (11:00 AM - 12:00 PM)' },
+    { value: '4', label: 'Period 4 (2:00 PM - 3:00 PM)' },
+    { value: '5', label: 'Period 5 (3:00 PM - 4:00 PM)' },
+    { value: '6', label: 'Period 6 (4:00 PM - 5:00 PM)' },
+  ];
+
+  const getCurrentSemester = () => {
+    const month = new Date().getMonth() + 1;
+    return month >= 6 && month <= 11 ? '1' : '2';
+  };
+  const currentSemester = getCurrentSemester();
+
+  // Fetch subjects for selected year/semester
+  React.useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const token = localStorage.getItem('token');
         const response = await fetch(
-          `${apiBase}/students?year=${selectedYear}&section=${selectedSection}`,
+          `${apiBase}/subjects?year=${selectedYear}&semester=${currentSemester}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-        if (!response.ok) {
-          throw new Error('Failed to fetch students');
-        }
+        if (!response.ok) throw new Error('Failed to fetch subjects');
+        const data: { id: string; name: string }[] = await response.json();
+        setSubjects(data);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
+    };
+    fetchSubjects();
+  }, [selectedYear, currentSemester]);
+
+  // If the URL provided a subject name, convert it to its ID once subjects arrive
+  React.useEffect(() => {
+    if (subjects.length > 0 && selectedSubject && isNaN(Number(selectedSubject))) {
+      const match = subjects.find((s) => s.name === selectedSubject);
+      setSelectedSubject(match ? match.id : '');
+    }
+  }, [subjects, selectedSubject]);
+
+  // Fetch attendance for the current selection
+  const fetchAttendance = React.useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
+      if (selectedSubject) url += `&subjectId=${selectedSubject}`;
+
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch attendance');
+
+      type AttendanceRecord = {
+        studentId: string | number;
+        present: boolean | number;
+        period: string | number;
+      };
+
+      const data: AttendanceRecord[] = await response.json();
+      const periodRecords = data.filter((r) => r.period?.toString() === selectedPeriod);
+
+      setStudents((prev) =>
+        prev.map((student) => {
+          const record = periodRecords.find((r) => String(r.studentId) === String(student.id));
+          return record ? { ...student, present: Boolean(record.present) } : { ...student, present: false };
+        })
+      );
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+    }
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
+
+  // Fetch class + students whenever the selection changes, then sync attendance + summary
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+
+        // Classes
+        const classRes = await fetch(`${apiBase}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!classRes.ok) throw new Error('Failed to fetch classes');
+
+        type ClassResponse = { id: string; year: number; section: string };
+        const classes: ClassResponse[] = await classRes.json();
+
+        const cls = classes.find((c) => c.year.toString() === selectedYear && c.section === selectedSection);
+        const cid = cls?.id || null;
+        setClassId(cid);
+
+        // Students
+        const studentsRes = await fetch(
+          `${apiBase}/students?year=${selectedYear}&section=${selectedSection}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!studentsRes.ok) throw new Error('Failed to fetch students');
+
         type StudentResponse = {
           id: string;
           name: string;
@@ -71,8 +185,9 @@ const AttendanceManager = () => {
           collegeId: string;
           attendancePercentage: number;
         };
-        const data: StudentResponse[] = await response.json();
-        const mapped: AttendanceStudent[] = data.map((s) => ({
+
+        const sdata: StudentResponse[] = await studentsRes.json();
+        const mapped: AttendanceStudent[] = sdata.map((s) => ({
           id: s.id,
           name: s.name,
           rollNumber: s.rollNumber,
@@ -80,31 +195,25 @@ const AttendanceManager = () => {
           attendancePercentage: s.attendancePercentage,
           present: false,
         }));
+
         setStudents(mapped);
+
+        // Sync period attendance immediately
         await fetchAttendance();
 
-        // Fetch attendance summary to update percentages
+        // Attendance summary (per subject)
         if (cid && selectedSubject) {
           const summaryRes = await fetch(
             `${apiBase}/attendance/summary?classId=${cid}&subjectId=${selectedSubject}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           if (summaryRes.ok) {
-            type SummaryResponse = {
-              studentId: string;
-              attendancePercentage: number;
-            };
+            type SummaryResponse = { studentId: string; attendancePercentage: number };
             const summary: SummaryResponse[] = await summaryRes.json();
             setStudents((prev) =>
               prev.map((student) => {
-                const rec = summary.find((s) => s.studentId === student.id);
-                return rec
-                  ? { ...student, attendancePercentage: Math.round(rec.attendancePercentage) }
-                  : student;
+                const rec = summary.find((s) => String(s.studentId) === String(student.id));
+                return rec ? { ...student, attendancePercentage: Math.round(rec.attendancePercentage) } : student;
               })
             );
           }
@@ -117,26 +226,65 @@ const AttendanceManager = () => {
     fetchData();
   }, [selectedYear, selectedSection, selectedSubject, fetchAttendance]);
 
+  // Keep carousel on first page when list size/layout changes
   React.useEffect(() => {
-    fetchAttendance();
-  }, [fetchAttendance]);
+    api?.scrollTo(0);
+  }, [api, isDesktop, selectedYear, selectedSection, selectedSubject, selectedDate, selectedPeriod]);
 
+  // Autofill subject from timetable if not chosen
+  React.useEffect(() => {
+    const autofillSubject = async () => {
+      if (selectedSubject) return;
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${apiBase}/timetable?year=${selectedYear}&semester=${currentSemester}&section=${selectedSection}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) return;
+
+        type TimetableSlot = { day: string; time: string; subject: string };
+        const data: TimetableSlot[] = await response.json();
+
+        const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+        const periodTimes: Record<string, string> = {
+          '1': '09:00-10:00',
+          '2': '10:00-11:00',
+          '3': '11:00-12:00',
+          '4': '14:00-15:00',
+          '5': '15:00-16:00',
+          '6': '16:00-17:00',
+        };
+        const slot = data.find((s) => s.day === day && s.time === periodTimes[selectedPeriod]);
+
+        if (slot) {
+          const matched = subjects.find((sub) => sub.name === slot.subject);
+          if (matched) setSelectedSubject(matched.id);
+        }
+      } catch (error) {
+        console.error('Error auto-filling subject:', error);
+      }
+    };
+
+    autofillSubject();
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjects, selectedSubject, currentSemester]);
+
+  // Attendance toggles
   const toggleAttendance = (studentId: string) => {
     setStudents((prev) =>
-      prev.map((student) =>
-        student.id === studentId ? { ...student, present: !student.present } : student
-      )
+      prev.map((student) => (student.id === studentId ? { ...student, present: !student.present } : student))
     );
   };
 
   const markAllPresent = () => {
-    setStudents((prev) => prev.map((student) => ({ ...student, present: true })));
+    setStudents((prev) => prev.map((s) => ({ ...s, present: true })));
   };
 
   const markAllAbsent = () => {
-    setStudents((prev) => prev.map((student) => ({ ...student, present: false })));
+    setStudents((prev) => prev.map((s) => ({ ...s, present: false })));
   };
 
+  // Search + pagination
   const filteredStudents = students.filter(
     (student) =>
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,17 +300,12 @@ const AttendanceManager = () => {
     return chunks;
   }, [filteredStudents, itemsPerPage]);
 
-  React.useEffect(() => {
-    api?.scrollTo(0);
-  }, [api, filteredStudents, itemsPerPage]);
-
+  // Summary widgets
   const presentCount = students.filter((s) => s.present).length;
   const absentCount = students.length - presentCount;
   const attendanceRate =
     students.length > 0
-      ? Math.round(
-          students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length
-        )
+      ? Math.round(students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length)
       : 0;
 
   const getAttendanceColor = (percentage: number) => {
@@ -177,52 +320,6 @@ const AttendanceManager = () => {
     return { variant: 'destructive' as const, label: 'Critical' };
   };
 
-  React.useEffect(() => {
-    const autofillSubject = async () => {
-      if (selectedSubject) return;
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(
-          `${apiBase}/timetable?year=${selectedYear}&semester=${currentSemester}&section=${selectedSection}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) return;
-        type TimetableSlot = { day: string; time: string; subject: string };
-        const data: TimetableSlot[] = await response.json();
-        const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
-        const periodTimes: Record<string, string> = {
-          '1': '09:00-10:00',
-          '2': '10:00-11:00',
-          '3': '11:00-12:00',
-          '4': '14:00-15:00',
-          '5': '15:00-16:00',
-          '6': '16:00-17:00',
-        };
-        const slot = data.find((s) => s.day === day && s.time === periodTimes[selectedPeriod]);
-        if (slot) {
-          const matched = subjects.find((sub) => sub.name === slot.subject);
-          if (matched) setSelectedSubject(matched.id);
-        }
-      } catch (error) {
-        console.error('Error auto-filling subject:', error);
-      }
-    };
-
-    autofillSubject();
-  }, [
-    selectedDate,
-    selectedPeriod,
-    selectedYear,
-    selectedSection,
-    subjects,
-    selectedSubject,
-    currentSemester,
-  ]);
-
   const handleSaveAttendance = async () => {
     if (!selectedSubject) {
       toast({ variant: 'destructive', title: 'Select a subject first' });
@@ -230,7 +327,7 @@ const AttendanceManager = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const attendanceData = students.map((s) => ({ studentId: s.id, present: s.present }));
+      const attendanceData = students.map((s) => ({ studentId: Number(s.id), present: s.present }));
       const response = await fetch(`${apiBase}/attendance/bulk`, {
         method: 'POST',
         headers: {
@@ -245,21 +342,13 @@ const AttendanceManager = () => {
           markedBy: user?.id,
         }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to save attendance');
-      }
-      toast({
-        title: 'Attendance Saved',
-        description: 'Attendance has been saved successfully',
-      });
+      if (!response.ok) throw new Error('Failed to save attendance');
+
+      toast({ title: 'Attendance Saved', description: 'Attendance has been saved successfully' });
       await fetchAttendance();
     } catch (error) {
       console.error('Error saving attendance:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save attendance',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save attendance' });
     }
   };
 
@@ -288,8 +377,7 @@ const AttendanceManager = () => {
           {isProfessor && (
             <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Professor Access:</strong> You can only mark attendance for your assigned
-                classes and subjects.
+                <strong>Professor Access:</strong> You can only mark attendance for your assigned classes and subjects.
               </p>
             </div>
           )}
@@ -328,12 +416,7 @@ const AttendanceManager = () => {
 
             <div className="space-y-2">
               <Label htmlFor="date-select">Date</Label>
-              <Input
-                id="date-select"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
+              <Input id="date-select" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
             </div>
 
             <div className="space-y-2">
@@ -370,7 +453,9 @@ const AttendanceManager = () => {
             </div>
 
             <div className="flex items-end">
-              <Button className="w-full">Load Class</Button>
+              <Button className="w-full" onClick={fetchAttendance}>
+                Load Class
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -484,11 +569,7 @@ const AttendanceManager = () => {
                               onCheckedChange={() => toggleAttendance(student.id)}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <div
-                              className={`w-3 h-3 rounded-full ${
-                                student.present ? 'bg-green-500' : 'bg-red-500'
-                              }`}
-                            />
+                            <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
                           </div>
 
                           <div className="text-center space-y-2">
@@ -503,11 +584,7 @@ const AttendanceManager = () => {
 
                             {/* Attendance Percentage and Badge */}
                             <div className="flex items-center justify-between mt-2">
-                              <span
-                                className={`text-xs font-medium ${getAttendanceColor(
-                                  student.attendancePercentage
-                                )}`}
-                              >
+                              <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
                                 {student.attendancePercentage}%
                               </span>
                               <Badge variant={attendanceBadge.variant} className="hidden md:inline-flex text-xs">
