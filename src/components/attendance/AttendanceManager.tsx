@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from 'usehooks-ts';
+import { useLocation } from 'react-router-dom';
 
 interface AttendanceStudent {
   id: string;
@@ -42,6 +43,9 @@ const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const AttendanceManager = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const subjectId = searchParams.get('subject') || undefined;
   const [selectedYear, setSelectedYear] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -108,6 +112,45 @@ const AttendanceManager = () => {
 
     fetchStudents();
   }, [selectedYear, selectedSection]);
+
+  React.useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
+        if (subjectId) {
+          url += `&subjectId=${subjectId}`;
+        }
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch attendance');
+        }
+        type AttendanceRecord = {
+          studentId: string;
+          present: boolean | number;
+          period: string | number;
+        };
+        const data: AttendanceRecord[] = await response.json();
+        const periodRecords = data.filter(r => r.period?.toString() === selectedPeriod);
+        setStudents(prev =>
+          prev.map(student => {
+            const record = periodRecords.find(r => r.studentId === student.id);
+            return record
+              ? { ...student, present: Boolean(record.present) }
+              : { ...student, present: false };
+          })
+        );
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+      }
+    };
+
+    fetchAttendance();
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjectId]);
 
   const toggleAttendance = (studentId: string) => {
     setStudents(prev => prev.map(student => 
