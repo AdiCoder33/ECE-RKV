@@ -7,6 +7,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi,
+} from '@/components/ui/carousel';
 import { 
   Calendar, 
   Users, 
@@ -36,6 +44,7 @@ const AttendanceManager = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPeriod, setSelectedPeriod] = useState('1');
   const [searchTerm, setSearchTerm] = useState('');
+  const [api, setApi] = React.useState<CarouselApi | null>(null);
 
   // Check if user has access based on role
   const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
@@ -111,6 +120,18 @@ const AttendanceManager = () => {
     student.collegeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.rollNumber.toString().includes(searchTerm)
   );
+
+  const studentChunks = React.useMemo(() => {
+    const chunks: AttendanceStudent[][] = [];
+    for (let i = 0; i < filteredStudents.length; i += 9) {
+      chunks.push(filteredStudents.slice(i, i + 9));
+    }
+    return chunks;
+  }, [filteredStudents]);
+
+  React.useEffect(() => {
+    api?.scrollTo(0);
+  }, [api, filteredStudents]);
 
   const presentCount = students.filter(s => s.present).length;
   const absentCount = students.length - presentCount;
@@ -321,53 +342,62 @@ const AttendanceManager = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Grid Layout for Students */}
-          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredStudents.map((student) => {
-              const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
-              return (
-                <Card 
-                  key={student.id}
-                  className={`p-4 border-2 transition-all cursor-pointer ${
-                    student.present ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                  }`}
-                  onClick={() => toggleAttendance(student.id)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <Checkbox
-                      checked={student.present}
-                      onCheckedChange={() => toggleAttendance(student.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
+          <Carousel setApi={setApi}>
+            <CarouselContent>
+              {studentChunks.map((chunk, index) => (
+                <CarouselItem key={index}>
+                  <div className="grid grid-cols-3 gap-4">
+                    {chunk.map((student) => {
+                      const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
+                      return (
+                        <Card
+                          key={student.id}
+                          className={`p-4 border-2 transition-all cursor-pointer ${
+                            student.present ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                          }`}
+                          onClick={() => toggleAttendance(student.id)}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <Checkbox
+                              checked={student.present}
+                              onCheckedChange={() => toggleAttendance(student.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
+                          </div>
+
+                          <div className="text-center space-y-2">
+                            {/* Large Roll Number */}
+                            <div className="text-4xl font-bold text-primary">
+                              {student.rollNumber}
+                            </div>
+
+                            {/* Student Name */}
+                            <p className="font-medium text-sm text-foreground">{student.name}</p>
+
+                            {/* College ID */}
+                            <p className="text-xs text-muted-foreground font-mono">{student.collegeId}</p>
+
+                            {/* Attendance Percentage and Badge */}
+                            <div className="flex items-center justify-between mt-2">
+                              <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
+                                {student.attendancePercentage}%
+                              </span>
+                              <Badge variant={attendanceBadge.variant} className="text-xs">
+                                {attendanceBadge.label}
+                              </Badge>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
-                  
-                  <div className="text-center space-y-2">
-                    {/* Large Roll Number */}
-                    <div className="text-4xl font-bold text-primary">
-                      {student.rollNumber}
-                    </div>
-                    
-                    {/* Student Name */}
-                    <p className="font-medium text-sm text-foreground">{student.name}</p>
-                    
-                    {/* College ID */}
-                    <p className="text-xs text-muted-foreground font-mono">{student.collegeId}</p>
-                    
-                    {/* Attendance Percentage and Badge */}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
-                        {student.attendancePercentage}%
-                      </span>
-                      <Badge variant={attendanceBadge.variant} className="text-xs">
-                        {attendanceBadge.label}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </CardContent>
       </Card>
 
