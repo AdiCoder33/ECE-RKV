@@ -1,7 +1,6 @@
 #root {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -17,7 +16,9 @@
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
-
+::-webkit-scrollbar {
+  display: none;
+}
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -40,3 +41,19 @@
 .read-the-docs {
   color: #888;
 }
+.theme-light {
+  background-color: #f8fafc !important;
+  color: #222 !important;
+}
+.theme-dark {
+  background-color: #18181b !important;
+  color: #f3f4f6 !important;
+}
+.theme-dark .bg-white { background-color: #23272f !important; }
+.theme-dark .text-gray-700 { color: #e5e7eb !important; }
+.theme-dark .text-gray-800 { color: #f3f4f6 !important; }
+.theme-dark .shadow-lg { box-shadow: 0 2px 8px #0006 !important; }
+.theme-dark .border-gray-200 { border-color: #333 !important; }
+.theme-dark .bg-gray-100 { background-color: #23272f !important; }
+.theme-dark .bg-red-700 { background-color: #b91c1c !important; }
+.theme-dark .text-red-700 { color: #f87171 !important; }
