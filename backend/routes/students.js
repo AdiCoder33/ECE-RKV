@@ -15,7 +15,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
         c.year as class_year,
         c.semester as class_semester,
         c.section as class_section,
-        AVG(CAST(a.status AS int)) * 100 as attendance_percentage,
+        AVG(CAST(a.present AS float)) * 100 as attendance_percentage,
         ar.cgpa
       FROM users u
       LEFT JOIN student_classes sc ON u.id = sc.student_id
@@ -92,7 +92,7 @@ router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => 
         s.type,
         ISNULL(AVG(m.marks), 0) as marks,
         COUNT(a.id) as total_classes,
-        SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as attended_classes
+        SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
       LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = ?
       LEFT JOIN attendance a ON a.student_id = ? AND a.subject_id = s.id
@@ -135,7 +135,7 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
         u.roll_number,
         u.phone,
         u.profile_image,
-        AVG(CASE WHEN a.status = 'present' THEN 1.0 ELSE 0.0 END) * 100 as attendance_percentage
+        AVG(CASE WHEN a.present = 1 THEN 1.0 ELSE 0.0 END) * 100 as attendance_percentage
       FROM users u
       LEFT JOIN attendance a ON u.id = a.student_id
       WHERE u.role = ? AND u.year = ? AND u.semester = ? AND u.section = ?
