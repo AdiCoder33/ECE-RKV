@@ -38,6 +38,8 @@ interface AttendanceStudent {
   attendancePercentage: number;
 }
 
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 const AttendanceManager = () => {
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState('1');
@@ -53,22 +55,7 @@ const AttendanceManager = () => {
   const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
   const isProfessor = user?.role === 'professor';
 
-  // Generate students based on selected year and section with sequential roll numbers
-  const [students, setStudents] = useState<AttendanceStudent[]>(() => {
-    const generatedStudents: AttendanceStudent[] = [];
-    for (let i = 1; i <= 60; i++) {
-      const collegeId = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
-      generatedStudents.push({
-        id: collegeId,
-        name: `Student ${i} ${selectedSection}${selectedYear}`,
-        rollNumber: i,
-        collegeId,
-        present: Math.random() > 0.2, // 80% attendance by default
-        attendancePercentage: Math.floor(Math.random() * 20) + 75 // 75-95% attendance
-      });
-    }
-    return generatedStudents;
-  });
+  const [students, setStudents] = useState<AttendanceStudent[]>([]);
 
   // Filter years and sections based on professor's assigned classes
   const getAllowedYears = () => hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']; // Professor demo: years 3-4
@@ -85,21 +72,41 @@ const AttendanceManager = () => {
     { value: '6', label: 'Period 6 (4:00 PM - 5:00 PM)' }
   ];
 
-  // Update students when year/section changes
   React.useEffect(() => {
-    const newStudents: AttendanceStudent[] = [];
-    for (let i = 1; i <= 60; i++) {
-      const collegeId = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
-      newStudents.push({
-        id: collegeId,
-        name: `Student ${i} ${selectedSection}${selectedYear}`,
-        rollNumber: i,
-        collegeId,
-        present: Math.random() > 0.2,
-        attendancePercentage: Math.floor(Math.random() * 20) + 75
-      });
-    }
-    setStudents(newStudents);
+    const fetchStudents = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/students?year=${selectedYear}&section=${selectedSection}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch students');
+        }
+        type StudentResponse = {
+          id: string;
+          name: string;
+          rollNumber: number;
+          collegeId: string;
+          attendancePercentage: number;
+        };
+        const data: StudentResponse[] = await response.json();
+        const mapped: AttendanceStudent[] = data.map((s) => ({
+          id: s.id,
+          name: s.name,
+          rollNumber: s.rollNumber,
+          collegeId: s.collegeId,
+          attendancePercentage: s.attendancePercentage,
+          present: false,
+        }));
+        setStudents(mapped);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+    };
+
+    fetchStudents();
   }, [selectedYear, selectedSection]);
 
   const toggleAttendance = (studentId: string) => {
