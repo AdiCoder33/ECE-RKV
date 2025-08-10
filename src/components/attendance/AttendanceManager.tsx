@@ -29,6 +29,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from 'usehooks-ts';
 import { useLocation } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AttendanceStudent {
   id: string;
@@ -46,6 +47,7 @@ const AttendanceManager = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const subjectId = searchParams.get('subject') || undefined;
+  const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -113,44 +115,44 @@ const AttendanceManager = () => {
     fetchStudents();
   }, [selectedYear, selectedSection]);
 
-  React.useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
-        if (subjectId) {
-          url += `&subjectId=${subjectId}`;
-        }
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch attendance');
-        }
-        type AttendanceRecord = {
-          studentId: string;
-          present: boolean | number;
-          period: string | number;
-        };
-        const data: AttendanceRecord[] = await response.json();
-        const periodRecords = data.filter(r => r.period?.toString() === selectedPeriod);
-        setStudents(prev =>
-          prev.map(student => {
-            const record = periodRecords.find(r => r.studentId === student.id);
-            return record
-              ? { ...student, present: Boolean(record.present) }
-              : { ...student, present: false };
-          })
-        );
-      } catch (error) {
-        console.error('Error fetching attendance:', error);
+  const fetchAttendance = React.useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
+      if (subjectId) {
+        url += `&subjectId=${subjectId}`;
       }
-    };
-
-    fetchAttendance();
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch attendance');
+      }
+      type AttendanceRecord = {
+        studentId: string;
+        present: boolean | number;
+        period: string | number;
+      };
+      const data: AttendanceRecord[] = await response.json();
+      const periodRecords = data.filter(r => r.period?.toString() === selectedPeriod);
+      setStudents(prev =>
+        prev.map(student => {
+          const record = periodRecords.find(r => r.studentId === student.id);
+          return record
+            ? { ...student, present: Boolean(record.present) }
+            : { ...student, present: false };
+        })
+      );
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+    }
   }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjectId]);
+
+  React.useEffect(() => {
+    fetchAttendance();
+  }, [fetchAttendance]);
 
   const toggleAttendance = (studentId: string) => {
     setStudents(prev => prev.map(student => 
@@ -202,15 +204,40 @@ const AttendanceManager = () => {
     return { variant: 'destructive' as const, label: 'Critical' };
   };
 
-  const handleSaveAttendance = () => {
-    console.log('Saving attendance for:', {
-      year: selectedYear,
-      section: selectedSection,
-      date: selectedDate,
-      period: selectedPeriod,
-      attendance: students.map(s => ({ id: s.id, present: s.present }))
-    });
-    // Implementation for saving attendance
+  const handleSaveAttendance = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const attendanceData = students.map(s => ({ studentId: s.id, present: s.present }));
+      const response = await fetch(`${apiBase}/attendance/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectId,
+          date: selectedDate,
+          period: selectedPeriod,
+          attendanceData,
+          markedBy: user?.id,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save attendance');
+      }
+      toast({
+        title: 'Attendance Saved',
+        description: 'Attendance has been saved successfully',
+      });
+      await fetchAttendance();
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save attendance',
+      });
+    }
   };
 
   return (
