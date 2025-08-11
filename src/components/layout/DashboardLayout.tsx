@@ -122,11 +122,11 @@ const DashboardLayout: React.FC = () => {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-red-600';
-      case 'hod': return 'bg-blue-600';
-      case 'professor': return 'bg-green-600';
-      case 'student': return 'bg-purple-600';
-      case 'alumni': return 'bg-orange-600';
+      case 'admin': return 'bg-gray-800'; // Muted black for professional look
+      case 'hod': return 'bg-blue-700';
+      case 'professor': return 'bg-green-700';
+      case 'student': return 'bg-purple-700';
+      case 'alumni': return 'bg-orange-700';
       default: return 'bg-gray-600';
     }
   };
@@ -170,18 +170,18 @@ const DashboardLayout: React.FC = () => {
       <Sidebar
         onMouseEnter={() => setSidebarOpen(true)}
         onMouseLeave={() => setSidebarOpen(false)}
-        className={`fixed inset-y-0 left-0 z-40 border-r transition-[width] duration-300 overflow-hidden ${sidebarOpen ? 'w-60' : 'w-0 md:w-16'}`}
+        className={`fixed inset-y-0 left-0 z-40 border-r transition-[width] duration-300 overflow-hidden ${sidebarOpen ? 'w-60' : 'w-0 md:w-16'} bg-red-800 dark:bg-red-900`}
         collapsible="none"
       >
-        <SidebarHeader className="border-b p-4 flex items-center justify-between">
+        <SidebarHeader className="border-b border-red-700 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary rounded-lg">
-              <GraduationCap className="h-6 w-6 text-primary-foreground" />
+              <GraduationCap className="h-6 w-6 text-white" />
             </div>
             {sidebarOpen && (
               <div className="flex-1">
-                <h1 className="font-bold text-lg">ECE Department</h1>
-                <p className="text-sm text-muted-foreground">Academic Portal</p>
+                <h1 className="font-bold text-lg text-white">ECE Department</h1>
+                <p className="text-sm text-gray-200">Academic Portal</p>
               </div>
             )}
           </div>
@@ -190,18 +190,18 @@ const DashboardLayout: React.FC = () => {
         <SidebarContent className={`flex-1 ${sidebarOpen ? 'p-4' : 'p-2'} overflow-y-auto`}>
           {sidebarOpen && (
             <div className="mb-6">
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-red-700 rounded-lg">
                 <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary-foreground">
+                  <span className="text-sm font-medium text-white">
                     {user?.name?.charAt(0)}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{user?.name}</p>
+                  <p className="font-medium truncate text-white">{user?.name}</p>
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="secondary"
-                      className={`text-white ${getRoleBadgeColor(user?.role || '')}`}
+                      className={`text-white w-fit mt-1 ${getRoleBadgeColor(user?.role || '')}`}
                     >
                       {user?.role?.toUpperCase()}
                     </Badge>
@@ -222,10 +222,12 @@ const DashboardLayout: React.FC = () => {
                   <SidebarMenuButton
                     onClick={() => handleNavigation(item.path)}
                     isActive={isActive}
-                    className={`w-full ${sidebarOpen ? 'justify-start gap-3' : 'justify-center'}`}
+                    className={`w-full ${sidebarOpen ? 'justify-start gap-3' : 'justify-center'}
+                      text-white 
+                      ${isActive ? 'bg-red-900 text-red-500' : 'hover:bg-red-700'}`}
                   >
-                    <item.icon className="h-5 w-5" />
-                    {sidebarOpen && <span>{item.label}</span>}
+                    <item.icon className={`h-5 w-5 ${isActive ? 'text-red-500' : 'text-white'}`} />
+                    {sidebarOpen && <span className={isActive ? 'text-red-500' : 'text-white'}>{item.label}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -233,14 +235,14 @@ const DashboardLayout: React.FC = () => {
           </SidebarMenu>
         </SidebarContent>
 
-        <div className={`border-t ${sidebarOpen ? 'p-4' : 'p-2'}`}>
+        <div className={`border-t border-red-700 ${sidebarOpen ? 'p-4' : 'p-2'}`}>
           <Button
             variant="ghost"
             onClick={logout}
-            className={`w-full text-red-600 hover:text-red-700 hover:bg-red-50 ${sidebarOpen ? 'gap-3 justify-start' : 'justify-center'}`}
+            className={`w-full text-white hover:text-white hover:bg-red-700 ${sidebarOpen ? 'gap-3 justify-start' : 'justify-center'}`}
           >
-            <LogOut className="h-5 w-5" />
-            {sidebarOpen && <span>Sign Out</span>}
+            <LogOut className="h-5 w-5 text-white" />
+            {sidebarOpen && <span className="text-white">Sign Out</span>}
           </Button>
         </div>
       </Sidebar>
