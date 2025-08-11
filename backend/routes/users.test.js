@@ -2,7 +2,10 @@ const request = require('supertest');
 const express = require('express');
 
 jest.mock('../middleware/auth', () => ({
-  authenticateToken: (req, res, next) => next(),
+  authenticateToken: (req, res, next) => {
+    req.user = { id: '1' };
+    next();
+  },
 }));
 
 jest.mock('../config/database', () => ({
@@ -141,6 +144,30 @@ describe('users routes handle values correctly', () => {
       2,
       'DELETE FROM users WHERE id = ?',
       ['1']
+    );
+  });
+
+  it('filters users by year and section in search', async () => {
+    await request(app)
+      .get('/users')
+      .query({ search: 'Jane', year: '2', section: 'B' })
+      .expect(200);
+
+    expect(executeQuery).toHaveBeenCalledWith(
+      expect.stringContaining('year = ? AND section = ?'),
+      ['1', '%Jane%', 2, 'B']
+    );
+  });
+
+  it('filters users by year and section without search', async () => {
+    await request(app)
+      .get('/users')
+      .query({ year: '3', section: 'C' })
+      .expect(200);
+
+    expect(executeQuery).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE year = ? AND section = ?'),
+      [3, 'C']
     );
   });
 });
