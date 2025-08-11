@@ -225,7 +225,7 @@ const ChatConversation: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
+                      <div className={`w-full pr-8 ${isOwn ? 'text-right' : ''}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">{dm.sender_name}</span>
                           <span className="text-xs text-muted-foreground">
