@@ -35,7 +35,10 @@ interface ChatContextType {
   sendGroupMessage: (groupId: string, content: string) => Promise<ChatMessage>;
   fetchConversations: () => Promise<Conversation[]>;
   fetchConversation: (userId: string) => Promise<PrivateMessage[]>;
-  sendDirectMessage: (receiverId: string, content: string) => Promise<PrivateMessage>;
+  sendDirectMessage: (
+    receiverId: string,
+    content: string
+  ) => Promise<PrivateMessage | null>;
   markAsRead: (userId: string) => Promise<void>;
   searchUsers: (query: string) => Promise<User[]>;
 }
@@ -86,6 +89,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Request failed');
+      }
+
+      if (
+        response.status === 204 ||
+        !response.headers.get('content-type')?.includes('json')
+      ) {
+        return null;
       }
 
       return response.json();
@@ -146,14 +156,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendDirectMessage = async (
     receiverId: string,
     content: string
-  ): Promise<PrivateMessage> => {
+  ): Promise<PrivateMessage | null> => {
     const message = await fetchWithAuth('/messages/send', {
       method: 'POST',
       body: JSON.stringify({ receiverId, content }),
     });
-    setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
-    socketRef.current?.emit('private-message', { to: receiverId, message });
-    fetchConversations().catch(console.error);
+    if (message) {
+      setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
+      socketRef.current?.emit('private-message', { to: receiverId, message });
+      fetchConversations().catch(console.error);
+    }
     return message;
   };
 

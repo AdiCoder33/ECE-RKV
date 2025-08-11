@@ -124,11 +124,12 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       io.to(`user:${senderId}`).emit('private-message', savedMessage);
     }
 
-    res.status(201).json(savedMessage);
-    
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(201).json(savedMessage);
+
   } catch (error) {
     console.error('Send message error:', error);
-    next(error);
+    res.status(500).json({ message: 'Failed to send message' });
   }
 });
 
