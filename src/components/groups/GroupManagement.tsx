@@ -15,6 +15,9 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
 interface ChatGroup {
   id: string;
   name: string;
@@ -51,7 +54,7 @@ const GroupManagement = () => {
   const fetchGroups = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/groups', {
+      const response = await fetch(`${apiBase}/groups`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -86,7 +89,7 @@ const GroupManagement = () => {
     if (!newGroup.name.trim()) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/groups', {
+      const response = await fetch(`${apiBase}/groups`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +119,7 @@ const GroupManagement = () => {
     if (!editingGroup) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/groups/${editingGroup.id}`, {
+      const response = await fetch(`${apiBase}/groups/${editingGroup.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +143,7 @@ const GroupManagement = () => {
   const handleDeleteGroup = async (groupId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/groups/${groupId}`, {
+      const response = await fetch(`${apiBase}/groups/${groupId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
