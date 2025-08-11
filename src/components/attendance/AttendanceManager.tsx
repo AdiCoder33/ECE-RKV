@@ -24,6 +24,7 @@ import {
   CheckCircle,
   XCircle,
   Save,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from 'usehooks-ts';
@@ -35,7 +36,7 @@ interface AttendanceStudent {
   name: string;
   rollNumber: number;
   collegeId: string;
-  present: boolean;
+  present: boolean | null;
   attendancePercentage: number;
 }
 
@@ -144,7 +145,7 @@ const AttendanceManager: React.FC = () => {
       setStudents((prev) =>
         prev.map((student) => {
           const record = periodRecords.find((r) => String(r.studentId) === String(student.id));
-          return record ? { ...student, present: Boolean(record.present) } : { ...student, present: false };
+          return record ? { ...student, present: Boolean(record.present) } : { ...student, present: null };
         })
       );
     } catch (error) {
@@ -193,7 +194,7 @@ const AttendanceManager: React.FC = () => {
           rollNumber: s.rollNumber,
           collegeId: s.collegeId,
           attendancePercentage: s.attendancePercentage,
-          present: false,
+          present: null,
         }));
 
         setStudents(mapped);
@@ -272,7 +273,17 @@ const AttendanceManager: React.FC = () => {
   // Attendance toggles
   const toggleAttendance = (studentId: string) => {
     setStudents((prev) =>
-      prev.map((student) => (student.id === studentId ? { ...student, present: !student.present } : student))
+      prev.map((student) =>
+        student.id === studentId
+          ? { ...student, present: student.present === null ? true : !student.present }
+          : student
+      )
+    );
+  };
+
+  const clearAttendance = (studentId: string) => {
+    setStudents((prev) =>
+      prev.map((student) => (student.id === studentId ? { ...student, present: null } : student))
     );
   };
 
@@ -301,8 +312,8 @@ const AttendanceManager: React.FC = () => {
   }, [filteredStudents, itemsPerPage]);
 
   // Summary widgets
-  const presentCount = students.filter((s) => s.present).length;
-  const absentCount = students.length - presentCount;
+  const presentCount = students.filter((s) => s.present === true).length;
+  const absentCount = students.filter((s) => s.present === false).length;
   const attendanceRate =
     students.length > 0
       ? Math.round(students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length)
@@ -327,7 +338,9 @@ const AttendanceManager: React.FC = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const attendanceData = students.map((s) => ({ studentId: Number(s.id), present: s.present }));
+      const attendanceData = students
+        .filter((s) => s.present !== null)
+        .map((s) => ({ studentId: Number(s.id), present: s.present }));
       const response = await fetch(`${apiBase}/attendance/bulk`, {
         method: 'POST',
         headers: {
@@ -553,17 +566,42 @@ const AttendanceManager: React.FC = () => {
                         <Card
                           key={student.id}
                           className={`p-4 border-2 transition-all cursor-pointer ${
-                            student.present ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                            student.present === true
+                              ? 'border-green-200 bg-green-50'
+                              : student.present === false
+                              ? 'border-red-200 bg-red-50'
+                              : 'border-gray-200 bg-gray-50'
                           }`}
                           onClick={() => toggleAttendance(student.id)}
                         >
                           <div className="flex items-center justify-between mb-3">
                             <Checkbox
-                              checked={student.present}
+                              checked={student.present === null ? 'indeterminate' : student.present}
                               onCheckedChange={() => toggleAttendance(student.id)}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <div className="flex items-center gap-1">
+                              <div
+                                className={`w-3 h-3 rounded-full ${
+                                  student.present === true
+                                    ? 'bg-green-500'
+                                    : student.present === false
+                                    ? 'bg-red-500'
+                                    : 'bg-gray-400'
+                                }`}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-muted-foreground"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearAttendance(student.id);
+                                }}
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
 
                           <div className="text-center space-y-2">
