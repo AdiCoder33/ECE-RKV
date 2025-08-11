@@ -75,13 +75,21 @@ router.post('/send', authenticateToken, async (req, res, next) => {
     }
     
     const insertQuery = `
+      DECLARE @Inserted TABLE (
+        id INT, sender_id INT, receiver_id INT, content NVARCHAR(MAX),
+        message_type NVARCHAR(20), attachments NVARCHAR(MAX),
+        is_read BIT, created_at DATETIME
+      );
+
       INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at)
       OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id, INSERTED.content,
-             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read, INSERTED.created_at,
-             u.name AS sender_name
-      SELECT ?, ?, ?, ?, ?, 0, GETDATE()
-      FROM Users u
-      WHERE u.id = ?
+             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read, INSERTED.created_at
+      INTO @Inserted
+      VALUES (?, ?, ?, ?, ?, 0, GETDATE());
+
+      SELECT i.*, u.name AS sender_name
+      FROM @Inserted i
+      JOIN Users u ON u.id = i.sender_id;
     `;
     const { recordset } = await executeQuery(insertQuery, [
       senderId,
@@ -89,7 +97,6 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       content,
       messageType,
       JSON.stringify(attachments),
-      senderId,
     ]);
 
     if (!recordset[0]) {
