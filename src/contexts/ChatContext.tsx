@@ -29,7 +29,7 @@ interface ChatContextType {
   sendMessage: (content: string, chatType: 'section' | 'global' | 'alumni') => Promise<ChatMessage>;
   fetchConversations: () => Promise<Conversation[]>;
   fetchConversation: (userId: string) => Promise<PrivateMessage[]>;
-  sendPrivateMessage: (receiverId: string, content: string) => Promise<PrivateMessage>;
+  sendDirectMessage: (receiverId: string, content: string) => Promise<PrivateMessage>;
   markAsRead: (userId: string) => Promise<void>;
 }
 
@@ -118,7 +118,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newMessage;
   };
 
-  const sendPrivateMessage = async (
+  const sendDirectMessage = async (
     receiverId: string,
     content: string
   ): Promise<PrivateMessage> => {
@@ -173,17 +173,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <ChatContext.Provider
-      value={{
-        messages,
-        privateMessages,
-        conversations,
-        fetchMessages,
-        sendMessage,
-        fetchConversations,
-        fetchConversation,
-        sendPrivateMessage,
-        markAsRead,
-      }}
+        value={{
+          messages,
+          privateMessages,
+          conversations,
+          fetchMessages,
+          sendMessage,
+          fetchConversations,
+          fetchConversation,
+          sendDirectMessage,
+          markAsRead,
+        }}
     >
       {children}
     </ChatContext.Provider>
