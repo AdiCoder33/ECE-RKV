@@ -5,10 +5,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, X, Search, Pin, Check, CheckCheck, ArrowLeft, UserPlus } from 'lucide-react';
+import {
+  MessageSquare,
+  X,
+  Search,
+  Pin,
+  Check,
+  CheckCheck,
+  ArrowLeft,
+  UserPlus,
+  Loader2,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { ChatMessage, PrivateMessage } from '@/types';
+import { ChatMessage, PrivateMessage, User } from '@/types';
 import { Virtuoso } from 'react-virtuoso';
 import { Input } from '@/components/ui/input';
 import {
@@ -54,7 +64,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     fetchGroups,
     onlineUsers,
     typingUsers,
-    setTyping
+    setTyping,
+    searchUsers,
   } = useChat();
 
   const [activeChat, setActiveChat] = useState<{
@@ -68,6 +79,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [attachments, setAttachments] = useState<{ file: File; preview: string }[]>([]);
   const [tab, setTab] = useState<'all' | 'direct' | 'group'>('all');
   const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const typingRef = useRef(false);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
@@ -77,6 +90,25 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     fetchGroups().catch(() => {});
     fetchConversations().catch(() => {});
   }, [fetchGroups, fetchConversations]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const handler = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchUsers(search);
+        setSearchResults(results);
+      } catch {
+        // ignore
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search, searchUsers]);
 
   useEffect(() => {
     if (!activeChat) return;
@@ -239,6 +271,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     .filter(c => tab === 'all' || c.type === tab)
     .filter(c => c.title.toLowerCase().includes(search.toLowerCase()));
 
+  const filteredSearchResults = searchResults.filter(
+    u => u.id !== user?.id && !conversations.some(c => c.id === u.id)
+  );
+
   const handleSelectConversation = (c: typeof conversations[number]) => {
     setActiveChat({ type: c.type, id: c.id, title: c.title });
   };
@@ -327,6 +363,33 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </div>
               </CardHeader>
               <ScrollArea className="flex-1">
+                {search && (
+                  <div>
+                    {searchLoading ? (
+                      <div className="flex justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : (
+                      filteredSearchResults.map(u => (
+                        <div
+                          key={u.id}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
+                          onClick={() => {
+                            setActiveChat({ type: 'direct', id: u.id, title: u.name });
+                            setSearch('');
+                          }}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+                            {u.name.charAt(0)}
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-sm font-medium truncate">{u.name}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
                 {sortedConversations.map(c => (
                   <div
                     key={`${c.type}-${c.id}`}
