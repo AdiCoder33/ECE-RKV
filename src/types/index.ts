@@ -58,7 +58,8 @@ export interface ChatMessage {
   senderRole: string;
   content: string;
   timestamp: string;
-  chatType: 'section' | 'global' | 'alumni';
+  groupId: string;
+  chatType?: 'section' | 'global' | 'alumni';
   section?: string;
 }
 
