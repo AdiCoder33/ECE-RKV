@@ -101,9 +101,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   useEffect(() => {
     if (!activeChat || activeChat.type !== 'user') return;
-    const newMsgs = privateMessages.filter(
-      m => m.sender_id === activeChat.id || m.receiver_id === activeChat.id
-    );
+    const newMsgs = privateMessages
+      .filter(Boolean)
+      .filter(m => m.sender_id === activeChat.id || m.receiver_id === activeChat.id);
     const existing = new Set(directMessages.map(m => m.id));
     const additions = newMsgs.filter(m => !existing.has(m.id));
     if (additions.length) {

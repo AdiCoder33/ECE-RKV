@@ -42,6 +42,18 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
+// Utility to merge new private messages while filtering out any falsy entries
+export const mergePrivateMessages = (
+  prev: (PrivateMessage | null | undefined)[],
+  incoming: (PrivateMessage | null | undefined)[]
+): PrivateMessage[] => {
+  const sanitizedPrev = prev.filter(m => m && m.id) as PrivateMessage[];
+  const sanitizedIncoming = incoming.filter(m => m && m.id) as PrivateMessage[];
+  const existing = new Set(sanitizedPrev.map(m => m.id));
+  const filteredIncoming = sanitizedIncoming.filter(m => !existing.has(m.id));
+  return [...sanitizedPrev, ...filteredIncoming];
+};
+
 export const useChat = () => {
   const context = useContext(ChatContext);
   if (!context) {
@@ -109,12 +121,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchConversation = useCallback(
     async (userId: string): Promise<PrivateMessage[]> => {
       const data = await fetchWithAuth(`/messages/conversation/${userId}`);
-      setPrivateMessages(prev => {
-        const existing = new Set(prev.map(m => m.id));
-        const filtered = data.filter((m: PrivateMessage) => !existing.has(m.id));
-        return [...prev, ...filtered];
-      });
-      return data;
+      const sanitized = (data as (PrivateMessage | null | undefined)[]).filter(
+        m => m && m.id
+      ) as PrivateMessage[];
+      setPrivateMessages(prev => mergePrivateMessages(prev, sanitized));
+      return sanitized;
     },
     [fetchWithAuth]
   );
@@ -140,7 +151,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       method: 'POST',
       body: JSON.stringify({ receiverId, content }),
     });
-    setPrivateMessages(prev => [...prev, message]);
+    setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
     socketRef.current?.emit('private-message', { to: receiverId, message });
     fetchConversations().catch(console.error);
     return message;
@@ -172,9 +183,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     socket.on('private-message', (message: PrivateMessage) => {
-      setPrivateMessages(prev =>
-        prev.some(m => m.id === message.id) ? prev : [...prev, message]
-      );
+      setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
       fetchConversations().catch(console.error);
     });
 
