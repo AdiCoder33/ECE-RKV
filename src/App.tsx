@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
 import Homepage from './pages/Homepage';
@@ -49,8 +50,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
-          <Router>
-            <div className="min-h-screen bg-background">
+          <ChatProvider>
+            <Router>
+              <div className="min-h-screen bg-background">
               <Routes>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/login" element={<LoginForm />} />
@@ -84,7 +86,8 @@ function App() {
                 </Route>
               </Routes>
             </div>
-          </Router>
+            </Router>
+          </ChatProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
