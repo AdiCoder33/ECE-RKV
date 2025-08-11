@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { ChatMessage } from '@/types';
-import { useAuth } from './AuthContext';
 
 interface PrivateMessage {
   id: string;
@@ -21,12 +20,19 @@ interface Conversation {
   last_message: string;
 }
 
+interface Group {
+  id: string;
+  name: string;
+}
+
 interface ChatContextType {
   messages: ChatMessage[];
   privateMessages: PrivateMessage[];
   conversations: Conversation[];
-  fetchMessages: (chatType: 'section' | 'global' | 'alumni') => Promise<ChatMessage[]>;
-  sendMessage: (content: string, chatType: 'section' | 'global' | 'alumni') => Promise<ChatMessage>;
+  groups: Group[];
+  fetchGroups: () => Promise<Group[]>;
+  fetchGroupMessages: (groupId: string) => Promise<ChatMessage[]>;
+  sendGroupMessage: (groupId: string, content: string) => Promise<ChatMessage>;
   fetchConversations: () => Promise<Conversation[]>;
   fetchConversation: (userId: string) => Promise<PrivateMessage[]>;
   sendDirectMessage: (receiverId: string, content: string) => Promise<PrivateMessage>;
@@ -49,8 +55,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const socketRef = useRef<Socket | null>(null);
-  const { user } = useAuth();
 
   const fetchWithAuth = useCallback(
     async (url: string, options: RequestInit = {}) => {
@@ -74,12 +80,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [apiBase]
   );
 
-  const fetchMessages = async (
-    chatType: 'section' | 'global' | 'alumni'
-  ): Promise<ChatMessage[]> => {
-    const data = await fetchWithAuth(`/chat/messages?channel=${chatType}`);
+  const fetchGroups = useCallback(async (): Promise<Group[]> => {
+    const data = await fetchWithAuth('/groups');
+    const formatted = (data as { id: number | string; name: string }[]).map(g => ({
+      id: g.id.toString(),
+      name: g.name,
+    }));
+    setGroups(formatted);
+    return formatted;
+  }, [fetchWithAuth]);
+
+  const fetchGroupMessages = async (groupId: string): Promise<ChatMessage[]> => {
+    const data = await fetchWithAuth(`/chat/groups/${groupId}/messages`);
     setMessages(prev => {
-      const filtered = prev.filter(m => m.chatType !== chatType);
+      const filtered = prev.filter(m => m.groupId !== groupId);
       return [...filtered, ...data];
     });
     return data;
@@ -104,17 +118,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchWithAuth]
   );
 
-  const sendMessage = async (
-    content: string,
-    chatType: 'section' | 'global' | 'alumni'
+  const sendGroupMessage = async (
+    groupId: string,
+    content: string
   ): Promise<ChatMessage> => {
-    const newMessage = await fetchWithAuth('/chat/messages', {
+    const newMessage = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ content, chatType }),
+      body: JSON.stringify({ content }),
     });
     setMessages(prev => [...prev, newMessage]);
-    const room = chatType === 'section' ? `section-${user?.section}` : chatType;
-    socketRef.current?.emit('chat-message', { room, message: newMessage });
+    socketRef.current?.emit('group-message', { groupId, message: newMessage });
     return newMessage;
   };
 
@@ -144,7 +157,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!token) return;
     const socket = io(socketUrl, { auth: { token } });
 
-    socket.on('chat-message', (message: ChatMessage) => {
+    socket.on('group-message', (message: ChatMessage) => {
       setMessages(prev => (prev.some(m => m.id === message.id) ? prev : [...prev, message]));
     });
 
@@ -162,14 +175,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [socketUrl, fetchConversations]);
 
   useEffect(() => {
-    if (socketRef.current && user) {
-      socketRef.current.emit('join-room', 'global');
-      socketRef.current.emit('join-room', 'alumni');
-      if (user.section) {
-        socketRef.current.emit('join-room', `section-${user.section}`);
-      }
+    if (socketRef.current && groups.length) {
+      groups.forEach(g => socketRef.current?.emit('join-room', `group-${g.id}`));
     }
-  }, [user]);
+  }, [groups]);
 
   return (
     <ChatContext.Provider
@@ -177,8 +186,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           messages,
           privateMessages,
           conversations,
-          fetchMessages,
-          sendMessage,
+          groups,
+          fetchGroups,
+          fetchGroupMessages,
+          sendGroupMessage,
           fetchConversations,
           fetchConversation,
           sendDirectMessage,

@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Send, 
-  Smile, 
-  Paperclip, 
-  Hash, 
+import {
+  Send,
+  Smile,
+  Paperclip,
   Users,
   Search,
   X,
@@ -44,14 +43,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onExpandedChange
 }) => {
   const { user } = useAuth();
-  const [activeChat, setActiveChat] = useState<'section' | 'global' | string>('section');
-  const [isDirect, setIsDirect] = useState(false);
+  const [activeChat, setActiveChat] = useState<{ type: 'group' | 'user'; id: string } | null>(null);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
+  const [search, setSearch] = useState('');
   const {
-    fetchMessages,
-    sendMessage,
+    groups,
+    fetchGroups,
+    fetchGroupMessages,
+    sendGroupMessage,
     conversations,
     privateMessages,
     fetchConversations,
@@ -68,22 +69,24 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, directMessages]);
+  }, [groupMessages, directMessages]);
 
   useEffect(() => {
+    fetchGroups().catch(err => console.error('Failed to load groups:', err));
     fetchConversations().catch(err => console.error('Failed to load conversations:', err));
-  }, [fetchConversations]);
+  }, [fetchGroups, fetchConversations]);
 
   useEffect(() => {
     const loadMessages = async () => {
+      if (!activeChat) return;
       try {
-        if (isDirect) {
-          const data = await fetchConversation(activeChat);
+        if (activeChat.type === 'user') {
+          const data = await fetchConversation(activeChat.id);
           setDirectMessages(data);
-          markAsRead(activeChat).catch(() => {});
+          markAsRead(activeChat.id).catch(() => {});
         } else {
-          const data = await fetchMessages(activeChat as 'section' | 'global');
-          setMessages(data);
+          const data = await fetchGroupMessages(activeChat.id);
+          setGroupMessages(data);
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
@@ -92,30 +95,30 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (user) {
       loadMessages();
     }
-  }, [activeChat, isDirect, fetchConversation, fetchMessages, user, markAsRead]);
+  }, [activeChat, fetchConversation, fetchGroupMessages, user, markAsRead]);
 
   useEffect(() => {
-    if (!isDirect) return;
+    if (!activeChat || activeChat.type !== 'user') return;
     const newMsgs = privateMessages.filter(
-      m => m.sender_id === activeChat || m.receiver_id === activeChat
+      m => m.sender_id === activeChat.id || m.receiver_id === activeChat.id
     );
     const existing = new Set(directMessages.map(m => m.id));
     const additions = newMsgs.filter(m => !existing.has(m.id));
     if (additions.length) {
       setDirectMessages(prev => [...prev, ...additions]);
     }
-  }, [privateMessages, isDirect, activeChat, directMessages]);
+  }, [privateMessages, activeChat, directMessages]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !user) return;
+    if (!message.trim() || !user || !activeChat) return;
 
     try {
-      if (isDirect) {
-        const newMessage = await sendDirectMessage(activeChat, message);
+      if (activeChat.type === 'user') {
+        const newMessage = await sendDirectMessage(activeChat.id, message);
         setDirectMessages(prev => [...prev, newMessage]);
       } else {
-        const newMessage = await sendMessage(message, activeChat as 'section' | 'global');
-        setMessages(prev => [...prev, newMessage]);
+        const newMessage = await sendGroupMessage(activeChat.id, message);
+        setGroupMessages(prev => [...prev, newMessage]);
       }
       setMessage('');
     } catch (err) {
@@ -146,34 +149,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const displayMessages = isDirect
-    ? directMessages
-    : messages.filter(msg => msg.chatType === activeChat);
-
-  const channels = [
-    {
-      id: 'section',
-      name: user?.role === 'student' ? `${user?.section} Section` : 'My Classes',
-      type: 'section' as const,
-      unread: 2,
-      icon: Users
-    },
-    {
-      id: 'global',
-      name: 'College Community',
-      type: 'global' as const,
-      unread: 1,
-      icon: Hash
-    }
-  ];
+  const displayMessages =
+    activeChat?.type === 'user' ? directMessages : groupMessages;
 
   const contacts = conversations.map(c => ({
     id: c.user_id,
     name: c.user_name,
     last: c.last_message,
     unread: c.unread_count,
-    type: 'dm' as const,
   }));
+
+  const filteredGroups = groups.filter(g =>
+    g.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredContacts = contacts.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div
@@ -198,47 +190,38 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search channels..."
+                placeholder="Search..."
                 className="pl-10 h-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </CardHeader>
 
-          {/* Channels */}
+          {/* Groups and Contacts */}
           <div className="p-3 border-b">
             <div className="space-y-1">
-              {channels.map((channel) => (
+              {filteredGroups.map((group) => (
                 <Button
-                  key={channel.id}
-                  variant={activeChat === channel.id && !isDirect ? 'default' : 'ghost'}
+                  key={group.id}
+                  variant={activeChat?.type === 'group' && activeChat.id === group.id ? 'default' : 'ghost'}
                   className="w-full justify-start h-10 px-3"
-                  onClick={() => {
-                    setActiveChat(channel.id);
-                    setIsDirect(false);
-                  }}
+                  onClick={() => setActiveChat({ type: 'group', id: group.id })}
                 >
-                  <channel.icon className="h-4 w-4 mr-3" />
+                  <Users className="h-4 w-4 mr-3" />
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-sm">{channel.name}</p>
+                    <p className="font-medium text-sm">{group.name}</p>
                   </div>
-                  {channel.unread > 0 && (
-                    <Badge variant="destructive" className="text-xs">
-                      {channel.unread}
-                    </Badge>
-                  )}
                 </Button>
               ))}
-              {contacts.length > 0 && (
+              {filteredContacts.length > 0 && (
                 <div className="pt-2 mt-2 border-t space-y-1">
-                  {contacts.map((contact) => (
+                  {filteredContacts.map((contact) => (
                     <Button
                       key={contact.id}
-                      variant={isDirect && activeChat === contact.id ? 'default' : 'ghost'}
+                      variant={activeChat?.type === 'user' && activeChat.id === contact.id ? 'default' : 'ghost'}
                       className="w-full justify-start h-10 px-3"
-                      onClick={() => {
-                        setActiveChat(contact.id);
-                        setIsDirect(true);
-                      }}
+                      onClick={() => setActiveChat({ type: 'user', id: contact.id })}
                     >
                       <MessageSquare className="h-4 w-4 mr-3" />
                       <div className="flex-1 text-left">
@@ -262,16 +245,22 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <ScrollArea className="h-full px-4 py-4">
               <div className="space-y-4">
                 {displayMessages.map((msg) => {
-                  const isOwn = isDirect
-                    ? msg.sender_id === user?.id
-                    : (msg as ChatMessage).senderId === user?.id;
-                  const senderName = isDirect
-                    ? msg.sender_name
-                    : (msg as ChatMessage).senderName;
-                  const timestamp = isDirect
-                    ? msg.created_at
-                    : (msg as ChatMessage).timestamp;
-                  const role = isDirect ? null : (msg as ChatMessage).senderRole;
+                  const isOwn =
+                    activeChat?.type === 'user'
+                      ? (msg as PrivateMessage).sender_id === user?.id
+                      : (msg as ChatMessage).senderId === user?.id;
+                  const senderName =
+                    activeChat?.type === 'user'
+                      ? (msg as PrivateMessage).sender_name
+                      : (msg as ChatMessage).senderName;
+                  const timestamp =
+                    activeChat?.type === 'user'
+                      ? (msg as PrivateMessage).created_at
+                      : (msg as ChatMessage).timestamp;
+                  const role =
+                    activeChat?.type === 'user'
+                      ? null
+                      : (msg as ChatMessage).senderRole;
                   return (
                     <div
                       key={msg.id}
@@ -287,7 +276,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       <div className={`flex-1 max-w-sm ${isOwn ? 'text-right' : ''}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">{senderName}</span>
-                          {!isDirect && role && (
+                          {activeChat?.type !== 'user' && role && (
                             <Badge
                               variant="secondary"
                               className={`text-xs ${getRoleBadgeColor(role)}`}
@@ -328,11 +317,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={`Message ${
-                  isDirect
-                    ? conversations.find(c => c.user_id === activeChat)?.user_name || 'contact'
-                    : activeChat === 'section'
-                      ? 'section'
-                      : 'community'
+                  activeChat?.type === 'user'
+                    ? contacts.find(c => c.id === activeChat.id)?.name || 'contact'
+                    : groups.find(g => g.id === activeChat?.id)?.name || 'group'
                 }...`}
                 className="flex-1"
               />
@@ -350,14 +337,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <Button variant="ghost" size="icon" onClick={onToggle}>
             <MessageSquare className="h-5 w-5" />
           </Button>
-          {channels.map((channel) => (
+          {groups.slice(0, 3).map((group) => (
             <Button
-              key={channel.id}
-              variant={activeChat === channel.id ? 'default' : 'ghost'}
+              key={group.id}
+              variant={activeChat?.type === 'group' && activeChat.id === group.id ? 'default' : 'ghost'}
               size="icon"
-              onClick={() => setActiveChat(channel.id as 'section' | 'global')}
+              onClick={() => setActiveChat({ type: 'group', id: group.id })}
             >
-              <channel.icon className="h-5 w-5" />
+              <Users className="h-5 w-5" />
             </Button>
           ))}
         </div>
