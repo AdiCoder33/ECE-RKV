@@ -339,7 +339,7 @@ const GroupManagement = () => {
                 </span>
                 <span>{group.createdAt}</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                 <Button size="sm" variant="outline" className="flex-1">
                   <MessageCircle className="h-4 w-4 mr-1" />
                   Chat
