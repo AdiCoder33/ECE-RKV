@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +49,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     sendGroupMessage,
     markAsRead,
     pinConversation,
-    fetchGroups
+    fetchGroups,
+    onlineUsers,
+    typingUsers,
+    setTyping
   } = useChat();
 
   const [activeChat, setActiveChat] = useState<{
@@ -63,6 +66,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [tab, setTab] = useState<'all' | 'direct' | 'group'>('all');
   const [search, setSearch] = useState('');
   const [hasMore, setHasMore] = useState(false);
+  const typingRef = useRef(false);
 
   useEffect(() => {
     fetchGroups().catch(() => {});
@@ -112,11 +116,44 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         const newMessage = await sendGroupMessage(activeChat.id, message);
         setGroupMessages(prev => [...prev, newMessage]);
       }
+      const target =
+        activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id;
       setMessage('');
+      setTyping(target, 'stop_typing');
+      typingRef.current = false;
     } catch {
       // ignore
     }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMessage(value);
+    if (!activeChat) return;
+    const target =
+      activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id;
+    if (value && !typingRef.current) {
+      setTyping(target, 'typing');
+      typingRef.current = true;
+    } else if (!value && typingRef.current) {
+      setTyping(target, 'stop_typing');
+      typingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    const currentChat = activeChat;
+    return () => {
+      if (typingRef.current && currentChat) {
+        const target =
+          currentChat.type === 'group'
+            ? `group-${currentChat.id}`
+            : currentChat.id;
+        setTyping(target, 'stop_typing');
+        typingRef.current = false;
+      }
+    };
+  }, [activeChat, setTyping]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -234,8 +271,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
                   onClick={() => handleSelectConversation(c)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                    {c.title.charAt(0)}
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+                      {c.title.charAt(0)}
+                    </div>
+                    {c.type === 'direct' && onlineUsers.has(c.id) && (
+                      <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+                    )}
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <p className="text-sm font-medium truncate">{c.title}</p>
@@ -267,13 +309,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </ScrollArea>
           </div>
 
-          <CardContent className="flex-1 p-0">
+          <CardContent className="flex-1 p-0 flex flex-col">
             <Virtuoso
               data={groupedItems}
               startReached={loadMore}
               followOutput="smooth"
               initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
-              className="h-full px-4 py-4"
+              className="flex-1 px-4 py-4"
               itemContent={(index, item) => {
                 if (item.type === 'date') {
                   return (
@@ -337,13 +379,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 );
               }}
             />
+            {activeChat?.type === 'direct' && typingUsers.has(activeChat.id) && (
+              <div className="px-4 py-2 text-xs text-muted-foreground">User is typing…</div>
+            )}
           </CardContent>
 
           <div className="border-t p-4">
             <div className="flex gap-2">
               <Input
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 placeholder={
                   activeChat ? `Message ${activeChat.title}...` : 'Select a conversation'

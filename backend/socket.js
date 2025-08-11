@@ -23,9 +23,17 @@ function setupSocket(server) {
     });
   });
 
+  const onlineUsers = new Map();
+
   io.on('connection', (socket) => {
     const userId = socket.user.id;
     socket.join(`user:${userId}`);
+
+    const count = onlineUsers.get(userId) || 0;
+    onlineUsers.set(userId, count + 1);
+    if (count === 0) {
+      io.emit('user_online', userId);
+    }
 
     socket.on('join-room', (room) => {
       if (room) {
@@ -42,6 +50,32 @@ function setupSocket(server) {
     socket.on('private-message', ({ to, message }) => {
       if (to && message) {
         io.to(`user:${to}`).emit('private-message', message);
+      }
+    });
+
+    socket.on('typing', ({ to, room }) => {
+      if (to) {
+        io.to(`user:${to}`).emit('typing', { from: userId });
+      } else if (room) {
+        socket.to(room).emit('typing', { from: userId });
+      }
+    });
+
+    socket.on('stop_typing', ({ to, room }) => {
+      if (to) {
+        io.to(`user:${to}`).emit('stop_typing', { from: userId });
+      } else if (room) {
+        socket.to(room).emit('stop_typing', { from: userId });
+      }
+    });
+
+    socket.on('disconnect', () => {
+      const current = onlineUsers.get(userId) || 0;
+      if (current <= 1) {
+        onlineUsers.delete(userId);
+        io.emit('user_offline', userId);
+      } else {
+        onlineUsers.set(userId, current - 1);
       }
     });
   });
