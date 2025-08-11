@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { ChatMessage, User, PrivateMessage } from '@/types';
+import { ChatMessage, User, PrivateMessage, Attachment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Conversation {
@@ -40,7 +40,11 @@ interface ChatContextType {
   fetchMoreGroupMessages: (
     groupId: string
   ) => Promise<Paginated<ChatMessage>>;
-  sendGroupMessage: (groupId: string, content: string) => Promise<ChatMessage>;
+  sendGroupMessage: (
+    groupId: string,
+    content: string,
+    files?: File[]
+  ) => Promise<ChatMessage>;
   fetchConversations: () => Promise<Conversation[]>;
   fetchConversation: (
     userId: string,
@@ -51,7 +55,8 @@ interface ChatContextType {
   ) => Promise<Paginated<PrivateMessage>>;
   sendDirectMessage: (
     receiverId: string,
-    content: string
+    content: string,
+    files?: File[]
   ) => Promise<PrivateMessage | null>;
   pinConversation: (type: 'direct' | 'group', id: string, pinned: boolean) => Promise<void>;
   markAsRead: (type: 'direct' | 'group', id: string) => Promise<void>;
@@ -126,6 +131,41 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return response.json();
+    },
+    [apiBase]
+  );
+
+  const uploadFile = useCallback(
+    async (file: File, onProgress: (percent: number) => void) => {
+      const token = localStorage.getItem('token');
+      return new Promise<Attachment>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${apiBase}/uploads/chat`);
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const res = JSON.parse(xhr.responseText);
+              resolve(res as Attachment);
+            } catch {
+              reject(new Error('Invalid response'));
+            }
+          } else {
+            reject(new Error('Upload failed'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        const formData = new FormData();
+        formData.append('file', file);
+        xhr.send(formData);
+      });
     },
     [apiBase]
   );
@@ -233,7 +273,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendGroupMessage = async (
     groupId: string,
-    content: string
+    content: string,
+    files: File[] = []
   ): Promise<ChatMessage> => {
     const tempId = `temp-${Date.now()}`;
     const optimistic: ChatMessage = {
@@ -246,17 +287,54 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       groupId,
       status: 'sending',
       sender_profileImage: user?.profileImage,
+      attachments: files.map(f => ({
+        url: '',
+        type: f.type.startsWith('image/') ? 'image' : 'file',
+        name: f.name,
+        progress: 0,
+      })),
     };
     setMessages(prev => [...prev, optimistic]);
     try {
+      const uploaded: Attachment[] = [];
+      await Promise.all(
+        files.map((file, idx) =>
+          uploadFile(file, percent =>
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === tempId
+                  ? {
+                      ...m,
+                      attachments: m.attachments?.map((a, i) =>
+                        i === idx ? { ...a, progress: percent } : a
+                      ),
+                    }
+                  : m
+              )
+            )
+          ).then(res => {
+            uploaded[idx] = res;
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === tempId
+                  ? {
+                      ...m,
+                      attachments: m.attachments?.map((a, i) =>
+                        i === idx ? { ...a, url: res.url, progress: 100 } : a
+                      ),
+                    }
+                  : m
+              )
+            );
+          })
+        )
+      );
       const newMessage = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, attachments: uploaded }),
       });
       const finalMessage = { ...newMessage, status: 'sent' } as ChatMessage;
-      setMessages(prev =>
-        prev.map(m => (m.id === tempId ? finalMessage : m))
-      );
+      setMessages(prev => prev.map(m => (m.id === tempId ? finalMessage : m)));
       socketRef.current?.emit('group-message', { groupId, message: finalMessage });
       return finalMessage;
     } catch (e) {
@@ -267,7 +345,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendDirectMessage = async (
     receiverId: string,
-    content: string
+    content: string,
+    files: File[] = []
   ): Promise<PrivateMessage | null> => {
     const tempId = `temp-${Date.now()}`;
     const optimistic: PrivateMessage = {
@@ -281,18 +360,55 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       is_read: 0,
       status: 'sending',
       sender_profileImage: user?.profileImage,
+      attachments: files.map(f => ({
+        url: '',
+        type: f.type.startsWith('image/') ? 'image' : 'file',
+        name: f.name,
+        progress: 0,
+      })),
     };
     setPrivateMessages(prev => mergePrivateMessages(prev, [optimistic]));
     try {
+      const uploaded: Attachment[] = [];
+      await Promise.all(
+        files.map((file, idx) =>
+          uploadFile(file, percent =>
+            setPrivateMessages(prev =>
+              prev.map(m =>
+                m.id === tempId
+                  ? {
+                      ...m,
+                      attachments: m.attachments?.map((a, i) =>
+                        i === idx ? { ...a, progress: percent } : a
+                      ),
+                    }
+                  : m
+              )
+            )
+          ).then(res => {
+            uploaded[idx] = res;
+            setPrivateMessages(prev =>
+              prev.map(m =>
+                m.id === tempId
+                  ? {
+                      ...m,
+                      attachments: m.attachments?.map((a, i) =>
+                        i === idx ? { ...a, url: res.url, progress: 100 } : a
+                      ),
+                    }
+                  : m
+              )
+            );
+          })
+        )
+      );
       const message = await fetchWithAuth('/messages/send', {
         method: 'POST',
-        body: JSON.stringify({ receiverId, content }),
+        body: JSON.stringify({ receiverId, content, attachments: uploaded }),
       });
       if (message) {
         const finalMessage = { ...message, status: 'sent' } as PrivateMessage;
-        setPrivateMessages(prev =>
-          prev.map(m => (m.id === tempId ? finalMessage : m))
-        );
+        setPrivateMessages(prev => prev.map(m => (m.id === tempId ? finalMessage : m)));
         socketRef.current?.emit('private-message', { to: receiverId, message: finalMessage });
         return finalMessage;
       }

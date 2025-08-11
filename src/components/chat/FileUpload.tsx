@@ -1,12 +1,6 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Paperclip, 
-  Image, 
-  FileText, 
-  Camera,
-  X 
-} from 'lucide-react';
+import { Paperclip, Image, FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,14 +58,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, disabled = false 
       <input
         ref={imageInputRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp"
         style={{ display: 'none' }}
         onChange={(e) => handleFileChange(e, 'image')}
       />
       <input
         ref={documentInputRef}
         type="file"
-        accept=".pdf,.doc,.docx,.txt,.xlsx,.ppt,.pptx"
+        accept=".pdf,.docx,.xlsx"
         style={{ display: 'none' }}
         onChange={(e) => handleFileChange(e, 'document')}
       />

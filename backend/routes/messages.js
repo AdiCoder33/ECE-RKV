@@ -45,7 +45,12 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       ? result.recordset.slice(0, fetchLimit - 1)
       : result.recordset;
 
-    const formatted = sliced.reverse();
+    const formatted = sliced
+      .reverse()
+      .map(m => ({
+        ...m,
+        attachments: m.attachments ? JSON.parse(m.attachments) : []
+      }));
 
     res.json({
       messages: formatted,
@@ -63,18 +68,24 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
 router.post('/send', authenticateToken, async (req, res, next) => {
   try {
     const senderId = req.user.id;
-    const { receiverId, content, messageType = 'text' } = req.body;
+    const { receiverId, content, messageType = 'text', attachments = [] } = req.body;
     
     if (!receiverId || !content) {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
     }
     
     const insertQuery = `
-      INSERT INTO Messages (sender_id, receiver_id, content, message_type, is_read, created_at)
-      VALUES (?, ?, ?, ?, 0, GETDATE())
+      INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at)
+      VALUES (?, ?, ?, ?, ?, 0, GETDATE())
     `;
-    
-    const result = await executeQuery(insertQuery, [senderId, receiverId, content, messageType]);
+
+    const result = await executeQuery(insertQuery, [
+      senderId,
+      receiverId,
+      content,
+      messageType,
+      JSON.stringify(attachments),
+    ]);
     
     // Get the inserted message with sender details
     const messageQuery = `
@@ -83,10 +94,15 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       JOIN Users u ON u.id = m.sender_id
       WHERE m.id = SCOPE_IDENTITY()
     `;
-    
+
     const messageResult = await executeQuery(messageQuery);
 
-    const savedMessage = messageResult.recordset[0];
+    const savedMessage = {
+      ...messageResult.recordset[0],
+      attachments: messageResult.recordset[0].attachments
+        ? JSON.parse(messageResult.recordset[0].attachments)
+        : [],
+    };
     const io = req.app.get('io');
     if (io) {
       io.to(`user:${receiverId}`).emit('private-message', savedMessage);
