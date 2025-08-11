@@ -225,7 +225,7 @@ const ChatConversation: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className={`flex-1 max-w-md ${isOwn ? 'text-right' : ''}`}>
+                      <div className={`max-w-md ${isOwn ? 'text-right ml-auto' : ''}`}> 
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">{dm.sender_name}</span>
                           <span className="text-xs text-muted-foreground">
@@ -233,7 +233,7 @@ const ChatConversation: React.FC = () => {
                           </span>
                         </div>
                         <div
-                          className={`p-3 rounded-lg ${
+                          className={`inline-block w-fit max-w-[80%] break-words p-3 rounded-lg ${
                             isOwn
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted'
@@ -259,7 +259,7 @@ const ChatConversation: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className={`flex-1 max-w-md ${isOwn ? 'text-right' : ''}`}>
+                    <div className={`max-w-md ${isOwn ? 'text-right ml-auto' : ''}`}> 
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium">{gm.senderName}</span>
                         <Badge
@@ -273,7 +273,7 @@ const ChatConversation: React.FC = () => {
                         </span>
                       </div>
                       <div
-                        className={`p-3 rounded-lg ${
+                        className={`inline-block w-fit max-w-[80%] break-words p-3 rounded-lg ${
                           isOwn
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
