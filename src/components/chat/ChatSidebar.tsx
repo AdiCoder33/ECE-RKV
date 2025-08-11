@@ -182,19 +182,21 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const displayMessages =
     activeChat?.type === 'user' ? directMessages : groupMessages;
 
-  const contacts = conversations.map(c => ({
-    id: c.user_id,
-    name: c.user_name,
-    last: c.last_message,
-    unread: c.unread_count,
-  }));
-
-  const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const contacts = conversations
+    .filter(c => c?.user_name)
+    .map(c => ({
+      id: c.user_id,
+      name: c.user_name,
+      last: c.last_message,
+      unread: c.unread_count,
+    }));
 
   const filteredContacts = contacts.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+    c.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredGroups = groups.filter(g =>
+    g.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

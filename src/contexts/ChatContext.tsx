@@ -124,8 +124,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
     const data = await fetchWithAuth('/messages/conversations');
-    setConversations(data);
-    return data;
+    const filtered = (data as Conversation[]).filter(c => c.user_name);
+    setConversations(filtered);
+    return filtered;
   }, [fetchWithAuth]);
 
   const fetchConversation = useCallback(
