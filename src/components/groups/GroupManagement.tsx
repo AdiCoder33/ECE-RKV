@@ -1,88 +1,156 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Users, 
-  UserPlus, 
-  Search, 
+import {
+  Users,
+  UserPlus,
+  Search,
   Edit,
   Trash2,
   MessageCircle,
-  Settings,
   ArrowLeft
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useAuth } from '@/contexts/AuthContext';
-
 interface ChatGroup {
   id: string;
   name: string;
   description: string;
   type: 'section' | 'subject' | 'year' | 'department' | 'custom';
-  members: string[];
+  memberCount: number;
   createdBy: string;
   createdAt: string;
 }
 
+interface ApiGroup {
+  id: number;
+  name: string;
+  description: string | null;
+  type: ChatGroup['type'];
+  member_count?: number;
+  created_by?: number;
+  created_at?: string;
+}
+
 const GroupManagement = () => {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
-    type: 'custom' as const,
-    members: [] as string[]
+    type: 'custom' as const
   });
 
-  // Mock data
-  const [groups, setGroups] = useState<ChatGroup[]>([
-    {
-      id: '1',
-      name: 'ECE 3rd Year - Section A',
-      description: 'General discussion for ECE 3rd year students',
-      type: 'section',
-      members: ['1', '2', '3', '4'],
-      createdBy: 'admin',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'Digital Signal Processing',
-      description: 'Study group for DSP subject',
-      type: 'subject',
-      members: ['3', '4', '5'],
-      createdBy: 'prof1',
-      createdAt: '2024-01-20'
+  const [groups, setGroups] = useState<ChatGroup[]>([]);
+  const [editingGroup, setEditingGroup] = useState<ChatGroup | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const fetchGroups = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/groups', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch groups');
+      const data: ApiGroup[] = await response.json();
+      const formatted: ChatGroup[] = data.map((g) => ({
+        id: g.id.toString(),
+        name: g.name,
+        description: g.description || '',
+        type: g.type,
+        memberCount: g.member_count || 0,
+        createdBy: g.created_by ? g.created_by.toString() : '',
+        createdAt: g.created_at ? new Date(g.created_at).toISOString().split('T')[0] : ''
+      }));
+      setGroups(formatted);
+    } catch (err) {
+      console.error('Failed to load groups', err);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
 
   const filteredGroups = groups.filter(group =>
     group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     group.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroup.name.trim()) return;
-    
-    const group: ChatGroup = {
-      id: String(groups.length + 1),
-      ...newGroup,
-      createdBy: user?.id || 'admin',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    setGroups([...groups, group]);
-    setNewGroup({ name: '', description: '', type: 'custom', members: [] });
-    setIsCreateModalOpen(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newGroup.name,
+          description: newGroup.description,
+          type: newGroup.type
+        })
+      });
+      if (!response.ok) throw new Error('Failed to create group');
+      await fetchGroups();
+      setNewGroup({ name: '', description: '', type: 'custom' });
+      setIsCreateModalOpen(false);
+    } catch (err) {
+      console.error('Create group error', err);
+    }
   };
 
-  const handleDeleteGroup = (groupId: string) => {
-    setGroups(groups.filter(g => g.id !== groupId));
+  const handleEditClick = (group: ChatGroup) => {
+    setEditingGroup(group);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateGroup = async () => {
+    if (!editingGroup) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/groups/${editingGroup.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: editingGroup.name,
+          description: editingGroup.description,
+          type: editingGroup.type
+        })
+      });
+      if (!response.ok) throw new Error('Failed to update group');
+      await fetchGroups();
+      setIsEditModalOpen(false);
+      setEditingGroup(null);
+    } catch (err) {
+      console.error('Update group error', err);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/groups/${groupId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to delete group');
+      await fetchGroups();
+    } catch (err) {
+      console.error('Delete group error', err);
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -145,7 +213,7 @@ const GroupManagement = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Type</label>
-                  <Select value={newGroup.type} onValueChange={(value) => setNewGroup({ ...newGroup, type: value })}>
+                  <Select value={newGroup.type} onValueChange={(value) => setNewGroup({ ...newGroup, type: value as ChatGroup['type'] })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -171,6 +239,59 @@ const GroupManagement = () => {
           </Dialog>
         </div>
       </div>
+
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => { setIsEditModalOpen(open); if (!open) setEditingGroup(null); }}>
+        {editingGroup && (
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Group</DialogTitle>
+              <DialogDescription>Update group details</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Group Name</label>
+                <Input
+                  value={editingGroup.name}
+                  onChange={(e) => setEditingGroup(prev => prev ? { ...prev, name: e.target.value } : prev)}
+                  placeholder="Enter group name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  value={editingGroup.description}
+                  onChange={(e) => setEditingGroup(prev => prev ? { ...prev, description: e.target.value } : prev)}
+                  placeholder="Group description"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Type</label>
+                <Select value={editingGroup.type} onValueChange={(value) => setEditingGroup(prev => prev ? { ...prev, type: value as ChatGroup['type'] } : prev)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="section">Section</SelectItem>
+                    <SelectItem value="subject">Subject</SelectItem>
+                    <SelectItem value="year">Year</SelectItem>
+                    <SelectItem value="department">Department</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateGroup}>
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
 
       {/* Search */}
       <Card>
@@ -208,7 +329,7 @@ const GroupManagement = () => {
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  {group.members.length} members
+                  {group.memberCount} members
                 </span>
                 <span>{group.createdAt}</span>
               </div>
@@ -217,8 +338,8 @@ const GroupManagement = () => {
                   <MessageCircle className="h-4 w-4 mr-1" />
                   Chat
                 </Button>
-                <Button size="sm" variant="outline">
-                  <Settings className="h-4 w-4" />
+                <Button size="sm" variant="outline" onClick={() => handleEditClick(group)}>
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button 
                   size="sm" 

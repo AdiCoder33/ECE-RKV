@@ -3,11 +3,16 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
-// Get all chat groups
+// Get all chat groups with member counts
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const result = await executeQuery(
-      'SELECT * FROM chat_groups ORDER BY created_at DESC'
+      `SELECT g.id, g.name, g.description, g.type, g.created_by, g.created_at,
+              COUNT(m.id) as member_count
+       FROM chat_groups g
+       LEFT JOIN chat_group_members m ON g.id = m.group_id
+       GROUP BY g.id, g.name, g.description, g.type, g.created_by, g.created_at
+       ORDER BY g.created_at DESC`
     );
     res.json(result.recordset);
   } catch (error) {
@@ -60,6 +65,55 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
     res.json({ message: 'Group deleted successfully' });
   } catch (error) {
     console.error('Delete group error:', error);
+    next(error);
+  }
+});
+
+// Get members of a chat group
+router.get('/:id/members', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await executeQuery(
+      `SELECT u.id, u.name, u.email
+       FROM chat_group_members gm
+       JOIN users u ON gm.user_id = u.id
+       WHERE gm.group_id = ?`,
+      [id]
+    );
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Group members fetch error:', error);
+    next(error);
+  }
+});
+
+// Add member to chat group
+router.post('/:id/members', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+    await executeQuery(
+      'INSERT INTO chat_group_members (group_id, user_id) VALUES (?, ?)',
+      [id, userId]
+    );
+    res.status(201).json({ message: 'Member added successfully' });
+  } catch (error) {
+    console.error('Add group member error:', error);
+    next(error);
+  }
+});
+
+// Remove member from chat group
+router.delete('/:id/members/:userId', authenticateToken, async (req, res, next) => {
+  try {
+    const { id, userId } = req.params;
+    await executeQuery(
+      'DELETE FROM chat_group_members WHERE group_id = ? AND user_id = ?',
+      [id, userId]
+    );
+    res.json({ message: 'Member removed successfully' });
+  } catch (error) {
+    console.error('Delete group member error:', error);
     next(error);
   }
 });
