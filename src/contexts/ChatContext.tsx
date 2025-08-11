@@ -30,6 +30,8 @@ interface ChatContextType {
   privateMessages: PrivateMessage[];
   conversations: Conversation[];
   groups: Group[];
+  onlineUsers: Set<string>;
+  typingUsers: Set<string>;
   fetchGroups: () => Promise<Group[]>;
   fetchGroupMessages: (
     groupId: string,
@@ -54,6 +56,7 @@ interface ChatContextType {
   pinConversation: (type: 'direct' | 'group', id: string, pinned: boolean) => Promise<void>;
   markAsRead: (type: 'direct' | 'group', id: string) => Promise<void>;
   searchUsers: (query: string) => Promise<User[]>;
+  setTyping: (targetId: string, type: 'typing' | 'stop_typing') => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -85,6 +88,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
 
@@ -340,6 +345,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchWithAuth]
   );
 
+  const setTyping = useCallback((targetId: string, type: 'typing' | 'stop_typing') => {
+    if (!socketRef.current) return;
+    if (targetId.startsWith('group-')) {
+      socketRef.current.emit(type, { room: targetId });
+    } else {
+      socketRef.current.emit(type, { to: targetId });
+    }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -388,6 +402,35 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
+    socket.on('user_online', (id: string) => {
+      setOnlineUsers(prev => new Set(prev).add(id));
+    });
+
+    socket.on('user_offline', (id: string) => {
+      setOnlineUsers(prev => {
+        const s = new Set(prev);
+        s.delete(id);
+        return s;
+      });
+      setTypingUsers(prev => {
+        const s = new Set(prev);
+        s.delete(id);
+        return s;
+      });
+    });
+
+    socket.on('typing', ({ from }: { from: string }) => {
+      setTypingUsers(prev => new Set(prev).add(from));
+    });
+
+    socket.on('stop_typing', ({ from }: { from: string }) => {
+      setTypingUsers(prev => {
+        const s = new Set(prev);
+        s.delete(from);
+        return s;
+      });
+    });
+
     socketRef.current = socket;
     return () => {
       socket.disconnect();
@@ -407,6 +450,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           privateMessages,
           conversations,
           groups,
+          onlineUsers,
+          typingUsers,
           fetchGroups,
           fetchGroupMessages,
           fetchMoreGroupMessages,
@@ -418,6 +463,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           pinConversation,
           markAsRead,
           searchUsers,
+          setTyping,
         }}
     >
       {children}
