@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage } from '@/types';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
@@ -29,46 +30,8 @@ const ChatSystem = () => {
   const [activeChat, setActiveChat] = useState<'section' | 'global'>('section');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{file: File, type: 'image' | 'document'}>>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      senderId: '2',
-      senderName: 'Dr. Smith',
-      senderRole: 'professor',
-      content: 'Good morning everyone! Don\'t forget about tomorrow\'s assignment deadline.',
-      timestamp: '2024-01-09T10:30:00Z',
-      chatType: 'section',
-      section: 'CSE-3A'
-    },
-    {
-      id: '2',
-      senderId: '4',
-      senderName: 'John Doe',
-      senderRole: 'student',
-      content: 'Thank you for the reminder, Professor!',
-      timestamp: '2024-01-09T10:32:00Z',
-      chatType: 'section',
-      section: 'CSE-3A'
-    },
-    {
-      id: '3',
-      senderId: '1',
-      senderName: 'Admin',
-      senderRole: 'admin',
-      content: 'Mid-term exam schedule has been updated. Please check the announcements.',
-      timestamp: '2024-01-09T09:15:00Z',
-      chatType: 'global'
-    },
-    {
-      id: '4',
-      senderId: '5',
-      senderName: 'Jane Smith',
-      senderRole: 'alumni',
-      content: 'Congratulations to all current students on your achievements! 🎉',
-      timestamp: '2024-01-09T08:45:00Z',
-      chatType: 'global'
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { fetchMessages, sendMessage } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +43,21 @@ const ChatSystem = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        const data = await fetchMessages(activeChat);
+        setMessages(data);
+      } catch (err) {
+        console.error('Failed to fetch messages:', err);
+      }
+    };
+    if (user) {
+      loadMessages();
+    }
+  }, [activeChat, fetchMessages, user]);
+
+  const handleSendMessage = async () => {
     if ((!message.trim() && attachedFiles.length === 0) || !user) return;
 
     let messageContent = message;
@@ -89,20 +66,14 @@ const ChatSystem = () => {
       messageContent += attachedFiles.length > 0 ? `\n📎 Attached: ${fileNames}` : '';
     }
 
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      senderId: user.id,
-      senderName: user.name,
-      senderRole: user.role,
-      content: messageContent,
-      timestamp: new Date().toISOString(),
-      chatType: activeChat,
-      section: user.section
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setMessage('');
-    setAttachedFiles([]);
+    try {
+      const newMessage = await sendMessage(messageContent, activeChat);
+      setMessages(prev => [...prev, newMessage]);
+      setMessage('');
+      setAttachedFiles([]);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
   };
 
   const handleEmojiSelect = (emoji: string) => {

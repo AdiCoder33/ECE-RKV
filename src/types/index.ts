@@ -58,9 +58,8 @@ export interface ChatMessage {
   senderRole: string;
   content: string;
   timestamp: string;
-  chatType: 'section' | 'global';
+  chatType: 'section' | 'global' | 'alumni';
   section?: string;
-  attachments?: string[];
 }
 
 export interface Class {
