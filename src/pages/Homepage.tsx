@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import Logo from "../Assets/rgukt.jpeg";
-import announcements from "../Assets/rgukt.jpeg";
 import aboutImage from "../Assets/hero3.jpeg"; // You'll need to add a relevant image
 import achievementsImage from "../Assets/hero1.jpg"; // You'll need to add a relevant image
 
@@ -424,31 +423,30 @@ const LandingPage: React.FC = () => {
       icon: "🏆",
       title: "National-Level Hackathon Winners",
       description: "Our student team 'Innovators' secured the first place in the National Smart India Hackathon.",
-      image: "https://via.placeholder.com/600x400/FF5722/FFFFFF?text=Hackathon+Winners",
-    },
+      image: "../Assets/hero2.jpeg"  },
     {
       icon: "🔬",
       title: "Patents Filed by Faculty",
       description: "Two of our faculty members have successfully filed patents for their research on IoT-based energy systems.",
-      image: "https://via.placeholder.com/600x400/4CAF50/FFFFFF?text=Faculty+Patents",
+      image: "../Assets/hero2.jpeg",
     },
     {
       icon: "🚀",
       title: "Record Placements in 2024",
       description: "The ECE department achieved a record-high placement percentage of 98% in top-tier companies.",
-      image: "https://via.placeholder.com/600x400/2196F3/FFFFFF?text=Record+Placements",
+      image: "../Assets/hero2.jpeg",
     },
     {
       icon: "🏅",
       title: "GATE Top 100 Ranks",
       description: "Three of our final-year students secured ranks within the top 100 in the highly competitive GATE examination.",
-      image: "https://via.placeholder.com/600x400/9C27B0/FFFFFF?text=GATE+Achievers",
+      image: "../Assets/hero2.jpeg",
     },
     {
       icon: "💡",
       title: "International Journal Publications",
       description: "Students from our department published a total of 15 papers in various IEEE and Springer international journals.",
-      image: "https://via.placeholder.com/600x400/FFC107/FFFFFF?text=Journal+Publications",
+      image: "../Assets/hero2.jpeg",
     },
   ];
 
