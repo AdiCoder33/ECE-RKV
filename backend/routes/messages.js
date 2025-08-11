@@ -115,8 +115,15 @@ router.post('/send', authenticateToken, async (req, res, next) => {
     `;
     
     const messageResult = await executeQuery(messageQuery);
-    
-    res.status(201).json(messageResult.recordset[0]);
+
+    const savedMessage = messageResult.recordset[0];
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${receiverId}`).emit('private-message', savedMessage);
+      io.to(`user:${senderId}`).emit('private-message', savedMessage);
+    }
+
+    res.status(201).json(savedMessage);
     
   } catch (error) {
     console.error('Send message error:', error);

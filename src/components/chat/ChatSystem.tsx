@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { ChatMessage } from '@/types';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import { useNavigate } from 'react-router-dom';
@@ -30,8 +29,7 @@ const ChatSystem = () => {
   const [activeChat, setActiveChat] = useState<'section' | 'global'>('section');
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{file: File, type: 'image' | 'document'}>>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const { fetchMessages, sendMessage } = useChat();
+  const { messages, fetchMessages, sendMessage } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -46,8 +44,7 @@ const ChatSystem = () => {
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const data = await fetchMessages(activeChat);
-        setMessages(data);
+        await fetchMessages(activeChat);
       } catch (err) {
         console.error('Failed to fetch messages:', err);
       }
@@ -67,8 +64,7 @@ const ChatSystem = () => {
     }
 
     try {
-      const newMessage = await sendMessage(messageContent, activeChat);
-      setMessages(prev => [...prev, newMessage]);
+      await sendMessage(messageContent, activeChat);
       setMessage('');
       setAttachedFiles([]);
     } catch (err) {
