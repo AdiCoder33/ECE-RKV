@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { MessageSquare, X, Search, Pin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage } from '@/types';
+import { Virtuoso } from 'react-virtuoso';
 
 interface PrivateMessage {
   id: string;
@@ -39,7 +40,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     conversations,
     fetchConversations,
     fetchConversation,
+    fetchMoreConversation,
     fetchGroupMessages,
+    fetchMoreGroupMessages,
     privateMessages,
     messages,
     sendDirectMessage,
@@ -59,16 +62,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [message, setMessage] = useState('');
   const [tab, setTab] = useState<'all' | 'direct' | 'group'>('all');
   const [search, setSearch] = useState('');
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [groupMessages, directMessages]);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     fetchGroups().catch(() => {});
@@ -79,12 +73,18 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (!activeChat) return;
     if (activeChat.type === 'direct') {
       fetchConversation(activeChat.id)
-        .then(data => setDirectMessages(data))
+        .then(data => {
+          setDirectMessages(data.messages);
+          setHasMore(data.hasMore);
+        })
         .catch(() => {});
       markAsRead('direct', activeChat.id).catch(() => {});
     } else {
       fetchGroupMessages(activeChat.id)
-        .then(data => setGroupMessages(data))
+        .then(data => {
+          setGroupMessages(data.messages);
+          setHasMore(data.hasMore);
+        })
         .catch(() => {});
       markAsRead('group', activeChat.id).catch(() => {});
     }
@@ -133,6 +133,41 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const displayMessages =
     activeChat?.type === 'direct' ? directMessages : groupMessages;
+
+  type GroupedItem =
+    | { type: 'date'; date: string }
+    | { type: 'message'; message: PrivateMessage | ChatMessage };
+
+  const groupedItems = useMemo<GroupedItem[]>(() => {
+    const items: GroupedItem[] = [];
+    let lastDate = '';
+    displayMessages.forEach(msg => {
+      const timestamp =
+        activeChat?.type === 'direct'
+          ? (msg as PrivateMessage).created_at
+          : (msg as ChatMessage).timestamp;
+      const dateStr = new Date(timestamp).toDateString();
+      if (dateStr !== lastDate) {
+        items.push({ type: 'date', date: dateStr });
+        lastDate = dateStr;
+      }
+      items.push({ type: 'message', message: msg });
+    });
+    return items;
+  }, [displayMessages, activeChat]);
+
+  const loadMore = useCallback(() => {
+    if (!activeChat || !hasMore) return;
+    if (activeChat.type === 'direct') {
+      fetchMoreConversation(activeChat.id)
+        .then(res => setHasMore(res.hasMore))
+        .catch(() => {});
+    } else {
+      fetchMoreGroupMessages(activeChat.id)
+        .then(res => setHasMore(res.hasMore))
+        .catch(() => {});
+    }
+  }, [activeChat, hasMore, fetchMoreConversation, fetchMoreGroupMessages]);
 
   const sortedConversations = conversations
     .filter(c => tab === 'all' || c.type === tab)
@@ -233,68 +268,75 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
 
           <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-full px-4 py-4">
-              <div className="space-y-4">
-                {displayMessages.map((msg) => {
-                  const isOwn =
-                    activeChat?.type === 'direct'
-                      ? (msg as PrivateMessage).sender_id === user?.id
-                      : (msg as ChatMessage).senderId === user?.id;
-                  const senderName =
-                    activeChat?.type === 'direct'
-                      ? (msg as PrivateMessage).sender_name
-                      : (msg as ChatMessage).senderName;
-                  const timestamp =
-                    activeChat?.type === 'direct'
-                      ? (msg as PrivateMessage).created_at
-                      : (msg as ChatMessage).timestamp;
-                  const role =
-                    activeChat?.type === 'direct'
-                      ? null
-                      : (msg as ChatMessage).senderRole;
+            <Virtuoso
+              data={groupedItems}
+              startReached={loadMore}
+              followOutput="smooth"
+              initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
+              className="h-full px-4 py-4"
+              itemContent={(index, item) => {
+                if (item.type === 'date') {
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
-                    >
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                          <span className="text-xs font-medium text-primary-foreground">
-                            {senderName.charAt(0)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={`flex-1 max-w-sm ${isOwn ? 'text-right' : ''}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{senderName}</span>
-                          {activeChat?.type !== 'direct' && role && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs"
-                            >
-                              {role.toUpperCase()}
-                            </Badge>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {formatTime(timestamp)}
-                          </span>
-                        </div>
-                        <div
-                          className={`p-3 rounded-lg ${
-                            isOwn
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          <p className="text-sm">{msg.content}</p>
-                        </div>
-                      </div>
+                    <div className="text-center text-xs text-muted-foreground my-2">
+                      {item.date}
                     </div>
                   );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+                }
+                const msg = item.message as PrivateMessage | ChatMessage;
+                const isOwn =
+                  activeChat?.type === 'direct'
+                    ? (msg as PrivateMessage).sender_id === user?.id
+                    : (msg as ChatMessage).senderId === user?.id;
+                const senderName =
+                  activeChat?.type === 'direct'
+                    ? (msg as PrivateMessage).sender_name
+                    : (msg as ChatMessage).senderName;
+                const timestamp =
+                  activeChat?.type === 'direct'
+                    ? (msg as PrivateMessage).created_at
+                    : (msg as ChatMessage).timestamp;
+                const role =
+                  activeChat?.type === 'direct'
+                    ? null
+                    : (msg as ChatMessage).senderRole;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                  >
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-xs font-medium text-primary-foreground">
+                          {senderName.charAt(0)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`flex-1 max-w-sm ${isOwn ? 'text-right' : ''}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">{senderName}</span>
+                        {activeChat?.type !== 'direct' && role && (
+                          <Badge variant="secondary" className="text-xs">
+                            {role.toUpperCase()}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {formatTime(timestamp)}
+                        </span>
+                      </div>
+                      <div
+                        className={`p-3 rounded-lg ${
+                          isOwn
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="text-sm">{msg.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }}
+            />
           </CardContent>
 
           <div className="border-t p-4">

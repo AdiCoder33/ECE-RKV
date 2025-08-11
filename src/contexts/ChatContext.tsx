@@ -29,16 +29,34 @@ interface Group {
   name: string;
 }
 
+interface Paginated<T> {
+  messages: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 interface ChatContextType {
   messages: ChatMessage[];
   privateMessages: PrivateMessage[];
   conversations: Conversation[];
   groups: Group[];
   fetchGroups: () => Promise<Group[]>;
-  fetchGroupMessages: (groupId: string) => Promise<ChatMessage[]>;
+  fetchGroupMessages: (
+    groupId: string,
+    params?: { before?: string; limit?: number }
+  ) => Promise<Paginated<ChatMessage>>;
+  fetchMoreGroupMessages: (
+    groupId: string
+  ) => Promise<Paginated<ChatMessage>>;
   sendGroupMessage: (groupId: string, content: string) => Promise<ChatMessage>;
   fetchConversations: () => Promise<Conversation[]>;
-  fetchConversation: (userId: string) => Promise<PrivateMessage[]>;
+  fetchConversation: (
+    userId: string,
+    params?: { before?: string; limit?: number }
+  ) => Promise<Paginated<PrivateMessage>>;
+  fetchMoreConversation: (
+    userId: string
+  ) => Promise<Paginated<PrivateMessage>>;
   sendDirectMessage: (
     receiverId: string,
     content: string
@@ -126,13 +144,41 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return formatted;
   }, [fetchWithAuth]);
 
-  const fetchGroupMessages = async (groupId: string): Promise<ChatMessage[]> => {
-    const data = await fetchWithAuth(`/chat/groups/${groupId}/messages`);
+  const fetchGroupMessages = async (
+    groupId: string,
+    params: { before?: string; limit?: number } = {}
+  ): Promise<Paginated<ChatMessage>> => {
+    const { before, limit } = params;
+    const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
+    const data = (await fetchWithAuth(`/chat/groups/${groupId}/messages${qs}`)) as Paginated<ChatMessage>;
     setMessages(prev => {
-      const filtered = prev.filter(m => m.groupId !== groupId);
-      return [...filtered, ...data];
+      const existing = prev.filter(m => m.groupId === groupId);
+      const others = prev.filter(m => m.groupId !== groupId);
+      const combined = before ? [...data.messages, ...existing] : data.messages;
+      const unique: ChatMessage[] = [];
+      const seen = new Set<string>();
+      for (const msg of combined) {
+        if (!seen.has(msg.id)) {
+          seen.add(msg.id);
+          unique.push(msg);
+        }
+      }
+      return [...others, ...unique];
     });
     return data;
+  };
+
+  const fetchMoreGroupMessages = async (
+    groupId: string
+  ): Promise<Paginated<ChatMessage>> => {
+    const groupMsgs = messages
+      .filter(m => m.groupId === groupId)
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const oldest = groupMsgs[0];
+    if (!oldest) {
+      return { messages: [], nextCursor: null, hasMore: false };
+    }
+    return fetchGroupMessages(groupId, { before: oldest.timestamp });
   };
 
   const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
@@ -143,15 +189,48 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchWithAuth, sortConversations]);
 
   const fetchConversation = useCallback(
-    async (userId: string): Promise<PrivateMessage[]> => {
-      const data = await fetchWithAuth(`/messages/conversation/${userId}`);
-      const sanitized = (data as (PrivateMessage | null | undefined)[]).filter(
+    async (
+      userId: string,
+      params: { before?: string; limit?: number } = {}
+    ): Promise<Paginated<PrivateMessage>> => {
+      const { before, limit } = params;
+      const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
+      const data = (await fetchWithAuth(`/messages/conversation/${userId}${qs}`)) as Paginated<PrivateMessage>;
+      const sanitized = (data.messages as (PrivateMessage | null | undefined)[]).filter(
         m => m && m.id
       ) as PrivateMessage[];
-      setPrivateMessages(prev => mergePrivateMessages(prev, sanitized));
-      return sanitized;
+      setPrivateMessages(prev => {
+        const existing = prev.filter(
+          m => m.sender_id === userId || m.receiver_id === userId
+        );
+        const others = prev.filter(
+          m => m.sender_id !== userId && m.receiver_id !== userId
+        );
+        const merged = before
+          ? mergePrivateMessages(sanitized, existing)
+          : mergePrivateMessages([], sanitized);
+        return [...others, ...merged];
+      });
+      return { ...data, messages: sanitized };
     },
     [fetchWithAuth]
+  );
+
+  const fetchMoreConversation = useCallback(
+    async (userId: string): Promise<Paginated<PrivateMessage>> => {
+      const convMsgs = privateMessages
+        .filter(m => m.sender_id === userId || m.receiver_id === userId)
+        .sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      const oldest = convMsgs[0];
+      if (!oldest) {
+        return { messages: [], nextCursor: null, hasMore: false };
+      }
+      return fetchConversation(userId, { before: oldest.created_at });
+    },
+    [fetchConversation, privateMessages]
   );
 
   const sendGroupMessage = async (
@@ -266,9 +345,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           groups,
           fetchGroups,
           fetchGroupMessages,
+          fetchMoreGroupMessages,
           sendGroupMessage,
           fetchConversations,
           fetchConversation,
+          fetchMoreConversation,
           sendDirectMessage,
           pinConversation,
           markAsRead,

@@ -77,7 +77,7 @@ const ChatSystem = () => {
       try {
         if (activeChat.type === 'user') {
           const data = await fetchConversation(activeChat.id);
-          setDirectMessages(data);
+          setDirectMessages(data.messages);
           markAsRead('direct', activeChat.id).catch(() => {});
         } else {
           await fetchGroupMessages(activeChat.id);
