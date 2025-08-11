@@ -81,13 +81,22 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     }
 
     const insertQuery = `
+      DECLARE @NewMsg TABLE (
+        id INT, group_id INT, sender_id INT, content NVARCHAR(MAX),
+        timestamp DATETIME, attachments NVARCHAR(MAX)
+      );
+
       INSERT INTO chat_messages (group_id, sender_id, content, attachments)
-      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id, INSERTED.content,
-             INSERTED.timestamp, INSERTED.attachments,
-             (SELECT name FROM users WHERE id = INSERTED.sender_id) AS sender_name,
-             (SELECT role FROM users WHERE id = INSERTED.sender_id) AS sender_role
-      VALUES (?, ?, ?, ?)
+      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
+             INSERTED.content, INSERTED.timestamp, INSERTED.attachments
+      INTO @NewMsg
+      VALUES (?, ?, ?, ?);
+
+      SELECT n.*, u.name AS sender_name, u.role AS sender_role
+      FROM @NewMsg n
+      JOIN users u ON u.id = n.sender_id;
     `;
+
     const { recordset } = await executeQuery(insertQuery, [
       groupId,
       userId,
@@ -99,14 +108,13 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       return res.status(500).json({ error: 'Failed to create message' });
     }
 
+    const row = recordset[0];
     const formatted = {
-      ...recordset[0],
-      id: recordset[0].id.toString(),
-      senderId: recordset[0].sender_id.toString(),
-      groupId: recordset[0].group_id.toString(),
-      attachments: recordset[0].attachments
-        ? JSON.parse(recordset[0].attachments)
-        : []
+      ...row,
+      id: row.id.toString(),
+      senderId: row.sender_id.toString(),
+      groupId: row.group_id.toString(),
+      attachments: row.attachments ? JSON.parse(row.attachments) : []
     };
 
     const io = req.app.get('io');
