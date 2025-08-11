@@ -149,6 +149,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       const files = attachments.map(a => a.file);
       if (activeChat.type === 'direct') {
         await sendDirectMessage(activeChat.id, message, files);
+        if (!conversations.some(c => c.id === activeChat.id)) {
+          fetchConversations().catch(() => {});
+        }
       } else {
         await sendGroupMessage(activeChat.id, message, files);
       }
@@ -374,7 +377,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         <div
                           key={u.id}
                           className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
-                          onClick={() => {
+                          onClick={async () => {
+                            await fetchConversation(u.id).catch(() => {});
                             setActiveChat({ type: 'direct', id: u.id, title: u.name });
                             setSearch('');
                           }}
