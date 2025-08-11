@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { Virtuoso } from 'react-virtuoso';
+import EmojiPicker from './EmojiPicker';
+import FileUpload from './FileUpload';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -52,6 +54,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
   const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<{ file: File; preview: string }[]>([]);
   const [tab, setTab] = useState<'all' | 'direct' | 'group'>('all');
   const [search, setSearch] = useState('');
   const [hasMore, setHasMore] = useState(false);
@@ -96,16 +99,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [privateMessages, messages, activeChat]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !activeChat) return;
+    if ((!message.trim() && attachments.length === 0) || !activeChat) return;
     try {
+      const files = attachments.map(a => a.file);
       if (activeChat.type === 'direct') {
-        await sendDirectMessage(activeChat.id, message);
+        await sendDirectMessage(activeChat.id, message, files);
       } else {
-        await sendGroupMessage(activeChat.id, message);
+        await sendGroupMessage(activeChat.id, message, files);
       }
       const target =
         activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id;
       setMessage('');
+      attachments.forEach(a => URL.revokeObjectURL(a.preview));
+      setAttachments([]);
       setTyping(target, 'stop_typing');
       typingRef.current = false;
     } catch {
@@ -113,7 +119,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setMessage(value);
     if (!activeChat) return;
@@ -142,11 +148,34 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     };
   }, [activeChat, setTyping]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleFileSelect = (file: File) => {
+    const allowed = [
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+    if (!allowed.includes(file.type) || file.size > 20 * 1024 * 1024) {
+      return;
+    }
+    const preview = file.type.startsWith('image/')
+      ? URL.createObjectURL(file)
+      : '';
+    setAttachments(prev => [...prev, { file, preview }]);
+  };
+
+  const removeAttachment = (idx: number) => {
+    URL.revokeObjectURL(attachments[idx].preview);
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
   const formatTime = (timestamp: string | null) => {
@@ -379,6 +408,45 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         }`}
                       >
                         <p className="text-sm">{msg.content}</p>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {msg.attachments.map((att, i) =>
+                              att.type === 'image' ? (
+                                <div key={i} className="relative">
+                                  {att.url && (
+                                    <img
+                                      src={att.url}
+                                      alt={att.name}
+                                      className="max-w-xs rounded"
+                                    />
+                                  )}
+                                  {att.progress !== undefined && att.progress < 100 && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs">
+                                      {att.progress}%
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div
+                                  key={i}
+                                  className="flex items-center justify-between bg-background rounded px-2 py-1 text-xs"
+                                >
+                                  <a
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline"
+                                  >
+                                    {att.name}
+                                  </a>
+                                  {att.progress !== undefined && att.progress < 100 && (
+                                    <span className="ml-2">{att.progress}%</span>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                         {isOwn && (
                           <div className="flex justify-end mt-1">
                             {status === 'sending' && (
@@ -405,17 +473,56 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </CardContent>
 
           <div className="border-t p-4">
-            <div className="flex gap-2">
-              <Input
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {attachments.map((att, idx) => (
+                  att.file.type.startsWith('image/') ? (
+                    <div key={idx} className="relative">
+                      <img
+                        src={att.preview}
+                        alt={att.file.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <button
+                        onClick={() => removeAttachment(idx)}
+                        className="absolute -top-1 -right-1 bg-black text-white rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      key={idx}
+                      className="flex items-center bg-muted rounded px-2 py-1 text-xs"
+                    >
+                      {att.file.name}
+                      <button
+                        onClick={() => removeAttachment(idx)}
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <Textarea
                 value={message}
                 onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 placeholder={
                   activeChat ? `Message ${activeChat.title}...` : 'Select a conversation'
                 }
                 className="flex-1"
               />
-              <Button onClick={handleSendMessage} disabled={!message.trim()}>
+              <EmojiPicker onEmojiSelect={(e) => setMessage(prev => prev + e)} />
+              <FileUpload onFileSelect={handleFileSelect} disabled={!activeChat} />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!message.trim() && attachments.length === 0}
+              >
                 <MessageSquare className="h-4 w-4" />
               </Button>
             </div>

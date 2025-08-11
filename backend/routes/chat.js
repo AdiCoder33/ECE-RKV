@@ -20,7 +20,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
     params.push(fetchLimit);
 
     const query = `
-      SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp,
+      SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
              u.name as sender_name, u.role as sender_role
       FROM chat_messages cm
       JOIN chat_group_members gm ON gm.group_id = cm.group_id AND gm.user_id = ?
@@ -43,7 +43,8 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
         senderRole: msg.sender_role,
         content: msg.content,
         timestamp: msg.timestamp,
-        groupId: msg.group_id.toString()
+        groupId: msg.group_id.toString(),
+        attachments: msg.attachments ? JSON.parse(msg.attachments) : []
       }))
       .reverse();
 
@@ -62,7 +63,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
 router.post('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    const { content } = req.body;
+    const { content, attachments = [] } = req.body;
     const userId = req.user.id;
 
     if (!content || content.trim().length === 0) {
@@ -80,12 +81,12 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     }
 
     await executeQuery(
-      'INSERT INTO chat_messages (group_id, sender_id, content) VALUES (?, ?, ?)',
-      [groupId, userId, content.trim()]
+      'INSERT INTO chat_messages (group_id, sender_id, content, attachments) VALUES (?, ?, ?, ?)',
+      [groupId, userId, content.trim(), JSON.stringify(attachments)]
     );
 
     const { recordset: newMessage } = await executeQuery(
-      `SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp,
+      `SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
               u.name as sender_name, u.role as sender_role
        FROM chat_messages cm
        JOIN users u ON cm.sender_id = u.id
@@ -99,7 +100,10 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       senderRole: newMessage[0].sender_role,
       content: newMessage[0].content,
       timestamp: newMessage[0].timestamp,
-      groupId: newMessage[0].group_id.toString()
+      groupId: newMessage[0].group_id.toString(),
+      attachments: newMessage[0].attachments
+        ? JSON.parse(newMessage[0].attachments)
+        : []
     };
 
     const io = req.app.get('io');

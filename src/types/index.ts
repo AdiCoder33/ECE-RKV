@@ -62,6 +62,7 @@ export interface ChatMessage {
   groupId?: string;
   receiverId?: string;
   sender_profileImage?: string;
+  attachments?: Attachment[];
 }
 
 export interface PrivateMessage {
@@ -75,6 +76,14 @@ export interface PrivateMessage {
   is_read: number;
   status: 'sending' | 'sent' | 'delivered' | 'read';
   sender_profileImage?: string;
+  attachments?: Attachment[];
+}
+
+export interface Attachment {
+  url: string;
+  type: 'image' | 'file';
+  name: string;
+  progress?: number;
 }
 
 export interface Class {
