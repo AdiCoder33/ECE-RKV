@@ -9,34 +9,50 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
-    const { page = 1, limit = 50 } = req.query;
-    
-    const offset = (page - 1) * limit;
-    
+    const { limit = 50, before } = req.query;
+
+    const fetchLimit = parseInt(limit, 10) + 1;
+    const params = [userId, contactId, contactId, userId];
+    if (before) {
+      params.push(before);
+    }
+    params.push(fetchLimit);
+
     const query = `
       SELECT m.*, u.name as sender_name
       FROM Messages m
       JOIN Users u ON u.id = m.sender_id
-      WHERE (m.sender_id = ? AND m.receiver_id = ?) 
+      WHERE (m.sender_id = ? AND m.receiver_id = ?)
          OR (m.sender_id = ? AND m.receiver_id = ?)
+         ${before ? 'AND m.created_at < ?' : ''}
       ORDER BY m.created_at DESC
-      OFFSET ? ROWS
-      FETCH NEXT ? ROWS ONLY
+      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
     `;
-    
-    const result = await executeQuery(query, [userId, contactId, contactId, userId, offset, limit]);
-    
+
+    const result = await executeQuery(query, params);
+
     // Mark messages as read
     const markReadQuery = `
-      UPDATE Messages 
-      SET is_read = 1 
+      UPDATE Messages
+      SET is_read = 1
       WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
     `;
-    
+
     await executeQuery(markReadQuery, [contactId, userId]);
-    
-    res.json(result.recordset.reverse());
-    
+
+    const hasMore = result.recordset.length === fetchLimit;
+    const sliced = hasMore
+      ? result.recordset.slice(0, fetchLimit - 1)
+      : result.recordset;
+
+    const formatted = sliced.reverse();
+
+    res.json({
+      messages: formatted,
+      nextCursor: hasMore ? formatted[0]?.created_at : null,
+      hasMore
+    });
+
   } catch (error) {
     console.error('Messages fetch error:', error);
     next(error);

@@ -10,29 +10,48 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
   try {
     const { groupId } = req.params;
     const userId = req.user.id;
+    const { limit = 50, before } = req.query;
 
-    const { recordset: messages } = await executeQuery(
-      `SELECT TOP 100 cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp,
-              u.name as sender_name, u.role as sender_role
-       FROM chat_messages cm
-       JOIN chat_group_members gm ON gm.group_id = cm.group_id AND gm.user_id = ?
-       JOIN users u ON cm.sender_id = u.id
-       WHERE cm.group_id = ? AND cm.is_deleted = 0
-       ORDER BY cm.timestamp DESC`,
-      [userId, groupId]
-    );
+    const fetchLimit = parseInt(limit, 10) + 1;
+    const params = [userId, groupId];
+    if (before) {
+      params.push(before);
+    }
+    params.push(fetchLimit);
 
-    const formatted = messages.map(msg => ({
-      id: msg.id.toString(),
-      senderId: msg.sender_id.toString(),
-      senderName: msg.sender_name,
-      senderRole: msg.sender_role,
-      content: msg.content,
-      timestamp: msg.timestamp,
-      groupId: msg.group_id.toString()
-    })).reverse();
+    const query = `
+      SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp,
+             u.name as sender_name, u.role as sender_role
+      FROM chat_messages cm
+      JOIN chat_group_members gm ON gm.group_id = cm.group_id AND gm.user_id = ?
+      JOIN users u ON cm.sender_id = u.id
+      WHERE cm.group_id = ? AND cm.is_deleted = 0 ${before ? 'AND cm.timestamp < ?' : ''}
+      ORDER BY cm.timestamp DESC
+      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
+    `;
 
-    res.json(formatted);
+    const { recordset } = await executeQuery(query, params);
+
+    const hasMore = recordset.length === fetchLimit;
+    const sliced = hasMore ? recordset.slice(0, fetchLimit - 1) : recordset;
+
+    const formatted = sliced
+      .map(msg => ({
+        id: msg.id.toString(),
+        senderId: msg.sender_id.toString(),
+        senderName: msg.sender_name,
+        senderRole: msg.sender_role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        groupId: msg.group_id.toString()
+      }))
+      .reverse();
+
+    res.json({
+      messages: formatted,
+      nextCursor: hasMore ? formatted[0]?.timestamp : null,
+      hasMore
+    });
   } catch (error) {
     console.error('Group messages fetch error:', error);
     next(error);
