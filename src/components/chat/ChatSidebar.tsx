@@ -5,12 +5,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, X, Search, Pin, Check, CheckCheck, ArrowLeft } from 'lucide-react';
+import { MessageSquare, X, Search, Pin, Check, CheckCheck, ArrowLeft, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { Virtuoso } from 'react-virtuoso';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
@@ -61,6 +70,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [search, setSearch] = useState('');
   const [hasMore, setHasMore] = useState(false);
   const typingRef = useRef(false);
+  const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchGroups().catch(() => {});
@@ -240,27 +251,60 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => {});
   };
 
+  const handleGroupCreate = () => {
+    setIsGroupDialogOpen(false);
+    navigate('/dashboard/groups');
+  };
+
   return (
-    <div
-      className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${
-        isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
-      }`}
-      onMouseEnter={() => isOpen && onExpandedChange(true)}
-      onMouseLeave={() => isOpen && onExpandedChange(false)}
-    >
-      {isOpen && expanded ? (
-        <Card className="h-full flex flex-col rounded-none border-0 shadow-lg">
-          {!activeChat ? (
-            <>
+    <>
+      <Dialog open={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Group</DialogTitle>
+            <DialogDescription>
+              Navigate to manage and create chat groups.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleGroupCreate}>Go to Groups</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div
+        className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${
+          isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
+        }`}
+        onMouseEnter={() => isOpen && onExpandedChange(true)}
+        onMouseLeave={() => isOpen && onExpandedChange(false)}
+      >
+        {isOpen && expanded ? (
+          <Card className="h-full flex flex-col rounded-none border-0 shadow-lg">
+            {!activeChat ? (
+              <>
               <CardHeader className="pb-3 border-b">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MessageSquare className="h-5 w-5" />
                     Chat
                   </CardTitle>
-                  <Button variant="ghost" size="icon" onClick={onToggle}>
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsGroupDialogOpen(true)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggle}
+                      className="sm:hidden"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <Tabs
                   value={tab}
@@ -340,9 +384,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     </Button>
                     <CardTitle className="text-lg">{activeChat.title}</CardTitle>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={onToggle}>
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsGroupDialogOpen(true)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggle}
+                      className="sm:hidden"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 flex flex-col">
@@ -555,8 +613,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <MessageSquare className="h-5 w-5" />
           </Button>
         </div>
-      ) : null}
-    </div>
+        ) : null}
+      </div>
+    </>
   );
 };
 
