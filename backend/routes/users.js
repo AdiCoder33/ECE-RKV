@@ -7,7 +7,7 @@ const router = express.Router();
 // Get all users or search users
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { role, search, limit } = req.query;
+    const { role, search, limit, year, section } = req.query;
 
     // If search query is provided, return basic user info matching the search
     if (search) {
@@ -22,6 +22,14 @@ router.get('/', authenticateToken, async (req, res, next) => {
       if (role) {
         conditions.push('role = ?');
         params.push(role);
+      }
+      if (year) {
+        conditions.push('year = ?');
+        params.push(Number(year));
+      }
+      if (section) {
+        conditions.push('section = ?');
+        params.push(section);
       }
 
       query += ` WHERE ${conditions.join(' AND ')} ORDER BY name ASC`;
@@ -39,11 +47,27 @@ router.get('/', authenticateToken, async (req, res, next) => {
     let query =
       'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, created_at FROM users';
     const params = [];
+    const conditions = [];
     if (role) {
-      query += ' WHERE role = ?';
+      conditions.push('role = ?');
       params.push(role);
     }
+    if (year) {
+      conditions.push('year = ?');
+      params.push(Number(year));
+    }
+    if (section) {
+      conditions.push('section = ?');
+      params.push(section);
+    }
+    if (conditions.length) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
     query += ' ORDER BY created_at DESC';
+    if (limit) {
+      query += ' OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY';
+      params.push(Number(limit));
+    }
     const result = await executeQuery(query, params);
     res.json(result.recordset || []);
   } catch (error) {
