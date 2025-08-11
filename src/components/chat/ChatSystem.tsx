@@ -47,7 +47,6 @@ const ChatSystem = () => {
     messages,
     privateMessages,
     conversations,
-    groups,
     fetchGroups,
     fetchGroupMessages,
     sendGroupMessage,
@@ -79,9 +78,10 @@ const ChatSystem = () => {
         if (activeChat.type === 'user') {
           const data = await fetchConversation(activeChat.id);
           setDirectMessages(data);
-          markAsRead(activeChat.id).catch(() => {});
+          markAsRead('direct', activeChat.id).catch(() => {});
         } else {
           await fetchGroupMessages(activeChat.id);
+          markAsRead('group', activeChat.id).catch(() => {});
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
@@ -167,15 +167,17 @@ const ChatSystem = () => {
       ? directMessages
       : messages.filter(msg => msg.groupId === activeChat?.id);
 
-  const contacts = conversations.map(c => ({
-    id: c.user_id,
-    name: c.user_name,
-    last: c.last_message,
-    unread: c.unread_count,
-  }));
+  const contacts = conversations
+    .filter(c => c.type === 'direct')
+    .map(c => ({
+      id: c.id,
+      name: c.title,
+      last: c.last_message || '',
+      unread: c.unread_count,
+    }));
 
-  const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(search.toLowerCase())
+  const filteredGroups = conversations.filter(
+    c => c.type === 'group' && c.title.toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredContacts = contacts.filter(c =>
