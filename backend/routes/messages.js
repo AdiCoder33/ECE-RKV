@@ -9,39 +9,40 @@ router.get('/conversations', authenticateToken, async (req, res, next) => {
     const userId = req.user.id;
     
     const query = `
+      DECLARE @userId INT = ?;
       WITH ConversationMessages AS (
-        SELECT 
-          CASE 
-            WHEN sender_id = ? THEN receiver_id 
-            ELSE sender_id 
+        SELECT
+          CASE
+            WHEN sender_id = @userId THEN receiver_id
+            ELSE sender_id
           END as contact_id,
           MAX(created_at) as last_message_time,
           MAX(id) as last_message_id
-        FROM Messages 
-        WHERE sender_id = ? OR receiver_id = ?
-        GROUP BY 
-          CASE 
-            WHEN sender_id = ? THEN receiver_id 
-            ELSE sender_id 
+        FROM Messages
+        WHERE sender_id = @userId OR receiver_id = @userId
+        GROUP BY
+          CASE
+            WHEN sender_id = @userId THEN receiver_id
+            ELSE sender_id
           END
       )
-      SELECT 
+      SELECT
         cm.contact_id,
         u.name as contact_name,
         u.role as contact_role,
         m.content as last_message,
         m.sender_id as last_sender_id,
         cm.last_message_time,
-        COUNT(CASE WHEN m2.is_read = 0 AND m2.receiver_id = ? THEN 1 END) as unread_count
+        COUNT(CASE WHEN m2.is_read = 0 AND m2.receiver_id = @userId THEN 1 END) as unread_count
       FROM ConversationMessages cm
       JOIN Users u ON u.id = cm.contact_id
       JOIN Messages m ON m.id = cm.last_message_id
-      LEFT JOIN Messages m2 ON (m2.sender_id = cm.contact_id AND m2.receiver_id = ?)
+      LEFT JOIN Messages m2 ON (m2.sender_id = cm.contact_id AND m2.receiver_id = @userId)
       GROUP BY cm.contact_id, u.name, u.role, m.content, m.sender_id, cm.last_message_time
       ORDER BY cm.last_message_time DESC
     `;
-    
-    const result = await executeQuery(query, [userId, userId, userId, userId, userId, userId]);
+
+    const result = await executeQuery(query, [userId]);
     res.json(result.recordset);
     
   } catch (error) {
