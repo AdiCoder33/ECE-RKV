@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { Virtuoso } from 'react-virtuoso';
+import { Input } from '@/components/ui/input';
+
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 
