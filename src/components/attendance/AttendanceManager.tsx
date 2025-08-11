@@ -40,6 +40,18 @@ interface AttendanceStudent {
   attendancePercentage: number;
 }
 
+interface TimetableSlot {
+  day: string;
+  time: string;
+  subject: string;
+}
+
+interface PeriodOption {
+  value: string;
+  label: string;
+  subjectId: string;
+}
+
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const AttendanceManager: React.FC = () => {
@@ -52,11 +64,13 @@ const AttendanceManager: React.FC = () => {
   const [selectedYear, setSelectedYear] = React.useState('1');
   const [selectedSection, setSelectedSection] = React.useState('A');
   const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
-  const [selectedPeriod, setSelectedPeriod] = React.useState('1');
+  const [selectedPeriod, setSelectedPeriod] = React.useState('');
   const [subjects, setSubjects] = React.useState<{ id: string; name: string }[]>([]);
   const [selectedSubject, setSelectedSubject] = React.useState(initialSubject);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [api, setApi] = React.useState<CarouselApi | null>(null);
+  const [timetable, setTimetable] = React.useState<TimetableSlot[]>([]);
+  const [periodOptions, setPeriodOptions] = React.useState<PeriodOption[]>([]);
 
   const isDesktop = useMediaQuery('(min-width:768px)');
   const itemsPerPage = isDesktop ? 15 : 9;
@@ -74,15 +88,6 @@ const AttendanceManager: React.FC = () => {
 
   const years = getAllowedYears();
   const sections = getAllowedSections();
-
-  const periods = [
-    { value: '1', label: 'Period 1 (9:00 AM - 10:00 AM)' },
-    { value: '2', label: 'Period 2 (10:00 AM - 11:00 AM)' },
-    { value: '3', label: 'Period 3 (11:00 AM - 12:00 PM)' },
-    { value: '4', label: 'Period 4 (2:00 PM - 3:00 PM)' },
-    { value: '5', label: 'Period 5 (3:00 PM - 4:00 PM)' },
-    { value: '6', label: 'Period 6 (4:00 PM - 5:00 PM)' },
-  ];
 
   const getCurrentSemester = () => {
     const month = new Date().getMonth() + 1;
@@ -120,6 +125,52 @@ const AttendanceManager: React.FC = () => {
       setSelectedSubject(match ? match.id : '');
     }
   }, [subjects, selectedSubject]);
+
+  // Fetch timetable for the selected class
+  React.useEffect(() => {
+    const fetchTimetable = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${apiBase}/timetable?year=${selectedYear}&semester=${currentSemester}&section=${selectedSection}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch timetable');
+        const data: TimetableSlot[] = await response.json();
+        setTimetable(data);
+      } catch (error) {
+        console.error('Error fetching timetable:', error);
+      }
+    };
+    fetchTimetable();
+  }, [selectedYear, selectedSection, currentSemester]);
+
+  // Build period options based on timetable and date
+  React.useEffect(() => {
+    const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+    const daySlots = timetable.filter((slot) => slot.day === day);
+    const timeToPeriod: Record<string, string> = {
+      '09:00-10:00': '1',
+      '10:00-11:00': '2',
+      '11:00-12:00': '3',
+      '14:00-15:00': '4',
+      '15:00-16:00': '5',
+      '16:00-17:00': '6',
+    };
+    const options: PeriodOption[] = daySlots
+      .map((slot) => {
+        const periodNumber = timeToPeriod[slot.time];
+        const subjectMatch = subjects.find((s) => s.name === slot.subject);
+        if (!periodNumber || !subjectMatch) return null;
+        return {
+          value: periodNumber,
+          label: `${slot.time} – ${slot.subject}`,
+          subjectId: subjectMatch.id,
+        };
+      })
+      .filter((opt): opt is PeriodOption => opt !== null);
+    setPeriodOptions(options);
+  }, [timetable, selectedDate, subjects]);
 
   // Fetch attendance for the current selection
   const fetchAttendance = React.useCallback(async () => {
@@ -231,44 +282,6 @@ const AttendanceManager: React.FC = () => {
   React.useEffect(() => {
     api?.scrollTo(0);
   }, [api, isDesktop, selectedYear, selectedSection, selectedSubject, selectedDate, selectedPeriod]);
-
-  // Autofill subject from timetable if not chosen
-  React.useEffect(() => {
-    const autofillSubject = async () => {
-      if (selectedSubject) return;
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(
-          `${apiBase}/timetable?year=${selectedYear}&semester=${currentSemester}&section=${selectedSection}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!response.ok) return;
-
-        type TimetableSlot = { day: string; time: string; subject: string };
-        const data: TimetableSlot[] = await response.json();
-
-        const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
-        const periodTimes: Record<string, string> = {
-          '1': '09:00-10:00',
-          '2': '10:00-11:00',
-          '3': '11:00-12:00',
-          '4': '14:00-15:00',
-          '5': '15:00-16:00',
-          '6': '16:00-17:00',
-        };
-        const slot = data.find((s) => s.day === day && s.time === periodTimes[selectedPeriod]);
-
-        if (slot) {
-          const matched = subjects.find((sub) => sub.name === slot.subject);
-          if (matched) setSelectedSubject(matched.id);
-        }
-      } catch (error) {
-        console.error('Error auto-filling subject:', error);
-      }
-    };
-
-    autofillSubject();
-  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, subjects, selectedSubject, currentSemester]);
 
   // Attendance toggles
   const toggleAttendance = (studentId: string) => {
@@ -437,29 +450,18 @@ const AttendanceManager: React.FC = () => {
               <select
                 id="period-select"
                 value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedPeriod(value);
+                  const option = periodOptions.find((o) => o.value === value);
+                  setSelectedSubject(option?.subjectId || '');
+                }}
                 className="w-full p-2 border rounded-md bg-background text-foreground"
               >
-                {periods.map((period) => (
-                  <option key={period.value} value={period.value}>
-                    {period.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="subject-select">Subject</Label>
-              <select
-                id="subject-select"
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-foreground"
-              >
-                <option value="">Select Subject</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>
-                    {subject.name}
+                <option value="">Select Period</option>
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -527,7 +529,7 @@ const AttendanceManager: React.FC = () => {
             <div>
               <CardTitle>Student Attendance - Year {selectedYear}, Section {selectedSection}</CardTitle>
               <CardDescription>
-                {selectedDate} • {periods.find((p) => p.value === selectedPeriod)?.label}
+                {selectedDate} • {periodOptions.find((p) => p.value === selectedPeriod)?.label}
               </CardDescription>
             </div>
             <div className="flex gap-2">
