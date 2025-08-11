@@ -92,11 +92,11 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full max-w-full p-0 flex flex-col border-0 sm:rounded-none">
-        <DialogHeader className="p-6 pb-2">
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] p-6 flex flex-col">
+        <DialogHeader className="p-0 pb-4">
           <DialogTitle>Add Members to {group.name}</DialogTitle>
         </DialogHeader>
-        <div className="p-6 pt-0 flex flex-col gap-4 flex-1 overflow-hidden">
+        <div className="flex flex-col gap-4 flex-1 overflow-hidden">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input
               placeholder="Search users..."
