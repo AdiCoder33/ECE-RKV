@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { ChatMessage } from '@/types';
 import { useAuth } from './AuthContext';
@@ -14,12 +14,23 @@ interface PrivateMessage {
   is_read: number;
 }
 
+interface Conversation {
+  user_id: string;
+  user_name: string;
+  unread_count: number;
+  last_message: string;
+}
+
 interface ChatContextType {
   messages: ChatMessage[];
   privateMessages: PrivateMessage[];
+  conversations: Conversation[];
   fetchMessages: (chatType: 'section' | 'global' | 'alumni') => Promise<ChatMessage[]>;
   sendMessage: (content: string, chatType: 'section' | 'global' | 'alumni') => Promise<ChatMessage>;
+  fetchConversations: () => Promise<Conversation[]>;
+  fetchConversation: (userId: string) => Promise<PrivateMessage[]>;
   sendPrivateMessage: (receiverId: string, content: string) => Promise<PrivateMessage>;
+  markAsRead: (userId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -37,56 +48,31 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const socketUrl = apiBase.replace(/\/api$/, '');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const socket = io(socketUrl, { auth: { token } });
+  const fetchWithAuth = useCallback(
+    async (url: string, options: RequestInit = {}) => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}${url}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options.headers || {}),
+        },
+      });
 
-    socket.on('chat-message', (message: ChatMessage) => {
-      setMessages(prev => prev.some(m => m.id === message.id) ? prev : [...prev, message]);
-    });
-
-    socket.on('private-message', (message: PrivateMessage) => {
-      setPrivateMessages(prev => prev.some(m => m.id === message.id) ? prev : [...prev, message]);
-    });
-
-    socketRef.current = socket;
-    return () => {
-      socket.disconnect();
-    };
-  }, [socketUrl]);
-
-  useEffect(() => {
-    if (socketRef.current && user) {
-      socketRef.current.emit('join-room', 'global');
-      socketRef.current.emit('join-room', 'alumni');
-      if (user.section) {
-        socketRef.current.emit('join-room', `section-${user.section}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Request failed');
       }
-    }
-  }, [user]);
 
-  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${apiBase}${url}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {}),
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Request failed');
-    }
-
-    return response.json();
-  };
+      return response.json();
+    },
+    [apiBase]
+  );
 
   const fetchMessages = async (
     chatType: 'section' | 'global' | 'alumni'
@@ -98,6 +84,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     return data;
   };
+
+  const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
+    const data = await fetchWithAuth('/messages/conversations');
+    setConversations(data);
+    return data;
+  }, [fetchWithAuth]);
+
+  const fetchConversation = useCallback(
+    async (userId: string): Promise<PrivateMessage[]> => {
+      const data = await fetchWithAuth(`/messages/conversation/${userId}`);
+      setPrivateMessages(prev => {
+        const existing = new Set(prev.map(m => m.id));
+        const filtered = data.filter((m: PrivateMessage) => !existing.has(m.id));
+        return [...prev, ...filtered];
+      });
+      return data;
+    },
+    [fetchWithAuth]
+  );
 
   const sendMessage = async (
     content: string,
@@ -123,11 +128,63 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     setPrivateMessages(prev => [...prev, message]);
     socketRef.current?.emit('private-message', { to: receiverId, message });
+    fetchConversations().catch(console.error);
     return message;
   };
 
+  const markAsRead = async (userId: string): Promise<void> => {
+    await fetchWithAuth(`/messages/mark-read/${userId}`, { method: 'PUT' });
+    setConversations(prev =>
+      prev.map(c => (c.user_id === userId ? { ...c, unread_count: 0 } : c))
+    );
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const socket = io(socketUrl, { auth: { token } });
+
+    socket.on('chat-message', (message: ChatMessage) => {
+      setMessages(prev => (prev.some(m => m.id === message.id) ? prev : [...prev, message]));
+    });
+
+    socket.on('private-message', (message: PrivateMessage) => {
+      setPrivateMessages(prev =>
+        prev.some(m => m.id === message.id) ? prev : [...prev, message]
+      );
+      fetchConversations().catch(console.error);
+    });
+
+    socketRef.current = socket;
+    return () => {
+      socket.disconnect();
+    };
+  }, [socketUrl, fetchConversations]);
+
+  useEffect(() => {
+    if (socketRef.current && user) {
+      socketRef.current.emit('join-room', 'global');
+      socketRef.current.emit('join-room', 'alumni');
+      if (user.section) {
+        socketRef.current.emit('join-room', `section-${user.section}`);
+      }
+    }
+  }, [user]);
+
   return (
-    <ChatContext.Provider value={{ messages, privateMessages, fetchMessages, sendMessage, sendPrivateMessage }}>
+    <ChatContext.Provider
+      value={{
+        messages,
+        privateMessages,
+        conversations,
+        fetchMessages,
+        sendMessage,
+        fetchConversations,
+        fetchConversation,
+        sendPrivateMessage,
+        markAsRead,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
