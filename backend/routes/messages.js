@@ -76,31 +76,30 @@ router.post('/send', authenticateToken, async (req, res, next) => {
     
     const insertQuery = `
       INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at)
-      VALUES (?, ?, ?, ?, ?, 0, GETDATE())
+      OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id, INSERTED.content,
+             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read, INSERTED.created_at,
+             u.name AS sender_name
+      SELECT ?, ?, ?, ?, ?, 0, GETDATE()
+      FROM Users u
+      WHERE u.id = ?
     `;
-
-    const result = await executeQuery(insertQuery, [
+    const { recordset } = await executeQuery(insertQuery, [
       senderId,
       receiverId,
       content,
       messageType,
       JSON.stringify(attachments),
+      senderId,
     ]);
-    
-    // Get the inserted message with sender details
-    const messageQuery = `
-      SELECT m.*, u.name as sender_name
-      FROM Messages m
-      JOIN Users u ON u.id = m.sender_id
-      WHERE m.id = SCOPE_IDENTITY()
-    `;
 
-    const messageResult = await executeQuery(messageQuery);
+    if (!recordset[0]) {
+      return res.status(500).json({ message: 'Failed to save message' });
+    }
 
     const savedMessage = {
-      ...messageResult.recordset[0],
-      attachments: messageResult.recordset[0].attachments
-        ? JSON.parse(messageResult.recordset[0].attachments)
+      ...recordset[0],
+      attachments: recordset[0].attachments
+        ? JSON.parse(recordset[0].attachments)
         : [],
     };
     const io = req.app.get('io');
