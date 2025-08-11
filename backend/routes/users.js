@@ -4,11 +4,40 @@ const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
-// Get all users
+// Get all users or search users
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { role } = req.query;
-    let query = 'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, created_at FROM users';
+    const { role, search, limit } = req.query;
+
+    // If search query is provided, return basic user info matching the search
+    if (search) {
+      let query = 'SELECT id, name, role FROM users';
+      const params = [];
+      const conditions = ['id <> ?'];
+      params.push(req.user.id);
+
+      conditions.push('name LIKE ?');
+      params.push(`%${search}%`);
+
+      if (role) {
+        conditions.push('role = ?');
+        params.push(role);
+      }
+
+      query += ` WHERE ${conditions.join(' AND ')} ORDER BY name ASC`;
+
+      if (limit) {
+        query += ' OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY';
+        params.push(Number(limit));
+      }
+
+      const result = await executeQuery(query, params);
+      return res.json(result.recordset || []);
+    }
+
+    // Default behaviour: return full user records
+    let query =
+      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, created_at FROM users';
     const params = [];
     if (role) {
       query += ' WHERE role = ?';
