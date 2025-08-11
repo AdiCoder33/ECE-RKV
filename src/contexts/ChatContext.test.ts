@@ -1,16 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mergePrivateMessages } from './ChatContext';
-
-interface PrivateMessage {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  created_at: string;
-  sender_name: string;
-  message_type: string;
-  is_read: number;
-}
+import { PrivateMessage } from '@/types';
 
 describe('mergePrivateMessages', () => {
   it('removes falsy entries and duplicates when merging', () => {
@@ -24,6 +14,7 @@ describe('mergePrivateMessages', () => {
         sender_name: 'A',
         message_type: 'text',
         is_read: 0,
+        status: 'sent',
       },
       null,
     ];
@@ -39,6 +30,7 @@ describe('mergePrivateMessages', () => {
         sender_name: 'B',
         message_type: 'text',
         is_read: 0,
+        status: 'sent',
       },
       {
         id: '1',
@@ -49,6 +41,7 @@ describe('mergePrivateMessages', () => {
         sender_name: 'A',
         message_type: 'text',
         is_read: 0,
+        status: 'sent',
       },
       null,
     ];

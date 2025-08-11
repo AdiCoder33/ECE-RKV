@@ -5,22 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, X, Search, Pin } from 'lucide-react';
+import { MessageSquare, X, Search, Pin, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { ChatMessage } from '@/types';
+import { ChatMessage, PrivateMessage } from '@/types';
 import { Virtuoso } from 'react-virtuoso';
-
-interface PrivateMessage {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  created_at: string;
-  sender_name: string;
-  message_type: string;
-  is_read: number;
-}
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -106,11 +95,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (!message.trim() || !activeChat) return;
     try {
       if (activeChat.type === 'direct') {
-        const newMessage = await sendDirectMessage(activeChat.id, message);
-        if (newMessage) setDirectMessages(prev => [...prev, newMessage]);
+        await sendDirectMessage(activeChat.id, message);
       } else {
-        const newMessage = await sendGroupMessage(activeChat.id, message);
-        setGroupMessages(prev => [...prev, newMessage]);
+        await sendGroupMessage(activeChat.id, message);
       }
       setMessage('');
     } catch {
@@ -299,22 +286,41 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   activeChat?.type === 'direct'
                     ? null
                     : (msg as ChatMessage).senderRole;
+                const status = msg.status || 'sent';
+                const avatar = msg.sender_profileImage;
+                const initials = senderName
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .slice(0, 2);
                 return (
                   <div
                     key={msg.id}
                     className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
                   >
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <span className="text-xs font-medium text-primary-foreground">
-                          {senderName.charAt(0)}
-                        </span>
+                    {!isOwn && (
+                      <div className="flex-shrink-0">
+                        {avatar ? (
+                          <img
+                            src={avatar}
+                            alt={senderName}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <span className="text-xs font-medium text-primary-foreground">
+                              {initials}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
                     <div className={`flex-1 max-w-sm ${isOwn ? 'text-right' : ''}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">{senderName}</span>
-                        {activeChat?.type !== 'direct' && role && (
+                      <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
+                        {!isOwn && (
+                          <span className="text-sm font-medium">{senderName}</span>
+                        )}
+                        {activeChat?.type !== 'direct' && role && !isOwn && (
                           <Badge variant="secondary" className="text-xs">
                             {role.toUpperCase()}
                           </Badge>
@@ -331,6 +337,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         }`}
                       >
                         <p className="text-sm">{msg.content}</p>
+                        {isOwn && (
+                          <div className="flex justify-end mt-1">
+                            {status === 'sending' && (
+                              <Check className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            {status === 'sent' && <Check className="h-3 w-3" />}
+                            {status === 'delivered' && (
+                              <CheckCheck className="h-3 w-3" />
+                            )}
+                            {status === 'read' && (
+                              <CheckCheck className="h-3 w-3 text-primary" />
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

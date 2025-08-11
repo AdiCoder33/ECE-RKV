@@ -58,8 +58,23 @@ export interface ChatMessage {
   senderRole: string;
   content: string;
   timestamp: string;
+  status: 'sending' | 'sent' | 'delivered' | 'read';
   groupId?: string;
   receiverId?: string;
+  sender_profileImage?: string;
+}
+
+export interface PrivateMessage {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  sender_name: string;
+  message_type: string;
+  is_read: number;
+  status: 'sending' | 'sent' | 'delivered' | 'read';
+  sender_profileImage?: string;
 }
 
 export interface Class {

@@ -1,17 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { ChatMessage, User } from '@/types';
-
-interface PrivateMessage {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  created_at: string;
-  sender_name: string;
-  message_type: string;
-  is_read: number;
-}
+import { ChatMessage, User, PrivateMessage } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Conversation {
   id: string;
@@ -96,6 +86,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const socketRef = useRef<Socket | null>(null);
+  const { user } = useAuth();
 
   const sortConversations = useCallback((list: Conversation[]) => {
     return [...list].sort((a, b) => {
@@ -151,10 +142,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { before, limit } = params;
     const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
     const data = (await fetchWithAuth(`/chat/groups/${groupId}/messages${qs}`)) as Paginated<ChatMessage>;
+    const withStatus = data.messages.map(m => ({ ...m, status: m.status ?? 'sent' }));
     setMessages(prev => {
       const existing = prev.filter(m => m.groupId === groupId);
       const others = prev.filter(m => m.groupId !== groupId);
-      const combined = before ? [...data.messages, ...existing] : data.messages;
+      const combined = before ? [...withStatus, ...existing] : withStatus;
       const unique: ChatMessage[] = [];
       const seen = new Set<string>();
       for (const msg of combined) {
@@ -165,7 +157,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return [...others, ...unique];
     });
-    return data;
+    return { ...data, messages: withStatus };
   };
 
   const fetchMoreGroupMessages = async (
@@ -199,6 +191,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sanitized = (data.messages as (PrivateMessage | null | undefined)[]).filter(
         m => m && m.id
       ) as PrivateMessage[];
+      const withStatus = sanitized.map(m => ({ ...m, status: m.status ?? 'sent' }));
       setPrivateMessages(prev => {
         const existing = prev.filter(
           m => m.sender_id === userId || m.receiver_id === userId
@@ -207,11 +200,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           m => m.sender_id !== userId && m.receiver_id !== userId
         );
         const merged = before
-          ? mergePrivateMessages(sanitized, existing)
-          : mergePrivateMessages([], sanitized);
+          ? mergePrivateMessages(withStatus, existing)
+          : mergePrivateMessages([], withStatus);
         return [...others, ...merged];
       });
-      return { ...data, messages: sanitized };
+      return { ...data, messages: withStatus };
     },
     [fetchWithAuth]
   );
@@ -237,28 +230,73 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     groupId: string,
     content: string
   ): Promise<ChatMessage> => {
-    const newMessage = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
-      method: 'POST',
-      body: JSON.stringify({ content }),
-    });
-    setMessages(prev => [...prev, newMessage]);
-    socketRef.current?.emit('group-message', { groupId, message: newMessage });
-    return newMessage;
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: ChatMessage = {
+      id: tempId,
+      senderId: user?.id || '',
+      senderName: user?.name || '',
+      senderRole: user?.role || '',
+      content,
+      timestamp: new Date().toISOString(),
+      groupId,
+      status: 'sending',
+      sender_profileImage: user?.profileImage,
+    };
+    setMessages(prev => [...prev, optimistic]);
+    try {
+      const newMessage = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+      const finalMessage = { ...newMessage, status: 'sent' } as ChatMessage;
+      setMessages(prev =>
+        prev.map(m => (m.id === tempId ? finalMessage : m))
+      );
+      socketRef.current?.emit('group-message', { groupId, message: finalMessage });
+      return finalMessage;
+    } catch (e) {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      throw e;
+    }
   };
 
   const sendDirectMessage = async (
     receiverId: string,
     content: string
   ): Promise<PrivateMessage | null> => {
-    const message = await fetchWithAuth('/messages/send', {
-      method: 'POST',
-      body: JSON.stringify({ receiverId, content }),
-    });
-    if (message) {
-      setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
-      socketRef.current?.emit('private-message', { to: receiverId, message });
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: PrivateMessage = {
+      id: tempId,
+      sender_id: user?.id || '',
+      receiver_id: receiverId,
+      content,
+      created_at: new Date().toISOString(),
+      sender_name: user?.name || '',
+      message_type: 'text',
+      is_read: 0,
+      status: 'sending',
+      sender_profileImage: user?.profileImage,
+    };
+    setPrivateMessages(prev => mergePrivateMessages(prev, [optimistic]));
+    try {
+      const message = await fetchWithAuth('/messages/send', {
+        method: 'POST',
+        body: JSON.stringify({ receiverId, content }),
+      });
+      if (message) {
+        const finalMessage = { ...message, status: 'sent' } as PrivateMessage;
+        setPrivateMessages(prev =>
+          prev.map(m => (m.id === tempId ? finalMessage : m))
+        );
+        socketRef.current?.emit('private-message', { to: receiverId, message: finalMessage });
+        return finalMessage;
+      }
+      setPrivateMessages(prev => prev.filter(m => m.id !== tempId));
+      return null;
+    } catch (e) {
+      setPrivateMessages(prev => prev.filter(m => m.id !== tempId));
+      throw e;
     }
-    return message;
   };
 
   const pinConversation = async (
@@ -308,11 +346,37 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const socket = io(socketUrl, { auth: { token } });
 
     socket.on('group-message', (message: ChatMessage) => {
-      setMessages(prev => (prev.some(m => m.id === message.id) ? prev : [...prev, message]));
+      const msgWithStatus = { ...message, status: message.status ?? 'sent' };
+      setMessages(prev =>
+        prev.some(m => m.id === msgWithStatus.id)
+          ? prev
+          : [...prev, msgWithStatus]
+      );
     });
 
     socket.on('private-message', (message: PrivateMessage) => {
-      setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
+      const msgWithStatus = { ...message, status: message.status ?? 'sent' };
+      setPrivateMessages(prev => mergePrivateMessages(prev, [msgWithStatus]));
+    });
+
+    socket.on('message-delivered', (data: { messageId: string }) => {
+      const { messageId } = data;
+      setPrivateMessages(prev =>
+        prev.map(m => (m.id === messageId ? { ...m, status: 'delivered' } : m))
+      );
+      setMessages(prev =>
+        prev.map(m => (m.id === messageId ? { ...m, status: 'delivered' } : m))
+      );
+    });
+
+    socket.on('message-read', (data: { messageId: string }) => {
+      const { messageId } = data;
+      setPrivateMessages(prev =>
+        prev.map(m => (m.id === messageId ? { ...m, status: 'read' } : m))
+      );
+      setMessages(prev =>
+        prev.map(m => (m.id === messageId ? { ...m, status: 'read' } : m))
+      );
     });
 
     socket.on('conversation_update', (summary: Conversation) => {
