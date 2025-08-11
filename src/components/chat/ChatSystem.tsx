@@ -47,6 +47,7 @@ const ChatSystem = () => {
     messages,
     privateMessages,
     conversations,
+    groups,
     fetchGroups,
     fetchGroupMessages,
     sendGroupMessage,
@@ -176,8 +177,8 @@ const ChatSystem = () => {
       unread: c.unread_count,
     }));
 
-  const filteredGroups = conversations.filter(
-    c => c.type === 'group' && c.title.toLowerCase().includes(search.toLowerCase())
+  const filteredGroups = groups.filter(g =>
+    g.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredContacts = contacts.filter(c =>
