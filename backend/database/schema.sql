@@ -142,8 +142,8 @@ CREATE TABLE chat_messages (
     group_id int NOT NULL,
     sender_id int NOT NULL,
     content ntext NOT NULL,
-    chat_type nvarchar(50) DEFAULT 'general',
-    created_at datetime2 DEFAULT GETDATE(),
+    timestamp datetime2 DEFAULT GETDATE(),
+    is_deleted bit DEFAULT 0,
     FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id)
 );

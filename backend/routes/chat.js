@@ -1,116 +1,98 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+
 const router = express.Router();
 
-// Get chat messages
-router.get('/messages', authenticateToken, async (req, res, next) => {
+// Get messages for a specific chat group
+router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
-    const { channel, chatType = 'section' } = req.query;
-    const userRole = req.user.role;
-    const userSection = req.user.section;
-    
-    // Determine chat type based on channel and user role
-    let actualChatType = chatType;
-    if (userRole === 'alumni') {
-      actualChatType = 'alumni';
-    }
-    
-    // Build query based on chat type
-    let query = `
-      SELECT TOP 100 cm.*, u.name as sender_name, u.role as sender_role
-      FROM chat_messages cm
-      JOIN users u ON cm.sender_id = u.id
-      WHERE cm.is_deleted = 0 AND cm.chat_type = ?
-    `;
-    let params = [actualChatType];
-    
-    // Add section filter for section chats
-    if (actualChatType === 'section' && userSection) {
-      query += ' AND cm.section = ?';
-      params.push(userSection);
-    }
-    
-    query += ' ORDER BY cm.timestamp DESC';
+    const { groupId } = req.params;
+    const userId = req.user.id;
 
-    const { recordset: messages } = await executeQuery(query, params);
-    
-    // Format messages for frontend
-    const formattedMessages = messages.map(msg => ({
+    const { recordset: messages } = await executeQuery(
+      `SELECT TOP 100 cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp,
+              u.name as sender_name, u.role as sender_role
+       FROM chat_messages cm
+       JOIN chat_group_members gm ON gm.group_id = cm.group_id AND gm.user_id = ?
+       JOIN users u ON cm.sender_id = u.id
+       WHERE cm.group_id = ? AND cm.is_deleted = 0
+       ORDER BY cm.timestamp DESC`,
+      [userId, groupId]
+    );
+
+    const formatted = messages.map(msg => ({
       id: msg.id.toString(),
       senderId: msg.sender_id.toString(),
       senderName: msg.sender_name,
       senderRole: msg.sender_role,
       content: msg.content,
       timestamp: msg.timestamp,
-      chatType: msg.chat_type,
-      section: msg.section
+      groupId: msg.group_id.toString()
     })).reverse();
-    
-    res.json(formattedMessages);
+
+    res.json(formatted);
   } catch (error) {
-    console.error('Chat messages fetch error:', error);
+    console.error('Group messages fetch error:', error);
     next(error);
   }
 });
 
-// Send chat message
-router.post('/messages', authenticateToken, async (req, res, next) => {
+// Send message to a specific chat group
+router.post('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
-    const { content, chatType = 'section' } = req.body;
+    const { groupId } = req.params;
+    const { content } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role;
-    const userSection = req.user.section;
-    
+
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Message content is required' });
     }
-    
-    // Determine actual chat type
-    let actualChatType = chatType;
-    if (userRole === 'alumni') {
-      actualChatType = 'alumni';
+
+    // Verify membership in the group
+    const { recordset: membership } = await executeQuery(
+      'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
+      [groupId, userId]
+    );
+
+    if (membership.length === 0) {
+      return res.status(403).json({ error: 'User is not a member of this group' });
     }
-    
-    // Insert message into database
-    const query = `
-      INSERT INTO chat_messages (sender_id, content, chat_type, section)
-      VALUES (?, ?, ?, ?)
-    `;
-    const params = [userId, content.trim(), actualChatType, userSection];
 
-    await executeQuery(query, params);
+    await executeQuery(
+      'INSERT INTO chat_messages (group_id, sender_id, content) VALUES (?, ?, ?)',
+      [groupId, userId, content.trim()]
+    );
 
-    // Fetch the created message with sender details
-    const { recordset: newMessage } = await executeQuery(`
-      SELECT cm.*, u.name as sender_name, u.role as sender_role
-      FROM chat_messages cm
-      JOIN users u ON cm.sender_id = u.id
-      WHERE cm.id = SCOPE_IDENTITY()
-    `);
+    const { recordset: newMessage } = await executeQuery(
+      `SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp,
+              u.name as sender_name, u.role as sender_role
+       FROM chat_messages cm
+       JOIN users u ON cm.sender_id = u.id
+       WHERE cm.id = SCOPE_IDENTITY()`
+    );
 
-    const formattedMessage = {
+    const formatted = {
       id: newMessage[0].id.toString(),
       senderId: newMessage[0].sender_id.toString(),
       senderName: newMessage[0].sender_name,
       senderRole: newMessage[0].sender_role,
       content: newMessage[0].content,
       timestamp: newMessage[0].timestamp,
-      chatType: newMessage[0].chat_type,
-      section: newMessage[0].section
+      groupId: newMessage[0].group_id.toString()
     };
 
     const io = req.app.get('io');
-    const room = actualChatType === 'section' ? `section-${userSection}` : actualChatType;
     if (io) {
-      io.to(room).emit('chat-message', formattedMessage);
+      io.to(`group-${groupId}`).emit('chat-message', formatted);
     }
 
-    res.status(201).json(formattedMessage);
+    res.status(201).json(formatted);
   } catch (error) {
-    console.error('Chat message send error:', error);
+    console.error('Group message send error:', error);
     next(error);
   }
 });
 
 module.exports = router;
+
