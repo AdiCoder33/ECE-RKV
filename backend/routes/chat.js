@@ -99,7 +99,13 @@ router.post('/messages', authenticateToken, async (req, res, next) => {
       chatType: newMessage[0].chat_type,
       section: newMessage[0].section
     };
-    
+
+    const io = req.app.get('io');
+    const room = actualChatType === 'section' ? `section-${userSection}` : actualChatType;
+    if (io) {
+      io.to(room).emit('chat-message', formattedMessage);
+    }
+
     res.status(201).json(formattedMessage);
   } catch (error) {
     console.error('Chat message send error:', error);

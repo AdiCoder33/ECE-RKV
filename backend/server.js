@@ -1,11 +1,16 @@
 
 const express = require('express');
 const path = require('path');
+const http = require('http');
 const cors = require('cors');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+const { setupSocket } = require('./socket');
+const io = setupSocket(server);
+app.set('io', io);
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -75,7 +80,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 connectToDatabase().then(() => {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 });
