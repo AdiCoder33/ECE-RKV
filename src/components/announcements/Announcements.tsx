@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Info,
   CheckCircle,
-  Send
+  Send,
+  X
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -31,6 +32,7 @@ const Announcements: React.FC = () => {
     priority: 'low'
   });
   const [loading, setLoading] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -61,7 +63,6 @@ const Announcements: React.FC = () => {
 
   useEffect(() => {
     fetchAnnouncements();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateAnnouncement = async () => {
@@ -78,7 +79,6 @@ const Announcements: React.FC = () => {
         const errText = await res.text().catch(() => '');
         throw new Error(`Create failed: ${res.status} ${res.statusText} ${errText}`);
       }
-      // reset form and refetch
       setShowCreateForm(false);
       setFormData({ title: '', content: '', targetRole: 'all', targetYear: '', priority: 'low' });
       await fetchAnnouncements();
@@ -122,6 +122,8 @@ const Announcements: React.FC = () => {
   });
 
   if (loading) return <p>Loading announcements...</p>;
+  const userRole = localStorage.getItem('userRole'); // e.g. 'admin', 'professor', 'alumni', 'student', etc.
+  console.log(localStorage.getItem('userRole'));
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
@@ -130,10 +132,13 @@ const Announcements: React.FC = () => {
           <h1 className="text-3xl font-bold">Announcements</h1>
           <p className="text-muted-foreground">Manage department announcements and notices</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Announcement
-        </Button>
+        
+        {userRole !== 'student' && (
+  <Button onClick={() => setShowCreateForm(true)}>
+    <Plus className="h-4 w-4 mr-2" />
+    Create Announcement
+  </Button>
+)}
       </div>
 
       {showCreateForm && (
@@ -146,15 +151,19 @@ const Announcements: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Title</label>
-                <Input placeholder="Enter announcement title"
+                <Input
+                  placeholder="Enter announcement title"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Priority</label>
-                <select className="w-full px-3 py-2 border rounded-md"
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
                   value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}>
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
@@ -165,9 +174,11 @@ const Announcements: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Target Audience</label>
-                <select className="w-full px-3 py-2 border rounded-md"
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
                   value={formData.targetRole}
-                  onChange={(e) => setFormData({ ...formData, targetRole: e.target.value })}>
+                  onChange={(e) => setFormData({ ...formData, targetRole: e.target.value })}
+                >
                   <option value="all">All</option>
                   <option value="student">Students</option>
                   <option value="professor">Faculty</option>
@@ -176,9 +187,11 @@ const Announcements: React.FC = () => {
               </div>
               <div>
                 <label className="text-sm font-medium">Target Year (Optional)</label>
-                <select className="w-full px-3 py-2 border rounded-md"
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
                   value={formData.targetYear}
-                  onChange={(e) => setFormData({ ...formData, targetYear: e.target.value })}>
+                  onChange={(e) => setFormData({ ...formData, targetYear: e.target.value })}
+                >
                   <option value="">All Years</option>
                   <option value="1">1st Year</option>
                   <option value="2">2nd Year</option>
@@ -190,9 +203,12 @@ const Announcements: React.FC = () => {
 
             <div>
               <label className="text-sm font-medium">Content</label>
-              <Textarea placeholder="Enter announcement content..." rows={4}
+              <Textarea
+                placeholder="Enter announcement content..."
+                rows={4}
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })} />
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              />
             </div>
 
             <div className="flex gap-2">
@@ -200,7 +216,9 @@ const Announcements: React.FC = () => {
                 <Send className="h-4 w-4 mr-2" />
                 Publish Announcement
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -212,11 +230,20 @@ const Announcements: React.FC = () => {
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search announcements..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                <Input
+                  placeholder="Search announcements..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
 
-            <select value={selectedPriority} onChange={(e) => setSelectedPriority(e.target.value)} className="px-3 py-2 border rounded-md">
+            <select
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              className="px-3 py-2 border rounded-md"
+            >
               <option value="all">All Priorities</option>
               <option value="high">High Priority</option>
               <option value="medium">Medium Priority</option>
@@ -257,7 +284,18 @@ const Announcements: React.FC = () => {
             </CardHeader>
 
             <CardContent>
-              <p className="text-muted-foreground leading-relaxed">{announcement.content}</p>
+              <p
+                className="text-muted-foreground leading-relaxed"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {announcement.content}
+              </p>
 
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
@@ -266,7 +304,9 @@ const Announcements: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">View Details</Button>
+                  <Button variant="outline" size="sm" onClick={() => setSelectedAnnouncement(announcement)}>
+                    View Details
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -280,10 +320,51 @@ const Announcements: React.FC = () => {
             <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No announcements found</h3>
             <p className="text-muted-foreground">
-              {searchTerm || selectedPriority !== 'all' ? 'Try adjusting your search or filter criteria' : 'Create your first announcement to get started'}
+              {searchTerm || selectedPriority !== 'all'
+                ? 'Try adjusting your search or filter criteria'
+                : 'Create your first announcement to get started'}
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal for Announcement Details */}
+      {selectedAnnouncement && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setSelectedAnnouncement(null)}
+        >
+          <div
+            className="bg-white rounded-lg p-6 max-w-lg w-full relative max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-3 right-3 text-gray-600 hover:text-gray-900"
+              onClick={() => setSelectedAnnouncement(null)}
+              aria-label="Close modal"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <h2 className="text-2xl font-bold mb-2">{selectedAnnouncement.title}</h2>
+            <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>{selectedAnnouncement.authorName}</span>
+              <Calendar className="h-4 w-4 ml-4" />
+              <span>{formatDate(selectedAnnouncement.created_at || selectedAnnouncement.createdAt)}</span>
+            </div>
+            {selectedAnnouncement.target_role && (
+              <Badge variant="outline" className="mb-2">
+                {selectedAnnouncement.target_role}
+              </Badge>
+            )}
+            {selectedAnnouncement.target_year && (
+              <Badge variant="outline" className="mb-2">Year {selectedAnnouncement.target_year}</Badge>
+            )}
+
+            <p className="whitespace-pre-wrap text-muted-foreground">{selectedAnnouncement.content}</p>
+          </div>
+        </div>
       )}
     </div>
   );
