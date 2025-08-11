@@ -26,6 +26,7 @@ const analyticsRoutes = require('./routes/analytics');
 const classRoutes = require('./routes/classes');
 const studentRoutes = require('./routes/students');
 const notificationRoutes = require('./routes/notifications');
+const conversationRoutes = require('./routes/conversations');
 
 // Middleware
 app.use(cors({
@@ -61,6 +62,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/conversations', conversationRoutes);
 app.use('/api/resumes', require('./routes/resumes'));
 app.use('/api/alumni', require('./routes/alumni'));
 app.use('/api/messages', require('./routes/messages'));

@@ -2,54 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-
-// Get conversations for a user
-router.get('/conversations', authenticateToken, async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    
-    const query = `
-      DECLARE @userId INT = ?;
-      WITH ConversationMessages AS (
-        SELECT
-          CASE
-            WHEN sender_id = @userId THEN receiver_id
-            ELSE sender_id
-          END as contact_id,
-          MAX(created_at) as last_message_time,
-          MAX(id) as last_message_id
-        FROM Messages
-        WHERE sender_id = @userId OR receiver_id = @userId
-        GROUP BY
-          CASE
-            WHEN sender_id = @userId THEN receiver_id
-            ELSE sender_id
-          END
-      )
-      SELECT
-        cm.contact_id,
-        u.name as contact_name,
-        u.role as contact_role,
-        m.content as last_message,
-        m.sender_id as last_sender_id,
-        cm.last_message_time,
-        COUNT(CASE WHEN m2.is_read = 0 AND m2.receiver_id = @userId THEN 1 END) as unread_count
-      FROM ConversationMessages cm
-      JOIN Users u ON u.id = cm.contact_id
-      JOIN Messages m ON m.id = cm.last_message_id
-      LEFT JOIN Messages m2 ON (m2.sender_id = cm.contact_id AND m2.receiver_id = @userId)
-      GROUP BY cm.contact_id, u.name, u.role, m.content, m.sender_id, cm.last_message_time
-      ORDER BY cm.last_message_time DESC
-    `;
-
-    const result = await executeQuery(query, [userId]);
-    res.json(result.recordset);
-    
-  } catch (error) {
-    console.error('Messages conversations fetch error:', error);
-    next(error);
-  }
-});
+const { emitConversationUpdate } = require('../utils/conversations');
 
 // Get messages between two users
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
@@ -124,6 +77,20 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       io.to(`user:${senderId}`).emit('private-message', savedMessage);
     }
 
+    // Update conversation state for sender (mark as read)
+    const convUpdate = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETDATE());
+    `;
+    await executeQuery(convUpdate, [senderId, receiverId, senderId, receiverId]);
+
+    await emitConversationUpdate(io, senderId, 'direct', receiverId);
+    await emitConversationUpdate(io, receiverId, 'direct', senderId);
+
     res.setHeader('Content-Type', 'application/json');
     return res.status(201).json(savedMessage);
 
@@ -146,6 +113,19 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     `;
     
     await executeQuery(query, [contactId, userId]);
+
+    const convUpdate = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETDATE());
+    `;
+    await executeQuery(convUpdate, [userId, contactId, userId, contactId]);
+
+    await emitConversationUpdate(req.app.get('io'), userId, 'direct', contactId);
+
     res.json({ message: 'Messages marked as read' });
     
   } catch (error) {
