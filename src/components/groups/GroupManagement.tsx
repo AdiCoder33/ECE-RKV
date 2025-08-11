@@ -15,6 +15,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import AddGroupMembersModal from './AddGroupMembersModal';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -50,6 +51,8 @@ const GroupManagement = () => {
   const [groups, setGroups] = useState<ChatGroup[]>([]);
   const [editingGroup, setEditingGroup] = useState<ChatGroup | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
 
   const fetchGroups = async () => {
     try {
@@ -341,12 +344,24 @@ const GroupManagement = () => {
                   <MessageCircle className="h-4 w-4 mr-1" />
                   Chat
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedGroup(group);
+                    setIsMembersModalOpen(true);
+                  }}
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Add Members
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => handleEditClick(group)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+                <Button
+                  size="sm"
+                  variant="outline"
                   className="text-red-600 hover:text-red-700"
                   onClick={() => handleDeleteGroup(group.id)}
                 >
@@ -372,6 +387,17 @@ const GroupManagement = () => {
             </Button>
           </CardContent>
         </Card>
+      )}
+      {selectedGroup && (
+        <AddGroupMembersModal
+          group={selectedGroup}
+          open={isMembersModalOpen}
+          onClose={() => {
+            setIsMembersModalOpen(false);
+            setSelectedGroup(null);
+            fetchGroups();
+          }}
+        />
       )}
     </div>
   );
