@@ -1,271 +1,78 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Calendar, BookOpen, MapPin, User, GraduationCap } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-const apiBase = import.meta.env.VITE_API_URL || '/api';
-
-interface TimeSlot {
-  id: string;
-  day: string;
-  time: string;
-  subject: string;
-  faculty: string;
-  room: string;
-  year: number;
-  semester: 1 | 2;
-  section: string;
-}
-
-const StudentTimetable = () => {
-  const { user } = useAuth();
-  const [timetable, setTimetable] = useState<TimeSlot[]>([]);
+export default function Announcements() {
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const timeSlots = [
-    '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
-    '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'
-  ];
-
-  // Mock student data - replace with actual user data
-  const studentYear = user?.year || 3;
-  const studentSemester = user?.semester || 1;
-  const studentSection = user?.section || 'A';
-
+  // Fetch announcements
   useEffect(() => {
-    fetchTimetable();
+    const fetchAnnouncements = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/announcements`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Uncomment if backend requires authentication:
+              // "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Error fetching announcements: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setAnnouncements(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load announcements.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
   }, []);
 
-  const fetchTimetable = async () => {
-    try {
-      const response = await fetch(`${apiBase}/timetable?year=${studentYear}&semester=${studentSemester}&section=${studentSection}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTimetable(data);
-      }
-    } catch (error) {
-      console.error('Error fetching timetable:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getSlotForTime = (day: string, time: string) => {
-    return timetable.find(slot => slot.day === day && slot.time === time);
-  };
-
-  const getTodaySchedule = () => {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    return timetable.filter(slot => slot.day === today).sort((a, b) => a.time.localeCompare(b.time));
-  };
-
-  const getNextClass = () => {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-    
-    const todayClasses = getTodaySchedule();
-    return todayClasses.find(slot => {
-      const classTime = slot.time.split('-')[0];
-      return classTime > currentTime;
-    });
-  };
-
   if (loading) {
-    return (
-      <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-32 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
+    return <p>Loading announcements...</p>;
   }
 
-  const todaySchedule = getTodaySchedule();
-  const nextClass = getNextClass();
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
+  }
 
   return (
-    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-      <div>
-        <h1 className="text-3xl font-bold">My Timetable</h1>
-        <p className="text-muted-foreground">
-          Class schedule for Year {studentYear}, Sem {studentSemester}, Section {studentSection}
-        </p>
-      </div>
-
-      {/* Today's Schedule Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+    <div className="p-4 grid gap-4">
+      {announcements.map((announcement, index) => (
+        <Card key={index} className="shadow-md">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Today's Classes
-            </CardTitle>
+            <CardTitle>{announcement.title}</CardTitle>
             <CardDescription>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              {announcement.authorName} —{" "}
+              {new Date(announcement.created_at).toLocaleString()}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {todaySchedule.length > 0 ? (
-              <div className="space-y-3">
-                {todaySchedule.map(slot => (
-                  <div key={slot.id} className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
-                    <div className="w-2 h-12 bg-primary rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="font-medium">{slot.subject}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        {slot.time}
-                        <MapPin className="h-3 w-3" />
-                        {slot.room}
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {slot.faculty}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-muted-foreground">No classes today</p>
-              </div>
-            )}
+            <p>{announcement.content}</p>
+            <Button className="mt-2">Read More</Button>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Next Class
-            </CardTitle>
-            <CardDescription>Upcoming class information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {nextClass ? (
-              <div className="space-y-3">
-                <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                  <div className="font-medium text-primary text-lg mb-2">{nextClass.subject}</div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">{nextClass.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {nextClass.room}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <User className="h-4 w-4" />
-                      {nextClass.faculty}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-muted-foreground">No more classes today</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Weekly Timetable Grid */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Weekly Schedule
-          </CardTitle>
-          <CardDescription>Complete weekly class timetable</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Time</th>
-                  {days.map(day => (
-                    <th key={day} className="text-left p-3 font-medium min-w-[150px]">
-                      {day}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {timeSlots.map(time => (
-                  <tr key={time} className="border-b">
-                    <td className="p-3 font-medium text-sm bg-muted/30">
-                      <Clock className="h-4 w-4 inline mr-2" />
-                      {time}
-                    </td>
-                    {days.map(day => {
-                      const slot = getSlotForTime(day, time);
-                      const isToday = day === new Date().toLocaleDateString('en-US', { weekday: 'long' });
-                      const isCurrentTime = isToday && (() => {
-                        const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                        const [startTime, endTime] = time.split('-');
-                        return currentTime >= startTime && currentTime <= endTime;
-                      })();
-                      
-                      return (
-                        <td key={`${day}-${time}`} className="p-2">
-                          {slot ? (
-                            <div className={`bg-primary/10 border rounded-lg p-3 transition-colors ${
-                              isCurrentTime 
-                                ? 'border-primary bg-primary/20 shadow-md' 
-                                : 'border-primary/20 hover:bg-primary/15'
-                            }`}>
-                              <div className="font-medium text-primary mb-1 flex items-center gap-1">
-                                <BookOpen className="h-3 w-3" />
-                                {slot.subject}
-                              </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                                <MapPin className="h-3 w-3" />
-                                {slot.room}
-                              </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {slot.faculty}
-                              </div>
-                              {isCurrentTime && (
-                                <div className="mt-2 text-xs font-medium text-primary">
-                                  ● Now
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="min-h-[80px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">Free</span>
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      ))}
     </div>
   );
-};
-
-export default StudentTimetable;
+}

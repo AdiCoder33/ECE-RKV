@@ -1,11 +1,14 @@
-
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const http = require('http');
+const socketIo = require('socket.io');
+
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -50,17 +53,25 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/internal-marks', marksRoutes);
-app.use('/api/announcements', announcementRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/classes', classRoutes);
-app.use('/api/students', studentRoutes);
+app.use('/api/marks', marksRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/resumes', require('./routes/resumes'));
-app.use('/api/alumni', require('./routes/alumni'));
-app.use('/api/messages', require('./routes/messages'));
-app.use('/api/marks', require('./routes/marks'));
-app.use('/api/timetable', require('./routes/timetable'));
+app.use('/api/announcements', announcementRoutes);
+
+
+const io = socketIo(server, {
+  cors: { origin: "*" }
+});
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// make io available to routes
+app.set('io', io);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -75,9 +86,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 connectToDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  server.listen(PORT, () => {
+    console.log(`Server + Socket.IO running on port ${PORT}`);
   });
 });
+
 
 module.exports = app;

@@ -1,17 +1,13 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Bell, 
+import {
+  Bell,
   Plus,
-  Edit,
-  Trash2,
   Search,
-  Filter,
   Calendar,
   User,
   AlertCircle,
@@ -19,58 +15,77 @@ import {
   CheckCircle,
   Send
 } from 'lucide-react';
-import { Announcement } from '@/types';
 
-const Announcements = () => {
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+const Announcements: React.FC = () => {
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    targetRole: 'all',
+    targetYear: '',
+    priority: 'low'
+  });
+  const [loading, setLoading] = useState(false);
 
-  const [announcements] = useState<Announcement[]>([
-    {
-      id: '1',
-      title: 'Mid-Semester Examination Schedule',
-      content: 'Mid-semester examinations for all years will be conducted from March 15-25, 2024. Please check the detailed timetable on the notice board.',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      targetRole: 'student',
-      createdAt: '2024-01-15T10:00:00Z',
-      priority: 'high',
-      isActive: true
-    },
-    {
-      id: '2',
-      title: 'Faculty Development Program',
-      content: 'A 5-day Faculty Development Program on "Emerging Technologies in ECE" will be conducted from February 10-14, 2024.',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      targetRole: 'professor',
-      createdAt: '2024-01-10T14:30:00Z',
-      priority: 'medium',
-      isActive: true
-    },
-    {
-      id: '3',
-      title: 'Industry Visit - TCS Innovation Lab',
-      content: 'Final year students are invited for an industry visit to TCS Innovation Lab on January 25, 2024. Registration deadline: January 20.',
-      authorId: '2',
-      authorName: 'Prof. Priya Sharma',
-      targetYear: 4,
-      createdAt: '2024-01-08T09:15:00Z',
-      priority: 'high',
-      isActive: true
-    },
-    {
-      id: '4',
-      title: 'Library Hours Extension',
-      content: 'Library hours have been extended till 10 PM during examination period (March 1-31, 2024).',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      createdAt: '2024-01-05T16:45:00Z',
-      priority: 'low',
-      isActive: true
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchAnnouncements = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/announcements`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      setAnnouncements(data);
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchAnnouncements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCreateAnnouncement = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/announcements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify(formData)
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Create failed: ${res.status} ${res.statusText} ${errText}`);
+      }
+      // reset form and refetch
+      setShowCreateForm(false);
+      setFormData({ title: '', content: '', targetRole: 'all', targetYear: '', priority: 'low' });
+      await fetchAnnouncements();
+    } catch (err) {
+      console.error('Error creating announcement:', err);
+    }
+  };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -98,13 +113,15 @@ const Announcements = () => {
     });
   };
 
-  const filteredAnnouncements = announcements.filter(announcement => {
-    const matchesSearch = announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         announcement.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPriority = selectedPriority === 'all' || announcement.priority === selectedPriority;
-    
+  const filteredAnnouncements = announcements.filter((announcement) => {
+    const title = (announcement.title || '').toString().toLowerCase();
+    const content = (announcement.content || '').toString().toLowerCase();
+    const matchesSearch = title.includes(searchTerm.toLowerCase()) || content.includes(searchTerm.toLowerCase());
+    const matchesPriority = selectedPriority === 'all' || (announcement.priority === selectedPriority);
     return matchesSearch && matchesPriority;
   });
+
+  if (loading) return <p>Loading announcements...</p>;
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
@@ -119,7 +136,6 @@ const Announcements = () => {
         </Button>
       </div>
 
-      {/* Create Announcement Form */}
       {showCreateForm && (
         <Card>
           <CardHeader>
@@ -130,22 +146,28 @@ const Announcements = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Title</label>
-                <Input placeholder="Enter announcement title" />
+                <Input placeholder="Enter announcement title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium">Priority</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select className="w-full px-3 py-2 border rounded-md"
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}>
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Target Audience</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select className="w-full px-3 py-2 border rounded-md"
+                  value={formData.targetRole}
+                  onChange={(e) => setFormData({ ...formData, targetRole: e.target.value })}>
                   <option value="all">All</option>
                   <option value="student">Students</option>
                   <option value="professor">Faculty</option>
@@ -154,7 +176,9 @@ const Announcements = () => {
               </div>
               <div>
                 <label className="text-sm font-medium">Target Year (Optional)</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select className="w-full px-3 py-2 border rounded-md"
+                  value={formData.targetYear}
+                  onChange={(e) => setFormData({ ...formData, targetYear: e.target.value })}>
                   <option value="">All Years</option>
                   <option value="1">1st Year</option>
                   <option value="2">2nd Year</option>
@@ -166,46 +190,33 @@ const Announcements = () => {
 
             <div>
               <label className="text-sm font-medium">Content</label>
-              <Textarea 
-                placeholder="Enter announcement content..." 
-                rows={4}
-              />
+              <Textarea placeholder="Enter announcement content..." rows={4}
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })} />
             </div>
 
             <div className="flex gap-2">
-              <Button>
+              <Button onClick={handleCreateAnnouncement}>
                 <Send className="h-4 w-4 mr-2" />
                 Publish Announcement
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search announcements..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Search announcements..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
             </div>
-            
-            <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-3 py-2 border rounded-md"
-            >
+
+            <select value={selectedPriority} onChange={(e) => setSelectedPriority(e.target.value)} className="px-3 py-2 border rounded-md">
               <option value="all">All Priorities</option>
               <option value="high">High Priority</option>
               <option value="medium">Medium Priority</option>
@@ -215,7 +226,6 @@ const Announcements = () => {
         </CardContent>
       </Card>
 
-      {/* Announcements List */}
       <div className="space-y-4">
         {filteredAnnouncements.map((announcement) => (
           <Card key={announcement.id} className="hover:shadow-lg transition-shadow">
@@ -226,10 +236,10 @@ const Announcements = () => {
                     <h3 className="text-lg font-semibold">{announcement.title}</h3>
                     <Badge className={getPriorityColor(announcement.priority)}>
                       {getPriorityIcon(announcement.priority)}
-                      <span className="ml-1">{announcement.priority.toUpperCase()}</span>
+                      <span className="ml-1">{(announcement.priority || '').toUpperCase()}</span>
                     </Badge>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <User className="h-4 w-4" />
@@ -237,52 +247,26 @@ const Announcements = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      <span>{formatDate(announcement.createdAt)}</span>
+                      <span>{formatDate(announcement.created_at || announcement.createdAt)}</span>
                     </div>
-                    {announcement.targetRole && (
-                      <Badge variant="outline">
-                        {announcement.targetRole}
-                      </Badge>
-                    )}
-                    {announcement.targetYear && (
-                      <Badge variant="outline">
-                        Year {announcement.targetYear}
-                      </Badge>
-                    )}
+                    {announcement.target_role && <Badge variant="outline">{announcement.target_role}</Badge>}
+                    {announcement.target_year && <Badge variant="outline">Year {announcement.target_year}</Badge>}
                   </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </CardHeader>
-            
+
             <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                {announcement.content}
-              </p>
-              
+              <p className="text-muted-foreground leading-relaxed">{announcement.content}</p>
+
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Active Announcement
-                  </span>
+                  <span className="text-sm text-muted-foreground">Active Announcement</span>
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    View Details
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
+                  <Button variant="outline" size="sm">View Details</Button>
                 </div>
               </div>
             </CardContent>
@@ -296,10 +280,7 @@ const Announcements = () => {
             <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No announcements found</h3>
             <p className="text-muted-foreground">
-              {searchTerm || selectedPriority !== 'all' 
-                ? 'Try adjusting your search or filter criteria'
-                : 'Create your first announcement to get started'
-              }
+              {searchTerm || selectedPriority !== 'all' ? 'Try adjusting your search or filter criteria' : 'Create your first announcement to get started'}
             </p>
           </CardContent>
         </Card>
