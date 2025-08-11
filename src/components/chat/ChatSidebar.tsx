@@ -351,7 +351,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   startReached={loadMore}
                   followOutput="smooth"
                   initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
-                  className="flex-1 px-4 py-4"
+                  className="flex-1 px-4 py-4 overflow-x-hidden"
                   itemContent={(index, item) => {
                     if (item.type === 'date') {
                       return (
@@ -406,8 +406,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             )}
                           </div>
                         )}
-                        <div className={`flex-1 max-w-sm ${isOwn ? 'text-right' : ''}`}>
-                          <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
+                        <div className={`max-w-full ${isOwn ? 'text-right ml-auto' : ''}`}> 
+                          <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}> 
                             {!isOwn && (
                               <span className="text-sm font-medium">{senderName}</span>
                             )}
@@ -420,13 +420,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               {formatTime(timestamp)}
                             </span>
                           </div>
-                          <div
-                            className={`p-3 rounded-lg ${
-                              isOwn
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                            }`}
-                          >
+                          <div 
+                            className={`inline-block w-fit max-w-[80%] break-words break-all p-3 rounded-lg ${ 
+                              isOwn 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-muted' 
+                            }`} 
+                          > 
                             <p className="text-sm">{msg.content}</p>
                             {msg.attachments && msg.attachments.length > 0 && (
                               <div className="mt-2 space-y-2">
