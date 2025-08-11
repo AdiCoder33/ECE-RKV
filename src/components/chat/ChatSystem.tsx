@@ -15,11 +15,12 @@ import {
   ArrowLeft,
   Link2,
   X,
-  MessageSquare
+  MessageSquare,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { ChatMessage } from '@/types';
+import { ChatMessage, User } from '@/types';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import { useNavigate } from 'react-router-dom';
@@ -43,10 +44,13 @@ const ChatSystem = () => {
   const [attachedFiles, setAttachedFiles] = useState<Array<{file: File, type: 'image' | 'document'}>>([]);
   const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
   const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const {
     messages,
     privateMessages,
     conversations,
+    groups,
     fetchGroups,
     fetchGroupMessages,
     sendGroupMessage,
@@ -54,6 +58,7 @@ const ChatSystem = () => {
     fetchConversation,
     sendDirectMessage,
     markAsRead,
+    searchUsers,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -103,6 +108,25 @@ const ChatSystem = () => {
       setDirectMessages(prev => [...prev, ...additions]);
     }
   }, [privateMessages, activeChat, directMessages]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const handler = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchUsers(search);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('User search failed:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search, searchUsers]);
 
   const handleSendMessage = async () => {
     if ((!message.trim() && attachedFiles.length === 0) || !user || !activeChat) return;
@@ -184,6 +208,10 @@ const ChatSystem = () => {
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const searchFilteredResults = searchResults.filter(
+    u => u.id !== user?.id && !contacts.some(c => c.id === u.id)
+  );
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 px-4 sm:px-6 md:px-0">
       {/* Channels Sidebar */}
@@ -212,6 +240,29 @@ const ChatSystem = () => {
         </CardHeader>
         <CardContent className="flex-1 p-0">
           <div className="space-y-1 px-3">
+            {search && (
+              <div className="mb-2">
+                {searchLoading ? (
+                  <div className="flex justify-center py-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                ) : (
+                  searchFilteredResults.map((result) => (
+                    <Button
+                      key={result.id}
+                      variant="ghost"
+                      className="w-full justify-start h-12 px-3"
+                      onClick={() => setActiveChat({ type: 'user', id: result.id })}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-3" />
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-sm">{result.name}</p>
+                      </div>
+                    </Button>
+                  ))
+                )}
+              </div>
+            )}
             {filteredGroups.map((group) => (
               <Button
                 key={group.id}
