@@ -381,7 +381,7 @@ const AttendanceManager: React.FC = () => {
               </p>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year-select">Year</Label>
               <select
@@ -450,12 +450,6 @@ const AttendanceManager: React.FC = () => {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="flex items-end">
-              <Button className="w-full" onClick={fetchAttendance}>
-                Load Class
-              </Button>
             </div>
           </div>
         </CardContent>
