@@ -225,7 +225,7 @@ const ChatConversation: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className={`max-w-md ${isOwn ? 'text-right ml-auto' : ''}`}> 
+                      <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">{dm.sender_name}</span>
                           <span className="text-xs text-muted-foreground">
@@ -233,9 +233,9 @@ const ChatConversation: React.FC = () => {
                           </span>
                         </div>
                         <div
-                          className={`inline-block w-fit max-w-[80%] break-words p-3 rounded-lg ${
+                          className={`inline-block max-w-[80%] break-words break-all p-3 rounded-lg ${
                             isOwn
-                              ? 'bg-primary text-primary-foreground'
+                              ? 'ml-auto bg-primary text-primary-foreground'
                               : 'bg-muted'
                           }`}
                         >
@@ -259,7 +259,7 @@ const ChatConversation: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className={`max-w-md ${isOwn ? 'text-right ml-auto' : ''}`}> 
+                    <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium">{gm.senderName}</span>
                         <Badge
@@ -273,9 +273,9 @@ const ChatConversation: React.FC = () => {
                         </span>
                       </div>
                       <div
-                        className={`inline-block w-fit max-w-[80%] break-words p-3 rounded-lg ${
+                        className={`inline-block max-w-[80%] break-words break-all p-3 rounded-lg ${
                           isOwn
-                            ? 'bg-primary text-primary-foreground'
+                            ? 'ml-auto bg-primary text-primary-foreground'
                             : 'bg-muted'
                         }`}
                       >
