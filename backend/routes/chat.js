@@ -80,29 +80,32 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       return res.status(403).json({ error: 'User is not a member of this group' });
     }
 
-    await executeQuery(
-      'INSERT INTO chat_messages (group_id, sender_id, content, attachments) VALUES (?, ?, ?, ?)',
-      [groupId, userId, content.trim(), JSON.stringify(attachments)]
-    );
+    const insertQuery = `
+      INSERT INTO chat_messages (group_id, sender_id, content, attachments)
+      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id, INSERTED.content,
+             INSERTED.timestamp, INSERTED.attachments,
+             (SELECT name FROM users WHERE id = INSERTED.sender_id) AS sender_name,
+             (SELECT role FROM users WHERE id = INSERTED.sender_id) AS sender_role
+      VALUES (?, ?, ?, ?)
+    `;
+    const { recordset } = await executeQuery(insertQuery, [
+      groupId,
+      userId,
+      content.trim(),
+      JSON.stringify(attachments)
+    ]);
 
-    const { recordset: newMessage } = await executeQuery(
-      `SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
-              u.name as sender_name, u.role as sender_role
-       FROM chat_messages cm
-       JOIN users u ON cm.sender_id = u.id
-       WHERE cm.id = SCOPE_IDENTITY()`
-    );
+    if (!recordset || recordset.length === 0) {
+      return res.status(500).json({ error: 'Failed to create message' });
+    }
 
     const formatted = {
-      id: newMessage[0].id.toString(),
-      senderId: newMessage[0].sender_id.toString(),
-      senderName: newMessage[0].sender_name,
-      senderRole: newMessage[0].sender_role,
-      content: newMessage[0].content,
-      timestamp: newMessage[0].timestamp,
-      groupId: newMessage[0].group_id.toString(),
-      attachments: newMessage[0].attachments
-        ? JSON.parse(newMessage[0].attachments)
+      ...recordset[0],
+      id: recordset[0].id.toString(),
+      senderId: recordset[0].sender_id.toString(),
+      groupId: recordset[0].group_id.toString(),
+      attachments: recordset[0].attachments
+        ? JSON.parse(recordset[0].attachments)
         : []
     };
 
