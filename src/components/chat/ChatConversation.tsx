@@ -1,29 +1,16 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Send,
-  Smile,
-  Paperclip,
-  Users,
-  Search,
-  MoreVertical,
-  ArrowLeft,
-  Link2,
-  X,
-  MessageSquare,
-  Loader2,
-} from 'lucide-react';
+import { Send, MoreVertical, ArrowLeft, Link2, X } from 'lucide-react';
+import EmojiPicker from './EmojiPicker';
+import FileUpload from './FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage, User } from '@/types';
-import EmojiPicker from './EmojiPicker';
-import FileUpload from './FileUpload';
-import { useNavigate } from 'react-router-dom';
 
 interface PrivateMessage {
   id: string;
@@ -36,16 +23,10 @@ interface PrivateMessage {
   is_read: number;
 }
 
-const ChatSystem = () => {
-  const { user } = useAuth();
+const ChatConversation: React.FC = () => {
+  const { type, id } = useParams<{ type: 'group' | 'user'; id: string }>();
   const navigate = useNavigate();
-  const [activeChat, setActiveChat] = useState<{ type: 'group' | 'user'; id: string } | null>(null);
-  const [message, setMessage] = useState('');
-  const [attachedFiles, setAttachedFiles] = useState<Array<{file: File, type: 'image' | 'document'}>>([]);
-  const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
-  const [search, setSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const { user } = useAuth();
   const {
     messages,
     privateMessages,
@@ -58,8 +39,11 @@ const ChatSystem = () => {
     fetchConversation,
     sendDirectMessage,
     markAsRead,
-    searchUsers,
   } = useChat();
+
+  const [message, setMessage] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ file: File; type: 'image' | 'document' }>>([]);
+  const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -72,21 +56,21 @@ const ChatSystem = () => {
   }, [messages, directMessages]);
 
   useEffect(() => {
-    fetchGroups().catch(err => console.error('Failed to load groups:', err));
-    fetchConversations().catch(err => console.error('Failed to load conversations:', err));
+    fetchGroups().catch(() => {});
+    fetchConversations().catch(() => {});
   }, [fetchGroups, fetchConversations]);
 
   useEffect(() => {
     const loadMessages = async () => {
-      if (!activeChat) return;
+      if (!id) return;
       try {
-        if (activeChat.type === 'user') {
-          const data = await fetchConversation(activeChat.id);
+        if (type === 'user') {
+          const data = await fetchConversation(id);
           setDirectMessages(data.messages);
-          markAsRead('direct', activeChat.id).catch(() => {});
+          markAsRead('direct', id).catch(() => {});
         } else {
-          await fetchGroupMessages(activeChat.id);
-          markAsRead('group', activeChat.id).catch(() => {});
+          await fetchGroupMessages(id);
+          markAsRead('group', id).catch(() => {});
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
@@ -95,41 +79,22 @@ const ChatSystem = () => {
     if (user) {
       loadMessages();
     }
-  }, [activeChat, fetchConversation, fetchGroupMessages, user, markAsRead]);
+  }, [id, type, fetchConversation, fetchGroupMessages, user, markAsRead]);
 
   useEffect(() => {
-    if (!activeChat || activeChat.type !== 'user') return;
+    if (type !== 'user' || !id) return;
     const newMsgs = privateMessages.filter(
-      m => m.sender_id === activeChat.id || m.receiver_id === activeChat.id
+      m => m.sender_id === id || m.receiver_id === id,
     );
     const existing = new Set(directMessages.map(m => m.id));
     const additions = newMsgs.filter(m => !existing.has(m.id));
     if (additions.length) {
       setDirectMessages(prev => [...prev, ...additions]);
     }
-  }, [privateMessages, activeChat, directMessages]);
-
-  useEffect(() => {
-    if (!search.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const handler = setTimeout(async () => {
-      setSearchLoading(true);
-      try {
-        const results = await searchUsers(search);
-        setSearchResults(results);
-      } catch (err) {
-        console.error('User search failed:', err);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [search, searchUsers]);
+  }, [privateMessages, id, type, directMessages]);
 
   const handleSendMessage = async () => {
-    if ((!message.trim() && attachedFiles.length === 0) || !user || !activeChat) return;
+    if ((!message.trim() && attachedFiles.length === 0) || !id) return;
 
     let messageContent = message;
     if (attachedFiles.length > 0) {
@@ -138,11 +103,11 @@ const ChatSystem = () => {
     }
 
     try {
-      if (activeChat.type === 'user') {
-        const newMsg = await sendDirectMessage(activeChat.id, messageContent);
-        setDirectMessages(prev => [...prev, newMsg]);
+      if (type === 'user') {
+        const newMsg = await sendDirectMessage(id, messageContent);
+        if (newMsg) setDirectMessages(prev => [...prev, newMsg]);
       } else {
-        await sendGroupMessage(activeChat.id, messageContent);
+        await sendGroupMessage(id, messageContent);
       }
       setMessage('');
       setAttachedFiles([]);
@@ -172,12 +137,18 @@ const ChatSystem = () => {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-red-600 text-white';
-      case 'hod': return 'bg-blue-600 text-white';
-      case 'professor': return 'bg-green-600 text-white';
-      case 'student': return 'bg-purple-600 text-white';
-      case 'alumni': return 'bg-orange-600 text-white';
-      default: return 'bg-gray-600 text-white';
+      case 'admin':
+        return 'bg-red-600 text-white';
+      case 'hod':
+        return 'bg-blue-600 text-white';
+      case 'professor':
+        return 'bg-green-600 text-white';
+      case 'student':
+        return 'bg-purple-600 text-white';
+      case 'alumni':
+        return 'bg-orange-600 text-white';
+      default:
+        return 'bg-gray-600 text-white';
     }
   };
 
@@ -186,144 +157,33 @@ const ChatSystem = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const filteredMessages =
-    activeChat?.type === 'user'
-      ? directMessages
-      : messages.filter(msg => msg.groupId === activeChat?.id);
-
   const contacts = conversations
     .filter(c => c.type === 'direct')
-    .map(c => ({
-      id: c.id,
-      name: c.title,
-      last: c.last_message || '',
-      unread: c.unread_count,
-    }));
+    .map(c => ({ id: c.id, name: c.title }));
 
-  const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const chatName = type === 'user'
+    ? contacts.find(c => c.id === id)?.name
+    : groups.find(g => g.id === id)?.name;
 
-  const filteredContacts = contacts.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const searchFilteredResults = searchResults.filter(
-    u => u.id !== user?.id && !contacts.some(c => c.id === u.id)
-  );
+  const filteredMessages = type === 'user'
+    ? directMessages
+    : messages.filter(msg => msg.groupId === id);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 px-4 sm:px-6 md:px-0">
-      {/* Channels Sidebar */}
-      <Card className="w-full md:w-80 flex flex-col md:max-h-full max-h-48">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Chats</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => navigate('/dashboard/alumni')}
-            >
-              <Link2 className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              className="pl-10 h-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 p-0">
-          <div className="space-y-1 px-3">
-            {search && (
-              <div className="mb-2">
-                {searchLoading ? (
-                  <div className="flex justify-center py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                ) : (
-                  searchFilteredResults.map((result) => (
-                    <Button
-                      key={result.id}
-                      variant="ghost"
-                      className="w-full justify-start h-12 px-3"
-                      onClick={() => setActiveChat({ type: 'user', id: result.id })}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-3" />
-                      <div className="flex-1 text-left">
-                        <p className="font-medium text-sm">{result.name}</p>
-                      </div>
-                    </Button>
-                  ))
-                )}
-              </div>
-            )}
-            {filteredGroups.map((group) => (
-              <Button
-                key={group.id}
-                variant={activeChat?.type === 'group' && activeChat.id === group.id ? 'secondary' : 'ghost'}
-                className="w-full justify-start h-12 px-3"
-                onClick={() => setActiveChat({ type: 'group', id: group.id })}
-              >
-                <Users className="h-4 w-4 mr-3" />
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-sm">{group.name}</p>
-                </div>
-              </Button>
-            ))}
-            {filteredContacts.length > 0 && (
-              <div className="pt-2 mt-2 border-t space-y-1">
-                {filteredContacts.map((contact) => (
-                  <Button
-                    key={contact.id}
-                    variant={activeChat?.type === 'user' && activeChat.id === contact.id ? 'secondary' : 'ghost'}
-                    className="w-full justify-start h-12 px-3"
-                    onClick={() => setActiveChat({ type: 'user', id: contact.id })}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-3" />
-                    <div className="flex-1 text-left">
-                      <p className="font-medium text-sm">{contact.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{contact.last}</p>
-                    </div>
-                    {contact.unread > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        {contact.unread}
-                      </Badge>
-                    )}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Chat Area */}
+    <div className="h-[calc(100vh-8rem)] flex flex-col gap-4 px-4 sm:px-6 md:px-0">
       <Card className="flex-1 flex flex-col">
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="md:hidden"
-                onClick={() => navigate(-1)}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/dashboard/chat')}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <CardTitle className="text-lg">
-                  {activeChat
-                    ? activeChat.type === 'user'
-                      ? contacts.find(c => c.id === activeChat.id)?.name
-                      : groups.find(g => g.id === activeChat.id)?.name
-                    : 'Select a chat'}
-                </CardTitle>
+                <CardTitle className="text-lg">{chatName || 'Conversation'}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {filteredMessages.length} messages
                 </p>
@@ -331,8 +191,8 @@ const ChatSystem = () => {
             </div>
             <div className="flex items-center gap-2">
               {user?.role === 'student' && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={() => navigate('/dashboard/alumni')}
                   title="Alumni Directory"
@@ -346,13 +206,11 @@ const ChatSystem = () => {
             </div>
           </div>
         </CardHeader>
-
-        {/* Messages */}
         <CardContent className="flex-1 p-0">
           <ScrollArea className="h-full px-4 py-4">
             <div className="space-y-4">
-              {filteredMessages.map((msg) => {
-                if (activeChat?.type === 'user') {
+              {filteredMessages.map(msg => {
+                if (type === 'user') {
                   const dm = msg as PrivateMessage;
                   const isOwn = dm.sender_id === user?.id;
                   return (
@@ -431,18 +289,15 @@ const ChatSystem = () => {
             </div>
           </ScrollArea>
         </CardContent>
-
-        {/* Message Input */}
         <div className="border-t p-4">
-          {/* Attached Files Preview */}
           {attachedFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
               {attachedFiles.map((item, index) => (
                 <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-sm">
                   <span className="truncate max-w-32">{item.file.name}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-4 w-4"
                     onClick={() => removeAttachedFile(index)}
                   >
@@ -452,26 +307,26 @@ const ChatSystem = () => {
               ))}
             </div>
           )}
-          
+
           <div className="flex gap-2">
-            <FileUpload 
+            <FileUpload
               onFileSelect={handleFileSelect}
               disabled={attachedFiles.length >= 5}
             />
             <Input
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={e => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={`Message ${
-                activeChat?.type === 'user'
-                  ? contacts.find(c => c.id === activeChat.id)?.name || 'contact'
-                  : groups.find(g => g.id === activeChat?.id)?.name || 'group'
+                type === 'user'
+                  ? contacts.find(c => c.id === id)?.name || 'contact'
+                  : groups.find(g => g.id === id)?.name || 'group'
               }...`}
               className="flex-1"
             />
             <EmojiPicker onEmojiSelect={handleEmojiSelect} />
-            <Button 
-              onClick={handleSendMessage} 
+            <Button
+              onClick={handleSendMessage}
               disabled={!message.trim() && attachedFiles.length === 0}
             >
               <Send className="h-4 w-4" />
@@ -483,4 +338,5 @@ const ChatSystem = () => {
   );
 };
 
-export default ChatSystem;
+export default ChatConversation;
+
