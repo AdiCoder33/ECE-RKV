@@ -8,7 +8,6 @@ import {
   GraduationCap,
   LogOut,
   MessageSquare,
-  Mail,
   Settings,
   Users,
   BookOpen,
@@ -41,7 +40,6 @@ import {
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useChat } from '@/contexts/ChatContext';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -54,12 +52,6 @@ const DashboardLayout: React.FC = () => {
   const [chatExpanded, setChatExpanded] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const { conversations, fetchConversations } = useChat();
-  const unreadDMs = conversations.reduce((sum, c) => sum + c.unread_count, 0);
-
-  useEffect(() => {
-    fetchConversations().catch(() => {});
-  }, [fetchConversations]);
 
   useEffect(() => {
     setChatOpen(!isMobile);
@@ -296,24 +288,6 @@ const DashboardLayout: React.FC = () => {
                 )}
               </Button>
             )}
-
-            {/* Direct Messages */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleNavigation('/dashboard/messages')}
-              className="relative"
-            >
-              <Mail className="h-5 w-5" />
-              {unreadDMs > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  {unreadDMs}
-                </Badge>
-              )}
-            </Button>
 
             {/* Notifications */}
             <NotificationDropdown />
