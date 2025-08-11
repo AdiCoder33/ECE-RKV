@@ -19,22 +19,22 @@ jest.mock('../config/database', () => ({
   sql: {},
 }));
 
-const messagesRouter = require('./messages');
+const conversationsRouter = require('./conversations');
 
-describe('GET /messages/conversations', () => {
+describe('GET /conversations', () => {
   let app;
 
   beforeEach(() => {
     app = express();
-    app.use('/messages', messagesRouter);
+    app.use('/conversations', conversationsRouter);
     mockExecuteQuery.mockClear();
   });
 
-  it('queries conversations using single userId parameter', async () => {
-    await request(app).get('/messages/conversations').expect(200);
-    expect(mockExecuteQuery).toHaveBeenCalledWith(expect.any(String), [1]);
-    const query = mockExecuteQuery.mock.calls[0][0];
-    const placeholders = (query.match(/\?/g) || []).length;
-    expect(placeholders).toBe(1);
+  it('queries conversations using single userId parameter for each query', async () => {
+    mockExecuteQuery.mockResolvedValueOnce({ recordset: [] });
+    mockExecuteQuery.mockResolvedValueOnce({ recordset: [] });
+    await request(app).get('/conversations').expect(200);
+    expect(mockExecuteQuery).toHaveBeenNthCalledWith(1, expect.any(String), [1]);
+    expect(mockExecuteQuery).toHaveBeenNthCalledWith(2, expect.any(String), [1]);
   });
 });

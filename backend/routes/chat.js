@@ -1,6 +1,7 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { emitConversationUpdate } = require('../utils/conversations');
 
 const router = express.Router();
 
@@ -87,9 +88,52 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       io.to(`group-${groupId}`).emit('chat-message', formatted);
     }
 
+    // Update sender's read timestamp and emit conversation updates
+    const convUpdate = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETDATE());
+    `;
+    await executeQuery(convUpdate, [userId, groupId, userId, groupId]);
+
+    if (io) {
+      const { recordset: members } = await executeQuery('SELECT user_id FROM chat_group_members WHERE group_id = ?', [groupId]);
+      for (const member of members) {
+        await emitConversationUpdate(io, member.user_id, 'group', groupId);
+      }
+    }
+
     res.status(201).json(formatted);
   } catch (error) {
     console.error('Group message send error:', error);
+    next(error);
+  }
+});
+
+// Mark group messages as read
+router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { groupId } = req.params;
+
+    const query = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETDATE());
+    `;
+    await executeQuery(query, [userId, groupId, userId, groupId]);
+
+    await emitConversationUpdate(req.app.get('io'), userId, 'group', groupId);
+
+    res.json({ message: 'Group messages marked as read' });
+  } catch (error) {
+    console.error('Group mark-read error:', error);
     next(error);
   }
 });

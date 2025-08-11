@@ -252,6 +252,18 @@ CREATE TABLE messages (
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE NO ACTION
 );
 
+-- Conversation user state (pinning and read tracking)
+CREATE TABLE conversation_users (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    user_id int NOT NULL,
+    conversation_type nvarchar(10) NOT NULL CHECK (conversation_type IN ('direct','group')),
+    conversation_id int NOT NULL,
+    pinned bit DEFAULT 0,
+    last_read_at datetime2 DEFAULT '1900-01-01',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, conversation_type, conversation_id)
+);
+
 -- Insert sample data
 INSERT INTO users (name, email, password, role, department) VALUES 
 ('Admin User', 'admin@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'ECE'),
