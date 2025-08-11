@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { ChatMessage } from '@/types';
+import { ChatMessage, User } from '@/types';
 
 interface PrivateMessage {
   id: string;
@@ -37,6 +37,7 @@ interface ChatContextType {
   fetchConversation: (userId: string) => Promise<PrivateMessage[]>;
   sendDirectMessage: (receiverId: string, content: string) => Promise<PrivateMessage>;
   markAsRead: (userId: string) => Promise<void>;
+  searchUsers: (query: string) => Promise<User[]>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -152,6 +153,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const searchUsers = useCallback(
+    async (query: string): Promise<User[]> => {
+      if (!query.trim()) return [];
+      const data = await fetchWithAuth(`/users?search=${encodeURIComponent(query)}`);
+      return data as User[];
+    },
+    [fetchWithAuth]
+  );
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -194,6 +204,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fetchConversation,
           sendDirectMessage,
           markAsRead,
+          searchUsers,
         }}
     >
       {children}

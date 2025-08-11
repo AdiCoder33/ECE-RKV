@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { ChatMessage } from '@/types';
+import { ChatMessage, User } from '@/types';
 
 interface PrivateMessage {
   id: string;
@@ -43,11 +43,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onExpandedChange
 }) => {
   const { user } = useAuth();
-  const [activeChat, setActiveChat] = useState<{ type: 'group' | 'user'; id: string } | null>(null);
+  const [activeChat, setActiveChat] = useState<{ type: 'group' | 'user'; id: string; name?: string } | null>(null);
   const [message, setMessage] = useState('');
   const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
   const [search, setSearch] = useState('');
+  const [searchedUsers, setSearchedUsers] = useState<User[]>([]);
   const {
     groups,
     fetchGroups,
@@ -59,6 +60,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     fetchConversation,
     sendDirectMessage,
     markAsRead,
+    searchUsers,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -108,6 +110,34 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       setDirectMessages(prev => [...prev, ...additions]);
     }
   }, [privateMessages, activeChat, directMessages]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchedUsers([]);
+      return;
+    }
+    const handler = setTimeout(() => {
+      searchUsers(search)
+        .then(users => {
+          const existing = new Set(conversations.map(c => c.user_id));
+          setSearchedUsers(
+            users.filter(u => u.id !== user?.id && !existing.has(u.id))
+          );
+        })
+        .catch(err => console.error('User search failed:', err));
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search, searchUsers, conversations, user]);
+
+  const handleSelectUser = async (u: User) => {
+    setActiveChat({ type: 'user', id: u.id, name: u.name });
+    try {
+      const data = await fetchConversation(u.id);
+      setDirectMessages(data);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!message.trim() || !user || !activeChat) return;
@@ -201,6 +231,29 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {/* Groups and Contacts */}
           <div className="p-3 border-b">
             <div className="space-y-1">
+              {searchedUsers.length > 0 && (
+                <div className="pb-2 mb-2 border-b space-y-1">
+                  {searchedUsers.map(u => (
+                    <Button
+                      key={u.id}
+                      variant={activeChat?.type === 'user' && activeChat.id === u.id ? 'default' : 'ghost'}
+                      className="w-full justify-start h-10 px-3"
+                      onClick={() => handleSelectUser(u)}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-3" />
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-sm">{u.name}</p>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${getRoleBadgeColor(u.role)}`}
+                        >
+                          {u.role.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
               {filteredGroups.map((group) => (
                 <Button
                   key={group.id}
@@ -221,7 +274,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       key={contact.id}
                       variant={activeChat?.type === 'user' && activeChat.id === contact.id ? 'default' : 'ghost'}
                       className="w-full justify-start h-10 px-3"
-                      onClick={() => setActiveChat({ type: 'user', id: contact.id })}
+                      onClick={() => setActiveChat({ type: 'user', id: contact.id, name: contact.name })}
                     >
                       <MessageSquare className="h-4 w-4 mr-3" />
                       <div className="flex-1 text-left">
@@ -318,7 +371,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onKeyPress={handleKeyPress}
                 placeholder={`Message ${
                   activeChat?.type === 'user'
-                    ? contacts.find(c => c.id === activeChat.id)?.name || 'contact'
+                    ? activeChat.name || contacts.find(c => c.id === activeChat.id)?.name || 'contact'
                     : groups.find(g => g.id === activeChat?.id)?.name || 'group'
                 }...`}
                 className="flex-1"
