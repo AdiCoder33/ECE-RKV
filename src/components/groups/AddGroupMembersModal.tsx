@@ -63,6 +63,27 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
   }, [search, role, year, section, open]);
 
   useEffect(() => {
+    if (!open) return;
+    const fetchMembers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/groups/${group.id}/members`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!res.ok) throw new Error('Failed to fetch group members');
+        const members: User[] = await res.json();
+        setAdded(new Set(members.map(m => m.id)));
+      } catch (err) {
+        console.error('Failed to load group members', err);
+      }
+    };
+
+    fetchMembers();
+  }, [open, group.id]);
+
+  useEffect(() => {
     if (!open) {
       setAdded(new Set());
       setSearch('');
