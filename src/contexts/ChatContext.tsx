@@ -14,10 +14,14 @@ interface PrivateMessage {
 }
 
 interface Conversation {
-  user_id: string;
-  user_name: string;
+  id: string;
+  type: 'direct' | 'group';
+  title: string;
+  avatar: string | null;
+  last_message: string | null;
+  last_activity: string | null;
   unread_count: number;
-  last_message: string;
+  pinned: number | boolean;
 }
 
 interface Group {
@@ -39,7 +43,8 @@ interface ChatContextType {
     receiverId: string,
     content: string
   ) => Promise<PrivateMessage | null>;
-  markAsRead: (userId: string) => Promise<void>;
+  pinConversation: (type: 'direct' | 'group', id: string, pinned: boolean) => Promise<void>;
+  markAsRead: (type: 'direct' | 'group', id: string) => Promise<void>;
   searchUsers: (query: string) => Promise<User[]>;
 }
 
@@ -73,6 +78,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const socketRef = useRef<Socket | null>(null);
+
+  const sortConversations = useCallback((list: Conversation[]) => {
+    return [...list].sort((a, b) => {
+      const pinDiff = Number(b.pinned) - Number(a.pinned);
+      if (pinDiff !== 0) return pinDiff;
+      return new Date(b.last_activity || 0).getTime() - new Date(a.last_activity || 0).getTime();
+    });
+  }, []);
 
   const fetchWithAuth = useCallback(
     async (url: string, options: RequestInit = {}) => {
@@ -123,11 +136,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
-    const data = await fetchWithAuth('/messages/conversations');
-    const filtered = (data as Conversation[]).filter(c => c.user_name);
-    setConversations(filtered);
-    return filtered;
-  }, [fetchWithAuth]);
+    const data = await fetchWithAuth('/conversations');
+    const convs = sortConversations(data as Conversation[]);
+    setConversations(convs);
+    return convs;
+  }, [fetchWithAuth, sortConversations]);
 
   const fetchConversation = useCallback(
     async (userId: string): Promise<PrivateMessage[]> => {
@@ -165,15 +178,39 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (message) {
       setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
       socketRef.current?.emit('private-message', { to: receiverId, message });
-      fetchConversations().catch(console.error);
     }
     return message;
   };
 
-  const markAsRead = async (userId: string): Promise<void> => {
-    await fetchWithAuth(`/messages/mark-read/${userId}`, { method: 'PUT' });
+  const pinConversation = async (
+    type: 'direct' | 'group',
+    id: string,
+    pinned: boolean
+  ): Promise<void> => {
+    const action = pinned ? 'unpin' : 'pin';
+    await fetchWithAuth(`/conversations/${type}/${id}/${action}`, { method: 'POST' });
     setConversations(prev =>
-      prev.map(c => (c.user_id === userId ? { ...c, unread_count: 0 } : c))
+      sortConversations(
+        prev.map(c =>
+          c.id === id && c.type === type ? { ...c, pinned: pinned ? 0 : 1 } : c
+        )
+      )
+    );
+  };
+
+  const markAsRead = async (
+    type: 'direct' | 'group',
+    id: string
+  ): Promise<void> => {
+    const url =
+      type === 'group'
+        ? `/chat/groups/${id}/mark-read`
+        : `/messages/mark-read/${id}`;
+    await fetchWithAuth(url, { method: 'PUT' });
+    setConversations(prev =>
+      prev.map(c =>
+        c.type === type && c.id === id ? { ...c, unread_count: 0 } : c
+      )
     );
   };
 
@@ -197,14 +234,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     socket.on('private-message', (message: PrivateMessage) => {
       setPrivateMessages(prev => mergePrivateMessages(prev, [message]));
-      fetchConversations().catch(console.error);
+    });
+
+    socket.on('conversation_update', (summary: Conversation) => {
+      setConversations(prev => {
+        const idx = prev.findIndex(c => c.id === summary.id && c.type === summary.type);
+        const updated = idx >= 0 ? [...prev] : [...prev, summary];
+        updated[idx >= 0 ? idx : updated.length - 1] = summary;
+        return sortConversations(updated);
+      });
     });
 
     socketRef.current = socket;
     return () => {
       socket.disconnect();
     };
-  }, [socketUrl, fetchConversations]);
+  }, [socketUrl, sortConversations]);
 
   useEffect(() => {
     if (socketRef.current && groups.length) {
@@ -225,6 +270,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fetchConversations,
           fetchConversation,
           sendDirectMessage,
+          pinConversation,
           markAsRead,
           searchUsers,
         }}
