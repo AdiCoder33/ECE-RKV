@@ -35,7 +35,8 @@ interface ChatContextType {
   fetchGroups: () => Promise<Group[]>;
   fetchGroupMessages: (
     groupId: string,
-    params?: { before?: string; limit?: number }
+    params?: { before?: string; limit?: number },
+    signal?: AbortSignal
   ) => Promise<Paginated<ChatMessage>>;
   fetchMoreGroupMessages: (
     groupId: string
@@ -48,7 +49,8 @@ interface ChatContextType {
   fetchConversations: () => Promise<Conversation[]>;
   fetchConversation: (
     userId: string,
-    params?: { before?: string; limit?: number }
+    params?: { before?: string; limit?: number },
+    signal?: AbortSignal
   ) => Promise<Paginated<PrivateMessage>>;
   fetchMoreConversation: (
     userId: string
@@ -182,11 +184,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchGroupMessages = async (
     groupId: string,
-    params: { before?: string; limit?: number } = {}
+    params: { before?: string; limit?: number } = {},
+    signal?: AbortSignal
   ): Promise<Paginated<ChatMessage>> => {
     const { before, limit } = params;
     const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
-    const data = (await fetchWithAuth(`/chat/groups/${groupId}/messages${qs}`)) as Paginated<ChatMessage>;
+    const data = (await fetchWithAuth(`/chat/groups/${groupId}/messages${qs}`, { signal })) as Paginated<ChatMessage>;
     const withStatus = data.messages.map(m => ({ ...m, status: m.status ?? 'sent' }));
     setMessages(prev => {
       const existing = prev.filter(m => m.groupId === groupId);
@@ -228,11 +231,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchConversation = useCallback(
     async (
       userId: string,
-      params: { before?: string; limit?: number } = {}
+      params: { before?: string; limit?: number } = {},
+      signal?: AbortSignal
     ): Promise<Paginated<PrivateMessage>> => {
       const { before, limit } = params;
       const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
-      const data = (await fetchWithAuth(`/messages/conversation/${userId}${qs}`)) as Paginated<PrivateMessage>;
+      const data = (await fetchWithAuth(`/messages/conversation/${userId}${qs}`, { signal })) as Paginated<PrivateMessage>;
       const sanitized = (data.messages as (PrivateMessage | null | undefined)[]).filter(
         m => m && m.id
       ) as PrivateMessage[];
