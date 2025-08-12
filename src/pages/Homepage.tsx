@@ -5,7 +5,9 @@ import { motion, Variants, AnimatePresence } from "framer-motion";
 import Logo from "../Assets/rgukt.jpeg";
 import aboutImage from "../Assets/hero3.jpeg"; // You'll need to add a relevant image
 import achievementsImage from "../Assets/hero1.jpg"; // You'll need to add a relevant image
-
+import heroimage1 from "../Assets/hero2.jpg";
+import heroimage2 from "../Assets/hero3.jpeg";
+import heroimage3 from "../Assets/hero1.jpg";
 // Hero assets
 import hero1 from "../Assets/hero1.jpg";
 import hero2 from "../Assets/hero2.jpg";
@@ -423,18 +425,18 @@ const LandingPage: React.FC = () => {
       icon: "🏆",
       title: "National-Level Hackathon Winners",
       description: "Our student team 'Innovators' secured the first place in the National Smart India Hackathon.",
-      image: "../Assets/hero2.jpeg"  },
+      image: heroimage1  },
     {
       icon: "🔬",
       title: "Patents Filed by Faculty",
       description: "Two of our faculty members have successfully filed patents for their research on IoT-based energy systems.",
-      image: "../Assets/hero2.jpeg",
+      image: heroimage2,
     },
     {
       icon: "🚀",
       title: "Record Placements in 2024",
       description: "The ECE department achieved a record-high placement percentage of 98% in top-tier companies.",
-      image: "../Assets/hero2.jpeg",
+      image: heroimage3,
     },
     {
       icon: "🏅",
