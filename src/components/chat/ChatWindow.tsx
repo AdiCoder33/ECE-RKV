@@ -75,7 +75,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return items;
   }, [messages, activeChat]);
 
-  const isTyping = activeChat.type === 'direct' && typingUsers.has(activeChat.id);
+  const isTyping = typingUsers.has(
+    activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id
+  );
 
   return (
     <>
