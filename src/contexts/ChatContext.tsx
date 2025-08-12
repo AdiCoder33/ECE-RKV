@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import DOMPurify from 'dompurify';
 import { ChatMessage, User, PrivateMessage, Attachment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -281,12 +282,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     files: File[] = []
   ): Promise<ChatMessage> => {
     const tempId = `temp-${Date.now()}`;
+    const sanitizedContent = DOMPurify.sanitize(content);
     const optimistic: ChatMessage = {
       id: tempId,
       senderId: user?.id || '',
       senderName: user?.name || '',
       senderRole: user?.role || '',
-      content,
+      content: sanitizedContent,
       timestamp: new Date().toISOString(),
       groupId,
       status: 'sending',
@@ -335,9 +337,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       const newMessage = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ content, attachments: uploaded }),
+        body: JSON.stringify({ content: sanitizedContent, attachments: uploaded }),
       });
-      const finalMessage = { ...newMessage, status: 'sent' } as ChatMessage;
+      const finalMessage = {
+        ...newMessage,
+        status: 'sent',
+        content: DOMPurify.sanitize(newMessage.content ?? ''),
+      } as ChatMessage;
       setMessages(prev => prev.map(m => (m.id === tempId ? finalMessage : m)));
       socketRef.current?.emit('group-message', { groupId, message: finalMessage });
       return finalMessage;
@@ -353,11 +359,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     files: File[] = []
   ): Promise<PrivateMessage | null> => {
     const tempId = `temp-${Date.now()}`;
+    const sanitizedContent = DOMPurify.sanitize(content);
     const optimistic: PrivateMessage = {
       id: tempId,
       sender_id: user?.id || '',
       receiver_id: receiverId,
-      content,
+      content: sanitizedContent,
       created_at: new Date().toISOString(),
       sender_name: user?.name || '',
       message_type: 'text',
@@ -408,10 +415,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       const message = await fetchWithAuth('/messages/send', {
         method: 'POST',
-        body: JSON.stringify({ receiverId, content, attachments: uploaded }),
+        body: JSON.stringify({ receiverId, content: sanitizedContent, attachments: uploaded }),
       });
       if (message) {
-        const finalMessage = { ...message, status: 'sent' } as PrivateMessage;
+        const finalMessage = {
+          ...message,
+          status: 'sent',
+          content: DOMPurify.sanitize(message.content ?? ''),
+        } as PrivateMessage;
         setPrivateMessages(prev => prev.map(m => (m.id === tempId ? finalMessage : m)));
         socketRef.current?.emit('private-message', { to: receiverId, message: finalMessage });
         return finalMessage;

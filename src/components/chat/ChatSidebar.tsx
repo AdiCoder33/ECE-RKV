@@ -253,18 +253,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const groupedItems = useMemo<GroupedItem[]>(() => {
     const items: GroupedItem[] = [];
     let lastDate = '';
-    displayMessages.forEach(msg => {
-      const timestamp =
-        activeChat?.type === 'direct'
-          ? (msg as PrivateMessage).created_at
-          : (msg as ChatMessage).timestamp;
-      const dateStr = new Date(timestamp).toDateString();
-      if (dateStr !== lastDate) {
-        items.push({ type: 'date', date: dateStr });
-        lastDate = dateStr;
-      }
-      items.push({ type: 'message', message: msg });
-    });
+    displayMessages
+      .filter(m => m.content || m.attachments?.length)
+      .forEach(msg => {
+        const timestamp =
+          activeChat?.type === 'direct'
+            ? (msg as PrivateMessage).created_at
+            : (msg as ChatMessage).timestamp;
+        const dateStr = new Date(timestamp).toDateString();
+        if (dateStr !== lastDate) {
+          items.push({ type: 'date', date: dateStr });
+          lastDate = dateStr;
+        }
+        items.push({ type: 'message', message: msg });
+      });
     return items;
   }, [displayMessages, activeChat]);
 
