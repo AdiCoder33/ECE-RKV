@@ -146,7 +146,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   }, [privateMessages, messages, activeChat]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if ((!message.trim() && attachments.length === 0) || !activeChat) return;
     try {
       const files = attachments.map(a => a.file);
@@ -170,24 +170,36 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     } catch {
       // ignore
     }
-  };
+  }, [
+    message,
+    attachments,
+    activeChat,
+    sendDirectMessage,
+    sendGroupMessage,
+    conversations,
+    fetchConversations,
+    setTyping
+  ]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setMessage(value);
-    if (!activeChat) return;
-    const target =
-      activeChat.type === 'group'
-        ? `group-${activeChat.id}`
-        : String(activeChat.id);
-    if (value && !typingRef.current) {
-      setTyping(target, 'typing');
-      typingRef.current = true;
-    } else if (!value && typingRef.current) {
-      setTyping(target, 'stop_typing');
-      typingRef.current = false;
-    }
-  };
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setMessage(value);
+      if (!activeChat) return;
+      const target =
+        activeChat.type === 'group'
+          ? `group-${activeChat.id}`
+          : String(activeChat.id);
+      if (value && !typingRef.current) {
+        setTyping(target, 'typing');
+        typingRef.current = true;
+      } else if (!value && typingRef.current) {
+        setTyping(target, 'stop_typing');
+        typingRef.current = false;
+      }
+    },
+    [activeChat, setTyping]
+  );
 
   useEffect(() => {
     const currentChat = activeChat;
@@ -203,35 +215,44 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     };
   }, [activeChat, setTyping]);
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    },
+    [handleSendMessage]
+  );
 
-  const handleFileSelect = (file: File) => {
-    const allowed = [
-      'image/png',
-      'image/jpeg',
-      'image/webp',
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ];
-    if (!allowed.includes(file.type) || file.size > 20 * 1024 * 1024) {
-      return;
-    }
-    const preview = file.type.startsWith('image/')
-      ? URL.createObjectURL(file)
-      : '';
-    setAttachments(prev => [...prev, { file, preview }]);
-  };
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      const allowed = [
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ];
+      if (!allowed.includes(file.type) || file.size > 20 * 1024 * 1024) {
+        return;
+      }
+      const preview = file.type.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : '';
+      setAttachments(prev => [...prev, { file, preview }]);
+    },
+    [setAttachments]
+  );
 
-  const removeAttachment = (idx: number) => {
-    URL.revokeObjectURL(attachments[idx].preview);
-    setAttachments(prev => prev.filter((_, i) => i !== idx));
-  };
+  const removeAttachment = useCallback(
+    (idx: number) => {
+      URL.revokeObjectURL(attachments[idx].preview);
+      setAttachments(prev => prev.filter((_, i) => i !== idx));
+    },
+    [attachments]
+  );
 
   const displayMessages =
     activeChat?.type === 'direct' ? directMessages : groupMessages;
@@ -257,28 +278,37 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     u => u.id !== user?.id && !conversations.some(c => c.id === u.id)
   );
 
-  const handleSelectConversation = (c: typeof conversations[number]) => {
-    setActiveChat({ type: c.type, id: String(c.id), title: c.title });
-  };
+  const handleSelectConversation = useCallback(
+    (c: typeof conversations[number]) => {
+      setActiveChat({ type: c.type, id: String(c.id), title: c.title });
+    },
+    []
+  );
 
-  const handlePin = (
-    e: React.MouseEvent,
-    c: typeof conversations[number]
-  ) => {
-    e.stopPropagation();
-    pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => {});
-  };
+  const handlePin = useCallback(
+    (
+      e: React.MouseEvent,
+      c: typeof conversations[number]
+    ) => {
+      e.stopPropagation();
+      pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => {});
+    },
+    [pinConversation]
+  );
 
-  const handleStartChat = async (u: User) => {
-    await fetchConversation(String(u.id)).catch(() => {});
-    setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
-    setSearch('');
-  };
+  const handleStartChat = useCallback(
+    async (u: User) => {
+      await fetchConversation(String(u.id)).catch(() => {});
+      setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
+      setSearch('');
+    },
+    [fetchConversation]
+  );
 
-  const handleGroupCreate = () => {
+  const handleGroupCreate = useCallback(() => {
     setIsGroupDialogOpen(false);
     navigate('/dashboard/groups');
-  };
+  }, [navigate]);
 
   return (
     <>
