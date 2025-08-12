@@ -82,6 +82,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const typingRef = useRef(false);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const navigate = useNavigate();
@@ -115,15 +116,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const { id, type } = activeChat;
     const controller = new AbortController();
     let ignore = false;
+    setMessagesLoading(true);
     if (type === 'direct') {
       fetchConversation(id, undefined, controller.signal)
         .then(data => {
           if (!ignore && activeChat?.id === id && activeChat.type === type) {
             setDirectMessages(data.messages);
             setHasMore(data.hasMore);
+            setMessagesLoading(false);
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!ignore) setMessagesLoading(false);
+        });
       markAsRead('direct', id).catch(() => {});
     } else {
       fetchGroupMessages(id, undefined, controller.signal)
@@ -131,9 +136,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           if (!ignore && activeChat?.id === id && activeChat.type === type) {
             setGroupMessages(data.messages);
             setHasMore(data.hasMore);
+            setMessagesLoading(false);
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!ignore) setMessagesLoading(false);
+        });
       markAsRead('group', id).catch(() => {});
     }
     return () => {
@@ -488,39 +496,45 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 flex flex-col">
-                <Virtuoso
-                  data={groupedItems}
-                  startReached={loadMore}
-                  followOutput="smooth"
-                  initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
-                  className="flex-1 px-4 py-4 overflow-x-hidden"
-                  itemContent={(index, item) => {
-                    if (item.type === 'date') {
-                      return (
-                        <div className="text-center text-xs text-muted-foreground my-2">
-                          {item.date}
-                        </div>
-                      );
-                    }
-                    const msg = item.message as PrivateMessage | ChatMessage;
-                    const isOwn =
-                      activeChat?.type === 'direct'
-                        ? (msg as PrivateMessage).sender_id === user?.id
-                        : (msg as ChatMessage).senderId === user?.id;
-                    const senderName =
-                      activeChat?.type === 'direct'
-                        ? (msg as PrivateMessage).sender_name
-                        : (msg as ChatMessage).senderName;
-                    const timestamp =
-                      activeChat?.type === 'direct'
-                        ? (msg as PrivateMessage).created_at
-                        : (msg as ChatMessage).timestamp;
-                    const role =
-                      activeChat?.type === 'direct'
-                        ? null
-                        : (msg as ChatMessage).senderRole;
-                    const status = msg.status || 'sent';
-                    const avatar = msg.sender_profileImage;
+                {messagesLoading ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <Virtuoso
+                      data={groupedItems}
+                      startReached={loadMore}
+                      followOutput="smooth"
+                      initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
+                      className="flex-1 px-4 py-4 overflow-x-hidden"
+                      itemContent={(index, item) => {
+                        if (item.type === 'date') {
+                          return (
+                            <div className="text-center text-xs text-muted-foreground my-2">
+                              {item.date}
+                            </div>
+                          );
+                        }
+                        const msg = item.message as PrivateMessage | ChatMessage;
+                        const isOwn =
+                          activeChat?.type === 'direct'
+                            ? (msg as PrivateMessage).sender_id === user?.id
+                            : (msg as ChatMessage).senderId === user?.id;
+                        const senderName =
+                          activeChat?.type === 'direct'
+                            ? (msg as PrivateMessage).sender_name
+                            : (msg as ChatMessage).senderName;
+                        const timestamp =
+                          activeChat?.type === 'direct'
+                            ? (msg as PrivateMessage).created_at
+                            : (msg as ChatMessage).timestamp;
+                        const role =
+                          activeChat?.type === 'direct'
+                            ? null
+                            : (msg as ChatMessage).senderRole;
+                        const status = msg.status || 'sent';
+                        const avatar = msg.sender_profileImage;
                     const initials = senderName
                       .split(' ')
                       .map(n => n[0])
@@ -632,7 +646,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 {activeChat?.type === 'direct' && typingUsers.has(activeChat.id) && (
                   <div className="px-4 py-2 text-xs text-muted-foreground">User is typing…</div>
                 )}
-              </CardContent>
+              </>
+            )}
+          </CardContent>
               <div className="border-t p-4">
                 {attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">

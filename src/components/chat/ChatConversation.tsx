@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, MoreVertical, ArrowLeft, Link2, X } from 'lucide-react';
+import { Send, MoreVertical, ArrowLeft, Link2, X, Loader2 } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +44,7 @@ const ChatConversation: React.FC = () => {
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<Array<{ file: File; type: 'image' | 'document' }>>([]);
   const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +64,7 @@ const ChatConversation: React.FC = () => {
   useEffect(() => {
     const loadMessages = async () => {
       if (!id) return;
+      setMessagesLoading(true);
       try {
         if (type === 'user') {
           const data = await fetchConversation(id);
@@ -74,6 +76,8 @@ const ChatConversation: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);
+      } finally {
+        setMessagesLoading(false);
       }
     };
     if (user) {
@@ -207,29 +211,74 @@ const ChatConversation: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="flex-1 p-0">
-          <ScrollArea className="h-full px-4 py-4">
-            <div className="space-y-4">
-              {filteredMessages.map(msg => {
-                if (type === 'user') {
-                  const dm = msg as PrivateMessage;
-                  const isOwn = dm.sender_id === user?.id;
+          {messagesLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <ScrollArea className="h-full px-4 py-4">
+              <div className="space-y-4">
+                {filteredMessages.map(msg => {
+                  if (type === 'user') {
+                    const dm = msg as PrivateMessage;
+                    const isOwn = dm.sender_id === user?.id;
+                    return (
+                      <div
+                        key={dm.id}
+                        className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                      >
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <span className="text-xs font-medium text-primary-foreground">
+                              {dm.sender_name.charAt(0)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={`w-full pr-8 ${isOwn ? 'text-right' : ''}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium">{dm.sender_name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatTime(dm.created_at)}
+                            </span>
+                          </div>
+                          <div
+                            className={`inline-block max-w-[80%] break-words break-all p-3 rounded-lg ${
+                              isOwn
+                                ? 'ml-auto bg-primary text-primary-foreground'
+                                : 'bg-muted'
+                            }`}
+                          >
+                            <p className="text-sm">{dm.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  const gm = msg as ChatMessage;
+                  const isOwn = gm.senderId === user?.id;
                   return (
                     <div
-                      key={dm.id}
+                      key={gm.id}
                       className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
                     >
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                           <span className="text-xs font-medium text-primary-foreground">
-                            {dm.sender_name.charAt(0)}
+                            {gm.senderName.charAt(0)}
                           </span>
                         </div>
                       </div>
-                      <div className={`w-full pr-8 ${isOwn ? 'text-right' : ''}`}>
+                      <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{dm.sender_name}</span>
+                          <span className="text-sm font-medium">{gm.senderName}</span>
+                          <Badge
+                            variant="secondary"
+                            className={`text-xs ${getRoleBadgeColor(gm.senderRole)}`}
+                          >
+                            {gm.senderRole.toUpperCase()}
+                          </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {formatTime(dm.created_at)}
+                            {formatTime(gm.timestamp)}
                           </span>
                         </div>
                         <div
@@ -239,55 +288,16 @@ const ChatConversation: React.FC = () => {
                               : 'bg-muted'
                           }`}
                         >
-                          <p className="text-sm">{dm.content}</p>
+                          <p className="text-sm">{gm.content}</p>
                         </div>
                       </div>
                     </div>
                   );
-                }
-                const gm = msg as ChatMessage;
-                const isOwn = gm.senderId === user?.id;
-                return (
-                  <div
-                    key={gm.id}
-                    className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <span className="text-xs font-medium text-primary-foreground">
-                          {gm.senderName.charAt(0)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">{gm.senderName}</span>
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs ${getRoleBadgeColor(gm.senderRole)}`}
-                        >
-                          {gm.senderRole.toUpperCase()}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatTime(gm.timestamp)}
-                        </span>
-                      </div>
-                      <div
-                        className={`inline-block max-w-[80%] break-words break-all p-3 rounded-lg ${
-                          isOwn
-                            ? 'ml-auto bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm">{gm.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+          )}
         </CardContent>
         <div className="border-t p-4">
           {attachedFiles.length > 0 && (
