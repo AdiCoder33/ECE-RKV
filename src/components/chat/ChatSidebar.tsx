@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
 
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
@@ -70,6 +71,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const typingRef = useRef(false);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchGroups().catch(() => {});
@@ -298,11 +300,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const handleStartChat = useCallback(
     async (u: User) => {
-      await fetchConversation(String(u.id)).catch(() => {});
-      setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
-      setSearch('');
+      try {
+        await fetchConversation(String(u.id));
+        setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
+        setSearch('');
+      } catch {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to start chat'
+        });
+      }
     },
-    [fetchConversation]
+    [fetchConversation, toast]
   );
 
   const handleGroupCreate = useCallback(() => {
