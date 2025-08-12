@@ -24,8 +24,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
     : (message as PrivateMessage).created_at;
 
   const role = isGroup ? (message as ChatMessage).senderRole : null;
-  const status = (message as any).status || 'sent';
-  const avatar = (message as any).sender_profileImage;
+  const status = message.status || 'sent';
+  const avatar = message.sender_profileImage;
   const initials = senderName
     .split(' ')
     .map(n => n[0])
@@ -77,7 +77,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
           {message.attachments && message.attachments.length > 0 && (
             <div className="mt-2 space-y-2">
               {message.attachments.map((att, i) => (
-                <AttachmentPreview key={i} attachment={att} />
+                <AttachmentPreview
+                  key={i}
+                  preview={att.url}
+                  filename={att.name}
+                  type={att.type}
+                  progress={att.progress}
+                />
               ))}
             </div>
           )}
