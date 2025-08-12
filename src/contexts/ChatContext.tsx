@@ -64,7 +64,7 @@ interface ChatContextType {
   pinConversation: (type: 'direct' | 'group', id: string, pinned: boolean) => Promise<void>;
   markAsRead: (type: 'direct' | 'group', id: string) => Promise<void>;
   searchUsers: (query: string) => Promise<User[]>;
-  setTyping: (targetId: string, type: 'typing' | 'stop_typing') => void;
+  setTyping: (targetId: string | number, type: 'typing' | 'stop_typing') => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -476,14 +476,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchWithAuth]
   );
 
-  const setTyping = useCallback((targetId: string, type: 'typing' | 'stop_typing') => {
-    if (!socketRef.current) return;
-    if (targetId.startsWith('group-')) {
-      socketRef.current.emit(type, { room: targetId });
-    } else {
-      socketRef.current.emit(type, { to: targetId });
-    }
-  }, []);
+  const setTyping = useCallback(
+    (targetId: string | number, type: 'typing' | 'stop_typing') => {
+      const id = String(targetId);
+      if (id.startsWith('group-')) socketRef.current?.emit(type, { room: id });
+      else socketRef.current?.emit(type, { to: id });
+    },
+    []
+  );
 
   useEffect(() => {
     const token = localStorage.getItem('token');

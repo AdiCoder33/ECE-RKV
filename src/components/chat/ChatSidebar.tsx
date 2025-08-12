@@ -167,7 +167,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         await sendGroupMessage(activeChat.id, message, files);
       }
       const target =
-        activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id;
+        activeChat.type === 'group'
+          ? `group-${activeChat.id}`
+          : String(activeChat.id);
       setMessage('');
       attachments.forEach(a => URL.revokeObjectURL(a.preview));
       setAttachments([]);
@@ -183,7 +185,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     setMessage(value);
     if (!activeChat) return;
     const target =
-      activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id;
+      activeChat.type === 'group'
+        ? `group-${activeChat.id}`
+        : String(activeChat.id);
     if (value && !typingRef.current) {
       setTyping(target, 'typing');
       typingRef.current = true;
@@ -200,7 +204,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         const target =
           currentChat.type === 'group'
             ? `group-${currentChat.id}`
-            : currentChat.id;
+            : String(currentChat.id);
         setTyping(target, 'stop_typing');
         typingRef.current = false;
       }
@@ -292,7 +296,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   );
 
   const handleSelectConversation = (c: typeof conversations[number]) => {
-    setActiveChat({ type: c.type, id: c.id, title: c.title });
+    setActiveChat({ type: c.type, id: String(c.id), title: c.title });
   };
 
   const handlePin = (
@@ -391,8 +395,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                           key={u.id}
                           className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
                           onClick={async () => {
-                            await fetchConversation(u.id).catch(() => {});
-                            setActiveChat({ type: 'direct', id: u.id, title: u.name });
+                            await fetchConversation(String(u.id)).catch(() => {});
+                            setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
                             setSearch('');
                           }}
                         >
