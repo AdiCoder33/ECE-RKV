@@ -143,7 +143,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             {attachments.map((att, idx) => (
               <AttachmentPreview
                 key={idx}
-                attachment={att}
+                preview={att.preview}
+                filename={att.file.name}
+                type={att.file.type.startsWith('image/') ? 'image' : 'file'}
                 onRemove={() => onRemoveAttachment(idx)}
               />
             ))}
