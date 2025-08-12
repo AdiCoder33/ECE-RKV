@@ -2,87 +2,62 @@ const express = require('express');
 const router = express.Router();
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-
-// Get conversations for a user
-router.get('/conversations', authenticateToken, async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    
-    const query = `
-      WITH ConversationMessages AS (
-        SELECT 
-          CASE 
-            WHEN sender_id = ? THEN receiver_id 
-            ELSE sender_id 
-          END as contact_id,
-          MAX(created_at) as last_message_time,
-          MAX(id) as last_message_id
-        FROM Messages 
-        WHERE sender_id = ? OR receiver_id = ?
-        GROUP BY 
-          CASE 
-            WHEN sender_id = ? THEN receiver_id 
-            ELSE sender_id 
-          END
-      )
-      SELECT 
-        cm.contact_id,
-        u.name as contact_name,
-        u.role as contact_role,
-        m.content as last_message,
-        m.sender_id as last_sender_id,
-        cm.last_message_time,
-        COUNT(CASE WHEN m2.is_read = 0 AND m2.receiver_id = ? THEN 1 END) as unread_count
-      FROM ConversationMessages cm
-      JOIN Users u ON u.id = cm.contact_id
-      JOIN Messages m ON m.id = cm.last_message_id
-      LEFT JOIN Messages m2 ON (m2.sender_id = cm.contact_id AND m2.receiver_id = ?)
-      GROUP BY cm.contact_id, u.name, u.role, m.content, m.sender_id, cm.last_message_time
-      ORDER BY cm.last_message_time DESC
-    `;
-    
-    const result = await executeQuery(query, [userId, userId, userId, userId, userId, userId]);
-    res.json(result.recordset);
-    
-  } catch (error) {
-    console.error('Messages conversations fetch error:', error);
-    next(error);
-  }
-});
+const { emitConversationUpdate } = require('../utils/conversations');
 
 // Get messages between two users
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
-    const { page = 1, limit = 50 } = req.query;
-    
-    const offset = (page - 1) * limit;
-    
+    const { limit = 50, before } = req.query;
+
+    const fetchLimit = parseInt(limit, 10) + 1;
+    const params = [userId, contactId, contactId, userId];
+    if (before) {
+      params.push(before);
+    }
+    params.push(fetchLimit);
+
     const query = `
       SELECT m.*, u.name as sender_name
       FROM Messages m
       JOIN Users u ON u.id = m.sender_id
-      WHERE (m.sender_id = ? AND m.receiver_id = ?) 
+      WHERE (m.sender_id = ? AND m.receiver_id = ?)
          OR (m.sender_id = ? AND m.receiver_id = ?)
+         ${before ? 'AND m.created_at < ?' : ''}
       ORDER BY m.created_at DESC
-      OFFSET ? ROWS
-      FETCH NEXT ? ROWS ONLY
+      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
     `;
-    
-    const result = await executeQuery(query, [userId, contactId, contactId, userId, offset, limit]);
-    
+
+    const result = await executeQuery(query, params);
+
     // Mark messages as read
     const markReadQuery = `
-      UPDATE Messages 
-      SET is_read = 1 
+      UPDATE Messages
+      SET is_read = 1
       WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
     `;
-    
+
     await executeQuery(markReadQuery, [contactId, userId]);
-    
-    res.json(result.recordset.reverse());
-    
+
+    const hasMore = result.recordset.length === fetchLimit;
+    const sliced = hasMore
+      ? result.recordset.slice(0, fetchLimit - 1)
+      : result.recordset;
+
+    const formatted = sliced
+      .reverse()
+      .map(m => ({
+        ...m,
+        attachments: m.attachments ? JSON.parse(m.attachments) : []
+      }));
+
+    res.json({
+      messages: formatted,
+      nextCursor: hasMore ? formatted[0]?.created_at : null,
+      hasMore
+    });
+
   } catch (error) {
     console.error('Messages fetch error:', error);
     next(error);
@@ -93,34 +68,73 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
 router.post('/send', authenticateToken, async (req, res, next) => {
   try {
     const senderId = req.user.id;
-    const { receiverId, content, messageType = 'text' } = req.body;
+    const { receiverId, content, messageType = 'text', attachments = [] } = req.body;
     
     if (!receiverId || !content) {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
     }
     
     const insertQuery = `
-      INSERT INTO Messages (sender_id, receiver_id, content, message_type, is_read, created_at)
-      VALUES (?, ?, ?, ?, 0, GETDATE())
+      DECLARE @Inserted TABLE (
+        id INT, sender_id INT, receiver_id INT, content NVARCHAR(MAX),
+        message_type NVARCHAR(20), attachments NVARCHAR(MAX),
+        is_read BIT, created_at DATETIME
+      );
+
+      INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at)
+      OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id, INSERTED.content,
+             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read, INSERTED.created_at
+      INTO @Inserted
+      VALUES (?, ?, ?, ?, ?, 0, GETDATE());
+
+      SELECT i.*, u.name AS sender_name
+      FROM @Inserted i
+      JOIN Users u ON u.id = i.sender_id;
     `;
-    
-    const result = await executeQuery(insertQuery, [senderId, receiverId, content, messageType]);
-    
-    // Get the inserted message with sender details
-    const messageQuery = `
-      SELECT m.*, u.name as sender_name
-      FROM Messages m
-      JOIN Users u ON u.id = m.sender_id
-      WHERE m.id = SCOPE_IDENTITY()
+    const { recordset } = await executeQuery(insertQuery, [
+      senderId,
+      receiverId,
+      content,
+      messageType,
+      JSON.stringify(attachments),
+    ]);
+
+    if (!recordset[0]) {
+      return res.status(500).json({ message: 'Failed to save message' });
+    }
+
+    const savedMessage = {
+      ...recordset[0],
+      attachments: recordset[0].attachments
+        ? JSON.parse(recordset[0].attachments)
+        : [],
+    };
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${receiverId}`).emit('private-message', savedMessage);
+      io.to(`user:${senderId}`).emit('private-message', savedMessage);
+    }
+
+    // Update conversation state for sender (mark as read)
+    const convUpdate = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETDATE());
     `;
-    
-    const messageResult = await executeQuery(messageQuery);
-    
-    res.status(201).json(messageResult.recordset[0]);
-    
+    await executeQuery(convUpdate, [senderId, receiverId, senderId, receiverId]);
+
+    await emitConversationUpdate(io, senderId, 'direct', receiverId);
+    await emitConversationUpdate(io, receiverId, 'direct', senderId);
+
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(201).json(savedMessage);
+
   } catch (error) {
     console.error('Send message error:', error);
-    next(error);
+    res.status(500).json({ message: 'Failed to send message' });
   }
 });
 
@@ -137,6 +151,19 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     `;
     
     await executeQuery(query, [contactId, userId]);
+
+    const convUpdate = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETDATE());
+    `;
+    await executeQuery(convUpdate, [userId, contactId, userId, contactId]);
+
+    await emitConversationUpdate(req.app.get('io'), userId, 'direct', contactId);
+
     res.json({ message: 'Messages marked as read' });
     
   } catch (error) {

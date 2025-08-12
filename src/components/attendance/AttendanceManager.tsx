@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,114 +6,331 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Calendar, 
-  Users, 
-  Search, 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi,
+} from '@/components/ui/carousel';
+import {
+  Calendar,
+  Users,
+  Search,
   Filter,
   Download,
   Upload,
   CheckCircle,
   XCircle,
-  Save
+  Save,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMediaQuery } from 'usehooks-ts';
+import { useLocation } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AttendanceStudent {
   id: string;
   name: string;
   rollNumber: number;
   collegeId: string;
-  present: boolean;
+  present: boolean | null;
   attendancePercentage: number;
 }
 
-const AttendanceManager = () => {
-  const { user } = useAuth();
-  const [selectedYear, setSelectedYear] = useState('1');
-  const [selectedSection, setSelectedSection] = useState('A');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedPeriod, setSelectedPeriod] = useState('1');
-  const [searchTerm, setSearchTerm] = useState('');
+interface TimetableSlot {
+  day: string;
+  time: string;
+  subject: string;
+}
 
-  // Check if user has access based on role
+interface PeriodOption {
+  value: string;
+  label: string;
+  subjectId: string;
+}
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+const AttendanceManager: React.FC = () => {
+  const { user } = useAuth();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialSubject = searchParams.get('subject') || '';
+  const { toast } = useToast();
+
+  const [selectedYear, setSelectedYear] = React.useState('1');
+  const [selectedSection, setSelectedSection] = React.useState('A');
+  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [selectedPeriod, setSelectedPeriod] = React.useState('');
+  const [subjects, setSubjects] = React.useState<{ id: string; name: string }[]>([]);
+  const [selectedSubject, setSelectedSubject] = React.useState(initialSubject);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [api, setApi] = React.useState<CarouselApi | null>(null);
+  const [timetable, setTimetable] = React.useState<TimetableSlot[]>([]);
+  const [periodOptions, setPeriodOptions] = React.useState<PeriodOption[]>([]);
+
+  const isDesktop = useMediaQuery('(min-width:768px)');
+  const itemsPerPage = isDesktop ? 15 : 9;
+
+  // Access control
   const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
   const isProfessor = user?.role === 'professor';
 
-  // Generate students based on selected year and section with sequential roll numbers
-  const [students, setStudents] = useState<AttendanceStudent[]>(() => {
-    const generatedStudents: AttendanceStudent[] = [];
-    for (let i = 1; i <= 60; i++) {
-      const collegeId = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
-      generatedStudents.push({
-        id: collegeId,
-        name: `Student ${i} ${selectedSection}${selectedYear}`,
-        rollNumber: i,
-        collegeId,
-        present: Math.random() > 0.2, // 80% attendance by default
-        attendancePercentage: Math.floor(Math.random() * 20) + 75 // 75-95% attendance
-      });
-    }
-    return generatedStudents;
-  });
+  const [students, setStudents] = React.useState<AttendanceStudent[]>([]);
+  const [classId, setClassId] = React.useState<string | null>(null);
 
-  // Filter years and sections based on professor's assigned classes
-  const getAllowedYears = () => hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']; // Professor demo: years 3-4
-  const getAllowedSections = () => hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']; // Professor demo: sections A-B
+  // Filter years and sections based on professor's assigned classes (demo constraints)
+  const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
+  const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
 
   const years = getAllowedYears();
   const sections = getAllowedSections();
-  const periods = [
-    { value: '1', label: 'Period 1 (9:00 AM - 10:00 AM)' },
-    { value: '2', label: 'Period 2 (10:00 AM - 11:00 AM)' },
-    { value: '3', label: 'Period 3 (11:00 AM - 12:00 PM)' },
-    { value: '4', label: 'Period 4 (2:00 PM - 3:00 PM)' },
-    { value: '5', label: 'Period 5 (3:00 PM - 4:00 PM)' },
-    { value: '6', label: 'Period 6 (4:00 PM - 5:00 PM)' }
-  ];
 
-  // Update students when year/section changes
+  const getCurrentSemester = () => {
+    const month = new Date().getMonth() + 1;
+    return month >= 6 && month <= 11 ? '1' : '2';
+  };
+  const currentSemester = getCurrentSemester();
+
+  // Fetch subjects for selected year/semester
   React.useEffect(() => {
-    const newStudents: AttendanceStudent[] = [];
-    for (let i = 1; i <= 60; i++) {
-      const collegeId = `20EC${selectedYear}${selectedSection}${i.toString().padStart(3, '0')}`;
-      newStudents.push({
-        id: collegeId,
-        name: `Student ${i} ${selectedSection}${selectedYear}`,
-        rollNumber: i,
-        collegeId,
-        present: Math.random() > 0.2,
-        attendancePercentage: Math.floor(Math.random() * 20) + 75
-      });
-    }
-    setStudents(newStudents);
-  }, [selectedYear, selectedSection]);
+    const fetchSubjects = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${apiBase}/subjects?year=${selectedYear}&semester=${currentSemester}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) throw new Error('Failed to fetch subjects');
+        const data: { id: string; name: string }[] = await response.json();
+        setSubjects(data);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
+    };
+    fetchSubjects();
+  }, [selectedYear, currentSemester]);
 
+  // If the URL provided a subject name, convert it to its ID once subjects arrive
+  React.useEffect(() => {
+    if (subjects.length > 0 && selectedSubject && isNaN(Number(selectedSubject))) {
+      const match = subjects.find((s) => s.name === selectedSubject);
+      setSelectedSubject(match ? match.id : '');
+    }
+  }, [subjects, selectedSubject]);
+
+  // Fetch timetable for the selected class
+  React.useEffect(() => {
+    const fetchTimetable = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${apiBase}/timetable?year=${selectedYear}&semester=${currentSemester}&section=${selectedSection}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch timetable');
+        const data: TimetableSlot[] = await response.json();
+        setTimetable(data);
+      } catch (error) {
+        console.error('Error fetching timetable:', error);
+      }
+    };
+    fetchTimetable();
+  }, [selectedYear, selectedSection, currentSemester]);
+
+  // Build period options based on timetable and date
+  React.useEffect(() => {
+    const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+    const daySlots = timetable.filter((slot) => slot.day === day);
+    const timeToPeriod: Record<string, string> = {
+      '09:00-10:00': '1',
+      '10:00-11:00': '2',
+      '11:00-12:00': '3',
+      '14:00-15:00': '4',
+      '15:00-16:00': '5',
+      '16:00-17:00': '6',
+    };
+    const options: PeriodOption[] = daySlots
+      .map((slot) => {
+        const periodNumber = timeToPeriod[slot.time];
+        const subjectMatch = subjects.find((s) => s.name === slot.subject);
+        if (!periodNumber || !subjectMatch) return null;
+        return {
+          value: periodNumber,
+          label: `${slot.time} – ${slot.subject}`,
+          subjectId: subjectMatch.id,
+        };
+      })
+      .filter((opt): opt is PeriodOption => opt !== null);
+    setPeriodOptions(options);
+  }, [timetable, selectedDate, subjects]);
+
+  // Fetch attendance for the current selection
+  const fetchAttendance = React.useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
+      if (selectedSubject) url += `&subjectId=${selectedSubject}`;
+
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch attendance');
+
+      type AttendanceRecord = {
+        studentId: string | number;
+        present: boolean | number;
+        period: string | number;
+      };
+
+      const data: AttendanceRecord[] = await response.json();
+      const periodRecords = data.filter((r) => r.period?.toString() === selectedPeriod);
+
+      setStudents((prev) =>
+        prev.map((student) => {
+          const record = periodRecords.find((r) => String(r.studentId) === String(student.id));
+          return record ? { ...student, present: Boolean(record.present) } : { ...student, present: null };
+        })
+      );
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+    }
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
+
+  // Fetch class + students whenever the selection changes, then sync attendance + summary
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+
+        // Classes
+        const classRes = await fetch(`${apiBase}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!classRes.ok) throw new Error('Failed to fetch classes');
+
+        type ClassResponse = { id: string; year: number; section: string };
+        const classes: ClassResponse[] = await classRes.json();
+
+        const cls = classes.find((c) => c.year.toString() === selectedYear && c.section === selectedSection);
+        const cid = cls?.id || null;
+        setClassId(cid);
+
+        // Students
+        const studentsRes = await fetch(
+          `${apiBase}/students?year=${selectedYear}&section=${selectedSection}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!studentsRes.ok) throw new Error('Failed to fetch students');
+
+        type StudentResponse = {
+          id: string;
+          name: string;
+          rollNumber: number;
+          collegeId: string;
+          attendancePercentage: number;
+        };
+
+        const sdata: StudentResponse[] = await studentsRes.json();
+        const mapped: AttendanceStudent[] = sdata.map((s) => ({
+          id: s.id,
+          name: s.name,
+          rollNumber: s.rollNumber,
+          collegeId: s.collegeId,
+          attendancePercentage: s.attendancePercentage,
+          present: null,
+        }));
+
+        setStudents(mapped);
+
+        // Sync period attendance immediately
+        await fetchAttendance();
+
+        // Attendance summary (per subject)
+        if (cid && selectedSubject) {
+          const summaryRes = await fetch(
+            `${apiBase}/attendance/summary?classId=${cid}&subjectId=${selectedSubject}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (summaryRes.ok) {
+            type SummaryResponse = { studentId: string; attendancePercentage: number };
+            const summary: SummaryResponse[] = await summaryRes.json();
+            setStudents((prev) =>
+              prev.map((student) => {
+                const rec = summary.find((s) => String(s.studentId) === String(student.id));
+                return rec ? { ...student, attendancePercentage: Math.round(rec.attendancePercentage) } : student;
+              })
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+    };
+
+    fetchData();
+  }, [selectedYear, selectedSection, selectedSubject, fetchAttendance]);
+
+  // Keep carousel on first page when list size/layout changes
+  React.useEffect(() => {
+    api?.scrollTo(0);
+  }, [api, isDesktop, selectedYear, selectedSection, selectedSubject, selectedDate, selectedPeriod]);
+
+  // Attendance toggles
   const toggleAttendance = (studentId: string) => {
-    setStudents(prev => prev.map(student => 
-      student.id === studentId 
-        ? { ...student, present: !student.present }
-        : student
-    ));
+    setStudents((prev) =>
+      prev.map((student) =>
+        student.id === studentId
+          ? { ...student, present: student.present === null ? true : !student.present }
+          : student
+      )
+    );
+  };
+
+  const clearAttendance = (studentId: string) => {
+    setStudents((prev) =>
+      prev.map((student) => (student.id === studentId ? { ...student, present: null } : student))
+    );
   };
 
   const markAllPresent = () => {
-    setStudents(prev => prev.map(student => ({ ...student, present: true })));
+    setStudents((prev) => prev.map((s) => ({ ...s, present: true })));
   };
 
   const markAllAbsent = () => {
-    setStudents(prev => prev.map(student => ({ ...student, present: false })));
+    setStudents((prev) => prev.map((s) => ({ ...s, present: false })));
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.collegeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.rollNumber.toString().includes(searchTerm)
+  // Search + pagination
+  const filteredStudents = students.filter(
+    (student) =>
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.collegeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.rollNumber.toString().includes(searchTerm)
   );
 
-  const presentCount = students.filter(s => s.present).length;
-  const absentCount = students.length - presentCount;
-  const attendanceRate = Math.round((presentCount / students.length) * 100);
+  const studentChunks = React.useMemo(() => {
+    const chunks: AttendanceStudent[][] = [];
+    for (let i = 0; i < filteredStudents.length; i += itemsPerPage) {
+      chunks.push(filteredStudents.slice(i, i + itemsPerPage));
+    }
+    return chunks;
+  }, [filteredStudents, itemsPerPage]);
+
+  // Summary widgets
+  const presentCount = students.filter((s) => s.present === true).length;
+  const absentCount = students.filter((s) => s.present === false).length;
+  const attendanceRate =
+    students.length > 0
+      ? Math.round(students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length)
+      : 0;
 
   const getAttendanceColor = (percentage: number) => {
     if (percentage >= 85) return 'text-green-600';
@@ -128,15 +344,38 @@ const AttendanceManager = () => {
     return { variant: 'destructive' as const, label: 'Critical' };
   };
 
-  const handleSaveAttendance = () => {
-    console.log('Saving attendance for:', {
-      year: selectedYear,
-      section: selectedSection,
-      date: selectedDate,
-      period: selectedPeriod,
-      attendance: students.map(s => ({ id: s.id, present: s.present }))
-    });
-    // Implementation for saving attendance
+  const handleSaveAttendance = async () => {
+    if (!selectedSubject) {
+      toast({ variant: 'destructive', title: 'Select a subject first' });
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const attendanceData = students
+        .filter((s) => s.present !== null)
+        .map((s) => ({ studentId: Number(s.id), present: s.present }));
+      const response = await fetch(`${apiBase}/attendance/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectId: selectedSubject,
+          date: selectedDate,
+          period: selectedPeriod,
+          attendanceData,
+          markedBy: user?.id,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save attendance');
+
+      toast({ title: 'Attendance Saved', description: 'Attendance has been saved successfully' });
+      await fetchAttendance();
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save attendance' });
+    }
   };
 
   return (
@@ -171,62 +410,61 @@ const AttendanceManager = () => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label htmlFor="year-select">Year</Label>
-              <select 
+              <select
                 id="year-select"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 className="w-full p-2 border rounded-md bg-background text-foreground"
               >
-                {years.map(year => (
-                  <option key={year} value={year}>{year}st Year</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}st Year
+                  </option>
                 ))}
               </select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="section-select">Section</Label>
-              <select 
+              <select
                 id="section-select"
                 value={selectedSection}
                 onChange={(e) => setSelectedSection(e.target.value)}
                 className="w-full p-2 border rounded-md bg-background text-foreground"
               >
-                {sections.map(section => (
-                  <option key={section} value={section}>Section {section}</option>
+                {sections.map((section) => (
+                  <option key={section} value={section}>
+                    Section {section}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="date-select">Date</Label>
-              <Input
-                id="date-select"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
+              <Input id="date-select" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="period-select">Period</Label>
-              <select 
+              <select
                 id="period-select"
                 value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedPeriod(value);
+                  const option = periodOptions.find((o) => o.value === value);
+                  setSelectedSubject(option?.subjectId || '');
+                }}
                 className="w-full p-2 border rounded-md bg-background text-foreground"
               >
-                {periods.map(period => (
-                  <option key={period.value} value={period.value}>
-                    {period.label}
+                <option value="">Select Period</option>
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="flex items-end">
-              <Button className="w-full">
-                Load Class
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -289,11 +527,9 @@ const AttendanceManager = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>
-                Student Attendance - Year {selectedYear}, Section {selectedSection}
-              </CardTitle>
+              <CardTitle>Student Attendance - Year {selectedYear}, Section {selectedSection}</CardTitle>
               <CardDescription>
-                {selectedDate} • {periods.find(p => p.value === selectedPeriod)?.label}
+                {selectedDate} • {periodOptions.find((p) => p.value === selectedPeriod)?.label}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -321,53 +557,85 @@ const AttendanceManager = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Grid Layout for Students */}
-          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredStudents.map((student) => {
-              const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
-              return (
-                <Card 
-                  key={student.id}
-                  className={`p-4 border-2 transition-all cursor-pointer ${
-                    student.present ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                  }`}
-                  onClick={() => toggleAttendance(student.id)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <Checkbox
-                      checked={student.present}
-                      onCheckedChange={() => toggleAttendance(student.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className={`w-3 h-3 rounded-full ${student.present ? 'bg-green-500' : 'bg-red-500'}`} />
+          <Carousel setApi={setApi}>
+            <CarouselContent>
+              {studentChunks.map((chunk, index) => (
+                <CarouselItem key={index}>
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                    {chunk.map((student) => {
+                      const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
+                      return (
+                        <Card
+                          key={student.id}
+                          className={`p-4 border-2 transition-all cursor-pointer ${
+                            student.present === true
+                              ? 'border-green-200 bg-green-50'
+                              : student.present === false
+                              ? 'border-red-200 bg-red-50'
+                              : 'border-gray-200 bg-gray-50'
+                          }`}
+                          onClick={() => toggleAttendance(student.id)}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <Checkbox
+                              checked={student.present === null ? 'indeterminate' : student.present}
+                              onCheckedChange={() => toggleAttendance(student.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex items-center gap-1">
+                              <div
+                                className={`w-3 h-3 rounded-full ${
+                                  student.present === true
+                                    ? 'bg-green-500'
+                                    : student.present === false
+                                    ? 'bg-red-500'
+                                    : 'bg-gray-400'
+                                }`}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-muted-foreground"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearAttendance(student.id);
+                                }}
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="text-center space-y-2">
+                            {/* Large Roll Number */}
+                            <div className="text-4xl font-bold text-primary">{student.rollNumber}</div>
+
+                            {/* Student Name */}
+                            <p className="font-medium text-sm text-foreground">{student.name}</p>
+
+                            {/* College ID */}
+                            <p className="text-xs text-muted-foreground font-mono">{student.collegeId}</p>
+
+                            {/* Attendance Percentage and Badge */}
+                            <div className="flex items-center justify-between mt-2">
+                              <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
+                                {student.attendancePercentage}%
+                              </span>
+                              <Badge variant={attendanceBadge.variant} className="hidden md:inline-flex text-xs">
+                                {attendanceBadge.label}
+                              </Badge>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
-                  
-                  <div className="text-center space-y-2">
-                    {/* Large Roll Number */}
-                    <div className="text-4xl font-bold text-primary">
-                      {student.rollNumber}
-                    </div>
-                    
-                    {/* Student Name */}
-                    <p className="font-medium text-sm text-foreground">{student.name}</p>
-                    
-                    {/* College ID */}
-                    <p className="text-xs text-muted-foreground font-mono">{student.collegeId}</p>
-                    
-                    {/* Attendance Percentage and Badge */}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
-                        {student.attendancePercentage}%
-                      </span>
-                      <Badge variant={attendanceBadge.variant} className="text-xs">
-                        {attendanceBadge.label}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </CardContent>
       </Card>
 

@@ -142,8 +142,8 @@ CREATE TABLE chat_messages (
     group_id int NOT NULL,
     sender_id int NOT NULL,
     content ntext NOT NULL,
-    chat_type nvarchar(50) DEFAULT 'general',
-    created_at datetime2 DEFAULT GETDATE(),
+    timestamp datetime2 DEFAULT GETDATE(),
+    is_deleted bit DEFAULT 0,
     FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id)
 );
@@ -250,6 +250,18 @@ CREATE TABLE messages (
     created_at datetime2 DEFAULT GETDATE(),
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE NO ACTION
+);
+
+-- Conversation user state (pinning and read tracking)
+CREATE TABLE conversation_users (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    user_id int NOT NULL,
+    conversation_type nvarchar(10) NOT NULL CHECK (conversation_type IN ('direct','group')),
+    conversation_id int NOT NULL,
+    pinned bit DEFAULT 0,
+    last_read_at datetime2 DEFAULT '1900-01-01',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, conversation_type, conversation_id)
 );
 
 -- Insert sample data

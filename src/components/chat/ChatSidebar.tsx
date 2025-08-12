@@ -1,22 +1,38 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Send, 
-  Smile, 
-  Paperclip, 
-  Hash, 
-  Users,
-  Search,
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  MessageSquare,
   X,
-  MessageSquare
+  Search,
+  Pin,
+  Check,
+  CheckCheck,
+  ArrowLeft,
+  UserPlus,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChatMessage } from '@/types';
+import { useChat } from '@/contexts/ChatContext';
+import { ChatMessage, PrivateMessage, User } from '@/types';
+import { Virtuoso } from 'react-virtuoso';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
+
+import EmojiPicker from './EmojiPicker';
+import FileUpload from './FileUpload';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -32,240 +48,674 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onExpandedChange
 }) => {
   const { user } = useAuth();
-  const [activeChat, setActiveChat] = useState<'section' | 'global'>('section');
+  const {
+    conversations,
+    fetchConversations,
+    fetchConversation,
+    fetchMoreConversation,
+    fetchGroupMessages,
+    fetchMoreGroupMessages,
+    privateMessages,
+    messages,
+    sendDirectMessage,
+    sendGroupMessage,
+    markAsRead,
+    pinConversation,
+    fetchGroups,
+    onlineUsers,
+    typingUsers,
+    setTyping,
+    searchUsers,
+  } = useChat();
+
+  const [activeChat, setActiveChat] = useState<{
+    type: 'direct' | 'group';
+    id: string;
+    title: string;
+  } | null>(null);
+  const [directMessages, setDirectMessages] = useState<PrivateMessage[]>([]);
+  const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      senderId: '2',
-      senderName: 'Dr. Smith',
-      senderRole: 'professor',
-      content: 'Good morning everyone! Don\'t forget about tomorrow\'s assignment deadline.',
-      timestamp: '2024-01-09T10:30:00Z',
-      chatType: 'section',
-      section: 'CSE-3A'
-    },
-    {
-      id: '2',
-      senderId: '4',
-      senderName: 'John Doe',
-      senderRole: 'student',
-      content: 'Thank you for the reminder, Professor!',
-      timestamp: '2024-01-09T10:32:00Z',
-      chatType: 'section',
-      section: 'CSE-3A'
+  const [attachments, setAttachments] = useState<{ file: File; preview: string }[]>([]);
+  const [tab, setTab] = useState<'all' | 'direct' | 'group'>('all');
+  const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const typingRef = useRef(false);
+  const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchGroups().catch(() => {});
+    fetchConversations().catch(() => {});
+  }, [fetchGroups, fetchConversations]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults([]);
+      return;
     }
-  ]);
+    const handler = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchUsers(search);
+        setSearchResults(results);
+      } catch {
+        // ignore
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search, searchUsers]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!activeChat) return;
+    const { id, type } = activeChat;
+    const controller = new AbortController();
+    let ignore = false;
+    setMessagesLoading(true);
+    if (type === 'direct') {
+      fetchConversation(id, undefined, controller.signal)
+        .then(data => {
+          if (!ignore && activeChat?.id === id && activeChat.type === type) {
+            setDirectMessages(data.messages);
+            setHasMore(data.hasMore);
+            setMessagesLoading(false);
+          }
+        })
+        .catch(() => {
+          if (!ignore) setMessagesLoading(false);
+        });
+      markAsRead('direct', id).catch(() => {});
+    } else {
+      fetchGroupMessages(id, undefined, controller.signal)
+        .then(data => {
+          if (!ignore && activeChat?.id === id && activeChat.type === type) {
+            setGroupMessages(data.messages);
+            setHasMore(data.hasMore);
+            setMessagesLoading(false);
+          }
+        })
+        .catch(() => {
+          if (!ignore) setMessagesLoading(false);
+        });
+      markAsRead('group', id).catch(() => {});
+    }
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
+  }, [activeChat, fetchConversation, fetchGroupMessages, markAsRead]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => {
+    if (!activeChat) return;
+    if (activeChat.type === 'direct') {
+      const newMsgs = privateMessages
+        .filter(m => m.sender_id === activeChat.id || m.receiver_id === activeChat.id);
+      setDirectMessages(newMsgs);
+    } else {
+      const newMsgs = messages.filter(m => m.groupId === activeChat.id);
+      setGroupMessages(newMsgs);
+    }
+  }, [privateMessages, messages, activeChat]);
+
+  const handleSendMessage = async () => {
+    if ((!message.trim() && attachments.length === 0) || !activeChat) return;
+    try {
+      const files = attachments.map(a => a.file);
+      if (activeChat.type === 'direct') {
+        await sendDirectMessage(activeChat.id, message, files);
+        if (!conversations.some(c => c.id === activeChat.id)) {
+          fetchConversations().catch(() => {});
+        }
+      } else {
+        await sendGroupMessage(activeChat.id, message, files);
+      }
+      const target =
+        activeChat.type === 'group'
+          ? `group-${activeChat.id}`
+          : String(activeChat.id);
+      setMessage('');
+      attachments.forEach(a => URL.revokeObjectURL(a.preview));
+      setAttachments([]);
+      setTyping(target, 'stop_typing');
+      typingRef.current = false;
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMessage(value);
+    if (!activeChat) return;
+    const target =
+      activeChat.type === 'group'
+        ? `group-${activeChat.id}`
+        : String(activeChat.id);
+    if (value && !typingRef.current) {
+      setTyping(target, 'typing');
+      typingRef.current = true;
+    } else if (!value && typingRef.current) {
+      setTyping(target, 'stop_typing');
+      typingRef.current = false;
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSendMessage = () => {
-    if (!message.trim() || !user) return;
-
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      senderId: user.id,
-      senderName: user.name,
-      senderRole: user.role,
-      content: message,
-      timestamp: new Date().toISOString(),
-      chatType: activeChat,
-      section: user.section
+    const currentChat = activeChat;
+    return () => {
+      if (typingRef.current && currentChat) {
+        const target =
+          currentChat.type === 'group'
+            ? `group-${currentChat.id}`
+            : String(currentChat.id);
+        setTyping(target, 'stop_typing');
+        typingRef.current = false;
+      }
     };
+  }, [activeChat, setTyping]);
 
-    setMessages(prev => [...prev, newMessage]);
-    setMessage('');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-600 text-white';
-      case 'hod': return 'bg-blue-600 text-white';
-      case 'professor': return 'bg-green-600 text-white';
-      case 'student': return 'bg-purple-600 text-white';
-      case 'alumni': return 'bg-orange-600 text-white';
-      default: return 'bg-gray-600 text-white';
+  const handleFileSelect = (file: File) => {
+    const allowed = [
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+    if (!allowed.includes(file.type) || file.size > 20 * 1024 * 1024) {
+      return;
     }
+    const preview = file.type.startsWith('image/')
+      ? URL.createObjectURL(file)
+      : '';
+    setAttachments(prev => [...prev, { file, preview }]);
   };
 
-  const formatTime = (timestamp: string) => {
+  const removeAttachment = (idx: number) => {
+    URL.revokeObjectURL(attachments[idx].preview);
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const formatTime = (timestamp: string | null) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const filteredMessages = messages.filter(msg => msg.chatType === activeChat);
+  const displayMessages =
+    activeChat?.type === 'direct' ? directMessages : groupMessages;
 
-  const channels = [
-    { 
-      id: 'section', 
-      name: user?.role === 'student' ? `${user?.section} Section` : 'My Classes',
-      type: 'section',
-      unread: 2,
-      icon: Users
-    },
-    { 
-      id: 'global', 
-      name: 'College Community', 
-      type: 'global',
-      unread: 1,
-      icon: Hash
+  type GroupedItem =
+    | { type: 'date'; date: string }
+    | { type: 'message'; message: PrivateMessage | ChatMessage };
+
+  const groupedItems = useMemo<GroupedItem[]>(() => {
+    const items: GroupedItem[] = [];
+    let lastDate = '';
+    displayMessages
+      .filter(m => m.content || m.attachments?.length)
+      .forEach(msg => {
+        const timestamp =
+          activeChat?.type === 'direct'
+            ? (msg as PrivateMessage).created_at
+            : (msg as ChatMessage).timestamp;
+        const dateStr = new Date(timestamp).toDateString();
+        if (dateStr !== lastDate) {
+          items.push({ type: 'date', date: dateStr });
+          lastDate = dateStr;
+        }
+        items.push({ type: 'message', message: msg });
+      });
+    return items;
+  }, [displayMessages, activeChat]);
+
+  const loadMore = useCallback(() => {
+    if (!activeChat || !hasMore) return;
+    if (activeChat.type === 'direct') {
+      fetchMoreConversation(activeChat.id)
+        .then(res => setHasMore(res.hasMore))
+        .catch(() => {});
+    } else {
+      fetchMoreGroupMessages(activeChat.id)
+        .then(res => setHasMore(res.hasMore))
+        .catch(() => {});
     }
-  ];
+  }, [activeChat, hasMore, fetchMoreConversation, fetchMoreGroupMessages]);
+
+  const sortedConversations = conversations
+    .filter(c => tab === 'all' || c.type === tab)
+    .filter(c => c.title.toLowerCase().includes(search.toLowerCase()));
+
+  const filteredSearchResults = searchResults.filter(
+    u => u.id !== user?.id && !conversations.some(c => c.id === u.id)
+  );
+
+  const handleSelectConversation = (c: typeof conversations[number]) => {
+    setActiveChat({ type: c.type, id: String(c.id), title: c.title });
+  };
+
+  const handlePin = (
+    e: React.MouseEvent,
+    c: typeof conversations[number]
+  ) => {
+    e.stopPropagation();
+    pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => {});
+  };
+
+  const handleGroupCreate = () => {
+    setIsGroupDialogOpen(false);
+    navigate('/dashboard/groups');
+  };
 
   return (
-    <div
-      className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${
-        isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
-      }`}
-      onMouseEnter={() => isOpen && onExpandedChange(true)}
-      onMouseLeave={() => isOpen && onExpandedChange(false)}
-    >
-      {isOpen && expanded ? (
-        <Card className="h-full flex flex-col rounded-none border-0 shadow-lg">
-          <CardHeader className="pb-3 border-b">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Chat
-              </CardTitle>
-              <Button variant="ghost" size="icon" onClick={onToggle}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search channels..."
-                className="pl-10 h-9"
-              />
-            </div>
-          </CardHeader>
-
-          {/* Channels */}
-          <div className="p-3 border-b">
-            <div className="space-y-1">
-              {channels.map((channel) => (
-                <Button
-                  key={channel.id}
-                  variant={activeChat === channel.id ? 'default' : 'ghost'}
-                  className="w-full justify-start h-10 px-3"
-                  onClick={() => setActiveChat(channel.id as 'section' | 'global')}
-                >
-                  <channel.icon className="h-4 w-4 mr-3" />
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-sm">{channel.name}</p>
+    <>
+      <Dialog open={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Group</DialogTitle>
+            <DialogDescription>
+              Navigate to manage and create chat groups.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleGroupCreate}>Go to Groups</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div
+        className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${
+          isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
+        }`}
+        onMouseEnter={() => isOpen && onExpandedChange(true)}
+        onMouseLeave={() => isOpen && onExpandedChange(false)}
+      >
+        {isOpen && expanded ? (
+          <Card className="h-full flex flex-col rounded-none border-0 shadow-lg">
+            {!activeChat ? (
+              <>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Chat
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsGroupDialogOpen(true)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggle}
+                      className="sm:hidden"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  {channel.unread > 0 && (
-                    <Badge variant="destructive" className="text-xs">
-                      {channel.unread}
-                    </Badge>
-                  )}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Messages */}
-          <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-full px-4 py-4">
-              <div className="space-y-4">
-                {filteredMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${msg.senderId === user?.id ? 'flex-row-reverse' : ''}`}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <span className="text-xs font-medium text-primary-foreground">
-                          {msg.senderName.charAt(0)}
-                        </span>
+                </div>
+                <Tabs
+                  value={tab}
+                  onValueChange={(v) => setTab(v as 'all' | 'direct' | 'group')}
+                >
+                  <TabsList className="grid grid-cols-3 mb-2">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="direct">DMs</TabsTrigger>
+                    <TabsTrigger value="group">Groups</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search..."
+                    className="pl-10 h-9"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </CardHeader>
+              <ScrollArea className="flex-1">
+                {search && (
+                  <div>
+                    {searchLoading ? (
+                      <div className="flex justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       </div>
-                    </div>
-                    <div className={`flex-1 max-w-sm ${msg.senderId === user?.id ? 'text-right' : ''}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">{msg.senderName}</span>
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs ${getRoleBadgeColor(msg.senderRole)}`}
+                    ) : (
+                      filteredSearchResults.map(u => (
+                        <div
+                          key={u.id}
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
+                          onClick={async () => {
+                            await fetchConversation(String(u.id)).catch(() => {});
+                            setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
+                            setSearch('');
+                          }}
                         >
-                          {msg.senderRole.toUpperCase()}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatTime(msg.timestamp)}
-                        </span>
+                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+                            {u.name.charAt(0)}
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-sm font-medium truncate">{u.name}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+                {sortedConversations.map(c => (
+                  <div
+                    key={`${c.type}-${c.id}`}
+                    className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
+                    onClick={() => handleSelectConversation(c)}
+                  >
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+                        {c.title.charAt(0)}
                       </div>
-                      <div
-                        className={`p-3 rounded-lg ${
-                          msg.senderId === user?.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm">{msg.content}</p>
-                      </div>
+                      {c.type === 'direct' && onlineUsers.has(c.id) && (
+                        <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+                      )}
                     </div>
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-sm font-medium truncate">{c.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {c.last_message || ''}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {formatTime(c.last_activity)}
+                      </span>
+                      {c.unread_count > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {c.unread_count}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handlePin(e, c)}
+                    >
+                      <Pin
+                        className={`h-4 w-4 ${c.pinned ? 'text-primary' : 'text-muted-foreground'}`}
+                      />
+                    </Button>
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+              </ScrollArea>
+            </>
+          ) : (
+            <>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setActiveChat(null)}
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <CardTitle className="text-lg">{activeChat.title}</CardTitle>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsGroupDialogOpen(true)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggle}
+                      className="sm:hidden"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-0 flex flex-col">
+                {messagesLoading ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <Virtuoso
+                      data={groupedItems}
+                      startReached={loadMore}
+                      followOutput="smooth"
+                      initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
+                      className="flex-1 px-4 py-4 overflow-x-hidden"
+                      itemContent={(index, item) => {
+                        if (item.type === 'date') {
+                          return (
+                            <div className="text-center text-xs text-muted-foreground my-2">
+                              {item.date}
+                            </div>
+                          );
+                        }
+                        const msg = item.message as PrivateMessage | ChatMessage;
+                        const isOwn =
+                          activeChat?.type === 'direct'
+                            ? (msg as PrivateMessage).sender_id === user?.id
+                            : (msg as ChatMessage).senderId === user?.id;
+                        const senderName =
+                          activeChat?.type === 'direct'
+                            ? (msg as PrivateMessage).sender_name
+                            : (msg as ChatMessage).senderName;
+                        const timestamp =
+                          activeChat?.type === 'direct'
+                            ? (msg as PrivateMessage).created_at
+                            : (msg as ChatMessage).timestamp;
+                        const role =
+                          activeChat?.type === 'direct'
+                            ? null
+                            : (msg as ChatMessage).senderRole;
+                        const status = msg.status || 'sent';
+                        const avatar = msg.sender_profileImage;
+                    const initials = senderName
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .slice(0, 2);
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                      >
+                        {!isOwn && (
+                          <div className="flex-shrink-0">
+                            {avatar ? (
+                              <img
+                                src={avatar}
+                                alt={senderName}
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                                <span className="text-xs font-medium text-primary-foreground">
+                                  {initials}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
+                          <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
+                            {!isOwn && (
+                              <span className="text-sm font-medium">{senderName}</span>
+                            )}
+                            {activeChat?.type !== 'direct' && role && !isOwn && (
+                              <Badge variant="secondary" className="text-xs">
+                                {role.toUpperCase()}
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {formatTime(timestamp)}
+                            </span>
+                          </div>
+                          <div
+                            className={`inline-block max-w-[80%] break-words break-all p-3 rounded-lg ${
+                              isOwn
+                                ? 'ml-auto bg-primary text-primary-foreground'
+                                : 'bg-muted'
+                            }`}
+                          >
+                            <p className="text-sm">{msg.content}</p>
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {msg.attachments.map((att, i) =>
+                                  att.type === 'image' ? (
+                                    <div key={i} className="relative">
+                                      {att.url && (
+                                        <img
+                                          src={att.url}
+                                          alt={att.name}
+                                          className="max-w-xs rounded"
+                                        />
+                                      )}
+                                      {att.progress !== undefined && att.progress < 100 && (
+                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs">
+                                          {att.progress}%
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div
+                                      key={i}
+                                      className="flex items-center justify-between bg-background rounded px-2 py-1 text-xs"
+                                    >
+                                      <a
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline"
+                                      >
+                                        {att.name}
+                                      </a>
+                                      {att.progress !== undefined && att.progress < 100 && (
+                                        <span className="ml-2">{att.progress}%</span>
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                            {isOwn && (
+                              <div className="flex justify-end mt-1">
+                                {status === 'sending' && (
+                                  <Check className="h-3 w-3 text-muted-foreground" />
+                                )}
+                                {status === 'sent' && <Check className="h-3 w-3" />}
+                                {status === 'delivered' && (
+                                  <CheckCheck className="h-3 w-3" />
+                                )}
+                                {status === 'read' && (
+                                  <CheckCheck className="h-3 w-3 text-primary" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                {activeChat?.type === 'direct' && typingUsers.has(activeChat.id) && (
+                  <div className="px-4 py-2 text-xs text-muted-foreground">User is typing…</div>
+                )}
+              </>
+            )}
           </CardContent>
-
-          {/* Message Input */}
-          <div className="border-t p-4">
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon">
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={`Message ${activeChat === 'section' ? 'section' : 'community'}...`}
-                className="flex-1"
-              />
-              <Button variant="ghost" size="icon">
-                <Smile className="h-4 w-4" />
-              </Button>
-              <Button onClick={handleSendMessage} disabled={!message.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+              <div className="border-t p-4">
+                {attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {attachments.map((att, idx) => (
+                      att.file.type.startsWith('image/') ? (
+                        <div key={idx} className="relative">
+                          <img
+                            src={att.preview}
+                            alt={att.file.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                          <button
+                            onClick={() => removeAttachment(idx)}
+                            className="absolute -top-1 -right-1 bg-black text-white rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          key={idx}
+                          className="flex items-center bg-muted rounded px-2 py-1 text-xs"
+                        >
+                          {att.file.name}
+                          <button
+                            onClick={() => removeAttachment(idx)}
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <Textarea
+                    value={message}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyPress}
+                    placeholder={
+                      activeChat ? `Message ${activeChat.title}...` : 'Select a conversation'
+                    }
+                    className="flex-1"
+                  />
+                  <EmojiPicker onEmojiSelect={(e) => setMessage(prev => prev + e)} />
+                  <FileUpload onFileSelect={handleFileSelect} disabled={!activeChat} />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!message.trim() && attachments.length === 0}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </Card>
       ) : isOpen ? (
         <div className="flex flex-col items-center py-4 space-y-4">
           <Button variant="ghost" size="icon" onClick={onToggle}>
             <MessageSquare className="h-5 w-5" />
           </Button>
-          {channels.map((channel) => (
-            <Button
-              key={channel.id}
-              variant={activeChat === channel.id ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => setActiveChat(channel.id as 'section' | 'global')}
-            >
-              <channel.icon className="h-5 w-5" />
-            </Button>
-          ))}
         </div>
-      ) : null}
-    </div>
+        ) : null}
+      </div>
+    </>
   );
 };
 

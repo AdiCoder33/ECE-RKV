@@ -1,110 +1,168 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { emitConversationUpdate } = require('../utils/conversations');
+
 const router = express.Router();
 
-// Get chat messages
-router.get('/messages', authenticateToken, async (req, res, next) => {
+// Get messages for a specific chat group
+router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
-    const { channel, chatType = 'section' } = req.query;
-    const userRole = req.user.role;
-    const userSection = req.user.section;
-    
-    // Determine chat type based on channel and user role
-    let actualChatType = chatType;
-    if (userRole === 'alumni') {
-      actualChatType = 'alumni';
-    }
-    
-    // Build query based on chat type
-    let query = `
-      SELECT TOP 100 cm.*, u.name as sender_name, u.role as sender_role
-      FROM chat_messages cm
-      JOIN users u ON cm.sender_id = u.id
-      WHERE cm.is_deleted = 0 AND cm.chat_type = ?
-    `;
-    let params = [actualChatType];
-    
-    // Add section filter for section chats
-    if (actualChatType === 'section' && userSection) {
-      query += ' AND cm.section = ?';
-      params.push(userSection);
-    }
-    
-    query += ' ORDER BY cm.timestamp DESC';
+    const { groupId } = req.params;
+    const userId = req.user.id;
+    const { limit = 50, before } = req.query;
 
-    const { recordset: messages } = await executeQuery(query, params);
-    
-    // Format messages for frontend
-    const formattedMessages = messages.map(msg => ({
-      id: msg.id.toString(),
-      senderId: msg.sender_id.toString(),
-      senderName: msg.sender_name,
-      senderRole: msg.sender_role,
-      content: msg.content,
-      timestamp: msg.timestamp,
-      chatType: msg.chat_type,
-      section: msg.section
-    })).reverse();
-    
-    res.json(formattedMessages);
+    const fetchLimit = parseInt(limit, 10) + 1;
+    const params = [userId, groupId];
+    if (before) {
+      params.push(before);
+    }
+    params.push(fetchLimit);
+
+    const query = `
+      SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
+             u.name as sender_name, u.role as sender_role
+      FROM chat_messages cm
+      JOIN chat_group_members gm ON gm.group_id = cm.group_id AND gm.user_id = ?
+      JOIN users u ON cm.sender_id = u.id
+      WHERE cm.group_id = ? AND cm.is_deleted = 0 ${before ? 'AND cm.timestamp < ?' : ''}
+      ORDER BY cm.timestamp DESC
+      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
+    `;
+
+    const { recordset } = await executeQuery(query, params);
+
+    const hasMore = recordset.length === fetchLimit;
+    const sliced = hasMore ? recordset.slice(0, fetchLimit - 1) : recordset;
+
+    const formatted = sliced
+      .map(msg => ({
+        id: msg.id.toString(),
+        senderId: msg.sender_id.toString(),
+        senderName: msg.sender_name,
+        senderRole: msg.sender_role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        groupId: msg.group_id.toString(),
+        attachments: msg.attachments ? JSON.parse(msg.attachments) : []
+      }))
+      .reverse();
+
+    res.json({
+      messages: formatted,
+      nextCursor: hasMore ? formatted[0]?.timestamp : null,
+      hasMore
+    });
   } catch (error) {
-    console.error('Chat messages fetch error:', error);
+    console.error('Group messages fetch error:', error);
     next(error);
   }
 });
 
-// Send chat message
-router.post('/messages', authenticateToken, async (req, res, next) => {
+// Send message to a specific chat group
+router.post('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
-    const { content, chatType = 'section' } = req.body;
+    const { groupId } = req.params;
+    const { content, attachments = [] } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role;
-    const userSection = req.user.section;
-    
+
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Message content is required' });
     }
-    
-    // Determine actual chat type
-    let actualChatType = chatType;
-    if (userRole === 'alumni') {
-      actualChatType = 'alumni';
+
+    // Verify membership in the group
+    const { recordset: membership } = await executeQuery(
+      'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
+      [groupId, userId]
+    );
+
+    if (membership.length === 0) {
+      return res.status(403).json({ error: 'User is not a member of this group' });
     }
-    
-    // Insert message into database
-    const query = `
-      INSERT INTO chat_messages (sender_id, content, chat_type, section)
+
+    const insertQuery = `
+      INSERT INTO chat_messages (group_id, sender_id, content, attachments)
+      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id, INSERTED.content,
+             INSERTED.timestamp, INSERTED.attachments,
+             (SELECT name FROM users WHERE id = INSERTED.sender_id) AS sender_name,
+             (SELECT role FROM users WHERE id = INSERTED.sender_id) AS sender_role
       VALUES (?, ?, ?, ?)
     `;
-    const params = [userId, content.trim(), actualChatType, userSection];
+    const { recordset } = await executeQuery(insertQuery, [
+      groupId,
+      userId,
+      content.trim(),
+      JSON.stringify(attachments)
+    ]);
 
-    await executeQuery(query, params);
+    if (!recordset || recordset.length === 0) {
+      return res.status(500).json({ error: 'Failed to create message' });
+    }
 
-    // Fetch the created message with sender details
-    const { recordset: newMessage } = await executeQuery(`
-      SELECT cm.*, u.name as sender_name, u.role as sender_role
-      FROM chat_messages cm
-      JOIN users u ON cm.sender_id = u.id
-      WHERE cm.id = SCOPE_IDENTITY()
-    `);
-
-    const formattedMessage = {
-      id: newMessage[0].id.toString(),
-      senderId: newMessage[0].sender_id.toString(),
-      senderName: newMessage[0].sender_name,
-      senderRole: newMessage[0].sender_role,
-      content: newMessage[0].content,
-      timestamp: newMessage[0].timestamp,
-      chatType: newMessage[0].chat_type,
-      section: newMessage[0].section
+    const formatted = {
+      ...recordset[0],
+      id: recordset[0].id.toString(),
+      senderId: recordset[0].sender_id.toString(),
+      groupId: recordset[0].group_id.toString(),
+      attachments: recordset[0].attachments
+        ? JSON.parse(recordset[0].attachments)
+        : []
     };
-    
-    res.status(201).json(formattedMessage);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`group-${groupId}`).emit('chat-message', formatted);
+    }
+
+    // Update sender's read timestamp and emit conversation updates
+    const convUpdate = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETDATE());
+    `;
+    await executeQuery(convUpdate, [userId, groupId, userId, groupId]);
+
+    if (io) {
+      const { recordset: members } = await executeQuery('SELECT user_id FROM chat_group_members WHERE group_id = ?', [groupId]);
+      for (const member of members) {
+        await emitConversationUpdate(io, member.user_id, 'group', groupId);
+      }
+    }
+
+    res.status(201).json(formatted);
   } catch (error) {
-    console.error('Chat message send error:', error);
+    console.error('Group message send error:', error);
+    next(error);
+  }
+});
+
+// Mark group messages as read
+router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { groupId } = req.params;
+
+    const query = `
+      MERGE conversation_users AS target
+      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
+      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETDATE());
+    `;
+    await executeQuery(query, [userId, groupId, userId, groupId]);
+
+    await emitConversationUpdate(req.app.get('io'), userId, 'group', groupId);
+
+    res.json({ message: 'Group messages marked as read' });
+  } catch (error) {
+    console.error('Group mark-read error:', error);
     next(error);
   }
 });
 
 module.exports = router;
+

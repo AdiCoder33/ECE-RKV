@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
 import Homepage from './pages/Homepage';
@@ -31,7 +32,8 @@ import ContactAlumni from './pages/ContactAlumni';
 import ResumeBuilder from './components/profile/ResumeBuilder';
 import StudentMarks from './components/marks/StudentMarks';
 import MarksUpload from './components/marks/MarksUpload';
-import ChatSystem from './components/chat/ChatSystem';
+import ChatList from './components/chat/ChatList';
+import ChatConversation from './components/chat/ChatConversation';
 import './App.css';
 
 // Create a client instance
@@ -49,8 +51,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
-          <Router>
-            <div className="min-h-screen bg-background">
+          <ChatProvider>
+            <Router>
+              <div className="min-h-screen bg-background">
               <Routes>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/login" element={<LoginForm />} />
@@ -79,12 +82,14 @@ function App() {
                   <Route path="resume" element={<ResumeBuilder />} />
                   <Route path="my-marks" element={<StudentMarks />} />
                   <Route path="marks-upload" element={<MarksUpload />} />
-                  <Route path="chat" element={<ChatSystem />} />
+                  <Route path="chat" element={<ChatList />} />
+                  <Route path="chat/:type/:id" element={<ChatConversation />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
               </Routes>
             </div>
-          </Router>
+            </Router>
+          </ChatProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

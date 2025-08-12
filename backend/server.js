@@ -1,11 +1,16 @@
 
 const express = require('express');
 const path = require('path');
+const http = require('http');
 const cors = require('cors');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+const { setupSocket } = require('./socket');
+const io = setupSocket(server);
+app.set('io', io);
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -21,6 +26,8 @@ const analyticsRoutes = require('./routes/analytics');
 const classRoutes = require('./routes/classes');
 const studentRoutes = require('./routes/students');
 const notificationRoutes = require('./routes/notifications');
+const conversationRoutes = require('./routes/conversations');
+const uploadRoutes = require('./routes/uploads');
 
 // Middleware
 app.use(cors({
@@ -28,6 +35,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
 const { connectDB } = require('./config/database');
@@ -56,6 +64,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/uploads', uploadRoutes);
 app.use('/api/resumes', require('./routes/resumes'));
 app.use('/api/alumni', require('./routes/alumni'));
 app.use('/api/messages', require('./routes/messages'));
@@ -75,7 +85,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 connectToDatabase().then(() => {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 });
