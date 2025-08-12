@@ -112,23 +112,34 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   useEffect(() => {
     if (!activeChat) return;
-    if (activeChat.type === 'direct') {
-      fetchConversation(activeChat.id)
+    const { id, type } = activeChat;
+    const controller = new AbortController();
+    let ignore = false;
+    if (type === 'direct') {
+      fetchConversation(id, undefined, controller.signal)
         .then(data => {
-          setDirectMessages(data.messages);
-          setHasMore(data.hasMore);
+          if (!ignore && activeChat?.id === id && activeChat.type === type) {
+            setDirectMessages(data.messages);
+            setHasMore(data.hasMore);
+          }
         })
         .catch(() => {});
-      markAsRead('direct', activeChat.id).catch(() => {});
+      markAsRead('direct', id).catch(() => {});
     } else {
-      fetchGroupMessages(activeChat.id)
+      fetchGroupMessages(id, undefined, controller.signal)
         .then(data => {
-          setGroupMessages(data.messages);
-          setHasMore(data.hasMore);
+          if (!ignore && activeChat?.id === id && activeChat.type === type) {
+            setGroupMessages(data.messages);
+            setHasMore(data.hasMore);
+          }
         })
         .catch(() => {});
-      markAsRead('group', activeChat.id).catch(() => {});
+      markAsRead('group', id).catch(() => {});
     }
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
   }, [activeChat, fetchConversation, fetchGroupMessages, markAsRead]);
 
   useEffect(() => {
