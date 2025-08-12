@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,12 @@ import EditSubjectModal from './EditSubjectModal';
 import { useToast } from "@/hooks/use-toast";
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+// Define theme colors for consistency, matching UserManagement's background
+const THEME = {
+  bgBeige: '#fbf4ea', // original warm beige
+  accent: '#8b0000', // deep-maroon, used for headings and primary buttons
+};
 
 const SubjectManagement = () => {
   const { toast } = useToast();
@@ -64,7 +69,7 @@ const SubjectManagement = () => {
       }
     };
     fetchSubjects();
-  }, []);
+  }, [toast]);
 
   const handleAddSubject = async (newSubject: Omit<Subject, 'id'>) => {
     try {
@@ -158,10 +163,10 @@ const SubjectManagement = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'theory': return 'bg-blue-100 text-blue-800';
-      case 'lab': return 'bg-green-100 text-green-800';
-      case 'elective': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'theory': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'lab': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+      case 'elective': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
   };
 
@@ -184,111 +189,105 @@ const SubjectManagement = () => {
   };
 
   return (
-    <div className="space-y-6 bg-background text-foreground px-4 sm:px-6 md:px-0">
-      <div className="flex items-center justify-between">
+    <div
+      className="space-y-6 p-4 sm:p-6 md:p-8 text-gray-900 dark:text-stone-100 min-h-screen"
+      style={{ backgroundColor: THEME.bgBeige }} // Applied the background color here
+    >
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Subject Management</h1>
-          <p className="text-muted-foreground">Manage subjects in ECE Department</p>
+          <h1 className="text-3xl font-bold text-red-800 dark:text-red-400">Subject Management</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Manage subjects in ECE Department.</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
+        <Button
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Subject
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BookOpen className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Subjects</p>
-                <p className="text-2xl font-bold">{subjectStats.total}</p>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg dark:bg-red-900">
+              <BookOpen className="h-5 w-5 text-red-600 dark:text-red-300" />
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Theory</p>
-                <p className="text-2xl font-bold">{subjectStats.theory}</p>
-              </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Subjects</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-stone-100">{subjectStats.total}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Clock className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Lab</p>
-                <p className="text-2xl font-bold">{subjectStats.lab}</p>
-              </div>
+        <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg dark:bg-amber-900">
+              <BookOpen className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Theory</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-stone-100">{subjectStats.theory}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Award className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Elective</p>
-                <p className="text-2xl font-bold">{subjectStats.elective}</p>
-              </div>
+        <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg dark:bg-green-900">
+              <Clock className="h-5 w-5 text-green-600 dark:text-green-300" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Lab</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-stone-100">{subjectStats.lab}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Award className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Credits</p>
-                <p className="text-2xl font-bold">{subjectStats.totalCredits}</p>
-              </div>
+        <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-fuchsia-100 rounded-lg dark:bg-fuchsia-900">
+              <Award className="h-5 w-5 text-fuchsia-600 dark:text-fuchsia-300" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Elective</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-stone-100">{subjectStats.elective}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 rounded-lg dark:bg-indigo-900">
+              <Award className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Credits</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-stone-100">{subjectStats.totalCredits}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
         <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search subjects..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Input
+                placeholder="Search subjects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border-stone-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-stone-100 focus:ring-red-500"
+              />
             </div>
-            
+
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-3 py-2 border rounded-md bg-background text-foreground"
+              className="px-3 py-2 border border-stone-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-stone-100"
             >
               <option value="all">All Years</option>
               <option value="1">1st Year</option>
@@ -300,7 +299,7 @@ const SubjectManagement = () => {
             <select
               value={selectedSemester}
               onChange={(e) => setSelectedSemester(e.target.value)}
-              className="px-3 py-2 border rounded-md bg-background text-foreground"
+              className="px-3 py-2 border border-stone-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-stone-100"
             >
               <option value="all">All Semesters</option>
               <option value="1">Semester 1</option>
@@ -310,7 +309,7 @@ const SubjectManagement = () => {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="px-3 py-2 border rounded-md bg-background text-foreground"
+              className="px-3 py-2 border border-stone-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-stone-100"
             >
               <option value="all">All Types</option>
               <option value="theory">Theory</option>
@@ -324,28 +323,28 @@ const SubjectManagement = () => {
       {/* Subjects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredSubjects.map((subject) => (
-          <Card key={subject.id} className="hover:shadow-lg transition-shadow">
+          <Card key={subject.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <CardTitle className="text-lg leading-tight">{subject.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground font-mono">{subject.code}</p>
+                  <CardTitle className="text-lg leading-tight text-gray-900 dark:text-stone-100">{subject.name}</CardTitle>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">{subject.code}</p>
                 </div>
                 <Badge className={getTypeColor(subject.type)}>
                   {subject.type}
                 </Badge>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Year/Sem</p>
-                  <p className="font-medium">{subject.year}-{subject.semester}</p>
+                  <p className="text-gray-600 dark:text-gray-400">Year/Sem</p>
+                  <p className="font-medium text-gray-900 dark:text-stone-100">{subject.year}-{subject.semester}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Credits</p>
-                  <p className="font-medium">{subject.credits}</p>
+                  <p className="text-gray-600 dark:text-gray-400">Credits</p>
+                  <p className="font-medium text-gray-900 dark:text-stone-100">{subject.credits}</p>
                 </div>
               </div>
 
@@ -353,16 +352,16 @@ const SubjectManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
                   onClick={() => handleEditClick(subject)}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-red-600 hover:text-red-700"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-700 hover:bg-red-100 dark:hover:bg-red-900"
                   onClick={() => handleDeleteSubject(subject.id)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -378,7 +377,7 @@ const SubjectManagement = () => {
         onClose={() => setIsAddModalOpen(false)}
         onAddSubject={handleAddSubject}
       />
-      
+
       <EditSubjectModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

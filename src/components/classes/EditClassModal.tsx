@@ -63,27 +63,27 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit Class</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="sm:max-w-[425px] bg-stone-100 dark:bg-gray-950 text-gray-900 dark:text-stone-100 rounded-lg shadow-xl">
+        <DialogHeader className="p-4 border-b border-stone-300 dark:border-gray-800">
+          <DialogTitle className="text-2xl font-bold text-red-800 dark:text-red-400">Edit Class</DialogTitle>
+          <DialogDescription className="text-gray-600 dark:text-gray-400">
             Update the class information below.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6 p-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="year" className="text-right">Year</Label>
+            <Label htmlFor="year" className="text-right font-medium">Year</Label>
             <Select
               value={formData.year.toString()}
               onValueChange={(value) =>
                 setFormData({ ...formData, year: parseInt(value) })
               }
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-800">
                 <SelectItem value="1">1st Year</SelectItem>
                 <SelectItem value="2">2nd Year</SelectItem>
                 <SelectItem value="3">3rd Year</SelectItem>
@@ -93,17 +93,17 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="semester" className="text-right">Semester</Label>
+            <Label htmlFor="semester" className="text-right font-medium">Semester</Label>
             <Select
               value={formData.semester.toString()}
               onValueChange={(value) =>
                 setFormData({ ...formData, semester: parseInt(value) as 1 | 2 })
               }
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-800">
                 <SelectItem value="1">1</SelectItem>
                 <SelectItem value="2">2</SelectItem>
               </SelectContent>
@@ -111,15 +111,15 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="section" className="text-right">Section</Label>
+            <Label htmlFor="section" className="text-right font-medium">Section</Label>
             <Select
               value={formData.section}
               onValueChange={(value) => setFormData({ ...formData, section: value })}
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-700">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-800">
                 <SelectItem value="A">Section A</SelectItem>
                 <SelectItem value="B">Section B</SelectItem>
                 <SelectItem value="C">Section C</SelectItem>
@@ -129,11 +129,13 @@ const EditClassModal: React.FC<EditClassModalProps> = ({
             </Select>
           </div>
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <DialogFooter className="mt-6 bg-stone-200 dark:bg-gray-800 p-4 rounded-b-lg">
+            <Button type="button" variant="outline" onClick={handleClose} className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200">
               Cancel
             </Button>
-            <Button type="submit">Update Class</Button>
+            <Button type="submit" className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200">
+              Update Class
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

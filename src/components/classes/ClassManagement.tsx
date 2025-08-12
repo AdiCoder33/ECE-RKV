@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -32,6 +31,12 @@ import { useNavigate } from 'react-router-dom';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
+// Define theme colors for consistency, matching UserManagement's background
+const THEME = {
+  bgBeige: '#fbf4ea', // original warm beige
+  accent: '#8b0000', // deep-maroon, used for headings and primary buttons
+};
+
 const ClassManagement = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState<Class[]>([]);
@@ -44,6 +49,7 @@ const ClassManagement = () => {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   const fetchClasses = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -137,10 +143,10 @@ const ClassManagement = () => {
       });
     } catch {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update class',
-      });
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to update class',
+        });
     }
   };
 
@@ -233,85 +239,114 @@ const ClassManagement = () => {
     navigate(`/dashboard/profile/student/${studentId}`);
   };
 
+  const getSemesterColor = (semester: number) => {
+    return semester === 1
+      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+  };
+
   return (
-    <div className="space-y-6 bg-background text-foreground px-4 sm:px-6 md:px-0">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 sm:p-6 md:p-8 min-h-screen text-gray-900 dark:text-stone-100"
+         style={{ backgroundColor: THEME.bgBeige }} // Applied the background color here
+    >
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Class Management</h1>
-          <p className="text-muted-foreground">Manage classes and students in ECE Department</p>
+          <h1 className="text-3xl font-bold text-red-800 dark:text-red-400">Class Management</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Manage classes and students in the ECE Department.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsPromoteModalOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setIsPromoteModalOpen(true)}
+            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
+          >
             <GraduationCap className="h-4 w-4 mr-2" />
             Promote Students
           </Button>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Create Class
           </Button>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Classes</CardTitle>
-          <CardDescription>
+      <Card className="shadow-lg border-stone-300 dark:border-gray-700">
+        <CardHeader className="bg-red-700 dark:bg-red-800 rounded-t-lg p-4">
+          <CardTitle className="text-xl font-semibold text-white">Classes</CardTitle>
+          <CardDescription className="text-red-100 dark:text-red-200">
             View, edit, and manage classes in the ECE Department.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
-            <TableCaption>A list of your classes.</TableCaption>
-            <TableHeader>
+            <TableHeader className="bg-stone-200 dark:bg-gray-800">
               <TableRow>
-                <TableHead className="w-[100px]">Year</TableHead>
-                <TableHead>Semester</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Section</TableHead>
-                <TableHead className="text-right">Total Students</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
+                <TableHead className="w-[80px] font-bold text-gray-800 dark:text-gray-300">Year</TableHead>
+                <TableHead className="font-bold text-gray-800 dark:text-gray-300">Semester</TableHead>
+                <TableHead className="font-bold text-gray-800 dark:text-gray-300">Name</TableHead>
+                <TableHead className="font-bold text-gray-800 dark:text-gray-300">Section</TableHead>
+                <TableHead className="text-right font-bold text-gray-800 dark:text-gray-300">Total Students</TableHead>
+                <TableHead className="text-center font-bold text-gray-800 dark:text-gray-300">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {classes.map((cls) => (
-                <TableRow
-                  key={cls.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleClassClick(cls)}
-                >
-                  <TableCell className="font-medium">{cls.year}</TableCell>
-                  <TableCell>{cls.semester}</TableCell>
-                  <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
-                  <TableCell>{cls.section}</TableCell>
-                  <TableCell className="text-right">{cls.totalStrength}</TableCell>
-                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEditClick(cls)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteClass(cls.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {classes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No classes found. Click "Create Class" to add one.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                classes.map((cls) => (
+                  <TableRow
+                    key={cls.id}
+                    className="cursor-pointer hover:bg-stone-200 dark:hover:bg-gray-800 transition-colors duration-150"
+                    onClick={() => handleClassClick(cls)}
+                  >
+                    <TableCell className="font-medium text-gray-900 dark:text-stone-100">{cls.year}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getSemesterColor(cls.semester)}`}>
+                        Semester {cls.semester}
+                      </span>
+                    </TableCell>
+                    <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
+                    <TableCell>{cls.section}</TableCell>
+                    <TableCell className="text-right">{cls.totalStrength}</TableCell>
+                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditClick(cls)}
+                          className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-700 hover:bg-red-100 dark:hover:bg-red-900"
+                          onClick={() => handleDeleteClass(cls.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan={5}>Total</TableCell>
-                <TableCell className="text-right">{classes.length}</TableCell>
-              </TableRow>
-            </TableFooter>
+            {classes.length > 0 && (
+              <TableFooter className="bg-stone-200 dark:bg-gray-800">
+                <TableRow>
+                  <TableCell colSpan={5} className="font-bold text-gray-900 dark:text-stone-100">Total Classes</TableCell>
+                  <TableCell className="text-right font-bold text-gray-900 dark:text-stone-100">{classes.length}</TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </CardContent>
       </Card>
@@ -337,23 +372,23 @@ const ClassManagement = () => {
       />
 
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Create Class</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg shadow-xl">
+          <DialogHeader className="p-4 border-b border-stone-200 dark:border-gray-700">
+            <DialogTitle className="text-2xl font-bold">Create Class</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
               Create a new class for the ECE Department.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 p-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="year" className="text-right">
+              <Label htmlFor="year" className="text-right font-medium">
                 Year
               </Label>
-              <Select onValueChange={(value) => setNewClassYear(parseInt(value))}>
-                <SelectTrigger className="col-span-3">
+              <Select onValueChange={(value) => setNewClassYear(parseInt(value))} defaultValue="1">
+                <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
                   <SelectValue placeholder="Select a year" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-gray-800">
                   <SelectItem value="1">1st Year</SelectItem>
                   <SelectItem value="2">2nd Year</SelectItem>
                   <SelectItem value="3">3rd Year</SelectItem>
@@ -362,28 +397,39 @@ const ClassManagement = () => {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="semester" className="text-right">
+              <Label htmlFor="semester" className="text-right font-medium">
                 Semester
               </Label>
-      <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)}>
-                <SelectTrigger className="col-span-3">
+              <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)} defaultValue="1">
+                <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
                   <SelectValue placeholder="Select a semester" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-gray-800">
                   <SelectItem value="1">1</SelectItem>
                   <SelectItem value="2">2</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="section" className="text-right">
+              <Label htmlFor="section" className="text-right font-medium">
                 Section
               </Label>
-              <Input id="section" value={newClassSection} onChange={(e) => setNewClassSection(e.target.value)} className="col-span-3" />
+              <Input
+                id="section"
+                value={newClassSection}
+                onChange={(e) => setNewClassSection(e.target.value)}
+                className="col-span-3 border-stone-300 dark:border-gray-600"
+              />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleCreateClass}>Create class</Button>
+          <DialogFooter className="bg-stone-100 dark:bg-gray-800 p-4 rounded-b-lg">
+            <Button
+              type="submit"
+              onClick={handleCreateClass}
+              className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+            >
+              Create class
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
