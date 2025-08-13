@@ -29,6 +29,7 @@ import ClassStudentsModal from './ClassStudentsModal';
 import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
 import loaderMp2 from '@/Assets/loader.mp4'; // <-- Add this import at the top
+import { useAuth } from '@/contexts/AuthContext';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -40,6 +41,8 @@ const THEME = {
 
 const ClassManagement = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isProfessor = user?.role === 'professor';
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newClassYear, setNewClassYear] = useState(1);
@@ -294,23 +297,25 @@ const ClassManagement = () => {
           <h1 className="text-3xl font-bold text-red-800 dark:text-red-400">Class Management</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">Manage classes and students in the ECE Department.</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsPromoteModalOpen(true)}
-            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
-          >
-            <GraduationCap className="h-4 w-4 mr-2" />
-            Promote Students
-          </Button>
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Class
-          </Button>
-        </div>
+        {!isProfessor && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsPromoteModalOpen(true)}
+              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
+            >
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Promote Students
+            </Button>
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Class
+            </Button>
+          </div>
+        )}
       </div>
 
       <Card className="shadow-lg border-stone-300 dark:border-gray-700">
@@ -329,14 +334,16 @@ const ClassManagement = () => {
                 <TableHead className="font-bold text-gray-800 dark:text-gray-300">Name</TableHead>
                 <TableHead className="font-bold text-gray-800 dark:text-gray-300">Section</TableHead>
                 <TableHead className="text-right font-bold text-gray-800 dark:text-gray-300">Total Students</TableHead>
-                <TableHead className="text-center font-bold text-gray-800 dark:text-gray-300">Actions</TableHead>
+                {!isProfessor && (
+                  <TableHead className="text-center font-bold text-gray-800 dark:text-gray-300">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {classes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    No classes found. Click "Create Class" to add one.
+                  <TableCell colSpan={isProfessor ? 5 : 6} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    {isProfessor ? 'No classes found.' : 'No classes found. Click "Create Class" to add one.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -355,26 +362,28 @@ const ClassManagement = () => {
                     <TableCell>{`ECE ${cls.year}${cls.year === 1 ? 'st' : cls.year === 2 ? 'nd' : cls.year === 3 ? 'rd' : 'th'} Year`}</TableCell>
                     <TableCell>{cls.section}</TableCell>
                     <TableCell className="text-right">{cls.totalStrength}</TableCell>
-                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditClick(cls)}
-                          className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-700 hover:bg-red-100 dark:hover:bg-red-900"
-                          onClick={() => handleDeleteClass(cls.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {!isProfessor && (
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditClick(cls)}
+                            className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-700 hover:bg-red-100 dark:hover:bg-red-900"
+                            onClick={() => handleDeleteClass(cls.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -382,7 +391,7 @@ const ClassManagement = () => {
             {classes.length > 0 && (
               <TableFooter className="bg-stone-200 dark:bg-gray-800">
                 <TableRow>
-                  <TableCell colSpan={5} className="font-bold text-gray-900 dark:text-stone-100">Total Classes</TableCell>
+                  <TableCell colSpan={isProfessor ? 4 : 5} className="font-bold text-gray-900 dark:text-stone-100">Total Classes</TableCell>
                   <TableCell className="text-right font-bold text-gray-900 dark:text-stone-100">{classes.length}</TableCell>
                 </TableRow>
               </TableFooter>
