@@ -60,6 +60,8 @@ const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const MarksUpload = () => {
   const [rows, setRows] = useState<MarkRow[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [rowCount, setRowCount] = useState(0);
   const [hasBlankMarks, setHasBlankMarks] = useState(false);
   const [loading, setLoading] = useState(false);
   const [year, setYear] = useState('');
@@ -134,6 +136,7 @@ const MarksUpload = () => {
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setUploadedFile(file);
 
     const input = event.target;
     const reader = new FileReader();
@@ -170,27 +173,29 @@ const MarksUpload = () => {
           }
         });
 
-        // Ensure rows state is always a true array
-        setRows([...parsed]);
-        setHasBlankMarks(missingMarks.length > 0);
-        if (parsed.length > 0) {
-          toast.success(`Uploaded ${parsed.length} rows`);
-        }
+          // Ensure rows state is always a true array
+          setRows([...parsed]);
+          setRowCount(parsed.length);
+          setHasBlankMarks(missingMarks.length > 0);
+          if (parsed.length > 0) {
+            toast.success(`Uploaded ${parsed.length} rows`);
+          }
         if (invalidEmails.length > 0) {
           toast.error(`Invalid marks for: ${invalidEmails.join(', ')}`);
         }
         if (missingMarks.length > 0) {
           toast.error(`Missing obtained marks for: ${missingMarks.join(', ')}`);
         }
-        if (
-          parsed.length === 0 &&
-          invalidEmails.length === 0 &&
-          missingMarks.length === 0
-        ) {
-          toast.error('No valid rows found');
-        }
+          if (
+            parsed.length === 0 &&
+            invalidEmails.length === 0 &&
+            missingMarks.length === 0
+          ) {
+            toast.error('No valid rows found');
+          }
       } catch (error) {
         toast.error((error as Error).message);
+        setRowCount(0);
       } finally {
         input.value = '';
       }
@@ -242,7 +247,7 @@ const MarksUpload = () => {
   };
 
   const submitMarks = async () => {
-    if (rows.length === 0) {
+    if (rowCount === 0) {
       toast.error('Please upload marks file first');
       return;
     }
@@ -275,10 +280,12 @@ const MarksUpload = () => {
         return;
       }
 
-      toast.success('Marks submitted successfully!');
-      setRows([]);
-      setHasBlankMarks(false);
-      fetchMarks();
+        toast.success('Marks submitted successfully!');
+        setRows([]);
+        setHasBlankMarks(false);
+        setUploadedFile(null);
+        setRowCount(0);
+        fetchMarks();
     } catch (error) {
       toast.error('Failed to submit marks');
     } finally {
@@ -404,42 +411,23 @@ const MarksUpload = () => {
               </label>
             </Button>
           </div>
-          {rows.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Max Marks</TableHead>
-                  <TableHead>Obtained Marks</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row, idx) => (
-                  <TableRow
-                    key={idx}
-                    className={row.marks === null ? 'bg-red-50' : ''}
-                  >
-                    <TableCell>{row.email}</TableCell>
-                    <TableCell>{row.subject}</TableCell>
-                    <TableCell>{row.maxMarks}</TableCell>
-                    <TableCell>{row.marks ?? ''}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          {uploadedFile && (
+            <div className="text-sm text-muted-foreground">
+              {uploadedFile.name} — {rowCount} row{rowCount === 1 ? '' : 's'}
+              {rowCount === 0 && (
+                <span className="ml-2 text-red-500">No valid rows found</span>
+              )}
+            </div>
           )}
 
-          {rows.length > 0 && (
-            <Button
-              onClick={submitMarks}
-              disabled={loading || hasBlankMarks}
-              className="bg-gradient-to-r from-primary to-primary/80"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Submit Marks
-            </Button>
-          )}
+          <Button
+            onClick={submitMarks}
+            disabled={loading || rowCount === 0 || hasBlankMarks}
+            className="bg-gradient-to-r from-primary to-primary/80"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Submit Marks
+          </Button>
         </CardContent>
       </Card>
 
