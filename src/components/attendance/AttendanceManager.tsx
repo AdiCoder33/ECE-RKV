@@ -61,17 +61,30 @@ interface PeriodOption {
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
+const TIME_TO_PERIOD: Record<string, string> = {
+  '09:00-10:00': '1',
+  '10:00-11:00': '2',
+  '11:00-12:00': '3',
+  '14:00-15:00': '4',
+  '15:00-16:00': '5',
+  '16:00-17:00': '6',
+};
+
 const AttendanceManager: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const initialSubject = searchParams.get('subject') || '';
+  const initialSubject = searchParams.get('subjectId') || '';
+  const initialYear = searchParams.get('year') || '1';
+  const initialSection = searchParams.get('section') || 'A';
+  const initialTime = searchParams.get('time') || '';
+  const initialPeriod = TIME_TO_PERIOD[initialTime] || '';
   const { toast } = useToast();
 
-  const [selectedYear, setSelectedYear] = React.useState('1');
-  const [selectedSection, setSelectedSection] = React.useState('A');
+  const [selectedYear, setSelectedYear] = React.useState(initialYear);
+  const [selectedSection, setSelectedSection] = React.useState(initialSection);
   const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
-  const [selectedPeriod, setSelectedPeriod] = React.useState('');
+  const [selectedPeriod, setSelectedPeriod] = React.useState(initialPeriod);
   const [subjects, setSubjects] = React.useState<{ id: string; name: string }[]>([]);
   const [selectedSubject, setSelectedSubject] = React.useState(initialSubject);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -180,17 +193,9 @@ const AttendanceManager: React.FC = () => {
   React.useEffect(() => {
     const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
     const daySlots = timetable.filter((slot) => slot.day === day);
-    const timeToPeriod: Record<string, string> = {
-      '09:00-10:00': '1',
-      '10:00-11:00': '2',
-      '11:00-12:00': '3',
-      '14:00-15:00': '4',
-      '15:00-16:00': '5',
-      '16:00-17:00': '6',
-    };
     const options: PeriodOption[] = daySlots
       .map((slot) => {
-        const periodNumber = timeToPeriod[slot.time];
+        const periodNumber = TIME_TO_PERIOD[slot.time];
         const subjectId = slot.subject_id
           ? String(slot.subject_id)
           : subjects.find((s) => s.name === slot.subject)?.id;
