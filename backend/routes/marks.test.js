@@ -69,4 +69,17 @@ describe('marks bulk entry', () => {
     await request(app).post('/marks/bulk').send(payload).expect(400);
     expect(executeQuery).not.toHaveBeenCalled();
   });
+
+  it('returns 400 for invalid marks', async () => {
+    const payload = {
+      type: 'internal',
+      date: '2024-01-01',
+      marksData: [
+        { email: 'test@example.com', subject: 'Math', maxMarks: 100, marks: 'NaN' }
+      ]
+    };
+
+    await request(app).post('/marks/bulk').send(payload).expect(400);
+    expect(executeQuery).not.toHaveBeenCalled();
+  });
 });
