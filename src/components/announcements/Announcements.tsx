@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,57 +20,65 @@ import {
   Send
 } from 'lucide-react';
 import { Announcement } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const Announcements = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const { toast } = useToast();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
-  const [announcements] = useState<Announcement[]>([
-    {
-      id: '1',
-      title: 'Mid-Semester Examination Schedule',
-      content: 'Mid-semester examinations for all years will be conducted from March 15-25, 2024. Please check the detailed timetable on the notice board.',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      targetRole: 'student',
-      createdAt: '2024-01-15T10:00:00Z',
-      priority: 'high',
-      isActive: true
-    },
-    {
-      id: '2',
-      title: 'Faculty Development Program',
-      content: 'A 5-day Faculty Development Program on "Emerging Technologies in ECE" will be conducted from February 10-14, 2024.',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      targetRole: 'professor',
-      createdAt: '2024-01-10T14:30:00Z',
-      priority: 'medium',
-      isActive: true
-    },
-    {
-      id: '3',
-      title: 'Industry Visit - TCS Innovation Lab',
-      content: 'Final year students are invited for an industry visit to TCS Innovation Lab on January 25, 2024. Registration deadline: January 20.',
-      authorId: '2',
-      authorName: 'Prof. Priya Sharma',
-      targetYear: 4,
-      createdAt: '2024-01-08T09:15:00Z',
-      priority: 'high',
-      isActive: true
-    },
-    {
-      id: '4',
-      title: 'Library Hours Extension',
-      content: 'Library hours have been extended till 10 PM during examination period (March 1-31, 2024).',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      createdAt: '2024-01-05T16:45:00Z',
-      priority: 'low',
-      isActive: true
-    }
-  ]);
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/announcements`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch announcements');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        const mapped: Announcement[] = data.map((a) => {
+          const {
+            author_id,
+            author_name,
+            created_at,
+            target_role,
+            target_section,
+            target_year,
+            is_active,
+            ...rest
+          } = a as Record<string, unknown>;
+          return {
+            ...(rest as Omit<Announcement, 'authorId' | 'authorName' | 'createdAt' | 'targetRole' | 'targetSection' | 'targetYear' | 'isActive'>),
+            authorId: (a as Record<string, unknown>).authorId as string ?? (author_id as string),
+            authorName: (a as Record<string, unknown>).authorName as string ?? (author_name as string),
+            createdAt: (a as Record<string, unknown>).createdAt as string ?? (created_at as string),
+            targetRole: (a as Record<string, unknown>).targetRole as string | undefined ?? (target_role as string | undefined),
+            targetSection: (a as Record<string, unknown>).targetSection as string | undefined ?? (target_section as string | undefined),
+            targetYear: (a as Record<string, unknown>).targetYear as number | undefined ?? (target_year as number | undefined),
+            isActive: (a as Record<string, unknown>).isActive as boolean ?? (is_active as boolean),
+          } as Announcement;
+        });
+        setAnnouncements(mapped);
+      } catch (error) {
+        console.error('Failed to fetch announcements', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load announcements.'
+        });
+      }
+    };
+
+    fetchAnnouncements();
+  }, [toast]);
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
