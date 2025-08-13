@@ -3,6 +3,14 @@ const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
+// Authorization helper to ensure the user has one of the required roles
+const requireRole = roles => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  next();
+};
+
 // Get all classes with student counts
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
@@ -71,7 +79,7 @@ router.get('/promotion-summary', authenticateToken, async (req, res, next) => {
 });
 
 // Create new class
-router.post('/', authenticateToken, async (req, res, next) => {
+router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
     const { year, semester, section, hodId } = req.body;
 
@@ -239,7 +247,7 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
 });
 
 // Update class
-router.put('/:classId', authenticateToken, async (req, res, next) => {
+router.put('/:classId', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
     const { classId } = req.params;
     const { year, semester, section, hodId } = req.body;
@@ -266,7 +274,7 @@ router.put('/:classId', authenticateToken, async (req, res, next) => {
 });
 
 // Delete class
-router.delete('/:classId', authenticateToken, async (req, res, next) => {
+router.delete('/:classId', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
     const { classId } = req.params;
     
@@ -290,7 +298,7 @@ router.delete('/:classId', authenticateToken, async (req, res, next) => {
 });
 
 // Promote students to next year
-router.post('/promote', authenticateToken, async (req, res, next) => {
+router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
     const semester = parseInt(req.body.currentSemester, 10);
     if (![1, 2].includes(semester)) {
