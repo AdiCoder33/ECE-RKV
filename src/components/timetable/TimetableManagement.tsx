@@ -118,7 +118,7 @@ interface TimeSlot {
   day: string;
   time: string;
   subject: string;
-  facultyId: number | null;
+  facultyId: string | null;
   facultyName?: string;
   room: string;
   year: number;
@@ -190,7 +190,7 @@ const TimetableManagement = () => {
           year: slot.year,
           semester: slot.semester,
           section: slot.section,
-          facultyId: slot.faculty_id ?? null,
+          facultyId: slot.faculty_id !== null && slot.faculty_id !== undefined ? String(slot.faculty_id) : null,
           facultyName: slot.faculty,
         }));
         setTimetable(mapped);
@@ -240,7 +240,10 @@ const TimetableManagement = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        const mapped = data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
+        const mapped = data.map((p: { id: number | string; name: string }) => ({
+          id: String(p.id),
+          name: p.name
+        }));
         setProfessors(mapped);
       }
     } catch (error) {
@@ -277,6 +280,7 @@ const TimetableManagement = () => {
     }
 
     try {
+      const facultyId = parseInt(newSlot.facultyId, 10);
       const response = await fetch(`${apiBase}/timetable`, {
         method: 'POST',
         headers: {
@@ -287,10 +291,10 @@ const TimetableManagement = () => {
           day: newSlot.day,
           time: newSlot.time,
           subject: newSlot.subject,
-          facultyId: Number(newSlot.facultyId),
+          facultyId: isNaN(facultyId) ? null : facultyId,
           room: newSlot.room,
-          year: parseInt(selectedYear),
-          semester: parseInt(selectedSemester) as 1 | 2,
+          year: parseInt(selectedYear, 10),
+          semester: parseInt(selectedSemester, 10) as 1 | 2,
           section: selectedSection
         })
       });
@@ -360,6 +364,7 @@ const TimetableManagement = () => {
     if (!slot) return;
 
     try {
+      const facultyId = parseInt(updatedData.facultyId, 10);
       const response = await fetch(`${apiBase}/timetable/${slotId}`, {
         method: 'PUT',
         headers: {
@@ -373,7 +378,7 @@ const TimetableManagement = () => {
           semester: slot.semester,
           section: slot.section,
           subject: updatedData.subject,
-          facultyId: Number(updatedData.facultyId),
+          facultyId: isNaN(facultyId) ? null : facultyId,
           room: updatedData.room
         })
       });
@@ -674,7 +679,7 @@ interface Slot {
   room: string;
 }
 interface EditSlotFormProps {
-  slot: { subject: string; facultyId: number | null; room: string };
+  slot: { subject: string; facultyId: string | null; room: string };
   subjects: Option[];
   professors: Option[];
   onSave: (data: Slot) => void;
@@ -683,7 +688,7 @@ interface EditSlotFormProps {
 const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlotFormProps) => {
   const [editData, setEditData] = useState<Slot>({
     subject: slot.subject,
-    facultyId: slot.facultyId ? String(slot.facultyId) : '',
+    facultyId: slot.facultyId ?? '',
     room: slot.room
   });
 
