@@ -118,6 +118,8 @@ interface TimeSlot {
   day: string;
   time: string;
   subject: string;
+  faculty: string;
+  faculty_id: number | null;
   facultyId: string;
   room: string;
   year: number;
@@ -127,7 +129,7 @@ interface TimeSlot {
 
 const TimetableManagement = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  the { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('3');
   const [selectedSemester, setSelectedSemester] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
@@ -157,20 +159,20 @@ const TimetableManagement = () => {
 
   const fetchTimetable = async () => {
     try {
-        const response = await fetch(
-          `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+      const response = await fetch(
+        `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       if (response.ok) {
         const data = await response.json();
-        const mapped = data.map((slot: any) => {
-          const { faculty, ...rest } = slot;
-          return { ...rest, facultyId: faculty };
-        });
+        const mapped = data.map((slot: any) => ({
+          ...slot,
+          facultyId: slot.faculty_id ? String(slot.faculty_id) : ''
+        }));
         setTimetable(mapped);
       }
     } catch (error) {
@@ -186,14 +188,14 @@ const TimetableManagement = () => {
 
   const fetchSubjects = async () => {
     try {
-        const response = await fetch(
-          `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+      const response = await fetch(
+        `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setSubjects(data);
@@ -211,11 +213,11 @@ const TimetableManagement = () => {
 
   const fetchProfessors = async () => {
     try {
-        const response = await fetch(`${apiBase}/users?role=professor`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+      const response = await fetch(`${apiBase}/users?role=professor`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
@@ -255,11 +257,11 @@ const TimetableManagement = () => {
     }
 
     try {
-        const response = await fetch(`${apiBase}/timetable`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(`${apiBase}/timetable`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           day: newSlot.day,
@@ -302,12 +304,12 @@ const TimetableManagement = () => {
   const handleDeleteSlot = async (slotId: string) => {
     if (!confirm('Are you sure you want to delete this timetable slot?')) return; // Confirmation for deletion
     try {
-        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+      const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
       if (response.ok) {
         fetchTimetable();
@@ -338,11 +340,11 @@ const TimetableManagement = () => {
     if (!slot) return;
 
     try {
-        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           day: slot.day,
@@ -588,7 +590,7 @@ const TimetableManagement = () => {
                                     {slot.subject}
                                   </div>
                                   <div className="text-xs text-gray-600 break-words"> {/* Muted for faculty */}
-                                    {professors.find(p => p.id === slot.facultyId)?.name}
+                                    {slot.faculty}
                                   </div>
                                   <div className="text-xs text-gray-600 break-words"> {/* Muted for room */}
                                     {slot.room}
@@ -627,7 +629,7 @@ const TimetableManagement = () => {
                               }}
                             >
                               {(user?.role === 'admin' || user?.role === 'hod') && (
-                                <Plus className="h-4 w-4 text-gray-500" /> 
+                                <Plus className="h-4 w-4 text-gray-500" />
                               )}
                             </div>
                           )}
