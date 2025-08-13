@@ -7,7 +7,9 @@ const router = express.Router();
 async function fetchTimetable({ year, semester, section, facultyId, day }) {
   let query =
     `SELECT t.id, t.day, t.time, t.subject, t.room, t.year, t.semester, t.section,
-            u.name AS faculty, u.id AS faculty_id, s.id AS subject_id
+            COALESCE(u.name, t.faculty) AS faculty,
+            COALESCE(u.id, TRY_CAST(t.faculty AS INT)) AS faculty_id,
+            s.id AS subject_id
        FROM timetable t
        LEFT JOIN users u ON u.id = TRY_CAST(t.faculty AS INT)
        LEFT JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
@@ -30,7 +32,7 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   }
 
   if (facultyId) {
-    query += ' AND u.id = ?';
+    query += ' AND COALESCE(u.id, TRY_CAST(t.faculty AS INT)) = ?';
     params.push(Number(facultyId));
   }
 
