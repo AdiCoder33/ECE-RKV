@@ -89,6 +89,7 @@ const DashboardLayout: React.FC = () => {
       case 'professor':
         return [
           { id: 'professor', label: 'Dashboard', icon: Home, path: '/dashboard/professor' },
+          { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/dashboard/classes' },
           { id: 'marks-upload', label: 'Upload Marks', icon: FileText, path: '/dashboard/marks-upload' },
           { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
           { id: 'attendance', label: 'Mark Attendance', icon: Calendar, path: '/dashboard/attendance' },
