@@ -1,7 +1,19 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { fetchTimetable } = require('./timetable');
 const router = express.Router();
+
+// Get timetable for a professor
+router.get('/:id/timetable', authenticateToken, async (req, res, next) => {
+  try {
+    const data = await fetchTimetable({ ...req.query, facultyId: req.params.id });
+    res.json(data);
+  } catch (error) {
+    console.error('Professor timetable fetch error:', error);
+    next(error);
+  }
+});
 
 // Get professor dashboard metrics
 router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {

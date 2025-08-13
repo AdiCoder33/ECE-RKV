@@ -3,42 +3,52 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
+// Helper to fetch timetable with optional filters
+async function fetchTimetable({ year, semester, section, facultyId, day }) {
+  let query =
+    `SELECT t.id, t.day, t.time, t.subject, t.room, t.year, t.semester, t.section,
+            u.name AS faculty, u.id AS faculty_id, s.id AS subject_id
+       FROM timetable t
+       LEFT JOIN users u ON u.id = TRY_CAST(t.faculty AS INT)
+       LEFT JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+      WHERE 1=1`;
+  const params = [];
+
+  if (year) {
+    query += ' AND t.year = ?';
+    params.push(year);
+  }
+
+  if (semester) {
+    query += ' AND t.semester = ?';
+    params.push(semester);
+  }
+
+  if (section) {
+    query += ' AND t.section = ?';
+    params.push(section);
+  }
+
+  if (facultyId) {
+    query += ' AND u.id = ?';
+    params.push(facultyId);
+  }
+
+  if (day) {
+    query += ' AND t.day = ?';
+    params.push(day);
+  }
+
+  query += ' ORDER BY t.day, t.time';
+  const result = await executeQuery(query, params);
+  return result.recordset;
+}
+
 // Get timetable
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { year, semester, section, faculty, day } = req.query;
-    let query = 'SELECT * FROM timetable WHERE 1=1';
-    let params = [];
-    
-    if (year) {
-      query += ' AND year = ?';
-      params.push(year);
-    }
-    
-    if (semester) {
-      query += ' AND semester = ?';
-      params.push(semester);
-    }
-
-    if (section) {
-      query += ' AND section = ?';
-      params.push(section);
-    }
-    
-    if (faculty) {
-      query += ' AND faculty = ?';
-      params.push(faculty);
-    }
-    
-    if (day) {
-      query += ' AND day = ?';
-      params.push(day);
-    }
-    
-    query += ' ORDER BY day, time';
-    
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const data = await fetchTimetable(req.query);
+    res.json(data);
   } catch (error) {
     console.error('Timetable fetch error:', error);
     next(error);
@@ -114,3 +124,4 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
 });
 
 module.exports = router;
+module.exports.fetchTimetable = fetchTimetable;
