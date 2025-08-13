@@ -8,20 +8,33 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const { recordset } = await executeQuery(`
-      SELECT 
-        id, 
-        title, 
-        message, 
-        type, 
-        is_read, 
+      SELECT
+        id,
+        title,
+        message,
+        type,
+        is_read,
         created_at,
         data
-      FROM notifications 
-      WHERE user_id = ? 
+      FROM notifications
+      WHERE user_id = ?
       ORDER BY created_at DESC
     `, [req.user.id]);
-    
-    res.json(recordset);
+
+    const notifications = recordset.map(notification => {
+      let parsedData = null;
+      if (notification.data) {
+        try {
+          parsedData = JSON.parse(notification.data);
+        } catch (err) {
+          // If parsing fails, keep data as null
+          parsedData = null;
+        }
+      }
+      return { ...notification, data: parsedData };
+    });
+
+    res.json(notifications);
   } catch (error) {
     console.error('Notifications fetch error:', error);
     next(error);
