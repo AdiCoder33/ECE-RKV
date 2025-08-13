@@ -78,22 +78,58 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Bulk enter marks
 router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
-    const { subjectId, type, marksData, maxMarks, date, enteredBy } = req.body;
-    
-    // Delete existing marks for the same subject and type
-    await executeQuery(
-      'DELETE FROM InternalMarks WHERE subject_id = ? AND type = ?',
-      [subjectId, type]
-    );
-    
-    // Insert new marks
+    const { type, date, enteredBy, marksData } = req.body;
+
+    if (!Array.isArray(marksData)) {
+      return res.status(400).json({ error: 'marksData must be an array' });
+    }
+
+    const errors = [];
+    const prepared = [];
+
+    // Resolve student and subject IDs for each record
     for (const record of marksData) {
+      const { email, subject, maxMarks, marks } = record;
+
+      const student = await executeQuery(
+        'SELECT id FROM Users WHERE email = ?',
+        [email]
+      );
+      if (!student.recordset.length) {
+        errors.push(`Student not found: ${email}`);
+        continue;
+      }
+
+      const subj = await executeQuery(
+        'SELECT id FROM Subjects WHERE name = ? OR code = ?',
+        [subject, subject]
+      );
+      if (!subj.recordset.length) {
+        errors.push(`Subject not found: ${subject}`);
+        continue;
+      }
+
+      prepared.push({
+        studentId: student.recordset[0].id,
+        subjectId: subj.recordset[0].id,
+        maxMarks,
+        marks
+      });
+    }
+
+    if (errors.length) {
+      return res.status(400).json({ errors });
+    }
+
+    // Insert marks
+    for (const p of prepared) {
       await executeQuery(
-        'INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())',
-        [record.studentId, subjectId, type, record.marks, maxMarks, date, enteredBy]
+        `INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())`,
+        [p.studentId, p.subjectId, type, p.marks, p.maxMarks, date, enteredBy]
       );
     }
-    
+
     res.json({ message: 'Marks entered successfully' });
   } catch (error) {
     console.error('Enter marks error:', error);
