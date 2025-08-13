@@ -40,33 +40,38 @@ router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
 // Get all marks (for faculty)
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { subjectId, studentId, type } = req.query;
+    const { year, semester, section, subjectId } = req.query;
     let query = `
-      SELECT im.*, u.name as student_name, u.roll_number, s.name as subject_name 
-      FROM InternalMarks im 
-      LEFT JOIN Users u ON im.student_id = u.id 
-      LEFT JOIN Subjects s ON im.subject_id = s.id 
+      SELECT u.name AS student_name, u.email, u.roll_number, s.name AS subject, im.marks
+      FROM InternalMarks im
+      LEFT JOIN Users u ON im.student_id = u.id
+      LEFT JOIN Subjects s ON im.subject_id = s.id
       WHERE 1=1
     `;
     const params = [];
-    
+
+    if (year) {
+      query += ' AND u.year = ?';
+      params.push(year);
+    }
+
+    if (semester) {
+      query += ' AND u.semester = ?';
+      params.push(semester);
+    }
+
+    if (section) {
+      query += ' AND u.section = ?';
+      params.push(section);
+    }
+
     if (subjectId) {
       query += ' AND im.subject_id = ?';
       params.push(subjectId);
     }
-    
-    if (studentId) {
-      query += ' AND im.student_id = ?';
-      params.push(studentId);
-    }
-    
-    if (type) {
-      query += ' AND im.type = ?';
-      params.push(type);
-    }
-    
-    query += ' ORDER BY im.date DESC';
-    
+
+    query += ' ORDER BY u.roll_number';
+
     const result = await executeQuery(query, params);
     res.json(result.recordset);
   } catch (error) {
