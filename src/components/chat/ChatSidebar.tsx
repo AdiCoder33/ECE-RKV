@@ -103,6 +103,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const controller = new AbortController();
     let ignore = false;
     setMessagesLoading(true);
+    setDirectMessages([]);
+    setGroupMessages([]);
     if (type === 'direct') {
       fetchConversation(id, undefined, controller.signal)
         .then(data => {
