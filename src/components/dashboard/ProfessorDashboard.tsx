@@ -196,7 +196,7 @@ const ProfessorDashboard = () => {
       const token = localStorage.getItem('token');
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
       
-      const response = await fetch(`${apiBase}/timetable?faculty=${user?.name}&day=${today}`, {
+      const response = await fetch(`${apiBase}/timetable?facultyId=${user?.id}&day=${today}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
