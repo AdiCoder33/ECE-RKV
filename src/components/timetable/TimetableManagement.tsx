@@ -129,7 +129,7 @@ interface TimeSlot {
 
 const TimetableManagement = () => {
   const { user } = useAuth();
-  the { toast } = useToast();
+  const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('3');
   const [selectedSemester, setSelectedSemester] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
