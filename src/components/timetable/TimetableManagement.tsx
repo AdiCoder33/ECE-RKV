@@ -118,13 +118,25 @@ interface TimeSlot {
   day: string;
   time: string;
   subject: string;
-  faculty: string;
-  faculty_id: number | null;
-  facultyId: string;
+  facultyId: number | null;
+  facultyName?: string;
   room: string;
   year: number;
   semester: 1 | 2;
   section: string;
+}
+
+interface ApiSlot {
+  id: string;
+  day: string;
+  time: string;
+  subject: string;
+  room: string;
+  year: number;
+  semester: number;
+  section: string;
+  faculty_id: number | null;
+  faculty: string;
 }
 
 const TimetableManagement = () => {
@@ -168,10 +180,18 @@ const TimetableManagement = () => {
         }
       );
       if (response.ok) {
-        const data = await response.json();
-        const mapped = data.map((slot: any) => ({
-          ...slot,
-          facultyId: slot.faculty_id ? String(slot.faculty_id) : ''
+        const data: ApiSlot[] = await response.json();
+        const mapped: TimeSlot[] = data.map((slot) => ({
+          id: slot.id,
+          day: slot.day,
+          time: slot.time,
+          subject: slot.subject,
+          room: slot.room,
+          year: slot.year,
+          semester: slot.semester,
+          section: slot.section,
+          facultyId: slot.faculty_id ?? null,
+          facultyName: slot.faculty,
         }));
         setTimetable(mapped);
       }
@@ -267,7 +287,7 @@ const TimetableManagement = () => {
           day: newSlot.day,
           time: newSlot.time,
           subject: newSlot.subject,
-          facultyId: newSlot.facultyId,
+          facultyId: Number(newSlot.facultyId),
           room: newSlot.room,
           year: parseInt(selectedYear),
           semester: parseInt(selectedSemester) as 1 | 2,
@@ -353,7 +373,7 @@ const TimetableManagement = () => {
           semester: slot.semester,
           section: slot.section,
           subject: updatedData.subject,
-          facultyId: updatedData.facultyId,
+          facultyId: Number(updatedData.facultyId),
           room: updatedData.room
         })
       });
@@ -590,7 +610,7 @@ const TimetableManagement = () => {
                                     {slot.subject}
                                   </div>
                                   <div className="text-xs text-gray-600 break-words"> {/* Muted for faculty */}
-                                    {slot.faculty}
+                                    {slot.facultyName}
                                   </div>
                                   <div className="text-xs text-gray-600 break-words"> {/* Muted for room */}
                                     {slot.room}
@@ -654,7 +674,7 @@ interface Slot {
   room: string;
 }
 interface EditSlotFormProps {
-  slot: Slot;
+  slot: { subject: string; facultyId: number | null; room: string };
   subjects: Option[];
   professors: Option[];
   onSave: (data: Slot) => void;
@@ -663,7 +683,7 @@ interface EditSlotFormProps {
 const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlotFormProps) => {
   const [editData, setEditData] = useState<Slot>({
     subject: slot.subject,
-    facultyId: slot.facultyId,
+    facultyId: slot.facultyId ? String(slot.facultyId) : '',
     room: slot.room
   });
 
