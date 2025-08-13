@@ -16,6 +16,7 @@ import { Subject } from '@/types';
 import AddSubjectModal from './AddSubjectModal';
 import EditSubjectModal from './EditSubjectModal';
 import { useToast } from "@/hooks/use-toast";
+import loaderMp2 from '@/Assets/loader.mp4';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -24,6 +25,8 @@ const THEME = {
   bgBeige: '#fbf4ea', // original warm beige
   accent: '#8b0000', // deep-maroon, used for headings and primary buttons
 };
+
+const MIN_LOADER_TIME = 1500; // milliseconds
 
 const SubjectManagement = () => {
   const { toast } = useToast();
@@ -34,11 +37,30 @@ const SubjectManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Loader component using loader.mp4 video
+  const EceVideoLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp2}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading ECE Subjects...</div>
+      <div className="text-[#a52a2a] text-sm mt-1">Fetching subject data, please wait</div>
+    </div>
+  );
 
   useEffect(() => {
     const fetchSubjects = async () => {
+      const start = Date.now();
       try {
         const response = await fetch(`${apiBase}/subjects`, {
           headers: {
@@ -61,11 +83,20 @@ const SubjectManagement = () => {
         setSubjects(mapped);
       } catch (error) {
         console.error('Error fetching subjects:', error);
+        setError('Failed to load subjects');
         toast({
           variant: "destructive",
           title: "Error",
           description: "Failed to load subjects",
         });
+      } finally {
+        // Ensure loader is visible for at least MIN_LOADER_TIME
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_LOADER_TIME) {
+          setTimeout(() => setLoading(false), MIN_LOADER_TIME - elapsed);
+        } else {
+          setLoading(false);
+        }
       }
     };
     fetchSubjects();
@@ -187,6 +218,17 @@ const SubjectManagement = () => {
     elective: subjects.filter(s => s.type === 'elective').length,
     totalCredits: subjects.reduce((sum, s) => sum + s.credits, 0)
   };
+
+  if (loading)
+    return (
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="p-8 text-center text-red-600">{error}</div>
+    );
 
   return (
     <div

@@ -28,6 +28,7 @@ import PromoteStudentsModal from './PromoteStudentsModal';
 import ClassStudentsModal from './ClassStudentsModal';
 import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
+import loaderMp2 from '@/Assets/loader.mp4'; // <-- Add this import at the top
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -50,8 +51,31 @@ const ClassManagement = () => {
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // Loader component using loader.mp2 video
+  const EceVideoLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp2}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading ECE Classes...</div>
+      <div className="text-[#a52a2a] text-sm mt-1">Fetching class data, please wait</div>
+    </div>
+  );
+
+  // Add loading and error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const fetchClasses = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/classes`, {
         headers: {
@@ -64,16 +88,20 @@ const ClassManagement = () => {
       const data: Class[] = await response.json();
       setClasses(data);
     } catch {
+      setError('Failed to load classes');
       toast({
         variant: 'destructive',
         title: 'Error',
         description: 'Failed to load classes',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
   const handleCreateClass = async () => {
@@ -244,6 +272,18 @@ const ClassManagement = () => {
       ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
       : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
   };
+
+  // Show loader or error if needed
+  if (loading)
+    return (
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="p-8 text-center text-red-600">{error}</div>
+    );
 
   return (
     <div className="space-y-6 p-4 sm:p-6 md:p-8 min-h-screen text-gray-900 dark:text-stone-100"

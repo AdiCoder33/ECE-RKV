@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
+import loaderMp2 from '@/Assets/loader.mp4';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -123,6 +124,8 @@ interface TimeSlot {
   section: string;
 }
 
+const MIN_LOADER_TIME = 1500; // milliseconds
+
 const TimetableManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -145,12 +148,54 @@ const TimetableManagement = () => {
   });
 
   const [timetable, setTimetable] = useState<TimeSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch timetable data
+  // Loader component using loader.mp4 video
+  const EceVideoLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp2}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading ECE Timetable...</div>
+      <div className="text-[#a52a2a] text-sm mt-1">Fetching timetable data, please wait</div>
+    </div>
+  );
+
+  // Fetch timetable, subjects, professors with minimum loader time
   useEffect(() => {
-    fetchTimetable();
-    fetchSubjects();
-    fetchProfessors();
+    const fetchAll = async () => {
+      const start = Date.now();
+      try {
+        await Promise.all([
+          fetchTimetable(),
+          fetchSubjects(),
+          fetchProfessors()
+        ]);
+      } catch (err) {
+        setError('Failed to load timetable data');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load timetable data",
+        });
+      } finally {
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_LOADER_TIME) {
+          setTimeout(() => setLoading(false), MIN_LOADER_TIME - elapsed);
+        } else {
+          setLoading(false);
+        }
+      }
+    };
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear, selectedSemester, selectedSection]);
 
   const fetchTimetable = async () => {
@@ -372,6 +417,17 @@ const TimetableManagement = () => {
   const getSlotForTime = (day: string, time: string) => {
     return filteredTimetable.find(slot => slot.day === day && slot.time === time);
   };
+
+  if (loading)
+    return (
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="p-8 text-center text-red-600">{error}</div>
+    );
 
   return (
     <div
