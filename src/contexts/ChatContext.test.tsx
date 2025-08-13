@@ -20,8 +20,8 @@ describe('mergePrivateMessages', () => {
     const prev: (PrivateMessage | null | undefined)[] = [
       {
         id: '1',
-        sender_id: 'a',
-        receiver_id: 'b',
+        sender_id: 1,
+        receiver_id: 2,
         content: 'hello',
         created_at: '',
         sender_name: 'A',
@@ -36,8 +36,8 @@ describe('mergePrivateMessages', () => {
       undefined,
       {
         id: '2',
-        sender_id: 'b',
-        receiver_id: 'a',
+        sender_id: 2,
+        receiver_id: 1,
         content: 'hi',
         created_at: '',
         sender_name: 'B',
@@ -47,8 +47,8 @@ describe('mergePrivateMessages', () => {
       },
       {
         id: '1',
-        sender_id: 'a',
-        receiver_id: 'b',
+        sender_id: 1,
+        receiver_id: 2,
         content: 'dup',
         created_at: '',
         sender_name: 'A',
@@ -66,13 +66,13 @@ describe('mergePrivateMessages', () => {
 });
 
 describe('ChatWindow typing indicator', () => {
-  it('shows typing indicator for group chats', () => {
+  it('shows typing indicator for direct chats', () => {
     render(
       <ChatWindow
-        activeChat={{ type: 'group', id: '1', title: 'Group' }}
+        activeChat={{ type: 'direct', id: '2', title: 'User' }}
         messages={[]}
-        currentUserId="1"
-        typingUsers={new Set(['group-1'])}
+        currentUserId={1}
+        typingUsers={new Set<number>([2])}
         loading={false}
         hasMore={false}
         loadMore={() => {}}

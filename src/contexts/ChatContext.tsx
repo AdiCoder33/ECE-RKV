@@ -31,8 +31,8 @@ interface ChatContextType {
   privateMessages: PrivateMessage[];
   conversations: Conversation[];
   groups: Group[];
-  onlineUsers: Set<string>;
-  typingUsers: Set<string>;
+  onlineUsers: Set<number>;
+  typingUsers: Set<number>;
   fetchGroups: () => Promise<Group[]>;
   fetchGroupMessages: (
     groupId: string,
@@ -49,15 +49,15 @@ interface ChatContextType {
   ) => Promise<ChatMessage>;
   fetchConversations: () => Promise<Conversation[]>;
   fetchConversation: (
-    userId: string,
+    userId: number,
     params?: { before?: string; limit?: number },
     signal?: AbortSignal
   ) => Promise<Paginated<PrivateMessage>>;
   fetchMoreConversation: (
-    userId: string
+    userId: number
   ) => Promise<Paginated<PrivateMessage>>;
   sendDirectMessage: (
-    receiverId: string,
+    receiverId: number,
     content: string,
     files?: File[]
   ) => Promise<PrivateMessage | null>;
@@ -96,8 +96,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
-  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
 
@@ -231,13 +231,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchConversation = useCallback(
     async (
-      userId: string,
+      userId: number,
       params: { before?: string; limit?: number } = {},
       signal?: AbortSignal
     ): Promise<Paginated<PrivateMessage>> => {
       const { before, limit } = params;
       const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
-      const data = (await fetchWithAuth(`/messages/conversation/${userId}${qs}`, { signal })) as Paginated<PrivateMessage>;
+      const data = (await fetchWithAuth(`/messages/conversation/${String(userId)}${qs}`, { signal })) as Paginated<PrivateMessage>;
       const sanitized = (data.messages as (PrivateMessage | null | undefined)[]).filter(
         m => m && m.id
       ) as PrivateMessage[];
@@ -260,7 +260,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const fetchMoreConversation = useCallback(
-    async (userId: string): Promise<Paginated<PrivateMessage>> => {
+    async (userId: number): Promise<Paginated<PrivateMessage>> => {
       const convMsgs = privateMessages
         .filter(m => m.sender_id === userId || m.receiver_id === userId)
         .sort(
@@ -285,7 +285,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sanitizedContent = DOMPurify.sanitize(content);
     const optimistic: ChatMessage = {
       id: tempId,
-      senderId: user?.id || '',
+      senderId: user?.id ?? 0,
       senderName: user?.name || '',
       senderRole: user?.role || '',
       content: sanitizedContent,
@@ -354,7 +354,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendDirectMessage = async (
-    receiverId: string,
+    receiverId: number,
     content: string,
     files: File[] = []
   ): Promise<PrivateMessage | null> => {
@@ -362,7 +362,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sanitizedContent = DOMPurify.sanitize(content);
     const optimistic: PrivateMessage = {
       id: tempId,
-      sender_id: user?.id || '',
+      sender_id: user?.id ?? 0,
       receiver_id: receiverId,
       content: sanitizedContent,
       created_at: new Date().toISOString(),
@@ -533,11 +533,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
-    socket.on('user_online', (id: string) => {
+    socket.on('user_online', (id: number) => {
       setOnlineUsers(prev => new Set(prev).add(id));
     });
 
-    socket.on('user_offline', (id: string) => {
+    socket.on('user_offline', (id: number) => {
       setOnlineUsers(prev => {
         const s = new Set(prev);
         s.delete(id);
@@ -550,11 +550,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
-    socket.on('typing', ({ from }: { from: string }) => {
+    socket.on('typing', ({ from }: { from: number }) => {
       setTypingUsers(prev => new Set(prev).add(from));
     });
 
-    socket.on('stop_typing', ({ from }: { from: string }) => {
+    socket.on('stop_typing', ({ from }: { from: number }) => {
       setTypingUsers(prev => {
         const s = new Set(prev);
         s.delete(from);
