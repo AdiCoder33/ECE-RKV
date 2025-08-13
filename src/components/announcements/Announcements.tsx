@@ -5,13 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Bell, 
+import {
+  Bell,
   Plus,
   Edit,
   Trash2,
   Search,
-  Filter,
   Calendar,
   User,
   AlertCircle,
@@ -24,12 +23,40 @@ import { useToast } from '@/components/ui/use-toast';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
+const mapAnnouncement = (a: Record<string, unknown>): Announcement => {
+  const {
+    author_id,
+    author_name,
+    created_at,
+    target_role,
+    target_section,
+    target_year,
+    is_active,
+    ...rest
+  } = a as Record<string, unknown>;
+  return {
+    ...(rest as Omit<Announcement, 'authorId' | 'authorName' | 'createdAt' | 'targetRole' | 'targetSection' | 'targetYear' | 'isActive'>),
+    authorId: (a as Record<string, unknown>).authorId as string ?? (author_id as string),
+    authorName: (a as Record<string, unknown>).authorName as string ?? (author_name as string),
+    createdAt: (a as Record<string, unknown>).createdAt as string ?? (created_at as string),
+    targetRole: (a as Record<string, unknown>).targetRole as string | undefined ?? (target_role as string | undefined),
+    targetSection: (a as Record<string, unknown>).targetSection as string | undefined ?? (target_section as string | undefined),
+    targetYear: (a as Record<string, unknown>).targetYear as number | undefined ?? (target_year as number | undefined),
+    isActive: (a as Record<string, unknown>).isActive as boolean ?? (is_active as boolean),
+  } as Announcement;
+};
+
 const Announcements = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('low');
+  const [targetRole, setTargetRole] = useState('all');
+  const [targetYear, setTargetYear] = useState('');
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -44,28 +71,7 @@ const Announcements = () => {
           throw new Error('Failed to fetch announcements');
         }
         const data: Array<Record<string, unknown>> = await response.json();
-        const mapped: Announcement[] = data.map((a) => {
-          const {
-            author_id,
-            author_name,
-            created_at,
-            target_role,
-            target_section,
-            target_year,
-            is_active,
-            ...rest
-          } = a as Record<string, unknown>;
-          return {
-            ...(rest as Omit<Announcement, 'authorId' | 'authorName' | 'createdAt' | 'targetRole' | 'targetSection' | 'targetYear' | 'isActive'>),
-            authorId: (a as Record<string, unknown>).authorId as string ?? (author_id as string),
-            authorName: (a as Record<string, unknown>).authorName as string ?? (author_name as string),
-            createdAt: (a as Record<string, unknown>).createdAt as string ?? (created_at as string),
-            targetRole: (a as Record<string, unknown>).targetRole as string | undefined ?? (target_role as string | undefined),
-            targetSection: (a as Record<string, unknown>).targetSection as string | undefined ?? (target_section as string | undefined),
-            targetYear: (a as Record<string, unknown>).targetYear as number | undefined ?? (target_year as number | undefined),
-            isActive: (a as Record<string, unknown>).isActive as boolean ?? (is_active as boolean),
-          } as Announcement;
-        });
+        const mapped: Announcement[] = data.map(mapAnnouncement);
         setAnnouncements(mapped);
       } catch (error) {
         console.error('Failed to fetch announcements', error);
@@ -110,9 +116,49 @@ const Announcements = () => {
     const matchesSearch = announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          announcement.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = selectedPriority === 'all' || announcement.priority === selectedPriority;
-    
+
     return matchesSearch && matchesPriority;
   });
+
+  const handlePublish = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/announcements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          targetRole: targetRole === 'all' ? null : targetRole,
+          targetSection: null,
+          targetYear: targetYear ? Number(targetYear) : null,
+          priority
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to publish announcement');
+      }
+      const data: Record<string, unknown> = await response.json();
+      const newAnnouncement = mapAnnouncement(data);
+      setAnnouncements((prev) => [newAnnouncement, ...prev]);
+      setTitle('');
+      setContent('');
+      setPriority('low');
+      setTargetRole('all');
+      setTargetYear('');
+      setShowCreateForm(false);
+    } catch (error) {
+      console.error('Failed to publish announcement', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to publish announcement.'
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
@@ -138,22 +184,34 @@ const Announcements = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Title</label>
-                <Input placeholder="Enter announcement title" />
+                <Input
+                  placeholder="Enter announcement title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Priority</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+                >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Target Audience</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
+                >
                   <option value="all">All</option>
                   <option value="student">Students</option>
                   <option value="professor">Faculty</option>
@@ -162,7 +220,11 @@ const Announcements = () => {
               </div>
               <div>
                 <label className="text-sm font-medium">Target Year (Optional)</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={targetYear}
+                  onChange={(e) => setTargetYear(e.target.value)}
+                >
                   <option value="">All Years</option>
                   <option value="1">1st Year</option>
                   <option value="2">2nd Year</option>
@@ -174,18 +236,23 @@ const Announcements = () => {
 
             <div>
               <label className="text-sm font-medium">Content</label>
-              <Textarea 
-                placeholder="Enter announcement content..." 
+              <Textarea
+                placeholder="Enter announcement content..."
                 rows={4}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
               />
             </div>
 
             <div className="flex gap-2">
-              <Button>
+              <Button onClick={handlePublish}>
                 <Send className="h-4 w-4 mr-2" />
                 Publish Announcement
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateForm(false)}
+              >
                 Cancel
               </Button>
             </div>
