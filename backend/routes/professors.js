@@ -256,4 +256,33 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
   }
 });
 
+// Get recent activity feed for a professor based on notifications
+router.get('/:id/activity-feed', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch recent notifications for the professor
+    const { recordset } = await executeQuery(
+      `SELECT TOP 10 id, title, message, type, created_at
+       FROM notifications
+       WHERE user_id = ?
+       ORDER BY created_at DESC`,
+      [id]
+    );
+
+    const activities = recordset.map(row => ({
+      id: row.id,
+      action: row.title,
+      details: row.message,
+      time: row.created_at,
+      type: row.type
+    }));
+
+    res.json(activities);
+  } catch (error) {
+    console.error('Professor activity feed error:', error);
+    next(error);
+  }
+});
+
 module.exports = router;

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDistanceToNow } from 'date-fns';
 
 const ProfessorDashboard = () => {
   const { user } = useAuth();
@@ -39,6 +40,7 @@ const ProfessorDashboard = () => {
 
   const [attendanceTrend, setAttendanceTrend] = useState([]);
   const [gradingDistribution, setGradingDistribution] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
 
   // Demo today's schedule
   const demoSchedule = [
@@ -81,6 +83,7 @@ const ProfessorDashboard = () => {
     fetchClassData();
     fetchAttendanceTrend();
     fetchGradingDistribution();
+    fetchActivityFeed();
   }, []);
 
   const fetchClassData = async () => {
@@ -168,6 +171,26 @@ const ProfessorDashboard = () => {
     }
   };
 
+  const fetchActivityFeed = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/professors/${user?.id}/activity-feed`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setActivityFeed(data);
+      } else {
+        setActivityFeed([]);
+      }
+    } catch (error) {
+      console.error('Error fetching activity feed:', error);
+      setActivityFeed([]);
+    }
+  };
+
   const fetchTodaySchedule = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -235,36 +258,8 @@ const ProfessorDashboard = () => {
     navigate(`/dashboard/attendance?year=${classItem.year}&section=${classItem.section}&subject=${subjectId}`);
   };
 
-  const recentActivities = [
-    {
-      id: 1,
-      action: 'Assignment submitted',
-      details: 'Data Structures - CSE-3A',
-      time: '5 minutes ago',
-      type: 'submission'
-    },
-    {
-      id: 2,
-      action: 'Low attendance alert',
-      details: 'John Doe - 65% attendance',
-      time: '1 hour ago',
-      type: 'alert'
-    },
-    {
-      id: 3,
-      action: 'Grades updated',
-      details: 'Database Systems - CSE-3B',
-      time: '2 hours ago',
-      type: 'grading'
-    },
-    {
-      id: 4,
-      action: 'Class scheduled',
-      details: 'Operating Systems - Tomorrow 10:00 AM',
-      time: '3 hours ago',
-      type: 'schedule'
-    }
-  ];
+  const formatActivityTime = (time: string) =>
+    formatDistanceToNow(new Date(time), { addSuffix: true });
 
   return (
     <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-0">
@@ -555,14 +550,19 @@ const ProfessorDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            {activityFeed.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
                 <div className="w-2 h-2 bg-primary rounded-full" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{activity.action}</p>
                   <p className="text-xs text-muted-foreground">{activity.details}</p>
                 </div>
-                <span className="text-xs text-muted-foreground">{activity.time}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatActivityTime(activity.time)}
+                </span>
               </div>
             ))}
           </div>
