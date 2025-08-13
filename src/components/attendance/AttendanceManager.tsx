@@ -77,7 +77,9 @@ const AttendanceManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [api, setApi] = React.useState<CarouselApi | null>(null);
   const [timetable, setTimetable] = React.useState<TimetableSlot[]>([]);
+  const [slotOptions, setSlotOptions] = React.useState<PeriodOption[]>([]);
   const [periodOptions, setPeriodOptions] = React.useState<PeriodOption[]>([]);
+  const [selectedSlot, setSelectedSlot] = React.useState('');
 
   const isDesktop = useMediaQuery('(min-width:768px)');
   const itemsPerPage = isDesktop ? 15 : 9;
@@ -203,8 +205,20 @@ const AttendanceManager: React.FC = () => {
         };
       })
       .filter((opt): opt is PeriodOption => opt !== null);
-    setPeriodOptions(options);
-  }, [timetable, selectedDate, subjects, selectedYear, selectedSection, currentSemester]);
+    setSlotOptions(options);
+    if (!isProfessor) {
+      setPeriodOptions(options);
+    }
+  }, [timetable, selectedDate, subjects, selectedYear, selectedSection, currentSemester, isProfessor]);
+
+  // Reset slot and period selections when date changes for professors
+  React.useEffect(() => {
+    if (isProfessor) {
+      setSelectedSlot('');
+      setSelectedPeriod('');
+      setPeriodOptions([]);
+    }
+  }, [selectedDate, isProfessor]);
 
   // Fetch attendance for the current selection
   const fetchAttendance = React.useCallback(async () => {
@@ -240,6 +254,7 @@ const AttendanceManager: React.FC = () => {
 
   // Fetch class + students whenever the selection changes, then sync attendance + summary
   React.useEffect(() => {
+    if (isProfessor && !selectedSlot) return;
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -310,7 +325,7 @@ const AttendanceManager: React.FC = () => {
     };
 
     fetchData();
-  }, [selectedYear, selectedSection, selectedSubject, fetchAttendance]);
+  }, [selectedYear, selectedSection, selectedSubject, fetchAttendance, isProfessor, selectedSlot]);
 
   // Keep carousel on first page when list size/layout changes
   React.useEffect(() => {
@@ -442,37 +457,75 @@ const AttendanceManager: React.FC = () => {
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="year-select">Year</Label>
-              <select
-                id="year-select"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-foreground"
-              >
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}st Year
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!isProfessor && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="year-select">Year</Label>
+                  <select
+                    id="year-select"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="w-full p-2 border rounded-md bg-background text-foreground"
+                  >
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}st Year
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="section-select">Section</Label>
-              <select
-                id="section-select"
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-foreground"
-              >
-                {sections.map((section) => (
-                  <option key={section} value={section}>
-                    Section {section}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="section-select">Section</Label>
+                  <select
+                    id="section-select"
+                    value={selectedSection}
+                    onChange={(e) => setSelectedSection(e.target.value)}
+                    className="w-full p-2 border rounded-md bg-background text-foreground"
+                  >
+                    {sections.map((section) => (
+                      <option key={section} value={section}>
+                        Section {section}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {isProfessor && (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="slot-select">Choose Class Slot</Label>
+                <select
+                  id="slot-select"
+                  value={selectedSlot}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedSlot(value);
+                    const option = slotOptions.find((o) => o.value === value);
+                    if (option) {
+                      setSelectedYear(option.year);
+                      setSelectedSection(option.section);
+                      setSelectedSubject(option.subjectId);
+                      setSelectedPeriod(option.value);
+                      setPeriodOptions([option]);
+                    } else {
+                      setSelectedSubject('');
+                      setSelectedPeriod(value);
+                      setPeriodOptions([]);
+                    }
+                  }}
+                  className="w-full p-2 border rounded-md bg-background text-foreground"
+                >
+                  <option value="">Select Slot</option>
+                  {slotOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {`${option.label} – Year ${option.year}, Section ${option.section}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="date-select">Date</Label>
