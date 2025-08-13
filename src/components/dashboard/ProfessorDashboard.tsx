@@ -27,11 +27,14 @@ const ProfessorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
 
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [activeClasses, setActiveClasses] = useState(0);
+  const [avgAttendance, setAvgAttendance] = useState(0);
+  const [pendingGrading, setPendingGrading] = useState(0);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [metricsError, setMetricsError] = useState(false);
+
   const apiBase = import.meta.env.VITE_API_URL || '/api';
-  const totalStudents = 156;
-  const activeClasses = 4;
-  const avgAttendance = 84;
-  const pendingGrading = 23;
 
   const classData = [
     { name: 'CSE-3A', students: 45, avgScore: 78, attendance: 88, color: '#8B0000' },
@@ -93,7 +96,33 @@ const ProfessorDashboard = () => {
   useEffect(() => {
     fetchTodaySchedule();
     fetchSubjects();
+    fetchProfessorMetrics();
   }, []);
+
+  const fetchProfessorMetrics = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/professors/${user?.id}/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTotalStudents(data.totalStudents ?? 0);
+        setActiveClasses(data.activeClasses ?? 0);
+        setAvgAttendance(data.avgAttendance ?? 0);
+        setPendingGrading(data.pendingGrading ?? 0);
+      } else {
+        setMetricsError(true);
+      }
+    } catch (error) {
+      console.error('Error fetching professor metrics:', error);
+      setMetricsError(true);
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
 
   const fetchTodaySchedule = async () => {
     try {
@@ -221,9 +250,11 @@ const ProfessorDashboard = () => {
             <Users className="h-3 w-3 lg:h-4 lg:w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{totalStudents}</div>
+            <div className="text-xl lg:text-2xl font-bold text-foreground">
+              {metricsLoading ? '...' : metricsError ? 'N/A' : totalStudents}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Across {activeClasses} classes
+              {metricsLoading ? '...' : metricsError ? 'N/A' : `Across ${activeClasses} classes`}
             </p>
           </CardContent>
         </Card>
@@ -234,9 +265,11 @@ const ProfessorDashboard = () => {
             <BookOpen className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{activeClasses}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {metricsLoading ? '...' : metricsError ? 'N/A' : activeClasses}
+            </div>
             <p className="text-xs text-muted-foreground">
-              This semester
+              {metricsLoading || metricsError ? '' : 'This semester'}
             </p>
           </CardContent>
         </Card>
@@ -247,13 +280,21 @@ const ProfessorDashboard = () => {
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{avgAttendance}%</div>
-            <Progress value={avgAttendance} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className={avgAttendance >= 80 ? 'text-green-600' : 'text-yellow-600'}>
-                {avgAttendance >= 80 ? 'Good' : 'Needs attention'}
-              </span>
-            </p>
+            {metricsLoading ? (
+              <div className="text-2xl font-bold text-foreground">...</div>
+            ) : metricsError ? (
+              <div className="text-2xl font-bold text-foreground">N/A</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-foreground">{avgAttendance}%</div>
+                <Progress value={avgAttendance} className="mt-2" />
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className={avgAttendance >= 80 ? 'text-green-600' : 'text-yellow-600'}>
+                    {avgAttendance >= 80 ? 'Good' : 'Needs attention'}
+                  </span>
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -263,9 +304,11 @@ const ProfessorDashboard = () => {
             <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{pendingGrading}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {metricsLoading ? '...' : metricsError ? 'N/A' : pendingGrading}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Assignments to grade
+              {metricsLoading || metricsError ? '' : 'Assignments to grade'}
             </p>
           </CardContent>
         </Card>
