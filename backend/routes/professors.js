@@ -82,4 +82,90 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get class metrics for a professor
+router.get('/:id/classes', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Find distinct classes (year/semester/section) taught by the professor
+    const classesResult = await executeQuery(
+      'SELECT DISTINCT year, semester, section FROM timetable WHERE faculty = ?',
+      [id]
+    );
+
+    const classes = classesResult.recordset || [];
+    const response = [];
+
+    for (const cls of classes) {
+      const { year, semester, section } = cls;
+
+      // Student count for this class
+      const studentsResult = await executeQuery(
+        `SELECT COUNT(*) AS count
+         FROM users
+         WHERE role = 'student' AND year = ? AND semester = ? AND section = ?`,
+        [year, semester, section]
+      );
+      const studentCount = studentsResult.recordset[0]?.count || 0;
+
+      // Subjects taught by this professor for the class
+      const subjectsResult = await executeQuery(
+        `SELECT DISTINCT s.id
+         FROM timetable t
+         JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+         WHERE t.faculty = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
+        [id, year, semester, section]
+      );
+
+      const subjectIds = subjectsResult.recordset.map(r => r.id);
+
+      let avgScore = 0;
+      let attendance = 0;
+
+      if (subjectIds.length > 0) {
+        const placeholders = subjectIds.map(() => '?').join(',');
+
+        // Average score from InternalMarks
+        const marksResult = await executeQuery(
+          `SELECT AVG(marks * 100.0 / NULLIF(max_marks, 0)) AS avg_score
+           FROM InternalMarks
+           WHERE subject_id IN (${placeholders})
+             AND student_id IN (
+               SELECT id FROM users WHERE role = 'student' AND year = ? AND semester = ? AND section = ?
+             )`,
+          [...subjectIds, year, semester, section]
+        );
+        avgScore = Math.round((marksResult.recordset[0]?.avg_score || 0) * 100) / 100;
+
+        // Attendance percentage
+        const attendanceResult = await executeQuery(
+          `SELECT AVG(CASE WHEN status = 'present' THEN 1.0 ELSE 0 END) * 100 AS attendance
+           FROM attendance
+           WHERE subject_id IN (${placeholders})
+             AND student_id IN (
+               SELECT id FROM users WHERE role = 'student' AND year = ? AND semester = ? AND section = ?
+             )`,
+          [...subjectIds, year, semester, section]
+        );
+        attendance = Math.round((attendanceResult.recordset[0]?.attendance || 0) * 100) / 100;
+      }
+
+      response.push({
+        name: `${year}-${section}`,
+        year,
+        semester,
+        section,
+        students: studentCount,
+        avgScore,
+        attendance
+      });
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Professor classes error:', error);
+    next(error);
+  }
+});
+
 module.exports = router;
