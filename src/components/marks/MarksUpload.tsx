@@ -75,30 +75,53 @@ const MarksUpload = () => {
 
   // Fetch subjects when year and semester are selected
   useEffect(() => {
-    if (year && semester) {
-      fetch(`${apiBase}/subjects?year=${year}&semester=${semester}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      })
-        .then((res) => res.json())
-        .then((data) => setSubjects(data))
-        .catch(() => setSubjects([]));
-    } else {
-      setSubjects([]);
-    }
+    const fetchSubjects = async () => {
+      if (year && semester) {
+        try {
+          const res = await fetch(`${apiBase}/subjects?year=${year}&semester=${semester}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            toast.error(err.error ?? 'Failed to fetch subjects');
+            setSubjects([]);
+            return;
+          }
+          const data = await res.json();
+          setSubjects(data);
+        } catch (error) {
+          toast.error((error as Error).message ?? 'Failed to fetch subjects');
+          setSubjects([]);
+        }
+      } else {
+        setSubjects([]);
+      }
+    };
+    fetchSubjects();
     setSubject('');
   }, [year, semester]);
 
-  const fetchMarks = () => {
+  const fetchMarks = async () => {
     if (year && semester && section && subject) {
-      fetch(
-        `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      try {
+        const res = await fetch(
+          `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          }
+        );
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(err.error ?? 'Failed to fetch marks');
+          setMarks([]);
+          return;
         }
-      )
-        .then((res) => res.json())
-        .then((data) => setMarks(data))
-        .catch(() => setMarks([]));
+        const data = await res.json();
+        setMarks(data);
+      } catch (error) {
+        toast.error((error as Error).message ?? 'Failed to fetch marks');
+        setMarks([]);
+      }
     } else {
       setMarks([]);
     }
@@ -141,7 +164,7 @@ const MarksUpload = () => {
           toast.error('No valid rows found');
         }
       } catch (error) {
-        toast.error('Error parsing Excel file');
+        toast.error((error as Error).message);
       } finally {
         input.value = '';
       }
@@ -161,7 +184,11 @@ const MarksUpload = () => {
         `${apiBase}/students?year=${year}&semester=${semester}&section=${section}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!res.ok) throw new Error('Failed to fetch students');
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? 'Failed to fetch students');
+        return;
+      }
 
       const students: { email: string; rollNumber: string | number; name: string }[] = await res.json();
       const subjectName = subjects.find((s) => String(s.id) === subject)?.name || '';
@@ -181,7 +208,7 @@ const MarksUpload = () => {
       XLSX.writeFile(workbook, 'marks_template.xlsx');
       setIsDownloadModalOpen(false);
     } catch (err) {
-      toast.error('Failed to generate template');
+      toast.error((err as Error).message ?? 'Failed to fetch students');
     }
   };
 
