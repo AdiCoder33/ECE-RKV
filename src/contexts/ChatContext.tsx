@@ -577,10 +577,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return;
     fetchConversations();
-    const interval = setInterval(() => {
-      fetchConversations();
-    }, 3000);
-    return () => clearInterval(interval);
   }, [user, fetchConversations]);
 
   return (
