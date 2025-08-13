@@ -41,6 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
+    // Clear any previous auth data to avoid using stale IDs
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+
     const response = await fetch(`${apiBase}/auth/login`, {
       method: 'POST',
       headers: {
@@ -58,12 +62,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { token, user: userInfo } = data;
 
     const id = Number(userInfo.id);
-    if (Number.isNaN(id)) {
+    if (typeof id !== 'number' || Number.isNaN(id)) {
       throw new Error('Invalid user ID');
     }
     const sanitizedUser: User = { ...userInfo, id };
 
     setUser(sanitizedUser);
+    // Only persist the user if the ID is a valid number
     localStorage.setItem('user', JSON.stringify(sanitizedUser));
     localStorage.setItem('token', token);
 

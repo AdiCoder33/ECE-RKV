@@ -26,8 +26,13 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const id = Number(user.id);
+    if (Number.isNaN(id)) {
+      return res.status(500).json({ error: 'Invalid user ID' });
+    }
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id, email: user.email, role: user.role },
       jwtSecret,
       { expiresIn: '24h' }
     );
