@@ -199,16 +199,23 @@ const MarksUpload = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ marks: rows })
+        body: JSON.stringify({
+          type: 'internal',
+          date: new Date().toISOString(),
+          marksData: rows,
+        }),
       });
 
-      if (response.ok) {
-        toast.success('Marks submitted successfully!');
-        setRows([]);
-        fetchMarks();
-      } else {
-        toast.error('Failed to submit marks');
+      if (!response.ok) {
+        const err = await response.json();
+        const message = err.error || (Array.isArray(err.errors) ? err.errors.join(', ') : 'Failed to submit marks');
+        toast.error(message);
+        return;
       }
+
+      toast.success('Marks submitted successfully!');
+      setRows([]);
+      fetchMarks();
     } catch (error) {
       toast.error('Failed to submit marks');
     } finally {
