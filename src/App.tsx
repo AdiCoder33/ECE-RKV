@@ -83,7 +83,14 @@ function App() {
                   <Route path="contact-alumni" element={<ContactAlumni />} />
                   <Route path="resume" element={<ResumeBuilder />} />
                   <Route path="my-marks" element={<StudentMarks />} />
-                  <Route path="marks-overview" element={<NonStudentRoute><MarksOverview /></NonStudentRoute>} />
+                  <Route
+                    path="marks-overview"
+                    element={
+                      <NonStudentRoute>
+                        <MarksOverview />
+                      </NonStudentRoute>
+                    }
+                  />
                   <Route path="marks-upload" element={<MarksUpload />} />
                   <Route path="chat" element={<ChatList />} />
                   <Route path="chat/:type/:id" element={<ChatConversation />} />
