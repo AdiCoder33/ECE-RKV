@@ -20,6 +20,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 const ProfessorDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -27,6 +28,7 @@ const ProfessorDashboard = () => {
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
+  const { toast } = useToast();
 
   const [totalStudents, setTotalStudents] = useState(0);
   const [activeClasses, setActiveClasses] = useState(0);
@@ -77,7 +79,10 @@ const ProfessorDashboard = () => {
   ];
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (typeof user?.id !== 'number') {
+      toast({ variant: 'destructive', title: 'Invalid user ID' });
+      return;
+    }
 
     fetchTodaySchedule();
     fetchSubjects();
@@ -91,7 +96,11 @@ const ProfessorDashboard = () => {
   const fetchClassData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/professors/${user?.id}/classes`, {
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/classes`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -111,7 +120,11 @@ const ProfessorDashboard = () => {
   const fetchProfessorMetrics = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/professors/${user?.id}/dashboard`, {
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/dashboard`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -136,7 +149,11 @@ const ProfessorDashboard = () => {
   const fetchAttendanceTrend = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/professors/${user?.id}/attendance-trend?weeks=5`, {
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/attendance-trend?weeks=5`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -156,7 +173,11 @@ const ProfessorDashboard = () => {
   const fetchGradingDistribution = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/professors/${user?.id}/grading-distribution`, {
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/grading-distribution`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -176,7 +197,11 @@ const ProfessorDashboard = () => {
   const fetchActivityFeed = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/professors/${user?.id}/activity-feed`, {
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/activity-feed`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -198,8 +223,13 @@ const ProfessorDashboard = () => {
       const token = localStorage.getItem('token');
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
       
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        setTodaySchedule(demoSchedule);
+        return;
+      }
       const response = await fetch(
-        `${apiBase}/timetable?facultyId=${user?.id}&day=${today}`,
+        `${apiBase}/timetable?facultyId=${String(user.id)}&day=${today}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`

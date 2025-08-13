@@ -14,8 +14,8 @@ import { ChatMessage, User } from '@/types';
 
 interface PrivateMessage {
   id: string;
-  sender_id: string;
-  receiver_id: string;
+  sender_id: number;
+  receiver_id: number;
   content: string;
   created_at: string;
   sender_name: string;
@@ -67,7 +67,7 @@ const ChatConversation: React.FC = () => {
       setMessagesLoading(true);
       try {
         if (type === 'user') {
-          const data = await fetchConversation(id);
+          const data = await fetchConversation(Number(id));
           setDirectMessages(data.messages);
           markAsRead('direct', id).catch(() => {});
         } else {
@@ -87,8 +87,9 @@ const ChatConversation: React.FC = () => {
 
   useEffect(() => {
     if (type !== 'user' || !id) return;
+    const numericId = Number(id);
     const newMsgs = privateMessages.filter(
-      m => m.sender_id === id || m.receiver_id === id,
+      m => m.sender_id === numericId || m.receiver_id === numericId,
     );
     const existing = new Set(directMessages.map(m => m.id));
     const additions = newMsgs.filter(m => !existing.has(m.id));
@@ -108,7 +109,7 @@ const ChatConversation: React.FC = () => {
 
     try {
       if (type === 'user') {
-        const newMsg = await sendDirectMessage(id, messageContent);
+        const newMsg = await sendDirectMessage(Number(id), messageContent);
         if (newMsg) setDirectMessages(prev => [...prev, newMsg]);
       } else {
         await sendGroupMessage(id, messageContent);

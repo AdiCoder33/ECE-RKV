@@ -50,7 +50,7 @@ const ChatList: React.FC = () => {
   const contacts = conversations
     .filter(c => c.type === 'direct')
     .map(c => ({
-      id: c.id,
+      id: Number(c.id),
       name: c.title,
       last: c.last_message || '',
       unread: c.unread_count,

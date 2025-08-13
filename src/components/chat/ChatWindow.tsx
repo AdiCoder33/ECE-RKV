@@ -13,8 +13,8 @@ import { ChatMessage, PrivateMessage } from '@/types';
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
   messages: (PrivateMessage | ChatMessage)[];
-  currentUserId?: string;
-  typingUsers: Set<string>;
+  currentUserId?: number;
+  typingUsers: Set<number>;
   loading: boolean;
   hasMore: boolean;
   loadMore: () => void;
@@ -75,9 +75,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return items;
   }, [messages, activeChat]);
 
-  const isTyping = typingUsers.has(
-    activeChat.type === 'group' ? `group-${activeChat.id}` : activeChat.id
-  );
+  const isTyping =
+    activeChat.type === 'direct' && typingUsers.has(Number(activeChat.id));
 
   return (
     <>

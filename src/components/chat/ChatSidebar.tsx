@@ -106,7 +106,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     setDirectMessages([]);
     setGroupMessages([]);
     if (type === 'direct') {
-      fetchConversation(id, undefined, controller.signal)
+      fetchConversation(Number(id), undefined, controller.signal)
         .then(data => {
           if (!ignore && activeChat?.id === id && activeChat.type === type) {
             setDirectMessages(data.messages);
@@ -142,7 +142,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (!activeChat) return;
     if (activeChat.type === 'direct') {
       const newMsgs = privateMessages
-        .filter(m => m.sender_id === activeChat.id || m.receiver_id === activeChat.id);
+        .filter(m => m.sender_id === Number(activeChat.id) || m.receiver_id === Number(activeChat.id));
       setDirectMessages(newMsgs);
     } else {
       const newMsgs = messages.filter(m => m.groupId === activeChat.id);
@@ -155,7 +155,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     try {
       const files = attachments.map(a => a.file);
       if (activeChat.type === 'direct') {
-        await sendDirectMessage(activeChat.id, message, files);
+        await sendDirectMessage(Number(activeChat.id), message, files);
         if (!conversations.some(c => c.id === activeChat.id)) {
           fetchConversations().catch(() => {});
         }
@@ -264,7 +264,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const loadMore = useCallback(() => {
     if (!activeChat || !hasMore) return;
     if (activeChat.type === 'direct') {
-      fetchMoreConversation(activeChat.id)
+      fetchMoreConversation(Number(activeChat.id))
         .then(res => setHasMore(res.hasMore))
         .catch(() => {});
     } else {
@@ -303,7 +303,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const handleStartChat = useCallback(
     async (u: User) => {
       try {
-        await fetchConversation(String(u.id));
+        await fetchConversation(Number(u.id));
         setActiveChat({ type: 'direct', id: String(u.id), title: u.name });
         setSearch('');
       } catch {

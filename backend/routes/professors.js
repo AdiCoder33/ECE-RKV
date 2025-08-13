@@ -9,6 +9,7 @@ router.get('/:id/timetable', authenticateToken, async (req, res, next) => {
   try {
     const professorId = parseInt(req.params.id, 10);
     if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
     const data = await fetchTimetable({ ...req.query, facultyId: professorId });
@@ -24,6 +25,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
   try {
     const professorId = parseInt(req.params.id, 10);
     if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 
@@ -106,6 +108,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
   try {
     const professorId = parseInt(req.params.id, 10);
     if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 
@@ -195,6 +198,7 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
   try {
     const professorId = parseInt(req.params.id, 10);
     if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
     const weeks = parseInt(req.query.weeks, 10) || 5;
@@ -243,6 +247,7 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
   try {
     const professorId = parseInt(req.params.id, 10);
     if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 
@@ -289,6 +294,7 @@ router.get('/:id/activity-feed', authenticateToken, async (req, res, next) => {
   try {
     const professorId = parseInt(req.params.id, 10);
     if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 

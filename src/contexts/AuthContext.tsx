@@ -28,7 +28,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for stored authentication
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsed: User = JSON.parse(storedUser);
+        if (typeof parsed.id === 'number') {
+          setUser(parsed);
+        }
+      } catch {
+        // ignore invalid stored user
+      }
     }
     setLoading(false);
   }, []);
@@ -50,8 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
     const { token, user: userInfo } = data;
 
-    setUser(userInfo);
-    localStorage.setItem('user', JSON.stringify(userInfo));
+    const id = Number(userInfo.id);
+    if (Number.isNaN(id)) {
+      throw new Error('Invalid user ID');
+    }
+    const sanitizedUser: User = { ...userInfo, id };
+
+    setUser(sanitizedUser);
+    localStorage.setItem('user', JSON.stringify(sanitizedUser));
     localStorage.setItem('token', token);
 
     // Redirect based on role

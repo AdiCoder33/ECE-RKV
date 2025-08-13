@@ -28,7 +28,7 @@ interface ConversationListProps {
   conversations: Conversation[];
   onSelectConversation: (c: Conversation) => void;
   onPin: (e: React.MouseEvent, c: Conversation) => void;
-  onlineUsers: Set<string>;
+  onlineUsers: Set<number>;
   onStartChat: (user: User) => void;
   onOpenGroupDialog: () => void;
   onClose: () => void;
@@ -124,7 +124,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
                 {c.title.charAt(0)}
               </div>
-              {c.type === 'direct' && onlineUsers.has(c.id) && (
+              {c.type === 'direct' && onlineUsers.has(Number(c.id)) && (
                 <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
               )}
             </div>

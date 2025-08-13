@@ -21,7 +21,7 @@ vi.mock('@/components/ui/use-toast', () => ({
 }));
 
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { id: '1', name: 'Alice' } }),
+  useAuth: () => ({ user: { id: 1, name: 'Alice' } }),
 }));
 
 vi.mock('@/contexts/ChatContext', () => ({
@@ -39,8 +39,8 @@ vi.mock('@/contexts/ChatContext', () => ({
     markAsRead: vi.fn(),
     pinConversation: vi.fn(),
     fetchGroups: vi.fn().mockResolvedValue([]),
-    onlineUsers: [],
-    typingUsers: new Set(),
+    onlineUsers: new Set<number>(),
+    typingUsers: new Set<number>(),
     setTyping: vi.fn(),
     searchUsers: vi.fn().mockResolvedValue([]),
   }),

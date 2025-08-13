@@ -32,7 +32,7 @@ import { useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 
 interface AttendanceStudent {
-  id: string;
+  id: number;
   name: string;
   rollNumber: number;
   collegeId: string;
@@ -171,13 +171,13 @@ const AttendanceManager: React.FC = () => {
 
   // Fetch timetable for professors based on selected date
   React.useEffect(() => {
-    if (!isProfessor || !user?.id) return;
+    if (!isProfessor || typeof user?.id !== 'number') return;
     const fetchProfessorTimetable = async () => {
       try {
         const token = localStorage.getItem('token');
         const weekday = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
         const response = await fetch(
-          `${apiBase}/timetable?facultyId=${user.id}&day=${weekday}`,
+          `${apiBase}/timetable?facultyId=${String(user.id)}&day=${weekday}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!response.ok) throw new Error('Failed to fetch timetable');

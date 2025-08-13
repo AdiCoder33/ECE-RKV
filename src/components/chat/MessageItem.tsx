@@ -7,7 +7,7 @@ import { ChatMessage, PrivateMessage } from '@/types';
 interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
   isGroup: boolean;
-  currentUserId?: string;
+  currentUserId?: number;
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUserId }) => {
