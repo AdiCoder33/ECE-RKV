@@ -44,12 +44,19 @@ interface TimetableSlot {
   day: string;
   time: string;
   subject: string;
+  year?: number;
+  semester?: number;
+  section?: string;
+  subject_id?: string;
 }
 
 interface PeriodOption {
   value: string;
   label: string;
   subjectId: string;
+  year: string;
+  semester: string;
+  section: string;
 }
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -182,17 +189,22 @@ const AttendanceManager: React.FC = () => {
     const options: PeriodOption[] = daySlots
       .map((slot) => {
         const periodNumber = timeToPeriod[slot.time];
-        const subjectMatch = subjects.find((s) => s.name === slot.subject);
-        if (!periodNumber || !subjectMatch) return null;
+        const subjectId = slot.subject_id
+          ? String(slot.subject_id)
+          : subjects.find((s) => s.name === slot.subject)?.id;
+        if (!periodNumber || !subjectId) return null;
         return {
           value: periodNumber,
           label: `${slot.time} – ${slot.subject}`,
-          subjectId: subjectMatch.id,
+          subjectId,
+          year: String(slot.year ?? selectedYear),
+          semester: String(slot.semester ?? currentSemester),
+          section: slot.section ?? selectedSection,
         };
       })
       .filter((opt): opt is PeriodOption => opt !== null);
     setPeriodOptions(options);
-  }, [timetable, selectedDate, subjects]);
+  }, [timetable, selectedDate, subjects, selectedYear, selectedSection, currentSemester]);
 
   // Fetch attendance for the current selection
   const fetchAttendance = React.useCallback(async () => {
@@ -474,9 +486,16 @@ const AttendanceManager: React.FC = () => {
                 value={selectedPeriod}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setSelectedPeriod(value);
                   const option = periodOptions.find((o) => o.value === value);
-                  setSelectedSubject(option?.subjectId || '');
+                  if (option) {
+                    setSelectedYear(option.year);
+                    setSelectedSection(option.section);
+                    setSelectedSubject(option.subjectId);
+                    setSelectedPeriod(option.value);
+                  } else {
+                    setSelectedSubject('');
+                    setSelectedPeriod(value);
+                  }
                 }}
                 className="w-full p-2 border rounded-md bg-background text-foreground"
               >
