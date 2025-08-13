@@ -75,6 +75,7 @@ const MarksUpload = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   // Fetch subjects when year and semester are selected
   useEffect(() => {
@@ -141,6 +142,7 @@ const MarksUpload = () => {
     setUploadedFile(file);
     setIsParsing(true);
     setUploadError(null);
+    setUploadSuccess(null);
 
     const input = event.target;
     const reader = new FileReader();
@@ -294,19 +296,24 @@ const MarksUpload = () => {
 
       if (!response.ok) {
         const err = await response.json();
-        const message = err.error || (Array.isArray(err.errors) ? err.errors.join(', ') : 'Failed to submit marks');
-        toast.error(message);
+        const baseMessage = err.error || (Array.isArray(err.errors) ? err.errors.join(', ') : 'Failed to submit marks');
+        toast.error(`${baseMessage} (${response.status})`);
+        setUploadSuccess(null);
         return;
       }
 
-        toast.success('Marks submitted successfully!');
-        setRows([]);
-        setHasBlankMarks(false);
-        setUploadedFile(null);
-        setRowCount(0);
-        fetchMarks();
+      toast.success('Marks submitted successfully!');
+      setUploadError(null);
+      setRows([]);
+      setHasBlankMarks(false);
+      setUploadedFile(null);
+      setRowCount(0);
+      fetchMarks();
+      setUploadSuccess('Marks submitted successfully!');
     } catch (error) {
-      toast.error('Failed to submit marks');
+      console.error('Error submitting marks:', error);
+      toast.error((error as Error).message || 'Failed to submit marks');
+      setUploadSuccess(null);
     } finally {
       setLoading(false);
     }
@@ -450,6 +457,9 @@ const MarksUpload = () => {
           )}
           {uploadError && (
             <p className="text-sm text-red-500">{uploadError}</p>
+          )}
+          {uploadSuccess && (
+            <p className="text-sm text-green-500">{uploadSuccess}</p>
           )}
 
           <Button
