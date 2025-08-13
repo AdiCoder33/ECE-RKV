@@ -31,7 +31,7 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
 
   if (facultyId) {
     query += ' AND u.id = ?';
-    params.push(facultyId);
+    params.push(Number(facultyId));
   }
 
   if (day) {
@@ -47,7 +47,8 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
 // Get timetable
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const data = await fetchTimetable(req.query);
+    const { year, semester, section, facultyId, day } = req.query;
+    const data = await fetchTimetable({ year, semester, section, facultyId, day });
     res.json(data);
   } catch (error) {
     console.error('Timetable fetch error:', error);

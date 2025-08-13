@@ -33,11 +33,14 @@ const ProfessorTimetable = () => {
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`${apiBase}/timetable?faculty=${encodeURIComponent(user?.name || '')}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(
+        `${apiBase}/timetable?facultyId=${user?.id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
+      );
       if (response.ok) {
         const data = await response.json();
         setTimetable(data);
