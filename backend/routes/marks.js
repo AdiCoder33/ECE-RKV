@@ -113,11 +113,15 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     const { type, date, marksData } = req.body;
     const enteredBy = Number(req.user.id);
     if (Number.isNaN(enteredBy)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      const message = 'Invalid user ID';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
     }
 
     if (!Array.isArray(marksData)) {
-      return res.status(400).json({ error: 'marksData must be an array' });
+      const message = 'marksData must be an array';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
     }
 
     const errors = [];
@@ -165,7 +169,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     }
 
     if (errors.length) {
-      return res.status(400).json({ errors });
+      const message = errors.join('; ');
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
     }
 
     // Insert marks
