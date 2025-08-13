@@ -33,7 +33,7 @@ const ProfessorTimetable = () => {
 
   const fetchTimetable = async () => {
     try {
-      const response = await fetch(`${apiBase}/timetable?facultyId=${user?.id}`, {
+      const response = await fetch(`${apiBase}/timetable?faculty=${encodeURIComponent(user?.name || '')}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
