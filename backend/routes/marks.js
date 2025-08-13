@@ -110,7 +110,11 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
 // Bulk enter marks
 router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
-    const { type, date, enteredBy, marksData } = req.body;
+    const { type, date, marksData } = req.body;
+    const enteredBy = Number(req.user.id);
+    if (Number.isNaN(enteredBy)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
 
     if (!Array.isArray(marksData)) {
       return res.status(400).json({ error: 'marksData must be an array' });
