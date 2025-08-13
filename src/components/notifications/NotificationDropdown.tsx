@@ -13,6 +13,7 @@ import {
 import { Bell, Check, Trash2, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface Notification {
   id: string;
@@ -39,7 +40,11 @@ const NotificationDropdown: React.FC = () => {
         },
       });
       if (!response.ok) throw new Error('Failed to fetch notifications');
-      return response.json();
+      const data = await response.json();
+      return data.map((n: any) => ({
+        ...n,
+        data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data,
+      }));
     },
   });
 
@@ -109,9 +114,16 @@ const NotificationDropdown: React.FC = () => {
     }
   };
 
+  const navigate = useNavigate();
+
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.is_read) {
       markAsReadMutation.mutate(notification.id);
+    }
+    const announcementId = (notification.data as Record<string, unknown> | undefined)?.announcementId as string | undefined;
+    if (announcementId) {
+      navigate('/dashboard/announcements', { state: { announcementId } });
+      setOpen(false);
     }
   };
 

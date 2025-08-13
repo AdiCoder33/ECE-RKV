@@ -69,6 +69,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
           { id: 'timetable', label: 'Timetable', icon: Clock, path: '/dashboard/timetable' },
           { id: 'attendance', label: 'Attendance Manager', icon: Calendar, path: '/dashboard/attendance' },
+          { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
           { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/dashboard/analytics' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
@@ -81,6 +82,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'users', label: 'Faculty & Students', icon: Users, path: '/dashboard/users' },
           { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
           { id: 'analytics', label: 'Department Analytics', icon: BarChart3, path: '/dashboard/analytics' },
+          { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
         ];
@@ -88,6 +90,7 @@ const DashboardLayout: React.FC = () => {
         return [
           { id: 'professor', label: 'Dashboard', icon: Home, path: '/dashboard/professor' },
           { id: 'marks-upload', label: 'Upload Marks', icon: FileText, path: '/dashboard/marks-upload' },
+          { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
           { id: 'attendance', label: 'Mark Attendance', icon: Calendar, path: '/dashboard/attendance' },
           { id: 'timetable', label: 'My Timetable', icon: Clock, path: '/dashboard/timetable' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },

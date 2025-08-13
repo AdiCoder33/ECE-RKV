@@ -19,42 +19,30 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 const ProfessorDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
+  const { toast } = useToast();
+
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [activeClasses, setActiveClasses] = useState(0);
+  const [avgAttendance, setAvgAttendance] = useState(0);
+  const [pendingGrading, setPendingGrading] = useState(0);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [metricsError, setMetricsError] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
-  const totalStudents = 156;
-  const activeClasses = 4;
-  const avgAttendance = 84;
-  const pendingGrading = 23;
+  const [classData, setClassData] = useState([]);
 
-  const classData = [
-    { name: 'CSE-3A', students: 45, avgScore: 78, attendance: 88, color: '#8B0000' },
-    { name: 'CSE-3B', students: 42, avgScore: 82, attendance: 85, color: '#001F54' },
-    { name: 'CSE-4A', students: 38, avgScore: 85, attendance: 90, color: '#8B5E3C' },
-    { name: 'CSE-4B', students: 31, avgScore: 80, attendance: 82, color: '#4A5568' }
-  ];
-
-  const attendanceTrend = [
-    { week: 'Week 1', attendance: 88 },
-    { week: 'Week 2', attendance: 85 },
-    { week: 'Week 3', attendance: 82 },
-    { week: 'Week 4', attendance: 87 },
-    { week: 'Week 5', attendance: 84 }
-  ];
-
-  const gradingDistribution = [
-    { grade: 'A+', count: 25, color: '#22c55e' },
-    { grade: 'A', count: 38, color: '#3b82f6' },
-    { grade: 'B+', count: 42, color: '#f59e0b' },
-    { grade: 'B', count: 31, color: '#ef4444' },
-    { grade: 'C+', count: 20, color: '#8b5cf6' }
-  ];
+  const [attendanceTrend, setAttendanceTrend] = useState([]);
+  const [gradingDistribution, setGradingDistribution] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
 
   // Demo today's schedule
   const demoSchedule = [
@@ -91,20 +79,163 @@ const ProfessorDashboard = () => {
   ];
 
   useEffect(() => {
+    if (typeof user?.id !== 'number') {
+      toast({ variant: 'destructive', title: 'Invalid user ID' });
+      return;
+    }
+
     fetchTodaySchedule();
     fetchSubjects();
-  }, []);
+    fetchProfessorMetrics();
+    fetchClassData();
+    fetchAttendanceTrend();
+    fetchGradingDistribution();
+    fetchActivityFeed();
+  }, [user]);
+
+  const fetchClassData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setClassData(data);
+      } else {
+        setClassData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching class data:', error);
+      setClassData([]);
+    }
+  };
+
+  const fetchProfessorMetrics = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTotalStudents(data.totalStudents ?? 0);
+        setActiveClasses(data.activeClasses ?? 0);
+        setAvgAttendance(data.avgAttendance ?? 0);
+        setPendingGrading(data.pendingGrading ?? 0);
+      } else {
+        setMetricsError(true);
+      }
+    } catch (error) {
+      console.error('Error fetching professor metrics:', error);
+      setMetricsError(true);
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  const fetchAttendanceTrend = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/attendance-trend?weeks=5`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceTrend(data);
+      } else {
+        setAttendanceTrend([]);
+      }
+    } catch (error) {
+      console.error('Error fetching attendance trend:', error);
+      setAttendanceTrend([]);
+    }
+  };
+
+  const fetchGradingDistribution = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/grading-distribution`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setGradingDistribution(data);
+      } else {
+        setGradingDistribution([]);
+      }
+    } catch (error) {
+      console.error('Error fetching grading distribution:', error);
+      setGradingDistribution([]);
+    }
+  };
+
+  const fetchActivityFeed = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/professors/${String(user.id)}/activity-feed`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setActivityFeed(data);
+      } else {
+        setActivityFeed([]);
+      }
+    } catch (error) {
+      console.error('Error fetching activity feed:', error);
+      setActivityFeed([]);
+    }
+  };
 
   const fetchTodaySchedule = async () => {
     try {
       const token = localStorage.getItem('token');
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
       
-      const response = await fetch(`${apiBase}/timetable?faculty=${user?.name}&day=${today}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      if (typeof user?.id !== 'number') {
+        toast({ variant: 'destructive', title: 'Invalid user ID' });
+        setTodaySchedule(demoSchedule);
+        return;
+      }
+      const response = await fetch(
+        `${apiBase}/timetable?facultyId=${String(user.id)}&day=${today}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
       
       if (response.ok) {
         const schedule = await response.json();
@@ -159,39 +290,23 @@ const ProfessorDashboard = () => {
 
   const handleClassClick = (classItem) => {
     const subjectId = subjectMap[classItem.subject] || classItem.subject;
-    navigate(`/dashboard/attendance?year=${classItem.year}&section=${classItem.section}&subject=${subjectId}`);
+    navigate(
+      `/dashboard/attendance?time=${encodeURIComponent(
+        classItem.time
+      )}&subjectId=${subjectId}&year=${classItem.year}&section=${classItem.section}`
+    );
   };
 
-  const recentActivities = [
-    {
-      id: 1,
-      action: 'Assignment submitted',
-      details: 'Data Structures - CSE-3A',
-      time: '5 minutes ago',
-      type: 'submission'
-    },
-    {
-      id: 2,
-      action: 'Low attendance alert',
-      details: 'John Doe - 65% attendance',
-      time: '1 hour ago',
-      type: 'alert'
-    },
-    {
-      id: 3,
-      action: 'Grades updated',
-      details: 'Database Systems - CSE-3B',
-      time: '2 hours ago',
-      type: 'grading'
-    },
-    {
-      id: 4,
-      action: 'Class scheduled',
-      details: 'Operating Systems - Tomorrow 10:00 AM',
-      time: '3 hours ago',
-      type: 'schedule'
-    }
-  ];
+  const formatActivityTime = (time: string) =>
+    formatDistanceToNow(new Date(time), { addSuffix: true });
+
+  if (authLoading || !user?.id) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-0">
@@ -221,9 +336,11 @@ const ProfessorDashboard = () => {
             <Users className="h-3 w-3 lg:h-4 lg:w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{totalStudents}</div>
+            <div className="text-xl lg:text-2xl font-bold text-foreground">
+              {metricsLoading ? '...' : metricsError ? 'N/A' : totalStudents}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Across {activeClasses} classes
+              {metricsLoading ? '...' : metricsError ? 'N/A' : `Across ${activeClasses} classes`}
             </p>
           </CardContent>
         </Card>
@@ -234,9 +351,11 @@ const ProfessorDashboard = () => {
             <BookOpen className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{activeClasses}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {metricsLoading ? '...' : metricsError ? 'N/A' : activeClasses}
+            </div>
             <p className="text-xs text-muted-foreground">
-              This semester
+              {metricsLoading || metricsError ? '' : 'This semester'}
             </p>
           </CardContent>
         </Card>
@@ -247,13 +366,21 @@ const ProfessorDashboard = () => {
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{avgAttendance}%</div>
-            <Progress value={avgAttendance} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className={avgAttendance >= 80 ? 'text-green-600' : 'text-yellow-600'}>
-                {avgAttendance >= 80 ? 'Good' : 'Needs attention'}
-              </span>
-            </p>
+            {metricsLoading ? (
+              <div className="text-2xl font-bold text-foreground">...</div>
+            ) : metricsError ? (
+              <div className="text-2xl font-bold text-foreground">N/A</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-foreground">{avgAttendance}%</div>
+                <Progress value={avgAttendance} className="mt-2" />
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className={avgAttendance >= 80 ? 'text-green-600' : 'text-yellow-600'}>
+                    {avgAttendance >= 80 ? 'Good' : 'Needs attention'}
+                  </span>
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -263,9 +390,11 @@ const ProfessorDashboard = () => {
             <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{pendingGrading}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {metricsLoading ? '...' : metricsError ? 'N/A' : pendingGrading}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Assignments to grade
+              {metricsLoading || metricsError ? '' : 'Assignments to grade'}
             </p>
           </CardContent>
         </Card>
@@ -282,21 +411,27 @@ const ProfessorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={classData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Bar dataKey="avgScore" fill="#8B0000" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {classData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={classData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Bar dataKey="avgScore" fill="#8B0000" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                No class data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -462,14 +597,19 @@ const ProfessorDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+            {activityFeed.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
                 <div className="w-2 h-2 bg-primary rounded-full" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{activity.action}</p>
                   <p className="text-xs text-muted-foreground">{activity.details}</p>
                 </div>
-                <span className="text-xs text-muted-foreground">{activity.time}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatActivityTime(activity.time)}
+                </span>
               </div>
             ))}
           </div>
@@ -485,31 +625,35 @@ const ProfessorDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-            {classData.map((classItem, index) => (
-              <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-foreground">{classItem.name}</h4>
-                  <Badge variant="secondary" className="text-xs">
-                    {classItem.students} students
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Avg Score:</span>
-                    <span className="font-medium text-foreground">{classItem.avgScore}%</span>
+          {classData.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+              {classData.map((classItem, index) => (
+                <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-foreground">{classItem.name}</h4>
+                    <Badge variant="secondary" className="text-xs">
+                      {classItem.students} students
+                    </Badge>
                   </div>
-                  <Progress value={classItem.avgScore} className="h-2" />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Attendance:</span>
-                    <span className={`font-medium ${classItem.attendance >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {classItem.attendance}%
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Avg Score:</span>
+                      <span className="font-medium text-foreground">{classItem.avgScore}%</span>
+                    </div>
+                    <Progress value={classItem.avgScore} className="h-2" />
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Attendance:</span>
+                      <span className={`font-medium ${classItem.attendance >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {classItem.attendance}%
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">No classes found</div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,17 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Bell, 
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Bell,
   Plus,
   Edit,
   Trash2,
   Search,
-  Filter,
   Calendar,
   User,
   AlertCircle,
@@ -20,57 +20,91 @@ import {
   Send
 } from 'lucide-react';
 import { Announcement } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+const mapAnnouncement = (a: Record<string, unknown>): Announcement => {
+  const {
+    author_id,
+    author_name,
+    created_at,
+    target_role,
+    target_section,
+    target_year,
+    is_active,
+    ...rest
+  } = a as Record<string, unknown>;
+  return {
+    ...(rest as Omit<Announcement, 'authorId' | 'authorName' | 'createdAt' | 'targetRole' | 'targetSection' | 'targetYear' | 'isActive'>),
+    authorId: (a as Record<string, unknown>).authorId as string ?? (author_id as string),
+    authorName: (a as Record<string, unknown>).authorName as string ?? (author_name as string),
+    createdAt: (a as Record<string, unknown>).createdAt as string ?? (created_at as string),
+    targetRole: (a as Record<string, unknown>).targetRole as string | undefined ?? (target_role as string | undefined),
+    targetSection: (a as Record<string, unknown>).targetSection as string | undefined ?? (target_section as string | undefined),
+    targetYear: (a as Record<string, unknown>).targetYear as number | undefined ?? (target_year as number | undefined),
+    isActive: (a as Record<string, unknown>).isActive as boolean ?? (is_active as boolean),
+  } as Announcement;
+};
 
 const Announcements = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const { toast } = useToast();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('low');
+  const [targetRole, setTargetRole] = useState('all');
+  const [targetYear, setTargetYear] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const { user } = useAuth();
+  const canManage = ['admin', 'hod', 'professor'].includes(user?.role ?? '');
+  const location = useLocation();
 
-  const [announcements] = useState<Announcement[]>([
-    {
-      id: '1',
-      title: 'Mid-Semester Examination Schedule',
-      content: 'Mid-semester examinations for all years will be conducted from March 15-25, 2024. Please check the detailed timetable on the notice board.',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      targetRole: 'student',
-      createdAt: '2024-01-15T10:00:00Z',
-      priority: 'high',
-      isActive: true
-    },
-    {
-      id: '2',
-      title: 'Faculty Development Program',
-      content: 'A 5-day Faculty Development Program on "Emerging Technologies in ECE" will be conducted from February 10-14, 2024.',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      targetRole: 'professor',
-      createdAt: '2024-01-10T14:30:00Z',
-      priority: 'medium',
-      isActive: true
-    },
-    {
-      id: '3',
-      title: 'Industry Visit - TCS Innovation Lab',
-      content: 'Final year students are invited for an industry visit to TCS Innovation Lab on January 25, 2024. Registration deadline: January 20.',
-      authorId: '2',
-      authorName: 'Prof. Priya Sharma',
-      targetYear: 4,
-      createdAt: '2024-01-08T09:15:00Z',
-      priority: 'high',
-      isActive: true
-    },
-    {
-      id: '4',
-      title: 'Library Hours Extension',
-      content: 'Library hours have been extended till 10 PM during examination period (March 1-31, 2024).',
-      authorId: '1',
-      authorName: 'Dr. Rajesh Kumar',
-      createdAt: '2024-01-05T16:45:00Z',
-      priority: 'low',
-      isActive: true
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiBase}/announcements`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch announcements');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        const mapped: Announcement[] = data.map(mapAnnouncement);
+        setAnnouncements(mapped);
+      } catch (error) {
+        console.error('Failed to fetch announcements', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load announcements.'
+        });
+      }
+    };
+
+    fetchAnnouncements();
+  }, [toast]);
+
+  useEffect(() => {
+    const state = location.state as { announcementId?: string } | null;
+    if (state?.announcementId && announcements.length > 0) {
+      const found = announcements.find((a) => a.id === String(state.announcementId));
+      if (found) {
+        setSelectedAnnouncement(found);
+        setIsDetailOpen(true);
+      }
     }
-  ]);
+  }, [location.state, announcements]);
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -102,9 +136,108 @@ const Announcements = () => {
     const matchesSearch = announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          announcement.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = selectedPriority === 'all' || announcement.priority === selectedPriority;
-    
+
     return matchesSearch && matchesPriority;
   });
+
+  const resetForm = () => {
+    setTitle('');
+    setContent('');
+    setPriority('low');
+    setTargetRole('all');
+    setTargetYear('');
+    setEditingId(null);
+    setShowCreateForm(false);
+  };
+
+  const handlePublish = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        title,
+        content,
+        targetRole: targetRole === 'all' ? null : targetRole,
+        targetSection: null,
+        targetYear: targetYear ? Number(targetYear) : null,
+        priority
+      };
+      const url = editingId ? `${apiBase}/announcements/${editingId}` : `${apiBase}/announcements`;
+      const method = editingId ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw new Error(editingId ? 'Failed to update announcement' : 'Failed to publish announcement');
+      }
+      if (editingId) {
+        setAnnouncements((prev) =>
+          prev.map((a) =>
+            a.id === editingId
+              ? {
+                  ...a,
+                  title,
+                  content,
+                  priority,
+                  targetRole: targetRole === 'all' ? undefined : targetRole,
+                  targetYear: targetYear ? Number(targetYear) : undefined
+                }
+              : a
+          )
+        );
+      } else {
+        const data: Record<string, unknown> = await response.json();
+        const newAnnouncement = mapAnnouncement(data);
+        setAnnouncements((prev) => [newAnnouncement, ...prev]);
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Failed to publish announcement', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: editingId ? 'Failed to update announcement.' : 'Failed to publish announcement.'
+      });
+    }
+  };
+
+  const handleEdit = (announcement: Announcement) => {
+    setEditingId(announcement.id);
+    setTitle(announcement.title);
+    setContent(announcement.content);
+    setPriority(announcement.priority);
+    setTargetRole(announcement.targetRole || 'all');
+    setTargetYear(announcement.targetYear ? String(announcement.targetYear) : '');
+    setShowCreateForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this announcement?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/announcements/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete announcement');
+      }
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    } catch (error) {
+      console.error('Failed to delete announcement', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete announcement.'
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
@@ -113,39 +246,53 @@ const Announcements = () => {
           <h1 className="text-3xl font-bold">Announcements</h1>
           <p className="text-muted-foreground">Manage department announcements and notices</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Announcement
-        </Button>
+        {canManage && (
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {editingId ? 'Edit Announcement' : 'Create Announcement'}
+          </Button>
+        )}
       </div>
 
       {/* Create Announcement Form */}
-      {showCreateForm && (
+      {showCreateForm && canManage && (
         <Card>
           <CardHeader>
-            <CardTitle>Create New Announcement</CardTitle>
+            <CardTitle>{editingId ? 'Edit Announcement' : 'Create New Announcement'}</CardTitle>
             <CardDescription>Share important information with students and faculty</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Title</label>
-                <Input placeholder="Enter announcement title" />
+                <Input
+                  placeholder="Enter announcement title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Priority</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+                >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Target Audience</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
+                >
                   <option value="all">All</option>
                   <option value="student">Students</option>
                   <option value="professor">Faculty</option>
@@ -154,7 +301,11 @@ const Announcements = () => {
               </div>
               <div>
                 <label className="text-sm font-medium">Target Year (Optional)</label>
-                <select className="w-full px-3 py-2 border rounded-md">
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={targetYear}
+                  onChange={(e) => setTargetYear(e.target.value)}
+                >
                   <option value="">All Years</option>
                   <option value="1">1st Year</option>
                   <option value="2">2nd Year</option>
@@ -166,18 +317,23 @@ const Announcements = () => {
 
             <div>
               <label className="text-sm font-medium">Content</label>
-              <Textarea 
-                placeholder="Enter announcement content..." 
+              <Textarea
+                placeholder="Enter announcement content..."
                 rows={4}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
               />
             </div>
 
             <div className="flex gap-2">
-              <Button>
+              <Button onClick={handlePublish}>
                 <Send className="h-4 w-4 mr-2" />
-                Publish Announcement
+                {editingId ? 'Update Announcement' : 'Publish Announcement'}
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+              <Button
+                variant="outline"
+                onClick={resetForm}
+              >
                 Cancel
               </Button>
             </div>
@@ -252,22 +408,29 @@ const Announcements = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(announcement)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDelete(announcement.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardHeader>
             
             <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed line-clamp-3">
                 {announcement.content}
               </p>
-              
+
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-muted-foreground" />
@@ -275,14 +438,23 @@ const Announcements = () => {
                     Active Announcement
                   </span>
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedAnnouncement(announcement);
+                      setIsDetailOpen(true);
+                    }}
+                  >
                     View Details
                   </Button>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
+                  {canManage && (
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(announcement)}>
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -304,6 +476,42 @@ const Announcements = () => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={isDetailOpen}
+        onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setSelectedAnnouncement(null);
+        }}
+      >
+        {selectedAnnouncement && (
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedAnnouncement.title}</DialogTitle>
+              <DialogDescription>
+                Posted by {selectedAnnouncement.authorName} on {formatDate(selectedAnnouncement.createdAt)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 space-y-4">
+              <p className="whitespace-pre-line text-sm leading-relaxed">
+                {selectedAnnouncement.content}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Badge className={getPriorityColor(selectedAnnouncement.priority)}>
+                  {getPriorityIcon(selectedAnnouncement.priority)}
+                  <span className="ml-1">{selectedAnnouncement.priority.toUpperCase()}</span>
+                </Badge>
+                {selectedAnnouncement.targetRole && (
+                  <Badge variant="outline">{selectedAnnouncement.targetRole}</Badge>
+                )}
+                {selectedAnnouncement.targetYear && (
+                  <Badge variant="outline">Year {selectedAnnouncement.targetYear}</Badge>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 };

@@ -22,10 +22,12 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [studentSubjects, setStudentSubjects] = useState([]);
   const [classmates, setClassmates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,10 +48,13 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        if (!user?.id) return;
-        
+        if (typeof user?.id !== 'number') {
+          toast({ variant: 'destructive', title: 'Invalid user ID' });
+          return;
+        }
+
         // Fetch student's subjects
-        const subjectsResponse = await fetch(`/api/students/${user.id}/subjects`, {
+        const subjectsResponse = await fetch(`/api/students/${String(user.id)}/subjects`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

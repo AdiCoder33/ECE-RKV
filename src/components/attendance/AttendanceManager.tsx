@@ -47,17 +47,25 @@ interface TimetableSlot {
   day: string;
   time: string;
   subject: string;
+  year?: number;
+  semester?: number;
+  section?: string;
+  subject_id?: string;
+  faculty_id?: number | null;
 }
 
 interface PeriodOption {
-  value: string;
-  label: string;
+  value: string; // period number
+  label: string; // "09:00-10:00 – Subject"
   subjectId: string;
+  year: string;
+  semester: string;
+  section: string;
 }
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
-// Update the COLORS palette for a softer, more modern look
+// Palette for the refreshed UI
 const COLORS = {
   accent: '#8B0000', // Deep red for headlines
   subAccent: '#B23A48', // Muted red for subheadlines
@@ -73,23 +81,39 @@ const COLORS = {
   grayBtn: '#F3F4F6', // Light gray for buttons
 };
 
+// Map from "start-end" time to period number
+const TIME_TO_PERIOD: Record<string, string> = {
+  '09:00-10:00': '1',
+  '10:00-11:00': '2',
+  '11:00-12:00': '3',
+  '14:00-15:00': '4',
+  '15:00-16:00': '5',
+  '16:00-17:00': '6',
+};
+
 const AttendanceManager: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const initialSubject = searchParams.get('subject') || '';
+  const initialSubject = searchParams.get('subjectId') || '';
+  const initialYear = searchParams.get('year') || '1';
+  const initialSection = searchParams.get('section') || 'A';
+  const initialTime = searchParams.get('time') || '';
+  const initialPeriod = TIME_TO_PERIOD[initialTime] || '';
   const { toast } = useToast();
 
-  const [selectedYear, setSelectedYear] = React.useState('1');
-  const [selectedSection, setSelectedSection] = React.useState('A');
+  const [selectedYear, setSelectedYear] = React.useState(initialYear);
+  const [selectedSection, setSelectedSection] = React.useState(initialSection);
   const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
-  const [selectedPeriod, setSelectedPeriod] = React.useState('');
+  const [selectedPeriod, setSelectedPeriod] = React.useState(initialPeriod);
   const [subjects, setSubjects] = React.useState<{ id: string; name: string }[]>([]);
   const [selectedSubject, setSelectedSubject] = React.useState(initialSubject);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [api, setApi] = React.useState<CarouselApi | null>(null);
   const [timetable, setTimetable] = React.useState<TimetableSlot[]>([]);
+  const [slotOptions, setSlotOptions] = React.useState<PeriodOption[]>([]);
   const [periodOptions, setPeriodOptions] = React.useState<PeriodOption[]>([]);
+  const [selectedSlot, setSelectedSlot] = React.useState(''); // for professors
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -103,7 +127,7 @@ const AttendanceManager: React.FC = () => {
   const [students, setStudents] = React.useState<AttendanceStudent[]>([]);
   const [classId, setClassId] = React.useState<string | null>(null);
 
-  // Filter years and sections based on professor's assigned classes (demo constraints)
+  // Filter years and sections
   const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
   const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
 
@@ -113,34 +137,29 @@ const AttendanceManager: React.FC = () => {
   const getCurrentSemester = () => {
     const month = new Date().getMonth() + 1;
     return month >= 6 && month <= 11 ? '1' : '2';
-    // No change to logic
   };
   const currentSemester = getCurrentSemester();
 
-  // Fetch subjects for selected year/semester
+  // Subjects
   React.useEffect(() => {
     const fetchSubjects = async () => {
       try {
         const token = localStorage.getItem('token');
         const response = await fetch(
           `${apiBase}/subjects?year=${selectedYear}&semester=${currentSemester}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!response.ok) throw new Error('Failed to fetch subjects');
         const data: { id: string; name: string }[] = await response.json();
         setSubjects(data);
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
+      } catch (err) {
+        console.error('Error fetching subjects:', err);
       }
     };
     fetchSubjects();
   }, [selectedYear, currentSemester]);
 
-  // If the URL provided a subject name, convert it to its ID once subjects arrive
+  // Convert subject name from URL to ID once subjects arrive
   React.useEffect(() => {
     if (subjects.length > 0 && selectedSubject && isNaN(Number(selectedSubject))) {
       const match = subjects.find((s) => s.name === selectedSubject);
@@ -148,8 +167,9 @@ const AttendanceManager: React.FC = () => {
     }
   }, [subjects, selectedSubject]);
 
-  // Fetch timetable for the selected class
+  // Timetable for non-professors (class-wise)
   React.useEffect(() => {
+    if (isProfessor) return;
     const fetchTimetable = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -160,50 +180,76 @@ const AttendanceManager: React.FC = () => {
         if (!response.ok) throw new Error('Failed to fetch timetable');
         const data: TimetableSlot[] = await response.json();
         setTimetable(data);
-      } catch (error) {
-        console.error('Error fetching timetable:', error);
+      } catch (err) {
+        console.error('Error fetching timetable:', err);
       }
     };
     fetchTimetable();
-  }, [selectedYear, selectedSection, currentSemester]);
+  }, [selectedYear, selectedSection, currentSemester, isProfessor]);
 
-  // Build period options based on timetable and date
+  // Timetable for professors (faculty/day-wise)
+  React.useEffect(() => {
+    if (!isProfessor || typeof user?.id !== 'number') return;
+    const fetchProfessorTimetable = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const weekday = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+        const response = await fetch(
+          `${apiBase}/timetable?facultyId=${String(user.id)}&day=${weekday}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch timetable');
+        const data: TimetableSlot[] = await response.json();
+        setTimetable(data);
+      } catch (err) {
+        console.error('Error fetching timetable:', err);
+      }
+    };
+    fetchProfessorTimetable();
+  }, [isProfessor, user?.id, selectedDate]);
+
+  // Build period options from timetable for selected date
   React.useEffect(() => {
     const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
     const daySlots = timetable.filter((slot) => slot.day === day);
-    const timeToPeriod: Record<string, string> = {
-      '09:00-10:00': '1',
-      '10:00-11:00': '2',
-      '11:00-12:00': '3',
-      '14:00-15:00': '4',
-      '15:00-16:00': '5',
-      '16:00-17:00': '6',
-    };
     const options: PeriodOption[] = daySlots
       .map((slot) => {
-        const periodNumber = timeToPeriod[slot.time];
-        const subjectMatch = subjects.find((s) => s.name === slot.subject);
-        if (!periodNumber || !subjectMatch) return null;
+        const periodNumber = TIME_TO_PERIOD[slot.time];
+        const subjectId =
+          slot.subject_id ? String(slot.subject_id) : subjects.find((s) => s.name === slot.subject)?.id;
+        if (!periodNumber || !subjectId) return null;
         return {
           value: periodNumber,
           label: `${slot.time} – ${slot.subject}`,
-          subjectId: subjectMatch.id,
+          subjectId,
+          year: String(slot.year ?? selectedYear),
+          semester: String(slot.semester ?? currentSemester),
+          section: slot.section ?? selectedSection,
         };
       })
       .filter((opt): opt is PeriodOption => opt !== null);
-    setPeriodOptions(options);
-  }, [timetable, selectedDate, subjects]);
 
-  // Fetch attendance for the current selection
+    setSlotOptions(options);
+    if (!isProfessor) setPeriodOptions(options);
+  }, [timetable, selectedDate, subjects, selectedYear, selectedSection, currentSemester, isProfessor]);
+
+  // Reset for professors when date changes
+  React.useEffect(() => {
+    if (isProfessor) {
+      setSelectedSlot('');
+      setSelectedPeriod('');
+      setPeriodOptions([]);
+    }
+  }, [selectedDate, isProfessor]);
+
+  // Fetch attendance for current selection
   const fetchAttendance = React.useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
       if (selectedSubject) url += `&subjectId=${selectedSubject}`;
 
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to fetch attendance');
 
       type AttendanceRecord = {
@@ -221,13 +267,14 @@ const AttendanceManager: React.FC = () => {
           return record ? { ...student, present: Boolean(record.present) } : { ...student, present: null };
         })
       );
-    } catch (error) {
-      console.error('Error fetching attendance:', error);
+    } catch (err) {
+      console.error('Error fetching attendance:', err);
     }
   }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
 
-  // Fetch class + students whenever the selection changes, then sync attendance + summary
+  // Fetch classes, students, then sync attendance + summary
   React.useEffect(() => {
+    if (isProfessor && !selectedSlot) return;
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -240,7 +287,6 @@ const AttendanceManager: React.FC = () => {
 
         type ClassResponse = { id: string; year: number; section: string };
         const classes: ClassResponse[] = await classRes.json();
-
         const cls = classes.find((c) => c.year.toString() === selectedYear && c.section === selectedSection);
         const cid = cls?.id || null;
         setClassId(cid);
@@ -269,7 +315,6 @@ const AttendanceManager: React.FC = () => {
           attendancePercentage: s.attendancePercentage,
           present: null,
         }));
-
         setStudents(mapped);
 
         // Sync period attendance immediately
@@ -292,15 +337,15 @@ const AttendanceManager: React.FC = () => {
             );
           }
         }
-      } catch (error) {
-        console.error('Error fetching students:', error);
+      } catch (err) {
+        console.error('Error fetching students:', err);
       }
     };
 
     fetchData();
-  }, [selectedYear, selectedSection, selectedSubject, fetchAttendance]);
+  }, [selectedYear, selectedSection, selectedSubject, fetchAttendance, isProfessor, selectedSlot]);
 
-  // Keep carousel on first page when list size/layout changes
+  // Keep carousel on first page when layout changes
   React.useEffect(() => {
     api?.scrollTo(0);
   }, [api, isDesktop, selectedYear, selectedSection, selectedSubject, selectedDate, selectedPeriod]);
@@ -354,13 +399,6 @@ const AttendanceManager: React.FC = () => {
       ? Math.round(students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length)
       : 0;
 
-  // ECE color scale (reds only)
-  const getAttendanceColor = (percentage: number) => {
-    if (percentage >= 85) return 'text-red-600';
-    if (percentage >= 75) return 'text-red-500';
-    return 'text-red-800';
-  };
-
   const getAttendanceBadge = (percentage: number) => {
     if (percentage >= 85) return { variant: 'default' as const, label: 'Good' };
     if (percentage >= 75) return { variant: 'secondary' as const, label: 'Warning' };
@@ -370,6 +408,10 @@ const AttendanceManager: React.FC = () => {
   const handleSaveAttendance = async () => {
     if (!selectedSubject) {
       toast({ variant: 'destructive', title: 'Select a subject first' });
+      return;
+    }
+    if (!selectedPeriod) {
+      toast({ variant: 'destructive', title: 'Select a period first' });
       return;
     }
     try {
@@ -395,8 +437,8 @@ const AttendanceManager: React.FC = () => {
 
       toast({ title: 'Attendance Saved', description: 'Attendance has been saved successfully' });
       await fetchAttendance();
-    } catch (error) {
-      console.error('Error saving attendance:', error);
+    } catch (err) {
+      console.error('Error saving attendance:', err);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to save attendance' });
     }
   };
@@ -418,16 +460,13 @@ const AttendanceManager: React.FC = () => {
     </div>
   );
 
-  // Fetch all required data with minimum loader time
+  // Minimal loader timing
   React.useEffect(() => {
     const fetchAll = async () => {
       const start = Date.now();
       try {
-        // You may want to fetch subjects, timetable, students, etc. here
-        // For example:
-        // await Promise.all([fetchSubjects(), fetchTimetable(), fetchStudents()]);
-        // But since you have multiple useEffects, just wait for a short time
-      } catch (err) {
+        // Effects above fetch data individually; we just keep a graceful loader duration.
+      } catch {
         setError('Failed to load attendance data');
       } finally {
         const elapsed = Date.now() - start;
@@ -448,10 +487,7 @@ const AttendanceManager: React.FC = () => {
         <EceVideoLoader />
       </div>
     );
-  if (error)
-    return (
-      <div className="p-8 text-center text-red-600">{error}</div>
-    );
+  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   return (
     <div className="min-h-screen w-full" style={{ background: COLORS.cream }}>
@@ -473,12 +509,7 @@ const AttendanceManager: React.FC = () => {
             <Button
               variant="outline"
               className="border rounded-md px-2 py-1 text-sm sm:text-base"
-              style={{
-                borderColor: COLORS.border,
-                color: COLORS.blue,
-                background: COLORS.grayBtn,
-                minWidth: 0,
-              }}
+              style={{ borderColor: COLORS.border, color: COLORS.blue, background: COLORS.grayBtn, minWidth: 0 }}
             >
               <Download className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Export</span>
@@ -486,12 +517,7 @@ const AttendanceManager: React.FC = () => {
             <Button
               variant="outline"
               className="border rounded-md px-2 py-1 text-sm sm:text-base"
-              style={{
-                borderColor: COLORS.border,
-                color: COLORS.blue,
-                background: COLORS.grayBtn,
-                minWidth: 0,
-              }}
+              style={{ borderColor: COLORS.border, color: COLORS.blue, background: COLORS.grayBtn, minWidth: 0 }}
             >
               <Upload className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Import</span>
@@ -499,7 +525,7 @@ const AttendanceManager: React.FC = () => {
           </div>
         </div>
 
-        {/* Class and Date Selection */}
+        {/* Class / Slot / Date / Period */}
         <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
           <CardContent className="p-3 sm:p-5 md:p-6">
             {isProfessor && (
@@ -512,51 +538,86 @@ const AttendanceManager: React.FC = () => {
                 </p>
               </div>
             )}
+
             <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="year-select" style={{ color: COLORS.accent, fontSize: 13 }}>
-                  Year
-                </Label>
-                <select
-                  id="year-select"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full p-2 rounded-md text-sm"
-                  style={{
-                    background: COLORS.card,
-                    color: COLORS.text,
-                    border: `1px solid ${COLORS.border}`,
-                  }}
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year}>
-                      {year}st Year
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="section-select" style={{ color: COLORS.accent, fontSize: 13 }}>
-                  Section
-                </Label>
-                <select
-                  id="section-select"
-                  value={selectedSection}
-                  onChange={(e) => setSelectedSection(e.target.value)}
-                  className="w-full p-2 rounded-md text-sm"
-                  style={{
-                    background: COLORS.card,
-                    color: COLORS.text,
-                    border: `1px solid ${COLORS.border}`,
-                  }}
-                >
-                  {sections.map((section) => (
-                    <option key={section} value={section}>
-                      Section {section}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* For Professors: Slot select; For others: Year & Section */}
+              {isProfessor ? (
+                <div className="space-y-1 md:col-span-2">
+                  <Label htmlFor="slot-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                    Choose Class Slot
+                  </Label>
+                  <select
+                    id="slot-select"
+                    value={selectedSlot}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSelectedSlot(value);
+                      const option = slotOptions.find((o) => o.value === value);
+                      if (option) {
+                        setSelectedYear(option.year);
+                        setSelectedSection(option.section);
+                        setSelectedSubject(option.subjectId);
+                        setSelectedPeriod(option.value);
+                        setPeriodOptions([option]);
+                      } else {
+                        setSelectedSubject('');
+                        setSelectedPeriod('');
+                        setPeriodOptions([]);
+                      }
+                    }}
+                    className="w-full p-2 rounded-md text-sm"
+                    style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                  >
+                    <option value="">Select Slot</option>
+                    {slotOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {`${option.label} – Year ${option.year}, Section ${option.section}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="year-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                      Year
+                    </Label>
+                    <select
+                      id="year-select"
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className="w-full p-2 rounded-md text-sm"
+                      style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}st Year
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="section-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                      Section
+                    </Label>
+                    <select
+                      id="section-select"
+                      value={selectedSection}
+                      onChange={(e) => setSelectedSection(e.target.value)}
+                      className="w-full p-2 rounded-md text-sm"
+                      style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                    >
+                      {sections.map((section) => (
+                        <option key={section} value={section}>
+                          Section {section}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-1">
                 <Label htmlFor="date-select" style={{ color: COLORS.accent, fontSize: 13 }}>
                   Date
@@ -567,13 +628,10 @@ const AttendanceManager: React.FC = () => {
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full text-sm"
-                  style={{
-                    background: COLORS.card,
-                    color: COLORS.text,
-                    border: `1px solid ${COLORS.border}`,
-                  }}
+                  style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
                 />
               </div>
+
               <div className="space-y-1 xs:col-span-2 md:col-span-2">
                 <Label htmlFor="period-select" style={{ color: COLORS.accent, fontSize: 13 }}>
                   Period
@@ -588,11 +646,7 @@ const AttendanceManager: React.FC = () => {
                     setSelectedSubject(option?.subjectId || '');
                   }}
                   className="w-full p-2 rounded-md text-sm"
-                  style={{
-                    background: COLORS.card,
-                    color: COLORS.text,
-                    border: `1px solid ${COLORS.border}`,
-                  }}
+                  style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
                 >
                   <option value="">Select Period</option>
                   {periodOptions.map((option) => (
@@ -606,7 +660,7 @@ const AttendanceManager: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Attendance Summary */}
+        {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
           <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
             <CardContent className="p-3 sm:p-5">
@@ -623,6 +677,7 @@ const AttendanceManager: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -638,6 +693,7 @@ const AttendanceManager: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -653,6 +709,7 @@ const AttendanceManager: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -673,7 +730,7 @@ const AttendanceManager: React.FC = () => {
           </Card>
         </div>
 
-        {/* Student Attendance Grid */}
+        {/* Students */}
         <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
           <CardHeader className="pb-2 sm:pb-4">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -690,11 +747,7 @@ const AttendanceManager: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="border rounded px-2 py-1 text-xs sm:text-sm"
-                  style={{
-                    borderColor: COLORS.border,
-                    color: COLORS.present,
-                    background: COLORS.grayBtn,
-                  }}
+                  style={{ borderColor: COLORS.border, color: COLORS.present, background: COLORS.grayBtn }}
                   onClick={markAllPresent}
                 >
                   Mark All Present
@@ -703,11 +756,7 @@ const AttendanceManager: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="border rounded px-2 py-1 text-xs sm:text-sm"
-                  style={{
-                    borderColor: COLORS.border,
-                    color: COLORS.absent,
-                    background: COLORS.grayBtn,
-                  }}
+                  style={{ borderColor: COLORS.border, color: COLORS.absent, background: COLORS.grayBtn }}
                   onClick={markAllAbsent}
                 >
                   Mark All Absent
@@ -729,10 +778,7 @@ const AttendanceManager: React.FC = () => {
                 variant="outline"
                 size="icon"
                 className="border rounded text-blue-700 hover:bg-blue-50 h-8 w-8 sm:h-10 sm:w-10"
-                style={{
-                  borderColor: COLORS.border,
-                  background: COLORS.grayBtn,
-                }}
+                style={{ borderColor: COLORS.border, background: COLORS.grayBtn }}
               >
                 <Filter className="h-4 w-4" />
               </Button>
@@ -766,7 +812,7 @@ const AttendanceManager: React.FC = () => {
                           >
                             <div className="flex items-center justify-between mb-1 sm:mb-3">
                               <Checkbox
-                                checked={student.present === null ? 'indeterminate' : student.present}
+                                checked={student.present === true}
                                 onCheckedChange={() => toggleAttendance(student.id)}
                                 onClick={(e) => e.stopPropagation()}
                                 className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
@@ -794,22 +840,15 @@ const AttendanceManager: React.FC = () => {
                             </div>
 
                             <div className="text-center space-y-1.5">
-                              {/* Large Roll Number */}
                               <div className="text-lg sm:text-2xl font-extrabold text-blue-700 leading-none">
                                 {student.rollNumber}
                               </div>
-
-                              {/* Student Name */}
                               <p className="font-medium text-[12px] sm:text-sm text-foreground line-clamp-1">
                                 {student.name}
                               </p>
-
-                              {/* College ID */}
                               <p className="text-[10px] sm:text-xs text-gray-500 font-mono break-all">
                                 {student.collegeId}
                               </p>
-
-                              {/* Attendance Percentage and Badge */}
                               <div className="flex items-center justify-between mt-1.5">
                                 <span className="text-[10px] sm:text-xs font-medium text-blue-700">
                                   {student.attendancePercentage}%
@@ -835,7 +874,7 @@ const AttendanceManager: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Save Button */}
+        {/* Save */}
         <div className="flex justify-end mt-2">
           <Button
             size="sm"

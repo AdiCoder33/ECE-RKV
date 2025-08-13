@@ -1,6 +1,6 @@
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
   role: 'admin' | 'hod' | 'professor' | 'student' | 'alumni';
@@ -32,43 +32,43 @@ export interface Subject {
 
 export interface Attendance {
   id: string;
-  studentId: string;
+  studentId: number;
   subjectId: string;
   date: string;
   present: boolean;
   period: number;
-  markedBy: string;
+  markedBy: number;
 }
 
 export interface InternalMark {
   id: string;
-  studentId: string;
+  studentId: number;
   subjectId: string;
   type: 'mid1' | 'mid2' | 'mid3' | 'assignment1' | 'assignment2' | 'assignment3';
   marks: number;
   maxMarks: number;
   date: string;
-  enteredBy: string;
+  enteredBy: number;
 }
 
 export interface ChatMessage {
   id: string;
-  senderId: string;
+  senderId: number;
   senderName: string;
   senderRole: string;
   content: string;
   timestamp: string;
   status: 'sending' | 'sent' | 'delivered' | 'read';
   groupId?: string;
-  receiverId?: string;
+  receiverId?: number;
   sender_profileImage?: string;
   attachments?: Attachment[];
 }
 
 export interface PrivateMessage {
   id: string;
-  sender_id: string;
-  receiver_id: string;
+  sender_id: number;
+  receiver_id: number;
   content: string;
   created_at: string;
   sender_name: string;
@@ -91,7 +91,7 @@ export interface Class {
   year: number;
   semester: 1 | 2;
   section: string;
-  hodId?: string;
+  hodId?: number;
   hodName?: string;
   subjects: Subject[];
   students: User[];
@@ -102,7 +102,7 @@ export interface Announcement {
   id: string;
   title: string;
   content: string;
-  authorId: string;
+  authorId: number;
   authorName: string;
   targetRole?: string;
   targetSection?: string;
@@ -120,13 +120,13 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   is_read: boolean;
   created_at: string;
-  user_id: string;
+  user_id: number;
   data?: Record<string, unknown>;
 }
 
 export interface AcademicRecord {
   id: string;
-  studentId: string;
+  studentId: number;
   year: number;
   semester: 1 | 2;
   subjects: {
@@ -143,7 +143,7 @@ export interface AcademicRecord {
 
 export interface Achievement {
   id: string;
-  userId: string;
+  userId: number;
   title: string;
   description: string;
   category: 'academic' | 'sports' | 'cultural' | 'technical' | 'other';

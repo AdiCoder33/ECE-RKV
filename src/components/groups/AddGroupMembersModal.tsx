@@ -13,7 +13,7 @@ interface ChatGroup {
 }
 
 interface User {
-  id: string;
+  id: number;
   name: string;
   role: string;
   year?: number;
@@ -32,7 +32,7 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
   const [year, setYear] = useState('all');
   const [section, setSection] = useState('all');
   const [users, setUsers] = useState<User[]>([]);
-  const [added, setAdded] = useState<Set<string>>(new Set());
+  const [added, setAdded] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!open) return;
@@ -93,7 +93,7 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
     }
   }, [open]);
 
-  const handleAdd = async (userId: string) => {
+  const handleAdd = async (userId: number) => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${apiBase}/groups/${group.id}/members`, {

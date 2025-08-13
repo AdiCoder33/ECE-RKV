@@ -10,6 +10,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 interface StudentSubject {
   id: string;
@@ -24,15 +25,19 @@ interface StudentSubject {
 
 const StudentSubjects = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        if (!user?.id) return;
-        
-        const response = await fetch(`/api/students/${user.id}/subjects`, {
+        if (typeof user?.id !== 'number') {
+          toast({ variant: 'destructive', title: 'Invalid user ID' });
+          return;
+        }
+
+        const response = await fetch(`/api/students/${String(user.id)}/subjects`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

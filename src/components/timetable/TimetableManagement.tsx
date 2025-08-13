@@ -63,6 +63,8 @@ const ProfessorCombobox = ({
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const selectedProfessor = professors.find((p) => p.id === value);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -71,9 +73,8 @@ const ProfessorCombobox = ({
           role="combobox"
           aria-expanded={open}
           className={cn('w-full justify-between border-gray-300 focus:border-red-700 focus:ring-red-700', buttonClassName)}
-          // Applied consistent border and focus styles
         >
-          {value ? value : placeholder}
+          {selectedProfessor ? selectedProfessor.name : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -89,7 +90,7 @@ const ProfessorCombobox = ({
             {filtered.map((prof) => (
               <CommandItem
                 key={prof.id}
-                value={prof.name}
+                value={prof.id}
                 onSelect={(currentValue) => {
                   onChange(currentValue);
                   setOpen(false);
@@ -99,7 +100,7 @@ const ProfessorCombobox = ({
                 <Check
                   className={cn(
                     'mr-2 h-4 w-4',
-                    value === prof.name ? 'opacity-100' : 'opacity-0'
+                    value === prof.id ? 'opacity-100' : 'opacity-0'
                   )}
                 />
                 {prof.name}
@@ -117,7 +118,8 @@ interface TimeSlot {
   day: string;
   time: string;
   subject: string;
-  faculty: string;
+  facultyId: string | null;
+  facultyName?: string;
   room: string;
   year: number;
   semester: 1 | 2;
@@ -125,6 +127,19 @@ interface TimeSlot {
 }
 
 const MIN_LOADER_TIME = 1500; // milliseconds
+
+interface ApiSlot {
+  id: string;
+  day: string;
+  time: string;
+  subject: string;
+  room: string;
+  year: number;
+  semester: number;
+  section: string;
+  faculty_id: number | null;
+  faculty: string;
+}
 
 const TimetableManagement = () => {
   const { user } = useAuth();
@@ -140,7 +155,7 @@ const TimetableManagement = () => {
     day: '',
     time: '',
     subject: '',
-    faculty: '',
+    facultyId: '',
     room: '',
     year: 3,
     semester: 1 as 1 | 2,
@@ -200,17 +215,29 @@ const TimetableManagement = () => {
 
   const fetchTimetable = async () => {
     try {
-        const response = await fetch(
-          `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+      const response = await fetch(
+        `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       if (response.ok) {
-        const data = await response.json();
-        setTimetable(data);
+        const data: ApiSlot[] = await response.json();
+        const mapped: TimeSlot[] = data.map((slot) => ({
+          id: slot.id,
+          day: slot.day,
+          time: slot.time,
+          subject: slot.subject,
+          room: slot.room,
+          year: slot.year,
+          semester: (slot.semester as 1 | 2),
+          section: slot.section,
+          facultyId: slot.faculty_id !== null && slot.faculty_id !== undefined ? String(slot.faculty_id) : null,
+          facultyName: slot.faculty,
+        }));
+        setTimetable(mapped);
       }
     } catch (error) {
       toast({
@@ -218,21 +245,19 @@ const TimetableManagement = () => {
         title: "Error",
         description: "Failed to load timetable data",
       });
-      // Mock data for demo (removed in favor of actual API calls if they work)
-      // setTimetable([]);
     }
   };
 
   const fetchSubjects = async () => {
     try {
-        const response = await fetch(
-          `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+      const response = await fetch(
+        `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setSubjects(data);
@@ -243,21 +268,22 @@ const TimetableManagement = () => {
         title: "Error",
         description: "Failed to load subjects data",
       });
-      // Mock data (removed in favor of actual API calls if they work)
-      // setSubjects([]);
     }
   };
 
   const fetchProfessors = async () => {
     try {
-        const response = await fetch(`${apiBase}/users?role=professor`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+      const response = await fetch(`${apiBase}/users?role=professor`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
-        const mapped = data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
+        const mapped = data.map((p: { id: number | string; name: string }) => ({
+          id: String(p.id),
+          name: p.name
+        }));
         setProfessors(mapped);
       }
     } catch (error) {
@@ -266,8 +292,6 @@ const TimetableManagement = () => {
         title: "Error",
         description: "Failed to load professors data",
       });
-      // Mock data (removed in favor of actual API calls if they work)
-      // setProfessors([]);
     }
   };
 
@@ -284,7 +308,7 @@ const TimetableManagement = () => {
   );
 
   const handleAddSlot = async () => {
-    if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.faculty) {
+    if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.facultyId) {
       toast({
         title: 'Validation Error',
         description: 'Please fill all required fields.',
@@ -294,16 +318,21 @@ const TimetableManagement = () => {
     }
 
     try {
-        const response = await fetch(`${apiBase}/timetable`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const facultyId = parseInt(newSlot.facultyId, 10);
+      const response = await fetch(`${apiBase}/timetable`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          ...newSlot,
-          year: parseInt(selectedYear),
-          semester: parseInt(selectedSemester) as 1 | 2,
+          day: newSlot.day,
+          time: newSlot.time,
+          subject: newSlot.subject,
+          facultyId: isNaN(facultyId) ? null : facultyId,
+          room: newSlot.room,
+          year: parseInt(selectedYear, 10),
+          semester: parseInt(selectedSemester, 10) as 1 | 2,
           section: selectedSection
         })
       });
@@ -318,7 +347,7 @@ const TimetableManagement = () => {
       }
 
       fetchTimetable();
-      setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, semester: 1, section: 'A' });
+      setNewSlot({ day: '', time: '', subject: '', facultyId: '', room: '', year: 3, semester: 1, section: 'A' });
       setIsAddModalOpen(false);
       toast({
         title: "Success",
@@ -335,14 +364,14 @@ const TimetableManagement = () => {
   };
 
   const handleDeleteSlot = async (slotId: string) => {
-    if (!confirm('Are you sure you want to delete this timetable slot?')) return; // Confirmation for deletion
+    if (!confirm('Are you sure you want to delete this timetable slot?')) return;
     try {
-        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+      const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
       if (response.ok) {
         fetchTimetable();
@@ -373,11 +402,12 @@ const TimetableManagement = () => {
     if (!slot) return;
 
     try {
-        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const facultyId = parseInt(updatedData.facultyId, 10);
+      const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           day: slot.day,
@@ -385,7 +415,9 @@ const TimetableManagement = () => {
           year: slot.year,
           semester: slot.semester,
           section: slot.section,
-          ...updatedData
+          subject: updatedData.subject,
+          facultyId: isNaN(facultyId) ? null : facultyId,
+          room: updatedData.room
         })
       });
       if (!response.ok) {
@@ -431,19 +463,19 @@ const TimetableManagement = () => {
 
   return (
     <div
-      className="space-y-6 px-4 py-4 sm:px-6 md:px-8 min-h-screen" // Adjusted padding for consistency
-      style={{ backgroundColor: THEME.bgBeige }} // Applied the consistent background color
+      className="space-y-6 px-4 py-4 sm:px-6 md:px-8 min-h-screen"
+      style={{ backgroundColor: THEME.bgBeige }}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: THEME.accent }}>Timetable Management</h1> {/* Applied accent color to heading */}
-          <p className="text-gray-700 mt-1">Manage class schedules and timetables for ECE Department</p> {/* Consistent muted text */}
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: THEME.accent }}>Timetable Management</h1>
+          <p className="text-gray-700 mt-1">Manage class schedules and timetables for ECE Department</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={() => window.history.back()}
-            className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200" // Styled to match other "Back" buttons
+            className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -451,21 +483,21 @@ const TimetableManagement = () => {
           {(user?.role === 'admin' || user?.role === 'hod') && (
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"> {/* Styled to match other "Add" buttons */}
+                <Button className="w-full sm:w-auto bg-red-700 text-white hover:bg-red-800 transition-colors duration-200">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Slot
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px] bg-white text-gray-900 rounded-lg shadow-xl"> {/* Consistent modal styling */}
-                <DialogHeader className="p-4 border-b border-gray-200"> {/* Consistent modal header */}
+              <DialogContent className="sm:max-w-[425px] bg-white text-gray-900 rounded-lg shadow-xl">
+                <DialogHeader className="p-4 border-b border-gray-200">
                   <DialogTitle className="text-2xl font-bold">Add Time Slot</DialogTitle>
                   <DialogDescription className="text-gray-600">
                     Add a new class to the timetable
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 p-4"> {/* Added padding to modal content */}
+                <div className="space-y-4 p-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Day</label> {/* Adjusted label color */}
+                    <label className="text-sm font-medium text-gray-700">Day</label>
                     <Select value={newSlot.day} onValueChange={(value) => setNewSlot({ ...newSlot, day: value })}>
                       <SelectTrigger className="border-gray-300 focus:border-red-700 focus:ring-red-700">
                         <SelectValue placeholder="Select day" />
@@ -506,10 +538,10 @@ const TimetableManagement = () => {
                   <div>
                     <label className="text-sm font-medium text-gray-700">Faculty</label>
                     <ProfessorCombobox
-                      value={newSlot.faculty}
-                      onChange={(value) => setNewSlot({ ...newSlot, faculty: value })}
+                      value={newSlot.facultyId}
+                      onChange={(value) => setNewSlot({ ...newSlot, facultyId: value })}
                       professors={professors}
-                      buttonClassName="border-gray-300 focus:border-red-700 focus:ring-red-700" // Consistent combobox styling
+                      buttonClassName="border-gray-300 focus:border-red-700 focus:ring-red-700"
                     />
                   </div>
                   <div>
@@ -518,11 +550,11 @@ const TimetableManagement = () => {
                       value={newSlot.room}
                       onChange={(e) => setNewSlot({ ...newSlot, room: e.target.value })}
                       placeholder="Room number"
-                      className="border-gray-300 focus:border-red-700 focus:ring-red-700" // Consistent input styling
+                      className="border-gray-300 focus:border-red-700 focus:ring-red-700"
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 p-4 border-t border-gray-200"> {/* Consistent modal footer */}
+                <div className="flex justify-end gap-2 p-4 border-t border-gray-200">
                   <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
                     Cancel
                   </Button>
@@ -537,11 +569,11 @@ const TimetableManagement = () => {
       </div>
 
       {user?.role !== 'professor' && (
-        <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}> {/* Applied card styling */}
+        <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700">Year</label> {/* Adjusted label color */}
+                <label className="text-sm font-medium text-gray-700">Year</label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger className="border-gray-300 focus:border-red-700 focus:ring-red-700">
                     <SelectValue />
@@ -584,21 +616,21 @@ const TimetableManagement = () => {
         </Card>
       )}
 
-      <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}> {/* Applied card styling */}
-        <CardHeader className="px-4 pt-4 pb-0"> {/* Adjusted header padding */}
-          <CardTitle className="flex items-center gap-2 text-gray-900"> {/* Adjusted text color */}
-            <Calendar className="h-5 w-5 text-red-700" /> {/* Applied accent color to icon */}
+      <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}>
+        <CardHeader className="px-4 pt-4 pb-0">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Calendar className="h-5 w-5 text-red-700" />
             Timetable - Year {selectedYear}, Sem {selectedSemester}, Section {selectedSection}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4"> {/* Adjusted content padding */}
+        <CardContent className="p-4">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-gray-700">Time</th> {/* Adjusted text color */}
+                  <th className="text-left p-3 font-medium text-gray-700">Time</th>
                   {days.map(day => (
-                    <th key={day} className="text-left p-3 font-medium min-w-[120px] text-gray-700"> {/* Adjusted text color */}
+                    <th key={day} className="text-left p-3 font-medium min-w-[120px] text-gray-700">
                       {day}
                     </th>
                   ))}
@@ -606,8 +638,8 @@ const TimetableManagement = () => {
               </thead>
               <tbody>
                 {timeSlots.map(time => (
-                  <tr key={time} className="border-b hover:bg-gray-50"> {/* Added hover effect for rows */}
-                    <td className="p-3 font-medium text-sm bg-gray-50 text-gray-700"> {/* Applied light background and text color */}
+                  <tr key={time} className="border-b hover:bg-gray-50">
+                    <td className="p-3 font-medium text-sm bg-gray-50 text-gray-700">
                       {time}
                     </td>
                     {days.map(day => {
@@ -615,9 +647,9 @@ const TimetableManagement = () => {
                       const slotKey = `${day}-${time}`;
                       const isEditing = editingSlot === slotKey;
                       return (
-                        <td key={slotKey} className="p-2 align-top"> {/* Align to top for better layout of content */}
+                        <td key={slotKey} className="p-2 align-top">
                           {slot ? (
-                            <div className="bg-red-50 rounded-lg p-2 min-h-[60px] relative group border border-red-200"> {/* Applied red-50 background and border */}
+                            <div className="bg-red-50 rounded-lg p-2 min-h-[60px] relative group border border-red-200">
                               {isEditing ? (
                                 <EditSlotForm
                                   slot={slot}
@@ -628,13 +660,13 @@ const TimetableManagement = () => {
                                 />
                               ) : (
                                 <>
-                                  <div className="text-xs font-medium text-red-800 mb-1 break-words"> {/* Dark red for subject */}
+                                  <div className="text-xs font-medium text-red-800 mb-1 break-words">
                                     {slot.subject}
                                   </div>
-                                  <div className="text-xs text-gray-600 break-words"> {/* Muted for faculty */}
-                                    {slot.faculty}
+                                  <div className="text-xs text-gray-600 break-words">
+                                    {slot.facultyName}
                                   </div>
-                                  <div className="text-xs text-gray-600 break-words"> {/* Muted for room */}
+                                  <div className="text-xs text-gray-600 break-words">
                                     {slot.room}
                                   </div>
                                   {(user?.role === 'admin' || user?.role === 'hod') && (
@@ -642,7 +674,7 @@ const TimetableManagement = () => {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="h-6 w-6 p-0 text-red-500 hover:bg-red-100 rounded" // Adjusted edit button color
+                                        className="h-6 w-6 p-0 text-red-500 hover:bg-red-100 rounded"
                                         onClick={() => setEditingSlot(slotKey)}
                                       >
                                         <Edit className="h-3 w-3" />
@@ -650,7 +682,7 @@ const TimetableManagement = () => {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="h-6 w-6 p-0 text-red-700 hover:bg-red-100 rounded" // Adjusted delete button color
+                                        className="h-6 w-6 p-0 text-red-700 hover:bg-red-100 rounded"
                                         onClick={() => handleDeleteSlot(slot.id)}
                                       >
                                         <Trash2 className="h-3 w-3" />
@@ -662,7 +694,7 @@ const TimetableManagement = () => {
                             </div>
                           ) : (
                             <div
-                              className="min-h-[60px] bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 flex items-center justify-center border border-gray-200" // Light gray background for empty slots
+                              className="min-h-[60px] bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 flex items-center justify-center border border-gray-200"
                               onClick={() => {
                                 if (user?.role === 'admin' || user?.role === 'hod') {
                                   setNewSlot({ ...newSlot, day, time });
@@ -671,7 +703,7 @@ const TimetableManagement = () => {
                               }}
                             >
                               {(user?.role === 'admin' || user?.role === 'hod') && (
-                                <Plus className="h-4 w-4 text-gray-500" /> 
+                                <Plus className="h-4 w-4 text-gray-500" />
                               )}
                             </div>
                           )}
@@ -692,11 +724,11 @@ const TimetableManagement = () => {
 // Inline edit form component
 interface Slot {
   subject: string;
-  faculty: string;
+  facultyId: string;
   room: string;
 }
 interface EditSlotFormProps {
-  slot: Slot;
+  slot: { subject: string; facultyId: string | null; room: string };
   subjects: Option[];
   professors: Option[];
   onSave: (data: Slot) => void;
@@ -705,7 +737,7 @@ interface EditSlotFormProps {
 const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlotFormProps) => {
   const [editData, setEditData] = useState<Slot>({
     subject: slot.subject,
-    faculty: slot.faculty,
+    facultyId: slot.facultyId ?? '',
     room: slot.room
   });
 
@@ -716,7 +748,7 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlot
   return (
     <div className="space-y-2">
       <Select value={editData.subject} onValueChange={(value) => setEditData({ ...editData, subject: value })}>
-        <SelectTrigger className="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700"> {/* Consistent styling */}
+        <SelectTrigger className="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-white">
@@ -727,10 +759,10 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlot
       </Select>
 
       <ProfessorCombobox
-        value={editData.faculty}
-        onChange={(value) => setEditData({ ...editData, faculty: value })}
+        value={editData.facultyId}
+        onChange={(value) => setEditData({ ...editData, facultyId: value })}
         professors={professors}
-        buttonClassName="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700" // Consistent styling
+        buttonClassName="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700"
         placeholder="Faculty"
       />
 
@@ -738,14 +770,14 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlot
         value={editData.room}
         onChange={(e) => setEditData({ ...editData, room: e.target.value })}
         placeholder="Room"
-        className="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700" // Consistent styling
+        className="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700"
       />
 
       <div className="flex gap-1">
-        <Button size="sm" onClick={handleSave} className="h-6 px-2 text-xs bg-red-700 text-white hover:bg-red-800"> {/* Consistent save button */}
+        <Button size="sm" onClick={handleSave} className="h-6 px-2 text-xs bg-red-700 text-white hover:bg-red-800">
           <Save className="h-3 w-3" />
         </Button>
-        <Button size="sm" variant="outline" onClick={onCancel} className="h-6 px-2 text-xs border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"> {/* Consistent cancel button */}
+        <Button size="sm" variant="outline" onClick={onCancel} className="h-6 px-2 text-xs border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
           <X className="h-3 w-3" />
         </Button>
       </div>

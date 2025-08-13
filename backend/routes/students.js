@@ -7,8 +7,27 @@ const router = express.Router();
 // Get all students with filtering
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { classId, year, semester, section } = req.query;
-    
+    if (req.user.role === 'student') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const { classId, year, semester, section, subjectId } = req.query;
+
+    let filterYear = year;
+    let filterSemester = semester;
+
+    if (subjectId && (!filterYear || !filterSemester)) {
+      const subjectRes = await executeQuery(
+        'SELECT year, semester FROM subjects WHERE id = ?',
+        [subjectId]
+      );
+      const subj = subjectRes.recordset[0];
+      if (subj) {
+        if (!filterYear) filterYear = subj.year;
+        if (!filterSemester) filterSemester = subj.semester;
+      }
+    }
+
     let query = `
       SELECT
         u.id,
@@ -39,29 +58,29 @@ router.get('/', authenticateToken, async (req, res, next) => {
       LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
       WHERE u.role = ?
     `;
-    
+
     const params = ['student'];
-    
+
     if (classId) {
       query += ' AND sc.class_id = ?';
       params.push(classId);
     }
-    
-    if (year) {
+
+    if (filterYear) {
       query += ' AND u.year = ?';
-      params.push(year);
+      params.push(filterYear);
     }
 
-    if (semester) {
+    if (filterSemester) {
       query += ' AND u.semester = ?';
-      params.push(semester);
+      params.push(filterSemester);
     }
 
     if (section) {
       query += ' AND u.section = ?';
       params.push(section);
     }
-    
+
     query += ` GROUP BY
       u.id,
       u.name,
@@ -84,30 +103,33 @@ router.get('/', authenticateToken, async (req, res, next) => {
       c.section,
       ar.cgpa
       ORDER BY u.year, u.semester, u.section, u.roll_number`;
-    
+
     const result = await executeQuery(query, params);
     const students = result.recordset || [];
-    
-    res.json(students.map(student => ({
-      id: student.id.toString(),
-      name: student.name,
-      email: student.email,
-      role: student.role,
-      department: student.department,
-      year: student.year,
-      semester: student.semester,
-      section: student.section,
-      rollNumber: student.roll_number,
-      phone: student.phone,
-      dateOfBirth: student.date_of_birth,
-      address: student.address,
-      parentContact: student.parent_contact,
-      bloodGroup: student.blood_group,
-      admissionYear: student.admission_year,
-      profileImage: student.profile_image,
-      attendancePercentage: Math.round(student.attendance_percentage || 0),
-      cgpa: student.cgpa || 0
-    })));
+
+    res.json(
+      students.map(student => ({
+        id: student.id.toString(),
+        name: student.name,
+        email: student.email,
+        roll_number: student.roll_number,
+        rollNumber: student.roll_number,
+        role: student.role,
+        department: student.department,
+        year: student.year,
+        semester: student.semester,
+        section: student.section,
+        phone: student.phone,
+        dateOfBirth: student.date_of_birth,
+        address: student.address,
+        parentContact: student.parent_contact,
+        bloodGroup: student.blood_group,
+        admissionYear: student.admission_year,
+        profileImage: student.profile_image,
+        attendancePercentage: Math.round(student.attendance_percentage || 0),
+        cgpa: student.cgpa || 0,
+      }))
+    );
   } catch (error) {
     console.error('Students fetch error:', error);
     next(error);

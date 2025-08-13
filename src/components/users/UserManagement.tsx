@@ -80,9 +80,10 @@ const UserManagement: React.FC = () => {
       }
       const data: Array<Record<string, unknown>> = await response.json();
       const mapped: User[] = data.map((u) => {
-        const { roll_number, created_at, ...rest } = u;
+        const { roll_number, created_at, id, ...rest } = u as Record<string, unknown>;
         return {
-          ...(rest as Omit<User, 'rollNumber' | 'createdAt'>),
+          id: typeof id === 'number' ? id : Number(id),
+          ...(rest as Omit<User, 'id' | 'rollNumber' | 'createdAt'>),
           rollNumber:
             ((u as Record<string, unknown>).rollNumber as string | undefined) ??
             (roll_number as string | undefined),
@@ -259,10 +260,10 @@ const UserManagement: React.FC = () => {
   };
 
   // Delete user
-  const handleDeleteUser = async (id: string) => {
+  const handleDeleteUser = async (id: number) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
-      const response = await fetch(`${apiBase}/users/${id}`, {
+      const response = await fetch(`${apiBase}/users/${String(id)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });

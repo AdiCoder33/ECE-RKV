@@ -2,528 +2,472 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { toast } from 'sonner';
-import { 
-  Upload, 
-  Download, 
-  Save, 
-  FileSpreadsheet,
-  GraduationCap,
-  Calculator,
-  Users,
-  Plus,
-  Trash2
-} from 'lucide-react';
+import { Upload, Download, Save } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import * as XLSX from 'xlsx';
 
-interface Student {
+interface MarkRow {
+  email: string;
+  subject: string;
+  maxMarks: number;
+  obtainedMarks: number;
+}
+
+interface SubjectOption {
   id: string;
   name: string;
-  rollNumber: string;
-  marks?: number;
 }
 
-interface MarkEntry {
-  studentId: string;
-  marks: number;
+interface StudentMark {
+  student_id: string;
+  student_name: string;
+  roll_number: string;
+  marks: number | null;
+  max_marks: number | null;
 }
+
+interface ExcelRow {
+  Email: string | number;
+  'Roll Number': string | number;
+  Name: string;
+  Subject: string;
+  MaxMarks: string | number;
+  ObtainedMarks: string | number;
+}
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const MarksUpload = () => {
-  const [selectedClass, setSelectedClass] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
-  const [selectedSection, setSelectedSection] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [examType, setExamType] = useState('');
-  const [maxMarks, setMaxMarks] = useState('40');
-  const [examDate, setExamDate] = useState('');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [markEntries, setMarkEntries] = useState<MarkEntry[]>([]);
+  const [rows, setRows] = useState<MarkRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [year, setYear] = useState('');
+  const [semester, setSemester] = useState('');
+  const [section, setSection] = useState('');
+  const [subject, setSubject] = useState('');
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [marks, setMarks] = useState<StudentMark[]>([]);
+  const [sortField, setSortField] = useState<'roll_number' | 'student_name' | 'marks'>('roll_number');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
-  const classes = [
-    { value: '1', label: 'Class 1' },
-    { value: '2', label: 'Class 2' },
-    { value: '3', label: 'Class 3' },
-    { value: '4', label: 'Class 4' }
-  ];
-
-  const sections = [
-    { value: 'A', label: 'Section A' },
-    { value: 'B', label: 'Section B' },
-    { value: 'C', label: 'Section C' }
-  ];
-
-  const semesters = [
-    { value: '1', label: 'Sem 1' },
-    { value: '2', label: 'Sem 2' }
-  ];
-
-  const subjects = [
-    { id: 'ece301', name: 'Digital Signal Processing' },
-    { id: 'ece302', name: 'VLSI Design' },
-    { id: 'ece303', name: 'Communication Systems' },
-    { id: 'ece304', name: 'Microprocessors' }
-  ];
-
-  const examTypes = [
-    { value: 'mid1', label: 'Mid Term 1' },
-    { value: 'mid2', label: 'Mid Term 2' },
-    { value: 'internal1', label: 'Internal Assessment 1' },
-    { value: 'internal2', label: 'Internal Assessment 2' },
-    { value: 'assignment', label: 'Assignment' },
-    { value: 'quiz', label: 'Quiz' }
-  ];
-
-  // Fetch students when class, semester and section are selected
-  const fetchStudents = async () => {
-    if (!selectedClass || !selectedSemester || !selectedSection) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/students?year=${selectedClass}&semester=${selectedSemester}&section=${selectedSection}`);
-      if (response.ok) {
-        const studentsData = await response.json();
-        setStudents(studentsData);
-        setMarkEntries([]);
-        toast.success(`Loaded ${studentsData.length} students`);
-      } else {
-        toast.error('Failed to fetch students');
-      }
-    } catch (error) {
-      toast.error('Error fetching students');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Fetch subjects when year and semester are selected
   useEffect(() => {
-    fetchStudents();
-  }, [selectedClass, selectedSemester, selectedSection]);
-
-  const initializeMarks = () => {
-    if (!selectedClass || !selectedSemester || !selectedSection || !selectedSubject || !examType) {
-      toast.error('Please select class, semester, section, subject and exam type first');
-      return;
+    if (year && semester) {
+      fetch(`${apiBase}/subjects?year=${year}&semester=${semester}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+        .then((res) => res.json())
+        .then((data) => setSubjects(data))
+        .catch(() => setSubjects([]));
+    } else {
+      setSubjects([]);
     }
-    
-    const initialEntries = students.map(student => ({
-      studentId: student.id,
-      marks: 0
-    }));
-    setMarkEntries(initialEntries);
-    toast.success('Marks sheet initialized for all students');
+    setSubject('');
+  }, [year, semester]);
+
+  const fetchMarks = () => {
+    if (year && semester && section && subject) {
+      fetch(
+        `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      )
+        .then((res) => res.json())
+        .then((data) => setMarks(data))
+        .catch(() => setMarks([]));
+    } else {
+      setMarks([]);
+    }
   };
+
+  // Fetch marks whenever filters change
+  useEffect(() => {
+    fetchMarks();
+  }, [year, semester, section, subject]);
 
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const input = event.target;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const csv = e.target?.result as string;
-        const lines = csv.split('\n');
-        const headers = lines[0].split(',');
-        
-        // Parse CSV and extract marks
-        const markData: MarkEntry[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(',');
-          if (row.length >= 3) {
-            const rollNumber = row[0].trim();
-            const marks = parseFloat(row[2].trim());
-            
-            // Find student by roll number
-            const student = students.find(s => s.rollNumber === rollNumber);
-            if (student && !isNaN(marks)) {
-              markData.push({ studentId: student.id, marks });
-            }
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { defval: '' });
+
+        const parsed: MarkRow[] = [];
+        json.forEach((row) => {
+          const email = row.Email?.toString().trim();
+          const subject = row.Subject?.toString().trim();
+          const maxMarks = parseFloat(String(row.MaxMarks));
+          const obtainedMarks = parseFloat(String(row.ObtainedMarks));
+
+          if (email && subject && !isNaN(maxMarks) && !isNaN(obtainedMarks)) {
+            parsed.push({ email, subject, maxMarks, obtainedMarks });
           }
+        });
+
+        setRows(parsed);
+        if (parsed.length > 0) {
+          toast.success(`Uploaded ${parsed.length} rows`);
+        } else {
+          toast.error('No valid rows found');
         }
-        
-        setMarkEntries(markData);
-        toast.success(`Uploaded marks for ${markData.length} students`);
       } catch (error) {
         toast.error('Error parsing Excel file');
+      } finally {
+        input.value = '';
       }
     };
-    reader.readAsText(file);
-    
-    // Reset file input
-    event.target.value = '';
+    reader.readAsArrayBuffer(file);
   };
 
-  const updateMarks = (studentId: string, marks: number) => {
-    setMarkEntries(prev => {
-      const existing = prev.find(entry => entry.studentId === studentId);
-      if (existing) {
-        return prev.map(entry => 
-          entry.studentId === studentId ? { ...entry, marks } : entry
-        );
-      } else {
-        return [...prev, { studentId, marks }];
-      }
-    });
-  };
+  const handleDownloadTemplate = async () => {
+    if (!year || !semester || !section || !subject) {
+      toast.error('Please select year, semester, section and subject');
+      return;
+    }
 
-  const getStudentMarks = (studentId: string) => {
-    const entry = markEntries.find(e => e.studentId === studentId);
-    return entry ? entry.marks : '';
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${apiBase}/students?year=${year}&semester=${semester}&section=${section}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error('Failed to fetch students');
+
+      const students: { email: string; rollNumber: string | number; name: string }[] = await res.json();
+      const subjectName = subjects.find((s) => String(s.id) === subject)?.name || '';
+
+      const sheetData = students.map((s) => ({
+        Email: s.email,
+        'Roll Number': s.rollNumber,
+        Name: s.name,
+        Subject: subjectName,
+        MaxMarks: '',
+        ObtainedMarks: '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');
+      XLSX.writeFile(workbook, 'marks_template.xlsx');
+      setIsDownloadModalOpen(false);
+    } catch (err) {
+      toast.error('Failed to generate template');
+    }
   };
 
   const submitMarks = async () => {
-    if (!selectedClass || !selectedSection || !selectedSubject || !examType || !maxMarks || markEntries.length === 0) {
-      toast.error('Please fill all required fields and enter marks');
+    if (rows.length === 0) {
+      toast.error('Please upload marks file first');
       return;
     }
 
     try {
       setLoading(true);
-      const response = await fetch('/api/marks/bulk', {
+      const response = await fetch(`${apiBase}/marks/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          subjectId: selectedSubject,
-          type: examType,
-          maxMarks: parseInt(maxMarks),
-          date: examDate || new Date().toISOString().split('T')[0],
-          marksData: markEntries,
-          enteredBy: JSON.parse(localStorage.getItem('user') || '{}').id
-        })
+        body: JSON.stringify({ marks: rows })
       });
 
       if (response.ok) {
         toast.success('Marks submitted successfully!');
-        
-        // Reset form
-        setMarkEntries([]);
-        setSelectedSubject('');
-        setExamType('');
-        setMaxMarks('40');
-        setExamDate('');
+        setRows([]);
+        fetchMarks();
       } else {
         toast.error('Failed to submit marks');
       }
     } catch (error) {
-      console.error('Submit marks error:', error);
       toast.error('Failed to submit marks');
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadTemplate = () => {
-    // Create CSV template
-    const csvContent = "Roll Number,Student Name,Marks\n" + 
-      students.map(s => `${s.rollNumber},${s.name},`).join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'marks_template.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const handleSort = (field: 'roll_number' | 'student_name' | 'marks') => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
   };
 
-  const calculateStats = () => {
-    if (markEntries.length === 0) return null;
-    
-    const validMarks = markEntries.filter(e => e.marks > 0).map(e => e.marks);
-    if (validMarks.length === 0) return null;
-    
-    const total = validMarks.reduce((sum, mark) => sum + mark, 0);
-    const average = total / validMarks.length;
-    const highest = Math.max(...validMarks);
-    const lowest = Math.min(...validMarks);
-    
-    return { average, highest, lowest, submitted: validMarks.length };
-  };
-
-  const stats = calculateStats();
+  const sortedMarks = [...marks].sort((a, b) => {
+    const aVal = a[sortField] ?? '';
+    const bVal = b[sortField] ?? '';
+    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Marks Upload
-          </h1>
-          <p className="text-muted-foreground mt-2">Upload and manage student marks for internal assessments</p>
-        </div>
-        <Button variant="outline" onClick={downloadTemplate}>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          Marks Upload
+        </h1>
+        <Button variant="outline" onClick={() => setIsDownloadModalOpen(true)}>
           <Download className="h-4 w-4 mr-2" />
           Download Template
         </Button>
       </div>
 
-      {/* Form Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            Exam Details
-          </CardTitle>
+          <CardTitle>Filters</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Class</label>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map(cls => (
-                    <SelectItem key={cls.value} value={cls.value}>
-                      {cls.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Semester</label>
-              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  {semesters.map(sem => (
-                    <SelectItem key={sem.value} value={sem.value}>
-                      {sem.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Section</label>
-              <Select value={selectedSection} onValueChange={setSelectedSection}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map(section => (
-                    <SelectItem key={section.value} value={section.value}>
-                      {section.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Students</label>
-              <div className="flex items-center h-10 px-3 py-2 text-sm bg-muted rounded-md">
-                {loading ? 'Loading...' : students.length > 0 ? `${students.length} students loaded` : 'Select class, semester & section'}
-              </div>
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Year</label>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4].map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    Year {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Subject</label>
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map(subject => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Exam Type</label>
-              <Select value={examType} onValueChange={setExamType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select exam type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {examTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Max Marks</label>
-              <Input 
-                type="number"
-                placeholder="Enter max marks"
-                value={maxMarks}
-                onChange={(e) => setMaxMarks(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Exam Date</label>
-              <Input 
-                type="date"
-                value={examDate}
-                onChange={(e) => setExamDate(e.target.value)}
-              />
-            </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Semester</label>
+            <Select value={semester} onValueChange={setSemester}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
-          <div className="flex gap-2">
-            <Button onClick={initializeMarks} variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Initialize Marks Sheet
-            </Button>
-            <div className="relative">
-              <Input
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleExcelUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                id="excel-upload"
-              />
-              <Button variant="outline" asChild>
-                <label htmlFor="excel-upload" className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Excel
-                </label>
-              </Button>
-            </div>
+
+  
+          <div>
+            <label className="text-sm font-medium mb-2 block">Section</label>
+            <Select value={section} onValueChange={setSection}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {['A', 'B', 'C', 'D', 'E'].map((sec) => (
+                  <SelectItem key={sec} value={sec}>
+                    {sec}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Subject</label>
+            <Select value={subject} onValueChange={setSubject} disabled={!subjects.length}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((subj) => (
+                  <SelectItem key={subj.id} value={String(subj.id)}>
+                    {subj.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Statistics */}
-      {stats && (
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload Marks</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Input
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleExcelUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              id="excel-upload"
+            />
+            <Button variant="outline" asChild>
+              <label htmlFor="excel-upload" className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Excel
+              </label>
+            </Button>
+          </div>
+
+          {rows.length > 0 && (
+            <Button
+              onClick={submitMarks}
+              disabled={loading}
+              className="bg-gradient-to-r from-primary to-primary/80"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Submit Marks
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {marks.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Statistics
-            </CardTitle>
+            <CardTitle>Student Marks</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-primary/5 rounded-lg">
-                <div className="text-2xl font-bold text-primary">{stats.submitted}</div>
-                <div className="text-sm text-muted-foreground">Submitted</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{stats.average.toFixed(1)}</div>
-                <div className="text-sm text-muted-foreground">Average</div>
-              </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{stats.highest}</div>
-                <div className="text-sm text-muted-foreground">Highest</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">{stats.lowest}</div>
-                <div className="text-sm text-muted-foreground">Lowest</div>
-              </div>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('roll_number')}>
+                    Roll No
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('student_name')}>
+                    Name
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('marks')}>
+                    Marks
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedMarks.map((m) => (
+                  <TableRow key={m.student_id}>
+                    <TableCell>{m.roll_number}</TableCell>
+                    <TableCell>{m.student_name}</TableCell>
+                    <TableCell>
+                      {m.marks != null && m.max_marks != null
+                        ? `${m.marks}/${m.max_marks}`
+                        : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
 
-      {/* Marks Entry Table */}
-      {markEntries.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Student Marks Entry
-              </CardTitle>
-              <Badge variant="outline">
-                {students.length} Students
-              </Badge>
+      <Dialog open={isDownloadModalOpen} onOpenChange={setIsDownloadModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Download Template</DialogTitle>
+            <DialogDescription>
+              Select class details to generate marks template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Year</label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4].map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      Year {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Roll Number</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead>Marks (out of {maxMarks})</TableHead>
-                    <TableHead>Percentage</TableHead>
-                    <TableHead>Grade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => {
-                    const marks = getStudentMarks(student.id);
-                    const percentage = marks && maxMarks ? ((Number(marks) / Number(maxMarks)) * 100).toFixed(1) : '0';
-                    const grade = Number(percentage) >= 90 ? 'A+' : 
-                                 Number(percentage) >= 80 ? 'A' : 
-                                 Number(percentage) >= 70 ? 'B+' : 
-                                 Number(percentage) >= 60 ? 'B' : 
-                                 Number(percentage) >= 50 ? 'C' : 'F';
-                    
-                    return (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.rollNumber}</TableCell>
-                        <TableCell>{student.name}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max={maxMarks}
-                            value={marks}
-                            onChange={(e) => updateMarks(student.id, Number(e.target.value))}
-                            className="w-24"
-                            placeholder="0"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <span className={`font-medium ${Number(percentage) >= 50 ? 'text-green-600' : 'text-red-600'}`}>
-                            {percentage}%
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={grade === 'F' ? 'destructive' : 'default'}>
-                            {grade}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Semester</label>
+              <Select value={semester} onValueChange={setSemester}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            <Separator className="my-4" />
-            
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setMarkEntries([])}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear All
-              </Button>
-              <Button onClick={submitMarks} className="bg-gradient-to-r from-primary to-primary/80">
-                <Save className="h-4 w-4 mr-2" />
-                Submit Marks
-              </Button>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Section</label>
+              <Select value={section} onValueChange={setSection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'E'].map((sec) => (
+                    <SelectItem key={sec} value={sec}>
+                      {sec}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <Select
+                value={subject}
+                onValueChange={setSubject}
+                disabled={!subjects.length}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subj) => (
+                    <SelectItem key={subj.id} value={String(subj.id)}>
+                      {subj.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDownloadModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDownloadTemplate}>Download</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default MarksUpload;
+
