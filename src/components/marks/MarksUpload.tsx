@@ -49,6 +49,15 @@ interface StudentMark {
   max_marks: number | null;
 }
 
+interface ExcelRow {
+  Email: string | number;
+  'Roll Number': string | number;
+  Name: string;
+  Subject: string;
+  MaxMarks: string | number;
+  ObtainedMarks: string | number;
+}
+
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const MarksUpload = () => {
@@ -104,40 +113,40 @@ const MarksUpload = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const input = event.target;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const csv = e.target?.result as string;
-        const lines = csv.split(/\r?\n/).filter(Boolean);
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const emailIdx = headers.indexOf('email');
-        const subjectIdx = headers.indexOf('subject');
-        const maxIdx = headers.indexOf('maxmarks');
-        const obtainedIdx = headers.indexOf('obtainedmarks');
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { defval: '' });
 
-        const data: MarkRow[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(',');
-          const email = row[emailIdx]?.trim();
-          const subject = row[subjectIdx]?.trim();
-          const maxMarks = parseFloat(row[maxIdx]);
-          const obtainedMarks = parseFloat(row[obtainedIdx]);
+        const parsed: MarkRow[] = [];
+        json.forEach((row) => {
+          const email = row.Email?.toString().trim();
+          const subject = row.Subject?.toString().trim();
+          const maxMarks = parseFloat(String(row.MaxMarks));
+          const obtainedMarks = parseFloat(String(row.ObtainedMarks));
 
           if (email && subject && !isNaN(maxMarks) && !isNaN(obtainedMarks)) {
-            data.push({ email, subject, maxMarks, obtainedMarks });
+            parsed.push({ email, subject, maxMarks, obtainedMarks });
           }
-        }
+        });
 
-        setRows(data);
-        toast.success(`Uploaded ${data.length} rows`);
+        setRows(parsed);
+        if (parsed.length > 0) {
+          toast.success(`Uploaded ${parsed.length} rows`);
+        } else {
+          toast.error('No valid rows found');
+        }
       } catch (error) {
         toast.error('Error parsing Excel file');
+      } finally {
+        input.value = '';
       }
     };
-    reader.readAsText(file);
-
-    // Reset file input
-    event.target.value = '';
+    reader.readAsArrayBuffer(file);
   };
 
   const handleDownloadTemplate = async () => {
