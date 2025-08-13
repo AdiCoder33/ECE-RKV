@@ -126,8 +126,9 @@ const AttendanceManager: React.FC = () => {
     }
   }, [subjects, selectedSubject]);
 
-  // Fetch timetable for the selected class
+  // Fetch timetable for the selected class (non-professors)
   React.useEffect(() => {
+    if (isProfessor) return;
     const fetchTimetable = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -143,7 +144,28 @@ const AttendanceManager: React.FC = () => {
       }
     };
     fetchTimetable();
-  }, [selectedYear, selectedSection, currentSemester]);
+  }, [selectedYear, selectedSection, currentSemester, isProfessor]);
+
+  // Fetch timetable for professors based on selected date
+  React.useEffect(() => {
+    if (!isProfessor || !user?.id) return;
+    const fetchProfessorTimetable = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const weekday = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+        const response = await fetch(
+          `${apiBase}/timetable?facultyId=${user.id}&day=${weekday}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch timetable');
+        const data: TimetableSlot[] = await response.json();
+        setTimetable(data);
+      } catch (error) {
+        console.error('Error fetching timetable:', error);
+      }
+    };
+    fetchProfessorTimetable();
+  }, [isProfessor, user?.id, selectedDate]);
 
   // Build period options based on timetable and date
   React.useEffect(() => {
