@@ -170,7 +170,8 @@ const MarksUpload = () => {
           }
         });
 
-        setRows(parsed);
+        // Ensure rows state is always a true array
+        setRows([...parsed]);
         setHasBlankMarks(missingMarks.length > 0);
         if (parsed.length > 0) {
           toast.success(`Uploaded ${parsed.length} rows`);
@@ -253,6 +254,7 @@ const MarksUpload = () => {
 
     try {
       setLoading(true);
+      console.log('Submitting rows', Array.isArray(rows), rows);
       const response = await fetch(`${apiBase}/marks/bulk`, {
         method: 'POST',
         headers: {
@@ -262,7 +264,7 @@ const MarksUpload = () => {
         body: JSON.stringify({
           type: 'internal',
           date: new Date().toISOString(),
-          marksData: rows,
+          marksData: rows, // rows must be a true Array
         }),
       });
 
