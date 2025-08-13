@@ -472,7 +472,7 @@ const Announcements = () => {
         }}
       >
         {selectedAnnouncement && (
-          <DialogContent>
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedAnnouncement.title}</DialogTitle>
               <DialogDescription>
