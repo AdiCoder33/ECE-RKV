@@ -48,6 +48,7 @@ interface TimetableSlot {
   semester?: number;
   section?: string;
   subject_id?: string;
+  faculty_id?: number | null;
 }
 
 interface PeriodOption {
