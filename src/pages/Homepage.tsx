@@ -18,7 +18,6 @@ interface Announcement {
   time: string;
   title: string;
   content: string;
-  color: string;
 }
 
 /** Explicitly typed framer-motion variants */
@@ -99,58 +98,35 @@ const ThemeToggle: React.FC = () => {
   );
 };
 const LandingPage: React.FC = () => {
-  // MODIFIED: Added more announcements for auto-scrolling
-  const announcementData: Announcement[] = [
-    {
-      author: "Dean of Academics",
-      time: "12:00 22/06/2025",
-      title: "Mid Time Table for E2 is announced",
-      content: "Mid 2 schedule came out, so I request all the students to check it",
-      color: "#E8EAF6",
-    },
-    {
-      author: "Dean of Academics",
-      time: "12:00 22/06/2025",
-      title: "Lab Timetable Updated",
-      content: "New lab schedule published — check your lab groups.",
-      color: "#FFFDE7",
-    },
-    {
-      author: "Dean of Academics",
-      time: "12:00 22/06/2025",
-      title: "Seminar on VLSI",
-      content: "A department seminar on VLSI will be conducted next week.",
-      color: "#FFEBEE",
-    },
-    {
-      author: "Placement Cell",
-      time: "10:30 20/06/2025",
-      title: "Campus Recruitment Drive",
-      content: "A major recruitment drive for final year students is scheduled next month.",
-      color: "#E0F7FA",
-    },
-    {
-      author: "Head of Department",
-      time: "11:00 18/06/2025",
-      title: "Project Expo Registration",
-      content: "Registration for the annual project expo is now open. Submit your proposals soon!",
-      color: "#F3E5F5",
-    },
-    {
-      author: "Admin Office",
-      time: "09:00 15/06/2025",
-      title: "Holiday Announcement",
-      content: "The college will remain closed on 25/06/2025 for a public holiday.",
-      color: "#E8F5E9",
-    },
-    {
-      author: "Sports Committee",
-      time: "14:00 14/06/2025",
-      title: "Annual Sports Day",
-      content: "The annual sports day has been rescheduled. New dates will be announced shortly.",
-      color: "#FBE9E7",
-    },
-  ];
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const url = token ? `${apiBase}/announcements` : `${apiBase}/public/announcements`;
+        const response = await fetch(url, token ? {
+          headers: { Authorization: `Bearer ${token}` },
+        } : undefined);
+        if (!response.ok) {
+          throw new Error('Failed to fetch announcements');
+        }
+        const data: Array<Record<string, unknown>> = await response.json();
+        const mapped: Announcement[] = data.map((a) => ({
+          author: (a.author_name as string) || (a.authorName as string) || 'Unknown',
+          time: new Date((a.created_at as string) || (a.createdAt as string)).toLocaleString('en-IN'),
+          title: a.title as string,
+          content: a.content as string,
+        }));
+        setAnnouncements(mapped);
+      } catch (error) {
+        console.error('Error fetching announcements', error);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [apiBase]);
 
   // --- Hero slider state ---
   const images = [hero1, hero2, hero3];
@@ -234,9 +210,10 @@ const LandingPage: React.FC = () => {
   };
 
   useEffect(() => {
+    stopAnnouncementsScroll();
     startAnnouncementsScroll();
     return () => stopAnnouncementsScroll();
-  }, []);
+  }, [announcements]);
 
   // helper to pause & resume after user interaction
   const pauseThenResume = (delay = 1000) => {
@@ -736,11 +713,11 @@ const LandingPage: React.FC = () => {
                 onMouseEnter={stopAnnouncementsScroll}
                 onMouseLeave={startAnnouncementsScroll}
               >
-                {announcementData.map((notice, index) => (
+                {announcements.map((notice, index) => (
                   <div
                     key={index}
                     className="bg-white dark:bg-gray-800 border-l-4 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 transition hover:shadow-xl text-left"
-                    style={{ borderLeftColor: notice.color }}
+                    style={{ borderLeftColor: '#E8EAF6' }}
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-1">
                       <span className="font-semibold text-red-700 text-sm sm:text-base">
