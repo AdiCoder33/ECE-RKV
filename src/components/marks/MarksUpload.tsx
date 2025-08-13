@@ -33,7 +33,7 @@ interface MarkRow {
   email: string;
   subject: string;
   maxMarks: number;
-  marks: number;
+  marks: number | null;
 }
 
 interface SubjectOption {
@@ -51,8 +51,6 @@ interface StudentMark {
 
 interface ExcelRow {
   email: string | number;
-  rollNumber: string | number;
-  name: string;
   subject: string;
   maxMarks: string | number;
   obtainedMarks: string | number;
@@ -62,6 +60,7 @@ const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const MarksUpload = () => {
   const [rows, setRows] = useState<MarkRow[]>([]);
+  const [hasBlankMarks, setHasBlankMarks] = useState(false);
   const [loading, setLoading] = useState(false);
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
@@ -145,35 +144,48 @@ const MarksUpload = () => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, {
           defval: '',
-          header: ['email', 'rollNumber', 'name', 'subject', 'maxMarks', 'obtainedMarks'],
+          header: ['email', 'subject', 'maxMarks', 'obtainedMarks'],
           range: 1,
         });
 
         const parsed: MarkRow[] = [];
         const invalidEmails: string[] = [];
+        const missingMarks: string[] = [];
         json.forEach((row) => {
           const email = row.email?.toString().trim();
           const subject = row.subject?.toString().trim();
           const maxMarks = Number(row.maxMarks);
-          const marks = Number(row.obtainedMarks);
+          const marksStr = row.obtainedMarks?.toString().trim();
+          const marks = marksStr === '' ? null : Number(marksStr);
 
           if (email && subject) {
-            if (Number.isNaN(marks) || Number.isNaN(maxMarks)) {
+            if (marks === null) {
+              missingMarks.push(email);
+              parsed.push({ email, subject, maxMarks: Number(maxMarks), marks: null });
+            } else if (Number.isNaN(marks) || Number.isNaN(maxMarks)) {
               invalidEmails.push(email);
             } else {
-              parsed.push({ email, subject, maxMarks, marks });
+              parsed.push({ email, subject, maxMarks: Number(maxMarks), marks });
             }
           }
         });
 
         setRows(parsed);
+        setHasBlankMarks(missingMarks.length > 0);
         if (parsed.length > 0) {
           toast.success(`Uploaded ${parsed.length} rows`);
         }
         if (invalidEmails.length > 0) {
           toast.error(`Invalid marks for: ${invalidEmails.join(', ')}`);
         }
-        if (parsed.length === 0 && invalidEmails.length === 0) {
+        if (missingMarks.length > 0) {
+          toast.error(`Missing obtained marks for: ${missingMarks.join(', ')}`);
+        }
+        if (
+          parsed.length === 0 &&
+          invalidEmails.length === 0 &&
+          missingMarks.length === 0
+        ) {
           toast.error('No valid rows found');
         }
       } catch (error) {
@@ -203,19 +215,22 @@ const MarksUpload = () => {
         return;
       }
 
-      const students: { email: string; rollNumber: string | number; name: string }[] = await res.json();
+      const students: { email: string }[] = await res.json();
       const subjectName = subjects.find((s) => String(s.id) === subject)?.name || '';
 
       const sheetData = students.map((s) => ({
-        Email: s.email,
-        'Roll Number': s.rollNumber,
-        Name: s.name,
-        Subject: subjectName,
-        MaxMarks: '',
-        ObtainedMarks: '',
+        email: s.email,
+        subject: subjectName,
+        maxMarks: '',
+        obtainedMarks: '',
       }));
 
-      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      const worksheet = XLSX.utils.json_to_sheet(sheetData, {
+        header: ['email', 'subject', 'maxMarks', 'obtainedMarks'],
+      });
+      if (worksheet['D1']) {
+        worksheet['D1'].v = 'obtainedMarks (required)';
+      }
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');
       XLSX.writeFile(workbook, 'marks_template.xlsx');
@@ -228,6 +243,11 @@ const MarksUpload = () => {
   const submitMarks = async () => {
     if (rows.length === 0) {
       toast.error('Please upload marks file first');
+      return;
+    }
+
+    if (rows.some((r) => r.marks === null)) {
+      toast.error('Please fill in all obtained marks before submitting');
       return;
     }
 
@@ -255,6 +275,7 @@ const MarksUpload = () => {
 
       toast.success('Marks submitted successfully!');
       setRows([]);
+      setHasBlankMarks(false);
       fetchMarks();
     } catch (error) {
       toast.error('Failed to submit marks');
@@ -381,11 +402,36 @@ const MarksUpload = () => {
               </label>
             </Button>
           </div>
+          {rows.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Max Marks</TableHead>
+                  <TableHead>Obtained Marks</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row, idx) => (
+                  <TableRow
+                    key={idx}
+                    className={row.marks === null ? 'bg-red-50' : ''}
+                  >
+                    <TableCell>{row.email}</TableCell>
+                    <TableCell>{row.subject}</TableCell>
+                    <TableCell>{row.maxMarks}</TableCell>
+                    <TableCell>{row.marks ?? ''}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
           {rows.length > 0 && (
             <Button
               onClick={submitMarks}
-              disabled={loading}
+              disabled={loading || hasBlankMarks}
               className="bg-gradient-to-r from-primary to-primary/80"
             >
               <Save className="h-4 w-4 mr-2" />
