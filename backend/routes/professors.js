@@ -7,7 +7,11 @@ const router = express.Router();
 // Get timetable for a professor
 router.get('/:id/timetable', authenticateToken, async (req, res, next) => {
   try {
-    const data = await fetchTimetable({ ...req.query, facultyId: req.params.id });
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
+    const data = await fetchTimetable({ ...req.query, facultyId: professorId });
     res.json(data);
   } catch (error) {
     console.error('Professor timetable fetch error:', error);
@@ -18,12 +22,15 @@ router.get('/:id/timetable', authenticateToken, async (req, res, next) => {
 // Get professor dashboard metrics
 router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
 
     // Fetch distinct classes and subjects taught by the professor
     const classResult = await executeQuery(
       'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE faculty = ?',
-      [id]
+      [professorId]
     );
     const classes = classResult.recordset || [];
     const activeClasses = classes.length;
@@ -38,7 +45,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
          WHERE faculty = ?
        ) t ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
        WHERE u.role = 'student'`,
-      [id]
+      [professorId]
     );
     const totalStudents = studentResult.recordset[0]?.total_students || 0;
 
@@ -49,7 +56,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
        WHERE subject_id IN (
          SELECT DISTINCT subject FROM timetable WHERE faculty = ?
        )`,
-      [id]
+      [professorId]
     );
     const avgAttendance = Math.round((attendanceResult.recordset[0]?.avg_attendance || 0) * 100) / 100;
 
@@ -67,7 +74,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
          WHERE u.role = 'student'
          GROUP BY t.subject
        ) x`,
-      [id]
+      [professorId]
     );
     const expectedMarks = expectedResult.recordset[0]?.expected || 0;
 
@@ -77,7 +84,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
        WHERE subject_id IN (
          SELECT DISTINCT subject FROM timetable WHERE faculty = ?
        )`,
-      [id]
+      [professorId]
     );
     const graded = gradedResult.recordset[0]?.graded || 0;
     const pendingGrading = Math.max(expectedMarks - graded, 0);
@@ -97,12 +104,15 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
 // Get class metrics for a professor
 router.get('/:id/classes', authenticateToken, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
 
     // Find distinct classes (year/semester/section) taught by the professor
     const classesResult = await executeQuery(
       'SELECT DISTINCT year, semester, section FROM timetable WHERE faculty = ?',
-      [id]
+      [professorId]
     );
 
     const classes = classesResult.recordset || [];
@@ -126,7 +136,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
          FROM timetable t
          JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
          WHERE t.faculty = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
-        [id, year, semester, section]
+        [professorId, year, semester, section]
       );
 
       const subjectIds = subjectsResult.recordset.map(r => r.id);
@@ -183,7 +193,10 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
 // Get weekly attendance trend for a professor's subjects
 router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
     const weeks = parseInt(req.query.weeks, 10) || 5;
 
     // Determine subject IDs taught by the professor
@@ -192,7 +205,7 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
        WHERE t.faculty = ?`,
-      [id]
+      [professorId]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);
     if (subjectIds.length === 0) {
@@ -228,7 +241,10 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
 // Get grading distribution for a professor's subjects
 router.get('/:id/grading-distribution', authenticateToken, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
 
     // Determine subject IDs taught by the professor
     const subjectsResult = await executeQuery(
@@ -236,7 +252,7 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
        WHERE t.faculty = ?`,
-      [id]
+      [professorId]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);
     if (subjectIds.length === 0) {
@@ -271,7 +287,10 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
 // Get recent activity feed for a professor based on notifications
 router.get('/:id/activity-feed', authenticateToken, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
 
     // Fetch recent notifications for the professor
     const { recordset } = await executeQuery(
@@ -279,7 +298,7 @@ router.get('/:id/activity-feed', authenticateToken, async (req, res, next) => {
        FROM notifications
        WHERE user_id = ?
        ORDER BY created_at DESC`,
-      [id]
+      [professorId]
     );
 
     const activities = recordset.map(row => ({
