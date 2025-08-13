@@ -22,7 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 
 const ProfessorDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +77,8 @@ const ProfessorDashboard = () => {
   ];
 
   useEffect(() => {
+    if (!user?.id) return;
+
     fetchTodaySchedule();
     fetchSubjects();
     fetchProfessorMetrics();
@@ -84,7 +86,7 @@ const ProfessorDashboard = () => {
     fetchAttendanceTrend();
     fetchGradingDistribution();
     fetchActivityFeed();
-  }, []);
+  }, [user]);
 
   const fetchClassData = async () => {
     try {
@@ -264,6 +266,14 @@ const ProfessorDashboard = () => {
 
   const formatActivityTime = (time: string) =>
     formatDistanceToNow(new Date(time), { addSuffix: true });
+
+  if (authLoading || !user?.id) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-0">
