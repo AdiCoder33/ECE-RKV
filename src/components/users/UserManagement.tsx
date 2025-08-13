@@ -25,6 +25,8 @@ import { User } from '@/types';
 import UserModal from './UserModal';
 import ImportUsersModal from './ImportUsersModal';
 import { useToast } from '@/components/ui/use-toast';
+import { motion } from "framer-motion"; // Add this if not already installed: npm install framer-motion
+import loaderMp2 from '@/Assets/loader.mp4';
 
 /**
  * Theme / color notes:
@@ -296,8 +298,30 @@ const UserManagement: React.FC = () => {
     XLSX.writeFile(workbook, 'users.xlsx');
   };
 
+  // ECE-themed loader using loader.mp4 video
+  const EceVideoLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp2}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading ECE Users...</div>
+      <div className="text-[#a52a2a] text-sm mt-1">Fetching user data, please wait</div>
+    </div>
+  );
+
   // Loading / Error states
-  if (loading) return <div className="p-8 text-center text-gray-700">Loading users...</div>;
+  if (loading)
+    return (
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
+      </div>
+    );
   if (error) return <div className="p-8 text-center text-red-600">Error: {error}</div>;
 
   // ---------- Render ----------

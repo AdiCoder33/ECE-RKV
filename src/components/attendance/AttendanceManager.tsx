@@ -30,9 +30,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from 'usehooks-ts';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import loaderMp2 from '@/Assets/loader.mp4';
+
+const MIN_LOADER_TIME = 1500; // milliseconds
 
 interface AttendanceStudent {
-  id: number;
+  id: string;
   name: string;
   rollNumber: number;
   collegeId: string;
@@ -52,8 +55,8 @@ interface TimetableSlot {
 }
 
 interface PeriodOption {
-  value: string;
-  label: string;
+  value: string; // period number
+  label: string; // "09:00-10:00 – Subject"
   subjectId: string;
   year: string;
   semester: string;
@@ -62,6 +65,23 @@ interface PeriodOption {
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
+// Palette for the refreshed UI
+const COLORS = {
+  accent: '#8B0000', // Deep red for headlines
+  subAccent: '#B23A48', // Muted red for subheadlines
+  cream: '#f7ede0ff', // Cream background
+  card: '#FFFFFF', // Card background
+  border: '#E5E3DD', // Soft border
+  text: '#2D2D2D', // Main text
+  muted: '#6B7280', // Muted text
+  present: '#3BA55D', // Green for present
+  absent: '#E57373', // Soft red for absent
+  warning: '#FBC02D', // Yellow for warning
+  blue: '#4F8FC0', // Soft blue for accents
+  grayBtn: '#F3F4F6', // Light gray for buttons
+};
+
+// Map from "start-end" time to period number
 const TIME_TO_PERIOD: Record<string, string> = {
   '09:00-10:00': '1',
   '10:00-11:00': '2',
@@ -93,7 +113,9 @@ const AttendanceManager: React.FC = () => {
   const [timetable, setTimetable] = React.useState<TimetableSlot[]>([]);
   const [slotOptions, setSlotOptions] = React.useState<PeriodOption[]>([]);
   const [periodOptions, setPeriodOptions] = React.useState<PeriodOption[]>([]);
-  const [selectedSlot, setSelectedSlot] = React.useState('');
+  const [selectedSlot, setSelectedSlot] = React.useState(''); // for professors
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   const isDesktop = useMediaQuery('(min-width:768px)');
   const itemsPerPage = isDesktop ? 15 : 9;
@@ -105,7 +127,7 @@ const AttendanceManager: React.FC = () => {
   const [students, setStudents] = React.useState<AttendanceStudent[]>([]);
   const [classId, setClassId] = React.useState<string | null>(null);
 
-  // Filter years and sections based on professor's assigned classes (demo constraints)
+  // Filter years and sections
   const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
   const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
 
@@ -118,30 +140,26 @@ const AttendanceManager: React.FC = () => {
   };
   const currentSemester = getCurrentSemester();
 
-  // Fetch subjects for selected year/semester
+  // Subjects
   React.useEffect(() => {
     const fetchSubjects = async () => {
       try {
         const token = localStorage.getItem('token');
         const response = await fetch(
           `${apiBase}/subjects?year=${selectedYear}&semester=${currentSemester}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!response.ok) throw new Error('Failed to fetch subjects');
         const data: { id: string; name: string }[] = await response.json();
         setSubjects(data);
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
+      } catch (err) {
+        console.error('Error fetching subjects:', err);
       }
     };
     fetchSubjects();
   }, [selectedYear, currentSemester]);
 
-  // If the URL provided a subject name, convert it to its ID once subjects arrive
+  // Convert subject name from URL to ID once subjects arrive
   React.useEffect(() => {
     if (subjects.length > 0 && selectedSubject && isNaN(Number(selectedSubject))) {
       const match = subjects.find((s) => s.name === selectedSubject);
@@ -149,7 +167,7 @@ const AttendanceManager: React.FC = () => {
     }
   }, [subjects, selectedSubject]);
 
-  // Fetch timetable for the selected class (non-professors)
+  // Timetable for non-professors (class-wise)
   React.useEffect(() => {
     if (isProfessor) return;
     const fetchTimetable = async () => {
@@ -162,14 +180,14 @@ const AttendanceManager: React.FC = () => {
         if (!response.ok) throw new Error('Failed to fetch timetable');
         const data: TimetableSlot[] = await response.json();
         setTimetable(data);
-      } catch (error) {
-        console.error('Error fetching timetable:', error);
+      } catch (err) {
+        console.error('Error fetching timetable:', err);
       }
     };
     fetchTimetable();
   }, [selectedYear, selectedSection, currentSemester, isProfessor]);
 
-  // Fetch timetable for professors based on selected date
+  // Timetable for professors (faculty/day-wise)
   React.useEffect(() => {
     if (!isProfessor || typeof user?.id !== 'number') return;
     const fetchProfessorTimetable = async () => {
@@ -183,23 +201,22 @@ const AttendanceManager: React.FC = () => {
         if (!response.ok) throw new Error('Failed to fetch timetable');
         const data: TimetableSlot[] = await response.json();
         setTimetable(data);
-      } catch (error) {
-        console.error('Error fetching timetable:', error);
+      } catch (err) {
+        console.error('Error fetching timetable:', err);
       }
     };
     fetchProfessorTimetable();
   }, [isProfessor, user?.id, selectedDate]);
 
-  // Build period options based on timetable and date
+  // Build period options from timetable for selected date
   React.useEffect(() => {
     const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
     const daySlots = timetable.filter((slot) => slot.day === day);
     const options: PeriodOption[] = daySlots
       .map((slot) => {
         const periodNumber = TIME_TO_PERIOD[slot.time];
-        const subjectId = slot.subject_id
-          ? String(slot.subject_id)
-          : subjects.find((s) => s.name === slot.subject)?.id;
+        const subjectId =
+          slot.subject_id ? String(slot.subject_id) : subjects.find((s) => s.name === slot.subject)?.id;
         if (!periodNumber || !subjectId) return null;
         return {
           value: periodNumber,
@@ -211,13 +228,12 @@ const AttendanceManager: React.FC = () => {
         };
       })
       .filter((opt): opt is PeriodOption => opt !== null);
+
     setSlotOptions(options);
-    if (!isProfessor) {
-      setPeriodOptions(options);
-    }
+    if (!isProfessor) setPeriodOptions(options);
   }, [timetable, selectedDate, subjects, selectedYear, selectedSection, currentSemester, isProfessor]);
 
-  // Reset slot and period selections when date changes for professors
+  // Reset for professors when date changes
   React.useEffect(() => {
     if (isProfessor) {
       setSelectedSlot('');
@@ -226,16 +242,14 @@ const AttendanceManager: React.FC = () => {
     }
   }, [selectedDate, isProfessor]);
 
-  // Fetch attendance for the current selection
+  // Fetch attendance for current selection
   const fetchAttendance = React.useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       let url = `${apiBase}/attendance?year=${selectedYear}&section=${selectedSection}&date=${selectedDate}`;
       if (selectedSubject) url += `&subjectId=${selectedSubject}`;
 
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error('Failed to fetch attendance');
 
       type AttendanceRecord = {
@@ -253,12 +267,12 @@ const AttendanceManager: React.FC = () => {
           return record ? { ...student, present: Boolean(record.present) } : { ...student, present: null };
         })
       );
-    } catch (error) {
-      console.error('Error fetching attendance:', error);
+    } catch (err) {
+      console.error('Error fetching attendance:', err);
     }
   }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
 
-  // Fetch class + students whenever the selection changes, then sync attendance + summary
+  // Fetch classes, students, then sync attendance + summary
   React.useEffect(() => {
     if (isProfessor && !selectedSlot) return;
     const fetchData = async () => {
@@ -273,7 +287,6 @@ const AttendanceManager: React.FC = () => {
 
         type ClassResponse = { id: string; year: number; section: string };
         const classes: ClassResponse[] = await classRes.json();
-
         const cls = classes.find((c) => c.year.toString() === selectedYear && c.section === selectedSection);
         const cid = cls?.id || null;
         setClassId(cid);
@@ -302,7 +315,6 @@ const AttendanceManager: React.FC = () => {
           attendancePercentage: s.attendancePercentage,
           present: null,
         }));
-
         setStudents(mapped);
 
         // Sync period attendance immediately
@@ -325,15 +337,15 @@ const AttendanceManager: React.FC = () => {
             );
           }
         }
-      } catch (error) {
-        console.error('Error fetching students:', error);
+      } catch (err) {
+        console.error('Error fetching students:', err);
       }
     };
 
     fetchData();
   }, [selectedYear, selectedSection, selectedSubject, fetchAttendance, isProfessor, selectedSlot]);
 
-  // Keep carousel on first page when list size/layout changes
+  // Keep carousel on first page when layout changes
   React.useEffect(() => {
     api?.scrollTo(0);
   }, [api, isDesktop, selectedYear, selectedSection, selectedSubject, selectedDate, selectedPeriod]);
@@ -387,12 +399,6 @@ const AttendanceManager: React.FC = () => {
       ? Math.round(students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length)
       : 0;
 
-  const getAttendanceColor = (percentage: number) => {
-    if (percentage >= 85) return 'text-green-600';
-    if (percentage >= 75) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
   const getAttendanceBadge = (percentage: number) => {
     if (percentage >= 85) return { variant: 'default' as const, label: 'Good' };
     if (percentage >= 75) return { variant: 'secondary' as const, label: 'Warning' };
@@ -402,6 +408,10 @@ const AttendanceManager: React.FC = () => {
   const handleSaveAttendance = async () => {
     if (!selectedSubject) {
       toast({ variant: 'destructive', title: 'Select a subject first' });
+      return;
+    }
+    if (!selectedPeriod) {
+      toast({ variant: 'destructive', title: 'Select a period first' });
       return;
     }
     try {
@@ -427,324 +437,462 @@ const AttendanceManager: React.FC = () => {
 
       toast({ title: 'Attendance Saved', description: 'Attendance has been saved successfully' });
       await fetchAttendance();
-    } catch (error) {
-      console.error('Error saving attendance:', error);
+    } catch (err) {
+      console.error('Error saving attendance:', err);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to save attendance' });
     }
   };
 
-  return (
-    <div className="space-y-6 bg-background text-foreground px-4 sm:px-6 md:px-0">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Attendance Management</h1>
-          <p className="text-muted-foreground">Mark and track student attendance</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline">
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-        </div>
+  // Loader component using loader.mp4 video
+  const EceVideoLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp2}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading Attendance...</div>
+      <div className="text-[#a52a2a] text-sm mt-1">Fetching attendance data, please wait</div>
+    </div>
+  );
+
+  // Minimal loader timing
+  React.useEffect(() => {
+    const fetchAll = async () => {
+      const start = Date.now();
+      try {
+        // Effects above fetch data individually; we just keep a graceful loader duration.
+      } catch {
+        setError('Failed to load attendance data');
+      } finally {
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_LOADER_TIME) {
+          setTimeout(() => setLoading(false), MIN_LOADER_TIME - elapsed);
+        } else {
+          setLoading(false);
+        }
+      }
+    };
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (loading)
+    return (
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ background: COLORS.cream }}>
+        <EceVideoLoader />
       </div>
+    );
+  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
-      {/* Class and Date Selection */}
-      <Card>
-        <CardContent className="p-6">
-          {isProfessor && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Professor Access:</strong> You can only mark attendance for your assigned classes and subjects.
-              </p>
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {!isProfessor && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="year-select">Year</Label>
-                  <select
-                    id="year-select"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    className="w-full p-2 border rounded-md bg-background text-foreground"
-                  >
-                    {years.map((year) => (
-                      <option key={year} value={year}>
-                        {year}st Year
-                      </option>
-                    ))}
-                  </select>
-                </div>
+  return (
+    <div className="min-h-screen w-full" style={{ background: COLORS.cream }}>
+      <div className="mx-auto w-full max-w-7xl px-2 sm:px-4 md:px-8 py-3 sm:py-6 md:py-8 space-y-3 sm:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+          <div className="space-y-1">
+            <h1
+              className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight"
+              style={{ color: COLORS.accent }}
+            >
+              Attendance Management
+            </h1>
+            <p className="text-xs sm:text-base" style={{ color: COLORS.subAccent }}>
+              Mark and track student attendance
+            </p>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-3">
+            <Button
+              variant="outline"
+              className="border rounded-md px-2 py-1 text-sm sm:text-base"
+              style={{ borderColor: COLORS.border, color: COLORS.blue, background: COLORS.grayBtn, minWidth: 0 }}
+            >
+              <Download className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Export</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="border rounded-md px-2 py-1 text-sm sm:text-base"
+              style={{ borderColor: COLORS.border, color: COLORS.blue, background: COLORS.grayBtn, minWidth: 0 }}
+            >
+              <Upload className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Import</span>
+            </Button>
+          </div>
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="section-select">Section</Label>
-                  <select
-                    id="section-select"
-                    value={selectedSection}
-                    onChange={(e) => setSelectedSection(e.target.value)}
-                    className="w-full p-2 border rounded-md bg-background text-foreground"
-                  >
-                    {sections.map((section) => (
-                      <option key={section} value={section}>
-                        Section {section}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </>
+        {/* Class / Slot / Date / Period */}
+        <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+          <CardContent className="p-3 sm:p-5 md:p-6">
+            {isProfessor && (
+              <div
+                className="rounded-lg p-2 mb-3"
+                style={{ background: '#FDEFEF', border: `1px solid ${COLORS.border}` }}
+              >
+                <p className="text-xs sm:text-sm" style={{ color: COLORS.accent }}>
+                  <strong>Professor Access:</strong> You can only mark attendance for your assigned classes and subjects.
+                </p>
+              </div>
             )}
 
-            {isProfessor && (
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="slot-select">Choose Class Slot</Label>
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
+              {/* For Professors: Slot select; For others: Year & Section */}
+              {isProfessor ? (
+                <div className="space-y-1 md:col-span-2">
+                  <Label htmlFor="slot-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                    Choose Class Slot
+                  </Label>
+                  <select
+                    id="slot-select"
+                    value={selectedSlot}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSelectedSlot(value);
+                      const option = slotOptions.find((o) => o.value === value);
+                      if (option) {
+                        setSelectedYear(option.year);
+                        setSelectedSection(option.section);
+                        setSelectedSubject(option.subjectId);
+                        setSelectedPeriod(option.value);
+                        setPeriodOptions([option]);
+                      } else {
+                        setSelectedSubject('');
+                        setSelectedPeriod('');
+                        setPeriodOptions([]);
+                      }
+                    }}
+                    className="w-full p-2 rounded-md text-sm"
+                    style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                  >
+                    <option value="">Select Slot</option>
+                    {slotOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {`${option.label} – Year ${option.year}, Section ${option.section}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="year-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                      Year
+                    </Label>
+                    <select
+                      id="year-select"
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className="w-full p-2 rounded-md text-sm"
+                      style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}st Year
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="section-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                      Section
+                    </Label>
+                    <select
+                      id="section-select"
+                      value={selectedSection}
+                      onChange={(e) => setSelectedSection(e.target.value)}
+                      className="w-full p-2 rounded-md text-sm"
+                      style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                    >
+                      {sections.map((section) => (
+                        <option key={section} value={section}>
+                          Section {section}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-1">
+                <Label htmlFor="date-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                  Date
+                </Label>
+                <Input
+                  id="date-select"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full text-sm"
+                  style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                />
+              </div>
+
+              <div className="space-y-1 xs:col-span-2 md:col-span-2">
+                <Label htmlFor="period-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                  Period
+                </Label>
                 <select
-                  id="slot-select"
-                  value={selectedSlot}
+                  id="period-select"
+                  value={selectedPeriod}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setSelectedSlot(value);
-                    const option = slotOptions.find((o) => o.value === value);
-                    if (option) {
-                      setSelectedYear(option.year);
-                      setSelectedSection(option.section);
-                      setSelectedSubject(option.subjectId);
-                      setSelectedPeriod(option.value);
-                      setPeriodOptions([option]);
-                    } else {
-                      setSelectedSubject('');
-                      setSelectedPeriod(value);
-                      setPeriodOptions([]);
-                    }
+                    setSelectedPeriod(value);
+                    const option = periodOptions.find((o) => o.value === value);
+                    setSelectedSubject(option?.subjectId || '');
                   }}
-                  className="w-full p-2 border rounded-md bg-background text-foreground"
+                  className="w-full p-2 rounded-md text-sm"
+                  style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
                 >
-                  <option value="">Select Slot</option>
-                  {slotOptions.map((option) => (
+                  <option value="">Select Period</option>
+                  {periodOptions.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {`${option.label} – Year ${option.year}, Section ${option.section}`}
+                      {option.label}
                     </option>
                   ))}
                 </select>
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="date-select">Date</Label>
-              <Input id="date-select" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="period-select">Period</Label>
-              <select
-                id="period-select"
-                value={selectedPeriod}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const option = periodOptions.find((o) => o.value === value);
-                  if (option) {
-                    setSelectedYear(option.year);
-                    setSelectedSection(option.section);
-                    setSelectedSubject(option.subjectId);
-                    setSelectedPeriod(option.value);
-                  } else {
-                    setSelectedSubject('');
-                    setSelectedPeriod(value);
-                  }
-                }}
-                className="w-full p-2 border rounded-md bg-background text-foreground"
-              >
-                <option value="">Select Period</option>
-                {periodOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Attendance Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold">{students.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Present</p>
-                <p className="text-2xl font-bold text-green-600">{presentCount}</p>
+        {/* Summary */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
+                    Total Students
+                  </p>
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.accent }}>
+                    {students.length}
+                  </p>
+                </div>
+                <Users className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.blue }} />
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Absent</p>
-                <p className="text-2xl font-bold text-red-600">{absentCount}</p>
+          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
+                    Present
+                  </p>
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.present }}>
+                    {presentCount}
+                  </p>
+                </div>
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.present }} />
               </div>
-              <XCircle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Attendance Rate</p>
-                <p className="text-2xl font-bold">{attendanceRate}%</p>
-                <Progress value={attendanceRate} className="mt-2 h-2" />
+          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
+                    Absent
+                  </p>
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.absent }}>
+                    {absentCount}
+                  </p>
+                </div>
+                <XCircle className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.absent }} />
               </div>
-              <Calendar className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
 
-      {/* Student Attendance Grid */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Student Attendance - Year {selectedYear}, Section {selectedSection}</CardTitle>
-              <CardDescription>
-                {selectedDate} • {periodOptions.find((p) => p.value === selectedPeriod)?.label}
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={markAllPresent}>
-                Mark All Present
-              </Button>
-              <Button variant="outline" size="sm" onClick={markAllAbsent}>
-                Mark All Absent
-              </Button>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 mt-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Carousel setApi={setApi}>
-            <CarouselContent>
-              {studentChunks.map((chunk, index) => (
-                <CarouselItem key={index}>
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-                    {chunk.map((student) => {
-                      const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
-                      return (
-                        <Card
-                          key={student.id}
-                          className={`p-4 border-2 transition-all cursor-pointer ${
-                            student.present === true
-                              ? 'border-green-200 bg-green-50'
-                              : student.present === false
-                              ? 'border-red-200 bg-red-50'
-                              : 'border-gray-200 bg-gray-50'
-                          }`}
-                          onClick={() => toggleAttendance(student.id)}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <Checkbox
-                              checked={student.present === null ? 'indeterminate' : student.present}
-                              onCheckedChange={() => toggleAttendance(student.id)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex items-center gap-1">
-                              <div
-                                className={`w-3 h-3 rounded-full ${
-                                  student.present === true
-                                    ? 'bg-green-500'
-                                    : student.present === false
-                                    ? 'bg-red-500'
-                                    : 'bg-gray-400'
-                                }`}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 text-muted-foreground"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  clearAttendance(student.id);
-                                }}
-                              >
-                                <RotateCcw className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="text-center space-y-2">
-                            {/* Large Roll Number */}
-                            <div className="text-4xl font-bold text-primary">{student.rollNumber}</div>
-
-                            {/* Student Name */}
-                            <p className="font-medium text-sm text-foreground">{student.name}</p>
-
-                            {/* College ID */}
-                            <p className="text-xs text-muted-foreground font-mono">{student.collegeId}</p>
-
-                            {/* Attendance Percentage and Badge */}
-                            <div className="flex items-center justify-between mt-2">
-                              <span className={`text-xs font-medium ${getAttendanceColor(student.attendancePercentage)}`}>
-                                {student.attendancePercentage}%
-                              </span>
-                              <Badge variant={attendanceBadge.variant} className="hidden md:inline-flex text-xs">
-                                {attendanceBadge.label}
-                              </Badge>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
+          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex items-center justify-between">
+                <div className="w-full">
+                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
+                    Attendance Rate
+                  </p>
+                  <div className="flex items-end justify-between">
+                    <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.blue }}>
+                      {attendanceRate}%
+                    </p>
+                    <Calendar className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.blue }} />
                   </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </CardContent>
-      </Card>
+                  <Progress value={attendanceRate} className="mt-2 h-2" style={{ background: COLORS.cream }} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button size="lg" className="bg-primary hover:bg-primary/90" onClick={handleSaveAttendance}>
-          <Save className="h-4 w-4 mr-2" />
-          Save Attendance
-        </Button>
+        {/* Students */}
+        <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+          <CardHeader className="pb-2 sm:pb-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-base sm:text-lg" style={{ color: COLORS.accent }}>
+                  Student Attendance – Year {selectedYear}, Section {selectedSection}
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm" style={{ color: COLORS.blue }}>
+                  {selectedDate} • {periodOptions.find((p) => p.value === selectedPeriod)?.label}
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border rounded px-2 py-1 text-xs sm:text-sm"
+                  style={{ borderColor: COLORS.border, color: COLORS.present, background: COLORS.grayBtn }}
+                  onClick={markAllPresent}
+                >
+                  Mark All Present
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border rounded px-2 py-1 text-xs sm:text-sm"
+                  style={{ borderColor: COLORS.border, color: COLORS.absent, background: COLORS.grayBtn }}
+                  onClick={markAllAbsent}
+                >
+                  Mark All Absent
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-4 mt-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search students..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-8 sm:h-10 border border-gray-200 focus-visible:ring-blue-200 bg-white text-sm"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="border rounded text-blue-700 hover:bg-blue-50 h-8 w-8 sm:h-10 sm:w-10"
+                style={{ borderColor: COLORS.border, background: COLORS.grayBtn }}
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-2 sm:pt-0">
+            <Carousel setApi={setApi}>
+              <CarouselContent>
+                {studentChunks.map((chunk, index) => (
+                  <CarouselItem key={index}>
+                    <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
+                      {chunk.map((student) => {
+                        const attendanceBadge = getAttendanceBadge(student.attendancePercentage);
+                        const present = student.present === true;
+                        const absent = student.present === false;
+
+                        return (
+                          <Card
+                            key={student.id}
+                            className={[
+                              'p-2 sm:p-4 border-2 transition-all cursor-pointer rounded-xl',
+                              present
+                                ? 'border-green-200 bg-green-50'
+                                : absent
+                                ? 'border-gray-300 bg-gray-50'
+                                : 'border-gray-200 bg-white',
+                              'hover:shadow-sm',
+                            ].join(' ')}
+                            onClick={() => toggleAttendance(student.id)}
+                          >
+                            <div className="flex items-center justify-between mb-1 sm:mb-3">
+                              <Checkbox
+                                checked={student.present === true}
+                                onCheckedChange={() => toggleAttendance(student.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
+                              />
+                              <div className="flex items-center gap-1">
+                                <div
+                                  className={[
+                                    'w-2 h-2 rounded-full',
+                                    present ? 'bg-green-500' : absent ? 'bg-gray-400' : 'bg-gray-200',
+                                  ].join(' ')}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 text-gray-500 hover:text-blue-700"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    clearAttendance(student.id);
+                                  }}
+                                  title="Clear"
+                                >
+                                  <RotateCcw className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="text-center space-y-1.5">
+                              <div className="text-lg sm:text-2xl font-extrabold text-blue-700 leading-none">
+                                {student.rollNumber}
+                              </div>
+                              <p className="font-medium text-[12px] sm:text-sm text-foreground line-clamp-1">
+                                {student.name}
+                              </p>
+                              <p className="text-[10px] sm:text-xs text-gray-500 font-mono break-all">
+                                {student.collegeId}
+                              </p>
+                              <div className="flex items-center justify-between mt-1.5">
+                                <span className="text-[10px] sm:text-xs font-medium text-blue-700">
+                                  {student.attendancePercentage}%
+                                </span>
+                                <Badge variant={attendanceBadge.variant} className="hidden md:inline-flex text-[10px]">
+                                  {attendanceBadge.label}
+                                </Badge>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+
+              <div className="mt-2 flex items-center justify-between">
+                <CarouselPrevious className="relative left-0 border border-gray-300 text-blue-700 hover:bg-blue-50 h-8 w-8" />
+                <CarouselNext className="relative right-0 border border-gray-300 text-blue-700 hover:bg-blue-50 h-8 w-8" />
+              </div>
+            </Carousel>
+          </CardContent>
+        </Card>
+
+        {/* Save */}
+        <div className="flex justify-end mt-2">
+          <Button
+            size="sm"
+            style={{
+              background: COLORS.blue,
+              color: '#fff',
+              borderRadius: '0.75rem',
+              height: '2.25rem',
+              padding: '0 1.2rem',
+              fontSize: 15,
+            }}
+            className="hover:brightness-95"
+            onClick={handleSaveAttendance}
+          >
+            <Save className="h-4 w-4 mr-1" />
+            Save Attendance
+          </Button>
+        </div>
       </div>
     </div>
   );

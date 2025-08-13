@@ -50,7 +50,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
-    "dompurify": "^2.4.7",
+    "dompurify": "^3.2.6",
     "embla-carousel-react": "^8.6.0",
     "frame": "^1.0.0-alpha.2",
     "input-otp": "^1.4.2",
