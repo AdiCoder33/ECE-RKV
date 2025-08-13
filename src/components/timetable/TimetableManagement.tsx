@@ -62,6 +62,8 @@ const ProfessorCombobox = ({
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const selectedProfessor = professors.find((p) => p.id === value);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -72,7 +74,7 @@ const ProfessorCombobox = ({
           className={cn('w-full justify-between border-gray-300 focus:border-red-700 focus:ring-red-700', buttonClassName)}
           // Applied consistent border and focus styles
         >
-          {value ? value : placeholder}
+          {selectedProfessor ? selectedProfessor.name : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -88,7 +90,7 @@ const ProfessorCombobox = ({
             {filtered.map((prof) => (
               <CommandItem
                 key={prof.id}
-                value={prof.name}
+                value={prof.id}
                 onSelect={(currentValue) => {
                   onChange(currentValue);
                   setOpen(false);
@@ -98,7 +100,7 @@ const ProfessorCombobox = ({
                 <Check
                   className={cn(
                     'mr-2 h-4 w-4',
-                    value === prof.name ? 'opacity-100' : 'opacity-0'
+                    value === prof.id ? 'opacity-100' : 'opacity-0'
                   )}
                 />
                 {prof.name}
@@ -118,6 +120,7 @@ interface TimeSlot {
   subject: string;
   faculty: string;
   faculty_id: number | null;
+  facultyId: string;
   room: string;
   year: number;
   semester: 1 | 2;
@@ -126,7 +129,7 @@ interface TimeSlot {
 
 const TimetableManagement = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  the { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState('3');
   const [selectedSemester, setSelectedSemester] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
@@ -138,7 +141,7 @@ const TimetableManagement = () => {
     day: '',
     time: '',
     subject: '',
-    faculty: '',
+    facultyId: '',
     room: '',
     year: 3,
     semester: 1 as 1 | 2,
@@ -156,17 +159,21 @@ const TimetableManagement = () => {
 
   const fetchTimetable = async () => {
     try {
-        const response = await fetch(
-          `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+      const response = await fetch(
+        `${apiBase}/timetable?year=${selectedYear}&semester=${selectedSemester}&section=${selectedSection}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       if (response.ok) {
         const data = await response.json();
-        setTimetable(data);
+        const mapped = data.map((slot: any) => ({
+          ...slot,
+          facultyId: slot.faculty_id ? String(slot.faculty_id) : ''
+        }));
+        setTimetable(mapped);
       }
     } catch (error) {
       toast({
@@ -181,14 +188,14 @@ const TimetableManagement = () => {
 
   const fetchSubjects = async () => {
     try {
-        const response = await fetch(
-          `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+      const response = await fetch(
+        `${apiBase}/subjects?year=${selectedYear}&semester=${selectedSemester}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setSubjects(data);
@@ -206,11 +213,11 @@ const TimetableManagement = () => {
 
   const fetchProfessors = async () => {
     try {
-        const response = await fetch(`${apiBase}/users?role=professor`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+      const response = await fetch(`${apiBase}/users?role=professor`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
@@ -240,7 +247,7 @@ const TimetableManagement = () => {
   );
 
   const handleAddSlot = async () => {
-    if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.faculty) {
+    if (!newSlot.day || !newSlot.time || !newSlot.subject || !newSlot.facultyId) {
       toast({
         title: 'Validation Error',
         description: 'Please fill all required fields.',
@@ -250,14 +257,18 @@ const TimetableManagement = () => {
     }
 
     try {
-        const response = await fetch(`${apiBase}/timetable`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(`${apiBase}/timetable`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          ...newSlot,
+          day: newSlot.day,
+          time: newSlot.time,
+          subject: newSlot.subject,
+          facultyId: newSlot.facultyId,
+          room: newSlot.room,
           year: parseInt(selectedYear),
           semester: parseInt(selectedSemester) as 1 | 2,
           section: selectedSection
@@ -274,7 +285,7 @@ const TimetableManagement = () => {
       }
 
       fetchTimetable();
-      setNewSlot({ day: '', time: '', subject: '', faculty: '', room: '', year: 3, semester: 1, section: 'A' });
+      setNewSlot({ day: '', time: '', subject: '', facultyId: '', room: '', year: 3, semester: 1, section: 'A' });
       setIsAddModalOpen(false);
       toast({
         title: "Success",
@@ -293,12 +304,12 @@ const TimetableManagement = () => {
   const handleDeleteSlot = async (slotId: string) => {
     if (!confirm('Are you sure you want to delete this timetable slot?')) return; // Confirmation for deletion
     try {
-        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+      const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
       if (response.ok) {
         fetchTimetable();
@@ -329,11 +340,11 @@ const TimetableManagement = () => {
     if (!slot) return;
 
     try {
-        const response = await fetch(`${apiBase}/timetable/${slotId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(`${apiBase}/timetable/${slotId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           day: slot.day,
@@ -341,7 +352,9 @@ const TimetableManagement = () => {
           year: slot.year,
           semester: slot.semester,
           section: slot.section,
-          ...updatedData
+          subject: updatedData.subject,
+          facultyId: updatedData.facultyId,
+          room: updatedData.room
         })
       });
       if (!response.ok) {
@@ -451,8 +464,8 @@ const TimetableManagement = () => {
                   <div>
                     <label className="text-sm font-medium text-gray-700">Faculty</label>
                     <ProfessorCombobox
-                      value={newSlot.faculty}
-                      onChange={(value) => setNewSlot({ ...newSlot, faculty: value })}
+                      value={newSlot.facultyId}
+                      onChange={(value) => setNewSlot({ ...newSlot, facultyId: value })}
                       professors={professors}
                       buttonClassName="border-gray-300 focus:border-red-700 focus:ring-red-700" // Consistent combobox styling
                     />
@@ -616,7 +629,7 @@ const TimetableManagement = () => {
                               }}
                             >
                               {(user?.role === 'admin' || user?.role === 'hod') && (
-                                <Plus className="h-4 w-4 text-gray-500" /> 
+                                <Plus className="h-4 w-4 text-gray-500" />
                               )}
                             </div>
                           )}
@@ -637,7 +650,7 @@ const TimetableManagement = () => {
 // Inline edit form component
 interface Slot {
   subject: string;
-  faculty: string;
+  facultyId: string;
   room: string;
 }
 interface EditSlotFormProps {
@@ -650,7 +663,7 @@ interface EditSlotFormProps {
 const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlotFormProps) => {
   const [editData, setEditData] = useState<Slot>({
     subject: slot.subject,
-    faculty: slot.faculty,
+    facultyId: slot.facultyId,
     room: slot.room
   });
 
@@ -672,8 +685,8 @@ const EditSlotForm = ({ slot, subjects, professors, onSave, onCancel }: EditSlot
       </Select>
 
       <ProfessorCombobox
-        value={editData.faculty}
-        onChange={(value) => setEditData({ ...editData, faculty: value })}
+        value={editData.facultyId}
+        onChange={(value) => setEditData({ ...editData, facultyId: value })}
         professors={professors}
         buttonClassName="h-6 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700" // Consistent styling
         placeholder="Faculty"
