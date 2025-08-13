@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Announcement } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -57,6 +58,9 @@ const Announcements = () => {
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('low');
   const [targetRole, setTargetRole] = useState('all');
   const [targetYear, setTargetYear] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const canManage = ['admin', 'hod', 'professor'].includes(user?.role ?? '');
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -120,42 +124,101 @@ const Announcements = () => {
     return matchesSearch && matchesPriority;
   });
 
+  const resetForm = () => {
+    setTitle('');
+    setContent('');
+    setPriority('low');
+    setTargetRole('all');
+    setTargetYear('');
+    setEditingId(null);
+    setShowCreateForm(false);
+  };
+
   const handlePublish = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiBase}/announcements`, {
-        method: 'POST',
+      const payload = {
+        title,
+        content,
+        targetRole: targetRole === 'all' ? null : targetRole,
+        targetSection: null,
+        targetYear: targetYear ? Number(targetYear) : null,
+        priority
+      };
+      const url = editingId ? `${apiBase}/announcements/${editingId}` : `${apiBase}/announcements`;
+      const method = editingId ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          title,
-          content,
-          targetRole: targetRole === 'all' ? null : targetRole,
-          targetSection: null,
-          targetYear: targetYear ? Number(targetYear) : null,
-          priority
-        })
+        body: JSON.stringify(payload)
       });
       if (!response.ok) {
-        throw new Error('Failed to publish announcement');
+        throw new Error(editingId ? 'Failed to update announcement' : 'Failed to publish announcement');
       }
-      const data: Record<string, unknown> = await response.json();
-      const newAnnouncement = mapAnnouncement(data);
-      setAnnouncements((prev) => [newAnnouncement, ...prev]);
-      setTitle('');
-      setContent('');
-      setPriority('low');
-      setTargetRole('all');
-      setTargetYear('');
-      setShowCreateForm(false);
+      if (editingId) {
+        setAnnouncements((prev) =>
+          prev.map((a) =>
+            a.id === editingId
+              ? {
+                  ...a,
+                  title,
+                  content,
+                  priority,
+                  targetRole: targetRole === 'all' ? undefined : targetRole,
+                  targetYear: targetYear ? Number(targetYear) : undefined
+                }
+              : a
+          )
+        );
+      } else {
+        const data: Record<string, unknown> = await response.json();
+        const newAnnouncement = mapAnnouncement(data);
+        setAnnouncements((prev) => [newAnnouncement, ...prev]);
+      }
+      resetForm();
     } catch (error) {
       console.error('Failed to publish announcement', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to publish announcement.'
+        description: editingId ? 'Failed to update announcement.' : 'Failed to publish announcement.'
+      });
+    }
+  };
+
+  const handleEdit = (announcement: Announcement) => {
+    setEditingId(announcement.id);
+    setTitle(announcement.title);
+    setContent(announcement.content);
+    setPriority(announcement.priority);
+    setTargetRole(announcement.targetRole || 'all');
+    setTargetYear(announcement.targetYear ? String(announcement.targetYear) : '');
+    setShowCreateForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this announcement?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/announcements/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete announcement');
+      }
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    } catch (error) {
+      console.error('Failed to delete announcement', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete announcement.'
       });
     }
   };
@@ -167,17 +230,19 @@ const Announcements = () => {
           <h1 className="text-3xl font-bold">Announcements</h1>
           <p className="text-muted-foreground">Manage department announcements and notices</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Announcement
-        </Button>
+        {canManage && (
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {editingId ? 'Edit Announcement' : 'Create Announcement'}
+          </Button>
+        )}
       </div>
 
       {/* Create Announcement Form */}
-      {showCreateForm && (
+      {showCreateForm && canManage && (
         <Card>
           <CardHeader>
-            <CardTitle>Create New Announcement</CardTitle>
+            <CardTitle>{editingId ? 'Edit Announcement' : 'Create New Announcement'}</CardTitle>
             <CardDescription>Share important information with students and faculty</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -247,11 +312,11 @@ const Announcements = () => {
             <div className="flex gap-2">
               <Button onClick={handlePublish}>
                 <Send className="h-4 w-4 mr-2" />
-                Publish Announcement
+                {editingId ? 'Update Announcement' : 'Publish Announcement'}
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowCreateForm(false)}
+                onClick={resetForm}
               >
                 Cancel
               </Button>
@@ -327,14 +392,21 @@ const Announcements = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(announcement)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDelete(announcement.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardHeader>
             
@@ -351,14 +423,16 @@ const Announcements = () => {
                   </span>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    View Details
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
-                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(announcement)}>
+                      View Details
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(announcement)}>
+                      Edit
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
