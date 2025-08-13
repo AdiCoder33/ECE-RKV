@@ -6,37 +6,44 @@ const router = express.Router();
 // Get timetable
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { year, semester, section, faculty, day } = req.query;
-    let query = 'SELECT * FROM timetable WHERE 1=1';
-    let params = [];
-    
+    let { year, semester, section, facultyId, day, faculty } = req.query;
+
+    if (!facultyId && faculty) {
+      const lookup = await executeQuery('SELECT id FROM users WHERE name = ?', [faculty]);
+      facultyId = lookup.recordset[0]?.id;
+    }
+
+    let query = `SELECT t.id, t.day, t.time, t.subject, u.name AS faculty, t.room, t.year, t.semester, t.section
+                 FROM timetable t JOIN users u ON t.faculty = u.id WHERE 1=1`;
+    const params = [];
+
     if (year) {
-      query += ' AND year = ?';
+      query += ' AND t.year = ?';
       params.push(year);
     }
-    
+
     if (semester) {
-      query += ' AND semester = ?';
+      query += ' AND t.semester = ?';
       params.push(semester);
     }
 
     if (section) {
-      query += ' AND section = ?';
+      query += ' AND t.section = ?';
       params.push(section);
     }
-    
-    if (faculty) {
-      query += ' AND faculty = ?';
-      params.push(faculty);
+
+    if (facultyId) {
+      query += ' AND t.faculty = ?';
+      params.push(facultyId);
     }
-    
+
     if (day) {
-      query += ' AND day = ?';
+      query += ' AND t.day = ?';
       params.push(day);
     }
-    
-    query += ' ORDER BY day, time';
-    
+
+    query += ' ORDER BY t.day, t.time';
+
     const result = await executeQuery(query, params);
     res.json(result.recordset);
   } catch (error) {
@@ -48,11 +55,25 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create timetable slot
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { day, time, subject, faculty, room, year, semester, section } = req.body;
+    const { day, time, subject, facultyId, faculty, room, year, semester, section } = req.body;
+    let facId = facultyId;
+
+    if (!facId && faculty) {
+      if (/^\d+$/.test(String(faculty))) {
+        facId = faculty;
+      } else {
+        const lookup = await executeQuery('SELECT id FROM users WHERE name = ?', [faculty]);
+        facId = lookup.recordset[0]?.id;
+      }
+    }
+
+    if (!facId) {
+      return res.status(400).json({ message: 'facultyId is required' });
+    }
 
     const clash = await executeQuery(
       'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ?',
-      [day, time, faculty]
+      [day, time, facId]
     );
     if (clash.recordset[0].cnt > 0) {
       return res
@@ -62,7 +83,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const result = await executeQuery(
       'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) OUTPUT INSERTED.id AS id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [day, time, subject, faculty, room, year, semester, section]
+      [day, time, subject, facId, room, year, semester, section]
     );
 
     const newId = result.recordset?.[0]?.id;
@@ -77,11 +98,25 @@ router.post('/', authenticateToken, async (req, res, next) => {
 router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { day, time, subject, faculty, room, year, semester, section } = req.body;
+    const { day, time, subject, facultyId, faculty, room, year, semester, section } = req.body;
+    let facId = facultyId;
+
+    if (!facId && faculty) {
+      if (/^\d+$/.test(String(faculty))) {
+        facId = faculty;
+      } else {
+        const lookup = await executeQuery('SELECT id FROM users WHERE name = ?', [faculty]);
+        facId = lookup.recordset[0]?.id;
+      }
+    }
+
+    if (!facId) {
+      return res.status(400).json({ message: 'facultyId is required' });
+    }
 
     const clash = await executeQuery(
       'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ? AND id <> ?',
-      [day, time, faculty, id]
+      [day, time, facId, id]
     );
     if (clash.recordset[0].cnt > 0) {
       return res
@@ -91,7 +126,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
 
     await executeQuery(
       'UPDATE timetable SET day = ?, time = ?, subject = ?, faculty = ?, room = ?, year = ?, semester = ?, section = ? WHERE id = ?',
-      [day, time, subject, faculty, room, year, semester, section, id]
+      [day, time, subject, facId, room, year, semester, section, id]
     );
 
     res.json({ message: 'Timetable slot updated successfully' });
