@@ -29,6 +29,7 @@ const notificationRoutes = require('./routes/notifications');
 const conversationRoutes = require('./routes/conversations');
 const uploadRoutes = require('./routes/uploads');
 const professorRoutes = require('./routes/professors');
+const publicRoutes = require('./routes/public');
 
 // Middleware
 app.use(cors({
@@ -73,6 +74,7 @@ app.use('/api/alumni', require('./routes/alumni'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/marks', require('./routes/marks'));
 app.use('/api/timetable', require('./routes/timetable'));
+app.use('/api/public', publicRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
