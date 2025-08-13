@@ -19,6 +19,15 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Upload, Download, Save } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import * as XLSX from 'xlsx';
 
 interface MarkRow {
   email: string;
@@ -53,6 +62,7 @@ const MarksUpload = () => {
   const [marks, setMarks] = useState<StudentMark[]>([]);
   const [sortField, setSortField] = useState<'roll_number' | 'student_name' | 'marks'>('roll_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   // Fetch subjects when year and semester are selected
   useEffect(() => {
@@ -130,15 +140,40 @@ const MarksUpload = () => {
     event.target.value = '';
   };
 
-  const downloadTemplate = () => {
-    const csvContent = 'email,subject,maxMarks,obtainedMarks\n';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'marks_template.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const handleDownloadTemplate = async () => {
+    if (!year || !semester || !section || !subject) {
+      toast.error('Please select year, semester, section and subject');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${apiBase}/students?year=${year}&semester=${semester}&section=${section}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error('Failed to fetch students');
+
+      const students: { email: string; rollNumber: string | number; name: string }[] = await res.json();
+      const subjectName = subjects.find((s) => String(s.id) === subject)?.name || '';
+
+      const sheetData = students.map((s) => ({
+        Email: s.email,
+        'Roll Number': s.rollNumber,
+        Name: s.name,
+        Subject: subjectName,
+        MaxMarks: '',
+        ObtainedMarks: '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');
+      XLSX.writeFile(workbook, 'marks_template.xlsx');
+      setIsDownloadModalOpen(false);
+    } catch (err) {
+      toast.error('Failed to generate template');
+    }
   };
 
   const submitMarks = async () => {
@@ -195,7 +230,7 @@ const MarksUpload = () => {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           Marks Upload
         </h1>
-        <Button variant="outline" onClick={downloadTemplate}>
+        <Button variant="outline" onClick={() => setIsDownloadModalOpen(true)}>
           <Download className="h-4 w-4 mr-2" />
           Download Template
         </Button>
@@ -341,6 +376,86 @@ const MarksUpload = () => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={isDownloadModalOpen} onOpenChange={setIsDownloadModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Download Template</DialogTitle>
+            <DialogDescription>
+              Select class details to generate marks template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Year</label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4].map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      Year {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Semester</label>
+              <Select value={semester} onValueChange={setSemester}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Section</label>
+              <Select value={section} onValueChange={setSection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'E'].map((sec) => (
+                    <SelectItem key={sec} value={sec}>
+                      {sec}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <Select
+                value={subject}
+                onValueChange={setSubject}
+                disabled={!subjects.length}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subj) => (
+                    <SelectItem key={subj.id} value={String(subj.id)}>
+                      {subj.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDownloadModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDownloadTemplate}>Download</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
