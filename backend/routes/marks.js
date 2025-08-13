@@ -121,14 +121,25 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
 
     // Resolve student and subject IDs for each record
     for (const record of marksData) {
-      const { email, subject, maxMarks, marks } = record;
+      const { rollNumber, email, subject, maxMarks, marks } = record;
 
-      const student = await executeQuery(
-        'SELECT id FROM Users WHERE email = ?',
-        [email]
-      );
-      if (!student.recordset.length) {
-        errors.push(`Student not found: ${email}`);
+      let student;
+      if (rollNumber) {
+        student = await executeQuery(
+          'SELECT id FROM Users WHERE roll_number = ?',
+          [rollNumber]
+        );
+      }
+
+      if ((!student || !student.recordset.length) && email) {
+        student = await executeQuery(
+          'SELECT id FROM Users WHERE email = ?',
+          [email]
+        );
+      }
+
+      if (!student || !student.recordset.length) {
+        errors.push(`Student not found: ${rollNumber || email}`);
         continue;
       }
 
