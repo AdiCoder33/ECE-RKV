@@ -22,6 +22,7 @@ import {
 import { Announcement } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -64,6 +65,7 @@ const Announcements = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { user } = useAuth();
   const canManage = ['admin', 'hod', 'professor'].includes(user?.role ?? '');
+  const location = useLocation();
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -92,6 +94,17 @@ const Announcements = () => {
 
     fetchAnnouncements();
   }, [toast]);
+
+  useEffect(() => {
+    const state = location.state as { announcementId?: string } | null;
+    if (state?.announcementId && announcements.length > 0) {
+      const found = announcements.find((a) => a.id === String(state.announcementId));
+      if (found) {
+        setSelectedAnnouncement(found);
+        setIsDetailOpen(true);
+      }
+    }
+  }, [location.state, announcements]);
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {

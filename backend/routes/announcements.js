@@ -35,7 +35,37 @@ router.post('/', authenticateToken, async (req, res, next) => {
       [title, content, req.user.id, targetRole, targetSection, targetYear, priority]
     );
 
-    res.status(201).json({ id: result.recordset[0].id, message: 'Announcement created successfully' });
+    const newId = result.recordset[0].id;
+
+    // Determine recipients based on targeting parameters
+    const conditions = [];
+    const params = [];
+    if (targetRole) {
+      conditions.push('role = ?');
+      params.push(targetRole);
+    }
+    if (targetYear) {
+      conditions.push('year = ?');
+      params.push(targetYear);
+    }
+    if (targetSection) {
+      conditions.push('section = ?');
+      params.push(targetSection);
+    }
+
+    const usersQuery = `SELECT id FROM users${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''}`;
+    const { recordset: recipients } = await executeQuery(usersQuery, params);
+
+    const snippet = content.substring(0, 100);
+    const notificationPromises = recipients.map((user) =>
+      executeQuery(
+        'INSERT INTO notifications (title, message, type, user_id, data) VALUES (?, ?, ?, ?, ?)',
+        [title, snippet, 'info', user.id, JSON.stringify({ announcementId: newId })]
+      )
+    );
+    await Promise.all(notificationPromises);
+
+    res.status(201).json({ id: newId, message: 'Announcement created successfully' });
   } catch (error) {
     console.error('Create announcement error:', error);
     next(error);
