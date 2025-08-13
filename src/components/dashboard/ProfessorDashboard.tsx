@@ -255,7 +255,11 @@ const ProfessorDashboard = () => {
 
   const handleClassClick = (classItem) => {
     const subjectId = subjectMap[classItem.subject] || classItem.subject;
-    navigate(`/dashboard/attendance?year=${classItem.year}&section=${classItem.section}&subject=${subjectId}`);
+    navigate(
+      `/dashboard/attendance?time=${encodeURIComponent(
+        classItem.time
+      )}&subjectId=${subjectId}&year=${classItem.year}&section=${classItem.section}`
+    );
   };
 
   const formatActivityTime = (time: string) =>
