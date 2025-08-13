@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Upload, Download, Save } from 'lucide-react';
+import { Upload, Download, Save, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,7 @@ const MarksUpload = () => {
   const [rowCount, setRowCount] = useState(0);
   const [hasBlankMarks, setHasBlankMarks] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [section, setSection] = useState('');
@@ -73,6 +74,7 @@ const MarksUpload = () => {
   const [sortField, setSortField] = useState<'roll_number' | 'student_name' | 'marks'>('roll_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Fetch subjects when year and semester are selected
   useEffect(() => {
@@ -137,6 +139,8 @@ const MarksUpload = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     setUploadedFile(file);
+    setIsParsing(true);
+    setUploadError(null);
 
     const input = event.target;
     const reader = new FileReader();
@@ -173,32 +177,47 @@ const MarksUpload = () => {
           }
         });
 
-          // Ensure rows state is always a true array
-          setRows([...parsed]);
-          setRowCount(parsed.length);
-          setHasBlankMarks(missingMarks.length > 0);
-          if (parsed.length > 0) {
-            toast.success(`Uploaded ${parsed.length} rows`);
-          }
+        // Ensure rows state is always a true array
+        setRows([...parsed]);
+        setRowCount(parsed.length);
+        setHasBlankMarks(missingMarks.length > 0);
+        if (parsed.length > 0) {
+          toast.success(`Uploaded ${parsed.length} rows`);
+        }
+        const errors: string[] = [];
         if (invalidEmails.length > 0) {
-          toast.error(`Invalid marks for: ${invalidEmails.join(', ')}`);
+          const msg = `Invalid marks for: ${invalidEmails.join(', ')}`;
+          toast.error(msg);
+          errors.push(msg);
         }
         if (missingMarks.length > 0) {
-          toast.error(`Missing obtained marks for: ${missingMarks.join(', ')}`);
+          const msg = `Missing obtained marks for: ${missingMarks.join(', ')}`;
+          toast.error(msg);
+          errors.push(msg);
         }
-          if (
-            parsed.length === 0 &&
-            invalidEmails.length === 0 &&
-            missingMarks.length === 0
-          ) {
-            toast.error('No valid rows found');
-          }
+        if (
+          parsed.length === 0 &&
+          invalidEmails.length === 0 &&
+          missingMarks.length === 0
+        ) {
+          const msg = 'No valid rows found';
+          toast.error(msg);
+          errors.push(msg);
+        }
+        setUploadError(errors.length > 0 ? errors.join(' ') : null);
       } catch (error) {
-        toast.error((error as Error).message);
+        const message = (error as Error).message;
+        toast.error(message);
         setRowCount(0);
+        setUploadError(message);
       } finally {
         input.value = '';
+        setIsParsing(false);
       }
+    };
+    reader.onerror = () => {
+      setUploadError('Failed to read file');
+      setIsParsing(false);
     };
     reader.readAsArrayBuffer(file);
   };
@@ -401,13 +420,23 @@ const MarksUpload = () => {
               type="file"
               accept=".csv,.xlsx,.xls"
               onChange={handleExcelUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
               id="excel-upload"
+              disabled={isParsing}
             />
-            <Button variant="outline" asChild>
-              <label htmlFor="excel-upload" className="cursor-pointer">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Excel
+            <Button variant="outline" asChild disabled={isParsing}>
+              <label
+                htmlFor="excel-upload"
+                className={isParsing ? 'flex items-center cursor-not-allowed' : 'flex items-center cursor-pointer'}
+              >
+                {isParsing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Excel
+                  </>
+                )}
               </label>
             </Button>
           </div>
@@ -418,6 +447,9 @@ const MarksUpload = () => {
                 <span className="ml-2 text-red-500">No valid rows found</span>
               )}
             </div>
+          )}
+          {uploadError && (
+            <p className="text-sm text-red-500">{uploadError}</p>
           )}
 
           <Button
