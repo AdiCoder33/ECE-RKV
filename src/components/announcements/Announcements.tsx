@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Bell,
   Plus,
@@ -59,6 +60,8 @@ const Announcements = () => {
   const [targetRole, setTargetRole] = useState('all');
   const [targetYear, setTargetYear] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { user } = useAuth();
   const canManage = ['admin', 'hod', 'professor'].includes(user?.role ?? '');
 
@@ -411,10 +414,10 @@ const Announcements = () => {
             </CardHeader>
             
             <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed line-clamp-3">
                 {announcement.content}
               </p>
-              
+
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-muted-foreground" />
@@ -422,17 +425,24 @@ const Announcements = () => {
                     Active Announcement
                   </span>
                 </div>
-                
-                {canManage && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(announcement)}>
-                      View Details
-                    </Button>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedAnnouncement(announcement);
+                      setIsDetailOpen(true);
+                    }}
+                  >
+                    View Details
+                  </Button>
+                  {canManage && (
                     <Button variant="outline" size="sm" onClick={() => handleEdit(announcement)}>
                       Edit
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -453,6 +463,42 @@ const Announcements = () => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={isDetailOpen}
+        onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setSelectedAnnouncement(null);
+        }}
+      >
+        {selectedAnnouncement && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{selectedAnnouncement.title}</DialogTitle>
+              <DialogDescription>
+                Posted by {selectedAnnouncement.authorName} on {formatDate(selectedAnnouncement.createdAt)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 space-y-4">
+              <p className="whitespace-pre-line text-sm leading-relaxed">
+                {selectedAnnouncement.content}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Badge className={getPriorityColor(selectedAnnouncement.priority)}>
+                  {getPriorityIcon(selectedAnnouncement.priority)}
+                  <span className="ml-1">{selectedAnnouncement.priority.toUpperCase()}</span>
+                </Badge>
+                {selectedAnnouncement.targetRole && (
+                  <Badge variant="outline">{selectedAnnouncement.targetRole}</Badge>
+                )}
+                {selectedAnnouncement.targetYear && (
+                  <Badge variant="outline">Year {selectedAnnouncement.targetYear}</Badge>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 };
