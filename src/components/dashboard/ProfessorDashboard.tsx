@@ -37,21 +37,8 @@ const ProfessorDashboard = () => {
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [classData, setClassData] = useState([]);
 
-  const attendanceTrend = [
-    { week: 'Week 1', attendance: 88 },
-    { week: 'Week 2', attendance: 85 },
-    { week: 'Week 3', attendance: 82 },
-    { week: 'Week 4', attendance: 87 },
-    { week: 'Week 5', attendance: 84 }
-  ];
-
-  const gradingDistribution = [
-    { grade: 'A+', count: 25, color: '#22c55e' },
-    { grade: 'A', count: 38, color: '#3b82f6' },
-    { grade: 'B+', count: 42, color: '#f59e0b' },
-    { grade: 'B', count: 31, color: '#ef4444' },
-    { grade: 'C+', count: 20, color: '#8b5cf6' }
-  ];
+  const [attendanceTrend, setAttendanceTrend] = useState([]);
+  const [gradingDistribution, setGradingDistribution] = useState([]);
 
   // Demo today's schedule
   const demoSchedule = [
@@ -92,6 +79,8 @@ const ProfessorDashboard = () => {
     fetchSubjects();
     fetchProfessorMetrics();
     fetchClassData();
+    fetchAttendanceTrend();
+    fetchGradingDistribution();
   }, []);
 
   const fetchClassData = async () => {
@@ -136,6 +125,46 @@ const ProfessorDashboard = () => {
       setMetricsError(true);
     } finally {
       setMetricsLoading(false);
+    }
+  };
+
+  const fetchAttendanceTrend = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/professors/${user?.id}/attendance-trend?weeks=5`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceTrend(data);
+      } else {
+        setAttendanceTrend([]);
+      }
+    } catch (error) {
+      console.error('Error fetching attendance trend:', error);
+      setAttendanceTrend([]);
+    }
+  };
+
+  const fetchGradingDistribution = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/professors/${user?.id}/grading-distribution`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setGradingDistribution(data);
+      } else {
+        setGradingDistribution([]);
+      }
+    } catch (error) {
+      console.error('Error fetching grading distribution:', error);
+      setGradingDistribution([]);
     }
   };
 

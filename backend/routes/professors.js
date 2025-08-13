@@ -168,4 +168,92 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get weekly attendance trend for a professor's subjects
+router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const weeks = parseInt(req.query.weeks, 10) || 5;
+
+    // Determine subject IDs taught by the professor
+    const subjectsResult = await executeQuery(
+      `SELECT DISTINCT s.id
+       FROM timetable t
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       WHERE t.faculty = ?`,
+      [id]
+    );
+    const subjectIds = subjectsResult.recordset.map(r => r.id);
+    if (subjectIds.length === 0) {
+      return res.json([]);
+    }
+
+    const placeholders = subjectIds.map(() => '?').join(',');
+    const params = [...subjectIds, -(weeks - 1)];
+
+    const attendanceQuery = `
+      SELECT 
+        DATEADD(WEEK, DATEDIFF(WEEK, 0, date), 0) AS week_start,
+        AVG(CASE WHEN present = 1 THEN 1.0 ELSE 0 END) * 100 AS attendance
+      FROM attendance
+      WHERE subject_id IN (${placeholders})
+        AND date >= DATEADD(WEEK, ?, CAST(GETDATE() AS DATE))
+      GROUP BY DATEADD(WEEK, DATEDIFF(WEEK, 0, date), 0)
+      ORDER BY week_start`;
+
+    const result = await executeQuery(attendanceQuery, params);
+    const trend = result.recordset.map((row, idx) => ({
+      week: `Week ${idx + 1}`,
+      attendance: Math.round((row.attendance || 0) * 100) / 100
+    }));
+
+    res.json(trend);
+  } catch (error) {
+    console.error('Professor attendance trend error:', error);
+    next(error);
+  }
+});
+
+// Get grading distribution for a professor's subjects
+router.get('/:id/grading-distribution', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Determine subject IDs taught by the professor
+    const subjectsResult = await executeQuery(
+      `SELECT DISTINCT s.id
+       FROM timetable t
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       WHERE t.faculty = ?`,
+      [id]
+    );
+    const subjectIds = subjectsResult.recordset.map(r => r.id);
+    if (subjectIds.length === 0) {
+      return res.json([]);
+    }
+
+    const placeholders = subjectIds.map(() => '?').join(',');
+
+    const distributionQuery = `
+      SELECT grade, COUNT(*) AS count FROM (
+        SELECT CASE
+          WHEN marks * 100.0 / NULLIF(max_marks, 0) >= 90 THEN 'A+'
+          WHEN marks * 100.0 / NULLIF(max_marks, 0) >= 80 THEN 'A'
+          WHEN marks * 100.0 / NULLIF(max_marks, 0) >= 70 THEN 'B+'
+          WHEN marks * 100.0 / NULLIF(max_marks, 0) >= 60 THEN 'B'
+          WHEN marks * 100.0 / NULLIF(max_marks, 0) >= 50 THEN 'C+'
+          ELSE 'F'
+        END AS grade
+        FROM InternalMarks
+        WHERE subject_id IN (${placeholders})
+      ) g
+      GROUP BY grade`;
+
+    const result = await executeQuery(distributionQuery, subjectIds);
+    res.json(result.recordset || []);
+  } catch (error) {
+    console.error('Professor grading distribution error:', error);
+    next(error);
+  }
+});
+
 module.exports = router;
