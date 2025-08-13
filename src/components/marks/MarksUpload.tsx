@@ -33,7 +33,7 @@ interface MarkRow {
   email: string;
   subject: string;
   maxMarks: number;
-  obtainedMarks: number;
+  marks: number;
 }
 
 interface SubjectOption {
@@ -50,12 +50,12 @@ interface StudentMark {
 }
 
 interface ExcelRow {
-  Email: string | number;
-  'Roll Number': string | number;
-  Name: string;
-  Subject: string;
-  MaxMarks: string | number;
-  ObtainedMarks: string | number;
+  email: string | number;
+  rollNumber: string | number;
+  name: string;
+  subject: string;
+  maxMarks: string | number;
+  obtainedMarks: string | number;
 }
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -143,24 +143,37 @@ const MarksUpload = () => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { defval: '' });
+        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, {
+          defval: '',
+          header: ['email', 'rollNumber', 'name', 'subject', 'maxMarks', 'obtainedMarks'],
+          range: 1,
+        });
 
         const parsed: MarkRow[] = [];
+        const invalidEmails: string[] = [];
         json.forEach((row) => {
-          const email = row.Email?.toString().trim();
-          const subject = row.Subject?.toString().trim();
-          const maxMarks = parseFloat(String(row.MaxMarks));
-          const obtainedMarks = parseFloat(String(row.ObtainedMarks));
+          const email = row.email?.toString().trim();
+          const subject = row.subject?.toString().trim();
+          const maxMarks = Number(row.maxMarks);
+          const marks = Number(row.obtainedMarks);
 
-          if (email && subject && !isNaN(maxMarks) && !isNaN(obtainedMarks)) {
-            parsed.push({ email, subject, maxMarks, obtainedMarks });
+          if (email && subject) {
+            if (Number.isNaN(marks) || Number.isNaN(maxMarks)) {
+              invalidEmails.push(email);
+            } else {
+              parsed.push({ email, subject, maxMarks, marks });
+            }
           }
         });
 
         setRows(parsed);
         if (parsed.length > 0) {
           toast.success(`Uploaded ${parsed.length} rows`);
-        } else {
+        }
+        if (invalidEmails.length > 0) {
+          toast.error(`Invalid marks for: ${invalidEmails.join(', ')}`);
+        }
+        if (parsed.length === 0 && invalidEmails.length === 0) {
           toast.error('No valid rows found');
         }
       } catch (error) {

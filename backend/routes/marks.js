@@ -131,6 +131,11 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     for (const record of marksData) {
       const { rollNumber, email, subject, maxMarks, marks } = record;
 
+      if (marks == null || isNaN(Number(marks))) {
+        errors.push(`Invalid marks for ${email}`);
+        continue;
+      }
+
       let student;
       if (rollNumber) {
         student = await executeQuery(
