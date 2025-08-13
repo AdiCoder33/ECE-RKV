@@ -35,13 +35,7 @@ const ProfessorDashboard = () => {
   const [metricsError, setMetricsError] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
-
-  const classData = [
-    { name: 'CSE-3A', students: 45, avgScore: 78, attendance: 88, color: '#8B0000' },
-    { name: 'CSE-3B', students: 42, avgScore: 82, attendance: 85, color: '#001F54' },
-    { name: 'CSE-4A', students: 38, avgScore: 85, attendance: 90, color: '#8B5E3C' },
-    { name: 'CSE-4B', students: 31, avgScore: 80, attendance: 82, color: '#4A5568' }
-  ];
+  const [classData, setClassData] = useState([]);
 
   const attendanceTrend = [
     { week: 'Week 1', attendance: 88 },
@@ -97,7 +91,28 @@ const ProfessorDashboard = () => {
     fetchTodaySchedule();
     fetchSubjects();
     fetchProfessorMetrics();
+    fetchClassData();
   }, []);
+
+  const fetchClassData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/professors/${user?.id}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setClassData(data);
+      } else {
+        setClassData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching class data:', error);
+      setClassData([]);
+    }
+  };
 
   const fetchProfessorMetrics = async () => {
     try {
@@ -325,21 +340,27 @@ const ProfessorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={classData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Bar dataKey="avgScore" fill="#8B0000" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {classData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={classData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Bar dataKey="avgScore" fill="#8B0000" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                No class data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -528,31 +549,35 @@ const ProfessorDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-            {classData.map((classItem, index) => (
-              <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-foreground">{classItem.name}</h4>
-                  <Badge variant="secondary" className="text-xs">
-                    {classItem.students} students
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Avg Score:</span>
-                    <span className="font-medium text-foreground">{classItem.avgScore}%</span>
+          {classData.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+              {classData.map((classItem, index) => (
+                <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-foreground">{classItem.name}</h4>
+                    <Badge variant="secondary" className="text-xs">
+                      {classItem.students} students
+                    </Badge>
                   </div>
-                  <Progress value={classItem.avgScore} className="h-2" />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Attendance:</span>
-                    <span className={`font-medium ${classItem.attendance >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {classItem.attendance}%
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Avg Score:</span>
+                      <span className="font-medium text-foreground">{classItem.avgScore}%</span>
+                    </div>
+                    <Progress value={classItem.avgScore} className="h-2" />
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Attendance:</span>
+                      <span className={`font-medium ${classItem.attendance >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {classItem.attendance}%
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">No classes found</div>
+          )}
         </CardContent>
       </Card>
     </div>
