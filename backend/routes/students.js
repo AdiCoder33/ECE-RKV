@@ -142,7 +142,7 @@ router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => 
     const { studentId } = req.params;
     
     const result = await executeQuery(`
-      SELECT 
+      SELECT
         s.id,
         s.name,
         s.code,
@@ -152,11 +152,12 @@ router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => 
         COUNT(a.id) as total_classes,
         SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
-      LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = ?
-      LEFT JOIN attendance a ON a.student_id = ? AND a.subject_id = s.id
-      INNER JOIN users u ON u.id = ? AND s.year = u.year AND s.semester = u.semester
+      INNER JOIN users u ON s.year = u.year AND s.semester = u.semester
+      LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = u.id
+      LEFT JOIN attendance a ON a.student_id = u.id AND a.subject_id = s.id
+      WHERE u.id = ?
       GROUP BY s.id, s.name, s.code, s.credits, s.type
-    `, [studentId, studentId, studentId]);
+    `, [studentId]);
     
     const subjects = result.recordset || [];
     const formattedSubjects = subjects.map(subject => ({
