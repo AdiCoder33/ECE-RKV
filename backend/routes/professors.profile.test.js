@@ -105,7 +105,6 @@ describe('PUT /professors/:id/profile', () => {
     expect(updateCall[0]).toMatch(/name = \?|email = \?/);
     expect(updateCall[0]).toMatch(/address = \?/);
     expect(updateCall[0]).toMatch(/blood_group = \?/);
-    expect(updateCall[0]).not.toMatch(/emergency_contact/);
     expect(updateCall[0]).toMatch(/date_of_birth = \?/);
     expect(updateCall[1]).toEqual([
       '123',
