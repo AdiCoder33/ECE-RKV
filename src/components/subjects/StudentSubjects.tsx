@@ -43,19 +43,32 @@ const StudentSubjects = () => {
           }
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
+          const text = await response.text();
           toast({
             variant: 'destructive',
             title: 'Error fetching subjects',
-            description: data?.message || 'Failed to fetch subjects'
+            description: text || 'Failed to fetch subjects'
           });
           setSubjects([]);
           return;
         }
 
-        setSubjects(data);
+        const cloned = response.clone();
+
+        try {
+          const data = await response.json();
+          setSubjects(data);
+        } catch (parseError) {
+          const rawText = await cloned.text();
+          console.error('Error parsing subjects response:', rawText, parseError);
+          toast({
+            variant: 'destructive',
+            title: 'Error fetching subjects',
+            description: 'Invalid response format'
+          });
+          setSubjects([]);
+        }
       } catch (error) {
         console.error('Error fetching subjects:', error);
         toast({
