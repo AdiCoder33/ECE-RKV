@@ -14,7 +14,7 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     const { recordset } = await executeQuery(
-      "SELECT id, name, email, department, phone, profile_image, address, blood_group, emergency_contact, date_of_birth FROM users WHERE id = ? AND role = 'professor'",
+      "SELECT id, name, email, department, phone, profile_image, address, blood_group, date_of_birth FROM users WHERE id = ? AND role = 'professor'",
       [professorId]
     );
 
@@ -32,7 +32,6 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
       profileImage: prof.profile_image,
       address: prof.address,
       bloodGroup: prof.blood_group,
-      emergencyContact: prof.emergency_contact,
       dateOfBirth: prof.date_of_birth
     });
   } catch (error) {
@@ -61,7 +60,6 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       email,
       address,
       bloodGroup,
-      emergencyContact,
       dateOfBirth
     } = req.body;
     const fields = [];
@@ -90,10 +88,6 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       fields.push('blood_group = ?');
       params.push(bloodGroup);
     }
-    if (emergencyContact !== undefined) {
-      fields.push('emergency_contact = ?');
-      params.push(emergencyContact);
-    }
     if (dateOfBirth !== undefined) {
       fields.push('date_of_birth = ?');
       params.push(dateOfBirth);
@@ -111,7 +105,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     const { recordset } = await executeQuery(
-      "SELECT id, name, email, department, phone, profile_image, address, blood_group, emergency_contact, date_of_birth FROM users WHERE id = ? AND role = 'professor'",
+      "SELECT id, name, email, department, phone, profile_image, address, blood_group, date_of_birth FROM users WHERE id = ? AND role = 'professor'",
       [professorId]
     );
     const prof = recordset[0];
@@ -124,7 +118,6 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       profileImage: prof.profile_image,
       address: prof.address,
       bloodGroup: prof.blood_group,
-      emergencyContact: prof.emergency_contact,
       dateOfBirth: prof.date_of_birth
     });
   } catch (error) {

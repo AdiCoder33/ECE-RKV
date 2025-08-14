@@ -35,7 +35,6 @@ describe('PUT /professors/:id/profile', () => {
       profile_image: 'img.jpg',
       address: 'addr',
       blood_group: 'O+',
-      emergency_contact: '111',
       date_of_birth: '1990-01-01',
     };
     mockExecuteQuery.mockImplementation((query, params) => {
@@ -47,7 +46,6 @@ describe('PUT /professors/:id/profile', () => {
           updated.email,
           updated.address,
           updated.blood_group,
-          updated.emergency_contact,
           updated.date_of_birth,
         ] = params;
         return { rowsAffected: [1] };
@@ -63,7 +61,6 @@ describe('PUT /professors/:id/profile', () => {
             profile_image: updated.profile_image,
             address: updated.address,
             blood_group: updated.blood_group,
-            emergency_contact: updated.emergency_contact,
             date_of_birth: updated.date_of_birth,
           },
         ],
@@ -80,7 +77,6 @@ describe('PUT /professors/:id/profile', () => {
       email: 'new@example.com',
       address: 'New Address',
       bloodGroup: 'A+',
-      emergencyContact: '999',
       dateOfBirth: '2000-01-01',
       bio: 'ignored',
       officeHours: 'ignored',
@@ -100,7 +96,6 @@ describe('PUT /professors/:id/profile', () => {
       profileImage: 'img.jpg',
       address: 'New Address',
       bloodGroup: 'A+',
-      emergencyContact: '999',
       dateOfBirth: '2000-01-01',
     });
 
@@ -110,7 +105,7 @@ describe('PUT /professors/:id/profile', () => {
     expect(updateCall[0]).toMatch(/name = \?|email = \?/);
     expect(updateCall[0]).toMatch(/address = \?/);
     expect(updateCall[0]).toMatch(/blood_group = \?/);
-    expect(updateCall[0]).toMatch(/emergency_contact = \?/);
+    expect(updateCall[0]).not.toMatch(/emergency_contact/);
     expect(updateCall[0]).toMatch(/date_of_birth = \?/);
     expect(updateCall[1]).toEqual([
       '123',
@@ -119,7 +114,6 @@ describe('PUT /professors/:id/profile', () => {
       'new@example.com',
       'New Address',
       'A+',
-      '999',
       '2000-01-01',
       1,
     ]);
