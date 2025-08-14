@@ -9,8 +9,19 @@ const router = express.Router();
 const uploadDir = path.join(__dirname, '..', 'uploads', 'chat');
 fs.mkdirSync(uploadDir, { recursive: true });
 
+const profileDir = path.join(__dirname, '..', 'uploads', 'profile');
+fs.mkdirSync(profileDir, { recursive: true });
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, unique + path.extname(file.originalname));
+  }
+});
+
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, profileDir),
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, unique + path.extname(file.originalname));
@@ -35,6 +46,15 @@ const upload = multer({
   }
 });
 
+const profileUpload = multer({
+  storage: profileStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Invalid file type'));
+  }
+});
+
 router.post('/chat', authenticateToken, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
@@ -42,6 +62,14 @@ router.post('/chat', authenticateToken, upload.single('file'), (req, res) => {
   const url = `${req.protocol}://${req.get('host')}/uploads/chat/${req.file.filename}`;
   const type = req.file.mimetype.startsWith('image/') ? 'image' : 'file';
   res.json({ url, type, name: req.file.originalname });
+});
+
+router.post('/profile', authenticateToken, profileUpload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  const url = `${req.protocol}://${req.get('host')}/uploads/profile/${req.file.filename}`;
+  res.json({ url });
 });
 
 module.exports = router;

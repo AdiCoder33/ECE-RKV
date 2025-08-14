@@ -14,6 +14,7 @@ CREATE TABLE users (
     section nvarchar(10),
     roll_number nvarchar(50) UNIQUE,
     phone nvarchar(20),
+    profile_image nvarchar(255),
     linkedin_profile nvarchar(255),
     current_company nvarchar(255),
     current_position nvarchar(255),
