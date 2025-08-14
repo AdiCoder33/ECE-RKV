@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Search, UserPlus, X, Pin, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 
 interface Conversation {
@@ -103,9 +104,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
                   className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
                   onClick={() => onStartChat(u)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                    {u.name.charAt(0)}
-                  </div>
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={u.profileImage} alt={u.name} />
+                    <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 overflow-hidden">
                     <p className="text-sm font-medium truncate">{u.name}</p>
                   </div>

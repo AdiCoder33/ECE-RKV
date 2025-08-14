@@ -11,7 +11,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
 
     // If search query is provided, return basic user info matching the search
     if (search) {
-      let query = 'SELECT id, name, role FROM users';
+      let query =
+        'SELECT id, name, role, profile_image AS profileImage FROM users';
       const params = [];
       const conditions = ['id <> ?'];
       params.push(req.user.id);
@@ -40,12 +41,20 @@ router.get('/', authenticateToken, async (req, res, next) => {
       }
 
       const result = await executeQuery(query, params);
-      return res.json(result.recordset || []);
+      const records = result.recordset || [];
+      return res.json(
+        records.map(({ id, name, role, profileImage }) => ({
+          id,
+          name,
+          role,
+          profileImage,
+        }))
+      );
     }
 
     // Default behaviour: return full user records
     let query =
-      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, created_at FROM users';
+      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, profile_image, created_at FROM users';
     const params = [];
     const conditions = [];
     if (role) {
@@ -69,7 +78,13 @@ router.get('/', authenticateToken, async (req, res, next) => {
       params.push(Number(limit));
     }
     const result = await executeQuery(query, params);
-    res.json(result.recordset || []);
+    const records = result.recordset || [];
+    res.json(
+      records.map(({ profile_image, ...rest }) => ({
+        ...rest,
+        profileImage: profile_image,
+      }))
+    );
   } catch (error) {
     console.error('Users fetch error:', error);
     next(error);
