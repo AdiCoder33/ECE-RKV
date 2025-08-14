@@ -6,7 +6,16 @@ const router = express.Router();
 // Get attendance records
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { subjectId, date, studentId, classId, startDate, endDate } = req.query;
+    const {
+      subjectId,
+      date,
+      studentId,
+      classId,
+      startDate,
+      endDate,
+      year,
+      semester
+    } = req.query;
     let query = `
       SELECT 
         a.*,
@@ -41,6 +50,16 @@ router.get('/', authenticateToken, async (req, res, next) => {
     if (studentId) {
       query += ' AND a.student_id = ? AND s.year = u.year AND s.semester = u.semester';
       params.push(studentId);
+    }
+
+    if (year) {
+      query += ' AND s.year = ?';
+      params.push(year);
+    }
+
+    if (semester) {
+      query += ' AND s.semester = ?';
+      params.push(semester);
     }
     
     if (classId) {
