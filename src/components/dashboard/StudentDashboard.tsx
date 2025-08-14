@@ -31,6 +31,7 @@ const StudentDashboard = () => {
   const [studentSubjects, setStudentSubjects] = useState([]);
   const [classmates, setClassmates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
   
   const currentGPA = 8.4;
   const attendancePercentage = 87;
@@ -54,7 +55,7 @@ const StudentDashboard = () => {
         }
 
         // Fetch student's subjects
-        const subjectsResponse = await fetch(`/api/students/${String(user.id)}/subjects`, {
+        const subjectsResponse = await fetch(`${apiBase}/students/${String(user.id)}/subjects`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -65,7 +66,7 @@ const StudentDashboard = () => {
         }
 
         // Fetch classmates
-        const classmatesResponse = await fetch(`/api/students/classmates?year=${user.year}&semester=${user.semester}&section=${user.section}`, {
+        const classmatesResponse = await fetch(`${apiBase}/students/classmates?year=${user.year}&semester=${user.semester}&section=${user.section}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

@@ -28,6 +28,7 @@ const StudentSubjects = () => {
   const { toast } = useToast();
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
   const [loading, setLoading] = useState(true);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -37,7 +38,7 @@ const StudentSubjects = () => {
           return;
         }
 
-        const response = await fetch(`/api/students/${String(user.id)}/subjects`, {
+        const response = await fetch(`${apiBase}/students/${String(user.id)}/subjects`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
