@@ -131,7 +131,7 @@ const Profile = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user?.id) return;
     try {
       setError(null);
       const token = localStorage.getItem('token');
@@ -149,7 +149,29 @@ const Profile = () => {
       }
       const result = await res.json();
       if (result.url) {
-        setProfileImage(result.url);
+        const updateRes = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ profileImage: result.url })
+        });
+        if (!updateRes.ok) {
+          throw new Error('Failed to update profile image');
+        }
+        const updated = await updateRes.json();
+        setProfileImage(updated.profileImage || result.url);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            const updatedUser = { ...parsed, ...updated };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } catch {
+            // ignore invalid stored user
+          }
+        }
       }
     } catch (err) {
       setError((err as Error).message);

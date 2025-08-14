@@ -16,6 +16,7 @@ describe('Profile image upload', () => {
     vi.resetAllMocks();
     localStorage.clear();
     localStorage.setItem('token', 'test-token');
+    localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Alice', role: 'professor' }));
   });
 
   it('uploads image and updates profileImage state with returned URL', async () => {
@@ -29,8 +30,12 @@ describe('Profile image upload', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ url: 'http://example.com/avatar.png' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ profileImage: 'http://example.com/avatar.png' }),
       });
-    global.fetch = mockFetch as any;
+    global.fetch = mockFetch as unknown as typeof fetch;
 
     const { container } = render(<Profile />);
 
@@ -41,12 +46,15 @@ describe('Profile image upload', () => {
 
     fireEvent.change(input, { target: { files: [file] } });
 
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
     const formData = mockFetch.mock.calls[1][1].body as FormData;
     expect(formData.get('image')).toBe(file);
 
     await waitFor(() =>
       expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'http://example.com/avatar.png')
     );
+
+    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+    expect(stored.profileImage).toBe('http://example.com/avatar.png');
   });
 });
