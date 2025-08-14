@@ -33,10 +33,23 @@ describe('PUT /professors/:id/profile', () => {
       email: 'prof@example.com',
       phone: '123',
       profile_image: 'img.jpg',
+      address: 'addr',
+      blood_group: 'O+',
+      emergency_contact: '111',
+      date_of_birth: '1990-01-01',
     };
     mockExecuteQuery.mockImplementation((query, params) => {
       if (query.startsWith('UPDATE')) {
-        [updated.phone, updated.profile_image, updated.name, updated.email] = params;
+        [
+          updated.phone,
+          updated.profile_image,
+          updated.name,
+          updated.email,
+          updated.address,
+          updated.blood_group,
+          updated.emergency_contact,
+          updated.date_of_birth,
+        ] = params;
         return { rowsAffected: [1] };
       }
       return {
@@ -48,6 +61,10 @@ describe('PUT /professors/:id/profile', () => {
             department: null,
             phone: updated.phone,
             profile_image: updated.profile_image,
+            address: updated.address,
+            blood_group: updated.blood_group,
+            emergency_contact: updated.emergency_contact,
+            date_of_birth: updated.date_of_birth,
           },
         ],
         rowsAffected: [1],
@@ -61,6 +78,10 @@ describe('PUT /professors/:id/profile', () => {
       profileImage: 'img.jpg',
       name: 'New Prof',
       email: 'new@example.com',
+      address: 'New Address',
+      bloodGroup: 'A+',
+      emergencyContact: '999',
+      dateOfBirth: '2000-01-01',
       bio: 'ignored',
       officeHours: 'ignored',
     };
@@ -77,13 +98,31 @@ describe('PUT /professors/:id/profile', () => {
       department: null,
       phone: '123',
       profileImage: 'img.jpg',
+      address: 'New Address',
+      bloodGroup: 'A+',
+      emergencyContact: '999',
+      dateOfBirth: '2000-01-01',
     });
 
     const updateCall = mockExecuteQuery.mock.calls[0];
     expect(updateCall[0]).toMatch(/UPDATE users SET/);
     expect(updateCall[0]).not.toMatch(/office_hours|bio/);
     expect(updateCall[0]).toMatch(/name = \?|email = \?/);
-    expect(updateCall[1]).toEqual(['123', 'img.jpg', 'New Prof', 'new@example.com', 1]);
+    expect(updateCall[0]).toMatch(/address = \?/);
+    expect(updateCall[0]).toMatch(/blood_group = \?/);
+    expect(updateCall[0]).toMatch(/emergency_contact = \?/);
+    expect(updateCall[0]).toMatch(/date_of_birth = \?/);
+    expect(updateCall[1]).toEqual([
+      '123',
+      'img.jpg',
+      'New Prof',
+      'new@example.com',
+      'New Address',
+      'A+',
+      '999',
+      '2000-01-01',
+      1,
+    ]);
   });
 });
 
