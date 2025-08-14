@@ -134,6 +134,120 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get attendance details for a student
+router.get('/student/:id', authenticateToken, async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const studentId = req.params.id;
+    let dateFilter = '';
+    const params = [studentId];
+
+    if (startDate && endDate) {
+      dateFilter = ' AND a.date BETWEEN ? AND ?';
+      params.push(startDate, endDate);
+    }
+
+    // Fetch individual records
+    const recordsQuery = `
+      SELECT
+        a.id,
+        a.subject_id,
+        s.name as subject_name,
+        a.date,
+        a.present,
+        a.period,
+        a.marked_by,
+        mb.name as marked_by_name
+      FROM attendance a
+      LEFT JOIN subjects s ON a.subject_id = s.id
+      LEFT JOIN users mb ON a.marked_by = mb.id
+      WHERE a.student_id = ?${dateFilter}
+      ORDER BY a.date DESC, a.period
+    `;
+    const recordsResult = await executeQuery(recordsQuery, params);
+    const records = recordsResult.recordset.map(row => ({
+      id: row.id,
+      subjectId: row.subject_id,
+      subjectName: row.subject_name,
+      date: row.date,
+      present: row.present,
+      period: row.period,
+      markedBy: row.marked_by,
+      markedByName: row.marked_by_name
+    }));
+
+    // Subject-wise statistics
+    const subjectStatsQuery = `
+      SELECT
+        a.subject_id,
+        s.name as subject_name,
+        SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended,
+        COUNT(*) as total,
+        ROUND(
+          (CAST(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
+          2
+        ) as percentage
+      FROM attendance a
+      JOIN subjects s ON a.subject_id = s.id
+      WHERE a.student_id = ?${dateFilter}
+      GROUP BY a.subject_id, s.name
+      ORDER BY s.name
+    `;
+    const subjectStatsResult = await executeQuery(subjectStatsQuery, params);
+    const subjectStats = subjectStatsResult.recordset.map(row => ({
+      subjectId: row.subject_id,
+      subjectName: row.subject_name,
+      attended: row.attended,
+      total: row.total,
+      percentage: row.percentage
+    }));
+
+    // Monthly attendance trend
+    const monthlyTrendQuery = `
+      SELECT
+        FORMAT(MIN(a.date), 'MMM') as month,
+        ROUND(
+          (CAST(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
+          2
+        ) as percentage
+      FROM attendance a
+      WHERE a.student_id = ?${dateFilter}
+      GROUP BY YEAR(a.date), MONTH(a.date)
+      ORDER BY YEAR(a.date), MONTH(a.date)
+    `;
+    const monthlyTrendResult = await executeQuery(monthlyTrendQuery, params);
+    const monthlyTrend = monthlyTrendResult.recordset.map(row => ({
+      month: row.month,
+      percentage: row.percentage
+    }));
+
+    // Overall attendance
+    const overallQuery = `
+      SELECT
+        SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) as attended,
+        SUM(CASE WHEN present = 0 THEN 1 ELSE 0 END) as missed,
+        ROUND(
+          (CAST(SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
+          2
+        ) as percentage
+      FROM attendance
+      WHERE student_id = ?${dateFilter}
+    `;
+    const overallResult = await executeQuery(overallQuery, params);
+    const overallRow = overallResult.recordset[0] || {};
+    const overall = {
+      attended: overallRow.attended || 0,
+      missed: overallRow.missed || 0,
+      percentage: overallRow.percentage || 0
+    };
+
+    res.json({ subjectStats, monthlyTrend, overall, records });
+  } catch (error) {
+    console.error('Student attendance fetch error:', error);
+    next(error);
+  }
+});
+
 // Bulk mark attendance
 router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
