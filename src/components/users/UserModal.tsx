@@ -49,6 +49,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
           section: initialUser.section ?? initialForm.section,
           rollNumber: initialUser.rollNumber ?? initialForm.rollNumber,
           phone: initialUser.phone ?? initialForm.phone,
+          password: '', // Don't prefill password on edit
         });
       } else {
         setFormData(initialForm);
@@ -66,6 +67,7 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
     setValidationError(null);
 
     try {
+      // Only include id if editing and initialUser.id exists
       const payload: Omit<User, 'id'> & { id?: string; password?: string } = {
         name: formData.name,
         email: formData.email,
@@ -79,8 +81,9 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
 
       if (mode === 'add') {
         payload.password = formData.password;
-      } else if (initialUser?.id) {
-        payload.id = initialUser.id;
+      }
+      if (mode === 'edit' && initialUser?.id) {
+        payload.id = String(initialUser.id);
       }
 
       await onSubmit(payload);
@@ -100,8 +103,12 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{mode === 'edit' ? 'Edit User' : 'Add New User'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>
+            <span className="bg-gradient-to-r from-[#8b0000] via-[#a52a2a] to-[#b86b2e] bg-clip-text text-transparent">
+              {mode === 'edit' ? 'Edit User' : 'Add New User'}
+            </span>
+          </DialogTitle>
+          <DialogDescription className="text-[#a52a2a] font-medium">
             {mode === 'edit'
               ? 'Update user details for the ECE department.'
               : 'Create a new user account for the ECE department.'}
@@ -111,18 +118,19 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-[#8b0000] font-semibold">Full Name</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="Enter full name"
                 required
+                className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[#8b0000] font-semibold">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -130,15 +138,19 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="Enter email address"
                 required
+                className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                <SelectTrigger>
+              <Label htmlFor="role" className="text-[#8b0000] font-semibold">Role</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) => handleInputChange('role', value)}
+              >
+                <SelectTrigger className="w-full border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,40 +162,39 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone" className="text-[#345b7a] font-semibold">Phone</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 placeholder="Enter phone number"
+                className="border-[#345b7a] bg-[#e8f0fb] text-[#345b7a] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-[#b86b2e] font-semibold">Password</Label>
             <Input
               id="password"
               type="password"
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
               placeholder="Default is 'password'"
+              className="border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]"
             />
           </div>
 
           {formData.role === 'student' && (
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-2">
               <div className="space-y-2">
-                <Label htmlFor="year">Year</Label>
+                <Label htmlFor="year" className="text-[#345b7a] font-semibold">Year</Label>
                 <Select
                   value={formData.year?.toString()}
-                  onValueChange={(value) =>
-                    handleInputChange('year', value ? parseInt(value) : value)
-                  }
+                  onValueChange={(value) => handleInputChange('year', value ? parseInt(value) : value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full border-[#345b7a] bg-[#e8f0fb] text-[#345b7a] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]">
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
                   <SelectContent>
@@ -194,16 +205,13 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="semester">Semester</Label>
+                <Label htmlFor="semester" className="text-[#b86b2e] font-semibold">Semester</Label>
                 <Select
                   value={formData.semester?.toString()}
-                  onValueChange={(value) =>
-                    handleInputChange('semester', value ? (parseInt(value) as 1 | 2) : value)
-                  }
+                  onValueChange={(value) => handleInputChange('semester', value ? (parseInt(value) as 1 | 2) : value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]">
                     <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
                   <SelectContent>
@@ -212,24 +220,24 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="section">Section</Label>
+                <Label htmlFor="section" className="text-[#b86b2e] font-semibold">Section</Label>
                 <Input
                   id="section"
                   value={formData.section}
                   onChange={(e) => handleInputChange('section', e.target.value)}
                   placeholder="A, B, C..."
+                  className="border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]"
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="rollNumber">Roll Number</Label>
+                <Label htmlFor="rollNumber" className="text-[#8b0000] font-semibold">Roll Number</Label>
                 <Input
                   id="rollNumber"
                   value={formData.rollNumber}
                   onChange={(e) => handleInputChange('rollNumber', e.target.value)}
                   placeholder="e.g., 20ECE001"
+                  className="border-[#6b0f0f] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]"
                 />
               </div>
             </div>
@@ -240,10 +248,13 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]">
               Cancel
             </Button>
-            <Button type="submit">
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-[#8b0000] via-[#a52a2a] to-[#b86b2e] text-white font-bold hover:from-[#a52a2a] hover:via-[#b86b2e] hover:to-[#8b0000] rounded-md"
+            >
               {mode === 'edit' ? 'Save Changes' : 'Add User'}
             </Button>
           </DialogFooter>

@@ -418,22 +418,22 @@ const UserManagement: React.FC = () => {
         {/* Filters */}
         <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}>
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="flex-1 min-w-0 relative">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex-1 min-w-0 relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search users (name, email, roll)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-gray-300 focus:border-[#8b0000] focus:ring-[#8b0000]"
+                  className="pl-10 border-gray-300 focus:border-[#8b0000] focus:ring-[#8b0000] w-full"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm border-gray-300 focus:border-[#8b0000]"
+                  className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#fde8e6] text-[#8b0000] border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] w-full sm:w-auto"
                 >
                   <option value="all">All Roles</option>
                   <option value="student">Students</option>
@@ -445,7 +445,7 @@ const UserManagement: React.FC = () => {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm border-gray-300 focus:border-[#8b0000]"
+                  className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#e8f0fb] text-[#345b7a] border-[#345b7a] focus:border-[#8b0000] focus:ring-[#8b0000] w-full sm:w-auto"
                 >
                   <option value="all">All Years</option>
                   <option value="1">1st Year</option>
@@ -457,7 +457,7 @@ const UserManagement: React.FC = () => {
                 <select
                   value={selectedSemester}
                   onChange={(e) => setSelectedSemester(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm border-gray-300 focus:border-[#8b0000]"
+                  className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#fff6e6] text-[#b86b2e] border-[#b86b2e] focus:border-[#8b0000] focus:ring-[#8b0000] w-full sm:w-auto"
                 >
                   <option value="all">All Semesters</option>
                   <option value="1">Sem 1</option>
@@ -467,7 +467,7 @@ const UserManagement: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2 px-3 py-2 border-[#8b0000] text-[#8b0000] hover:bg-[#8b0000] hover:text-white transition-colors rounded-md"
+                  className="flex items-center gap-2 px-3 py-2 border-[#8b0000] text-[#8b0000] hover:bg-[#8b0000] hover:text-white transition-colors rounded-md w-full sm:w-auto"
                   onClick={handleExportUsers}
                 >
                   <Download className="h-4 w-4" />
