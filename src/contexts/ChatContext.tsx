@@ -470,8 +470,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const searchUsers = useCallback(
     async (query: string): Promise<User[]> => {
       if (!query.trim()) return [];
-      const data = await fetchWithAuth(`/users?search=${encodeURIComponent(query)}`);
-      return data as User[];
+      const data = await fetchWithAuth(
+        `/users?search=${encodeURIComponent(query)}`
+      );
+      return (data as Array<Record<string, unknown>>).map(u => {
+        const { profile_image, id, ...rest } = u as Record<string, unknown>;
+        return {
+          id: typeof id === 'number' ? id : Number(id),
+          ...(rest as Omit<User, 'id' | 'profileImage'>),
+          profileImage:
+            ((u as Record<string, unknown>).profileImage as string | undefined) ??
+            (profile_image as string | undefined),
+        } as User;
+      });
     },
     [fetchWithAuth]
   );

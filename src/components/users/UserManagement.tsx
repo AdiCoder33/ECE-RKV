@@ -80,16 +80,20 @@ const UserManagement: React.FC = () => {
       }
       const data: Array<Record<string, unknown>> = await response.json();
       const mapped: User[] = data.map((u) => {
-        const { roll_number, created_at, id, ...rest } = u as Record<string, unknown>;
+        const { roll_number, created_at, profile_image, id, ...rest } =
+          u as Record<string, unknown>;
         return {
           id: typeof id === 'number' ? id : Number(id),
-          ...(rest as Omit<User, 'id' | 'rollNumber' | 'createdAt'>),
+          ...(rest as Omit<User, 'id' | 'rollNumber' | 'createdAt' | 'profileImage'>),
           rollNumber:
             ((u as Record<string, unknown>).rollNumber as string | undefined) ??
             (roll_number as string | undefined),
           createdAt:
             ((u as Record<string, unknown>).createdAt as string | undefined) ??
             (created_at as string | undefined),
+          profileImage:
+            ((u as Record<string, unknown>).profileImage as string | undefined) ??
+            (profile_image as string | undefined),
         } as User;
       });
       setUsers(mapped);
