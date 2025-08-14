@@ -37,6 +37,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/uploads/profile', express.static(path.join(__dirname, 'uploads', 'profile')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
