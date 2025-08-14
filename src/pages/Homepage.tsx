@@ -697,119 +697,113 @@ const LandingPage: React.FC = () => {
 
       {/* ANNOUNCEMENTS */}
       <main className="flex-grow w-full flex flex-col items-start px-2 sm:px-4 py-4 md:px-16">
-        <div className="w-full max-w-6xl">
-          {/* Announcements and Quick Links stacked on mobile, side-by-side on desktop */}
-          <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
-            {/* Announcements - Left Side */}
-            <div className="flex-1">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-700 mb-4 text-left">
-                Latest Announcements
-              </h2>
-              {/* Quick Links directly below heading, above messages */}
-              
-              <div
-                ref={announcementsRef}
-                className="space-y-4 sm:space-y-6 max-h-[550px] overflow-y-auto pr-2"
-                onMouseEnter={stopAnnouncementsScroll}
-                onMouseLeave={startAnnouncementsScroll}
+  <div className="w-full max-w-6xl">
+    {/* Announcements and Quick Links side by side on desktop, stacked on mobile */}
+    <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
+      {/* Announcements - Left Side */}
+      <div className="flex-1">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-700 mb-4 text-left">
+          Latest Announcements
+        </h2>
+        <div
+          ref={announcementsRef}
+          className="space-y-4 sm:space-y-6 max-h-[550px] overflow-y-auto pr-2"
+          onMouseEnter={stopAnnouncementsScroll}
+          onMouseLeave={startAnnouncementsScroll}
+        >
+          {announcements.map((notice, index) => (
+            <div
+              key={index}
+              className="bg-white dark:bg-gray-800 border-l-4 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 transition hover:shadow-xl text-left"
+              style={{ borderLeftColor: '#E8EAF6' }}
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-1">
+                <span className="font-semibold text-red-700 text-sm sm:text-base">
+                  {notice.author}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {notice.time}
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-1">
+                {notice.title}
+              </h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">
+                {notice.content}
+              </p>
+              <a
+                href="#"
+                className="text-sm text-blue-600 hover:underline font-medium"
               >
-                {announcements.map((notice, index) => (
-                  <div
-                    key={index}
-                    className="bg-white dark:bg-gray-800 border-l-4 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 transition hover:shadow-xl text-left"
-                    style={{ borderLeftColor: '#E8EAF6' }}
-                  >
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-1">
-                      <span className="font-semibold text-red-700 text-sm sm:text-base">
-                        {notice.author}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {notice.time}
-                      </span>{" "}
-                      {/* ADDED: dark mode class */}
-                    </div>
-                    <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-1">
-                      {notice.title}
-                    </h3>{" "}
-                    {/* ADDED: dark mode class */}
-                    <p className="text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">
-                      {notice.content}
-                    </p>{" "}
-                    {/* ADDED: dark mode class */}
-                    <a
-                      href="#"
-                      className="text-sm text-blue-600 hover:underline font-medium"
-                    >
-                      View More
-                    </a>
-                  </div>
-                ))}
-              </div>
+                View More
+              </a>
             </div>
-            {/* Right Side Panel - only on desktop */}
-            <div className="w-full md:w-72 flex-shrink-0 flex-col gap-4 justify-start md:justify-center hidden md:flex">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4 mt-0">
-                <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
-                  Quick Links
-                </h3>
-                <ul className="space-y-2">
-                  <li>
-                    <a
-                      href="#"
-                      className="text-blue-600 hover:underline text-sm font-medium"
-                    >
-                      Academic Calendar
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="text-blue-600 hover:underline text-sm font-medium"
-                    >
-                      Exam Schedules
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="text-blue-600 hover:underline text-sm font-medium"
-                    >
-                      Faculty Directory
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="text-blue-600 hover:underline text-sm font-medium"
-                    >
-                      Student Portal
-                    </a>
-                  </li>
-                </ul>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4">
-                <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
-                  Upcoming Events
-                </h3>
-                <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  <li>VLSI Seminar - 28/08/2025</li>
-                  <li>Hackathon Registration - 01/09/2025</li>
-                  <li>Lab Group Meeting - 05/09/2025</li>
-                </ul>
-              </div>
-              <div className="bg-gradient-to-r from-red-100 via-blue-100 to-green-100 rounded-xl shadow-lg p-4 flex flex-col items-center justify-center mt-2">
-                <svg className="w-8 h-8 text-red-700 mb-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
-                </svg>
-                <p className="text-center text-sm font-semibold text-gray-700">
-                  "Empowering innovation and excellence in every student.<br className='hidden sm:block'/> Dream big, achieve bigger!"
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
-     </main>
-
+      </div>
+      {/* Quick Links & Events - Right Side, with padding at the top */}
+      <div className="w-full md:w-72 flex-shrink-0 flex flex-col gap-4 justify-start md:justify-center pt-6 md:pt-16">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
+            ECE Quick Links
+          </h3>
+          <ul className="space-y-2">
+            <li>
+              <a
+                href="#"
+                className="text-blue-600 hover:underline text-sm font-medium"
+              >
+                ECE Lab Manuals
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="text-blue-600 hover:underline text-sm font-medium"
+              >
+                Project Gallery
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="text-blue-600 hover:underline text-sm font-medium"
+              >
+                Research Groups
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="text-blue-600 hover:underline text-sm font-medium"
+              >
+                Alumni Network
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
+            Upcoming ECE Events
+          </h3>
+          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li>VLSI Seminar - 28/08/2025</li>
+            <li>Hackathon Registration - 01/09/2025</li>
+            <li>Lab Group Meeting - 05/09/2025</li>
+          </ul>
+        </div>
+        <div className="bg-gradient-to-r from-red-100 via-blue-100 to-green-100 rounded-xl shadow-lg p-4 flex flex-col items-center justify-center mt-2">
+          <svg className="w-8 h-8 text-red-700 mb-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+          </svg>
+          <p className="text-center text-sm font-semibold text-gray-700">
+            "Empowering innovation and excellence in every student.<br className='hidden sm:block'/> Dream big, achieve bigger!"
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
       {/* COMBINED ABOUT & ACHIEVEMENTS SECTION */}
       <motion.section 
         className="bg-white dark:bg-gray-800 py-12 px-4 sm:px-8" 

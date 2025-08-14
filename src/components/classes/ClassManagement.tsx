@@ -12,10 +12,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import { Plus, Edit, Trash2, GraduationCap } from 'lucide-react';
 import { Class } from '@/types';
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import PromoteStudentsModal from './PromoteStudentsModal';
 import ClassStudentsModal from './ClassStudentsModal';
 import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
-import loaderMp2 from '@/Assets/loader.mp4'; // <-- Add this import at the top
+import loaderMp2 from '@/Assets/loader.mp4';
 import { useAuth } from '@/contexts/AuthContext';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -39,16 +39,17 @@ const THEME = {
   accent: '#8b0000', // deep-maroon, used for headings and primary buttons
 };
 
-const ClassManagement = () => {
+const ClassManagement: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isProfessor = user?.role === 'professor';
+
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newClassYear, setNewClassYear] = useState(1);
   const [newClassSemester, setNewClassSemester] = useState<1 | 2>(1);
   const [newClassSection, setNewClassSection] = useState('A');
-  const { toast } = useToast()
+  const { toast } = useToast();
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
@@ -176,10 +177,10 @@ const ClassManagement = () => {
       });
     } catch {
       toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to update class',
-        });
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update class',
+      });
     }
   };
 
@@ -291,27 +292,31 @@ const ClassManagement = () => {
     );
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 md:p-8 min-h-screen text-gray-900 dark:text-stone-100"
-         style={{ backgroundColor: THEME.bgBeige }} // Applied the background color here
+    <div
+      className="space-y-6 p-2 sm:p-4 md:p-8 min-h-screen text-gray-900 dark:text-stone-100"
+      style={{ backgroundColor: THEME.bgBeige }}
     >
+      {/* Header and Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-red-800 dark:text-red-400">Class Management</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">Manage classes and students in the ECE Department.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-red-800 dark:text-red-400">Class Management</h1>
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
+            Manage classes and students in the ECE Department.
+          </p>
         </div>
         {!isProfessor && (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => setIsPromoteModalOpen(true)}
-              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
+              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200 w-full sm:w-auto"
             >
               <GraduationCap className="h-4 w-4 mr-2" />
               Promote Students
             </Button>
             <Button
               onClick={() => setIsCreateModalOpen(true)}
-              className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+              className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Class
@@ -320,15 +325,16 @@ const ClassManagement = () => {
         )}
       </div>
 
+      {/* Classes Table */}
       <Card className="shadow-lg border-stone-300 dark:border-gray-700">
         <CardHeader className="bg-red-700 dark:bg-red-800 rounded-t-lg p-4">
-          <CardTitle className="text-xl font-semibold text-white">Classes</CardTitle>
+          <CardTitle className="text-lg sm:text-xl font-semibold text-white">Classes</CardTitle>
           <CardDescription className="text-red-100 dark:text-red-200">
             View, edit, and manage classes in the ECE Department.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader className="bg-stone-200 dark:bg-gray-800">
               <TableRow>
                 <TableHead className="w-[80px] font-bold text-gray-800 dark:text-gray-300">Year</TableHead>
@@ -372,6 +378,7 @@ const ClassManagement = () => {
                             size="icon"
                             onClick={() => handleEditClick(cls)}
                             className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
+                            aria-label="Edit class"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -380,6 +387,7 @@ const ClassManagement = () => {
                             size="icon"
                             className="text-red-700 hover:bg-red-100 dark:hover:bg-red-900"
                             onClick={() => handleDeleteClass(cls.id)}
+                            aria-label="Delete class"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -428,43 +436,49 @@ const ClassManagement = () => {
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
           <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg shadow-xl">
             <DialogHeader className="p-4 border-b border-stone-200 dark:border-gray-700">
-              <DialogTitle className="text-2xl font-bold">Create Class</DialogTitle>
+              <DialogTitle className="text-xl sm:text-2xl font-bold">Create Class</DialogTitle>
               <DialogDescription className="text-gray-600 dark:text-gray-400">
                 Create a new class for the ECE Department.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-6 p-4">
-              <div className="grid grid-cols-4 items-center gap-4">
+            <div className="grid gap-4 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                 <Label htmlFor="year" className="text-right font-medium">
                   Year
                 </Label>
-                <Select onValueChange={(value) => setNewClassYear(parseInt(value))} defaultValue="1">
-                  <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
-                    <SelectValue placeholder="Select a year" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800">
-                    <SelectItem value="1">1st Year</SelectItem>
-                    <SelectItem value="2">2nd Year</SelectItem>
-                    <SelectItem value="3">3rd Year</SelectItem>
-                    <SelectItem value="4">4th Year</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="sm:col-span-3">
+                  <Select onValueChange={(value) => setNewClassYear(parseInt(value))} defaultValue="1">
+                    <SelectTrigger className="w-full border-stone-300 dark:border-gray-600">
+                      <SelectValue placeholder="Select a year" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800">
+                      <SelectItem value="1">1st Year</SelectItem>
+                      <SelectItem value="2">2nd Year</SelectItem>
+                      <SelectItem value="3">3rd Year</SelectItem>
+                      <SelectItem value="4">4th Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                 <Label htmlFor="semester" className="text-right font-medium">
                   Semester
                 </Label>
-                <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)} defaultValue="1">
-                  <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
-                    <SelectValue placeholder="Select a semester" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800">
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="sm:col-span-3">
+                  <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)} defaultValue="1">
+                    <SelectTrigger className="w-full border-stone-300 dark:border-gray-600">
+                      <SelectValue placeholder="Select a semester" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800">
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                 <Label htmlFor="section" className="text-right font-medium">
                   Section
                 </Label>
@@ -472,7 +486,7 @@ const ClassManagement = () => {
                   id="section"
                   value={newClassSection}
                   onChange={(e) => setNewClassSection(e.target.value)}
-                  className="col-span-3 border-stone-300 dark:border-gray-600"
+                  className="sm:col-span-3 border-stone-300 dark:border-gray-600"
                 />
               </div>
             </div>
@@ -480,7 +494,7 @@ const ClassManagement = () => {
               <Button
                 type="submit"
                 onClick={handleCreateClass}
-                className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+                className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200 w-full"
               >
                 Create class
               </Button>
