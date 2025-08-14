@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Upload, Download, Save } from 'lucide-react';
+import { Upload, Download, Save, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ interface MarkRow {
   email: string;
   subject: string;
   maxMarks: number;
-  obtainedMarks: number;
+  marks: number | null;
 }
 
 interface SubjectOption {
@@ -50,19 +50,21 @@ interface StudentMark {
 }
 
 interface ExcelRow {
-  Email: string | number;
-  'Roll Number': string | number;
-  Name: string;
-  Subject: string;
-  MaxMarks: string | number;
-  ObtainedMarks: string | number;
+  email: string | number;
+  subject: string;
+  maxMarks: string | number;
+  obtainedMarks: string | number;
 }
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const MarksUpload = () => {
   const [rows, setRows] = useState<MarkRow[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [rowCount, setRowCount] = useState(0);
+  const [hasBlankMarks, setHasBlankMarks] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [section, setSection] = useState('');
@@ -72,33 +74,58 @@ const MarksUpload = () => {
   const [sortField, setSortField] = useState<'roll_number' | 'student_name' | 'marks'>('roll_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   // Fetch subjects when year and semester are selected
   useEffect(() => {
-    if (year && semester) {
-      fetch(`${apiBase}/subjects?year=${year}&semester=${semester}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      })
-        .then((res) => res.json())
-        .then((data) => setSubjects(data))
-        .catch(() => setSubjects([]));
-    } else {
-      setSubjects([]);
-    }
+    const fetchSubjects = async () => {
+      if (year && semester) {
+        try {
+          const res = await fetch(`${apiBase}/subjects?year=${year}&semester=${semester}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            toast.error(err.error ?? 'Failed to fetch subjects');
+            setSubjects([]);
+            return;
+          }
+          const data = await res.json();
+          setSubjects(data);
+        } catch (error) {
+          toast.error((error as Error).message ?? 'Failed to fetch subjects');
+          setSubjects([]);
+        }
+      } else {
+        setSubjects([]);
+      }
+    };
+    fetchSubjects();
     setSubject('');
   }, [year, semester]);
 
-  const fetchMarks = () => {
+  const fetchMarks = async () => {
     if (year && semester && section && subject) {
-      fetch(
-        `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      try {
+        const res = await fetch(
+          `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          }
+        );
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(err.error ?? 'Failed to fetch marks');
+          setMarks([]);
+          return;
         }
-      )
-        .then((res) => res.json())
-        .then((data) => setMarks(data))
-        .catch(() => setMarks([]));
+        const data = await res.json();
+        setMarks(data);
+      } catch (error) {
+        toast.error((error as Error).message ?? 'Failed to fetch marks');
+        setMarks([]);
+      }
     } else {
       setMarks([]);
     }
@@ -112,6 +139,10 @@ const MarksUpload = () => {
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setUploadedFile(file);
+    setIsParsing(true);
+    setUploadError(null);
+    setUploadSuccess(null);
 
     const input = event.target;
     const reader = new FileReader();
@@ -120,31 +151,75 @@ const MarksUpload = () => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { defval: '' });
+        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, {
+          defval: '',
+          header: ['email', 'subject', 'maxMarks', 'obtainedMarks'],
+          range: 1,
+        });
 
         const parsed: MarkRow[] = [];
+        const invalidEmails: string[] = [];
+        const missingMarks: string[] = [];
         json.forEach((row) => {
-          const email = row.Email?.toString().trim();
-          const subject = row.Subject?.toString().trim();
-          const maxMarks = parseFloat(String(row.MaxMarks));
-          const obtainedMarks = parseFloat(String(row.ObtainedMarks));
+          const email = row.email?.toString().trim();
+          const subject = row.subject?.toString().trim();
+          const maxMarks = Number(row.maxMarks);
+          const marksStr = row.obtainedMarks?.toString().trim();
+          const marks = marksStr === '' ? null : Number(marksStr);
 
-          if (email && subject && !isNaN(maxMarks) && !isNaN(obtainedMarks)) {
-            parsed.push({ email, subject, maxMarks, obtainedMarks });
+          if (email && subject) {
+            if (marks === null) {
+              missingMarks.push(email);
+              parsed.push({ email, subject, maxMarks: Number(maxMarks), marks: null });
+            } else if (Number.isNaN(marks) || Number.isNaN(maxMarks)) {
+              invalidEmails.push(email);
+            } else {
+              parsed.push({ email, subject, maxMarks: Number(maxMarks), marks });
+            }
           }
         });
 
-        setRows(parsed);
+        // Ensure rows state is always a true array
+        setRows([...parsed]);
+        setRowCount(parsed.length);
+        setHasBlankMarks(missingMarks.length > 0);
         if (parsed.length > 0) {
           toast.success(`Uploaded ${parsed.length} rows`);
-        } else {
-          toast.error('No valid rows found');
         }
+        const errors: string[] = [];
+        if (invalidEmails.length > 0) {
+          const msg = `Invalid marks for: ${invalidEmails.join(', ')}`;
+          toast.error(msg);
+          errors.push(msg);
+        }
+        if (missingMarks.length > 0) {
+          const msg = `Missing obtained marks for: ${missingMarks.join(', ')}`;
+          toast.error(msg);
+          errors.push(msg);
+        }
+        if (
+          parsed.length === 0 &&
+          invalidEmails.length === 0 &&
+          missingMarks.length === 0
+        ) {
+          const msg = 'No valid rows found';
+          toast.error(msg);
+          errors.push(msg);
+        }
+        setUploadError(errors.length > 0 ? errors.join(' ') : null);
       } catch (error) {
-        toast.error('Error parsing Excel file');
+        const message = (error as Error).message;
+        toast.error(message);
+        setRowCount(0);
+        setUploadError(message);
       } finally {
         input.value = '';
+        setIsParsing(false);
       }
+    };
+    reader.onerror = () => {
+      setUploadError('Failed to read file');
+      setIsParsing(false);
     };
     reader.readAsArrayBuffer(file);
   };
@@ -161,56 +236,84 @@ const MarksUpload = () => {
         `${apiBase}/students?year=${year}&semester=${semester}&section=${section}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!res.ok) throw new Error('Failed to fetch students');
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? 'Failed to fetch students');
+        return;
+      }
 
-      const students: { email: string; rollNumber: string | number; name: string }[] = await res.json();
+      const students: { email: string }[] = await res.json();
       const subjectName = subjects.find((s) => String(s.id) === subject)?.name || '';
 
       const sheetData = students.map((s) => ({
-        Email: s.email,
-        'Roll Number': s.rollNumber,
-        Name: s.name,
-        Subject: subjectName,
-        MaxMarks: '',
-        ObtainedMarks: '',
+        email: s.email,
+        subject: subjectName,
+        maxMarks: '',
+        obtainedMarks: '',
       }));
 
-      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      const worksheet = XLSX.utils.json_to_sheet(sheetData, {
+        header: ['email', 'subject', 'maxMarks', 'obtainedMarks'],
+      });
+      if (worksheet['D1']) {
+        worksheet['D1'].v = 'obtainedMarks (required)';
+      }
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');
       XLSX.writeFile(workbook, 'marks_template.xlsx');
       setIsDownloadModalOpen(false);
     } catch (err) {
-      toast.error('Failed to generate template');
+      toast.error((err as Error).message ?? 'Failed to fetch students');
     }
   };
 
   const submitMarks = async () => {
-    if (rows.length === 0) {
+    if (rowCount === 0) {
       toast.error('Please upload marks file first');
+      return;
+    }
+
+    if (rows.some((r) => r.marks === null)) {
+      toast.error('Please fill in all obtained marks before submitting');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('Submitting rows', Array.isArray(rows), rows);
       const response = await fetch(`${apiBase}/marks/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ marks: rows })
+        body: JSON.stringify({
+          type: 'internal',
+          date: new Date().toISOString(),
+          marksData: rows, // rows must be a true Array
+        }),
       });
 
-      if (response.ok) {
-        toast.success('Marks submitted successfully!');
-        setRows([]);
-        fetchMarks();
-      } else {
-        toast.error('Failed to submit marks');
+      if (!response.ok) {
+        const err = await response.json();
+        const baseMessage = err.error || (Array.isArray(err.errors) ? err.errors.join(', ') : 'Failed to submit marks');
+        toast.error(`${baseMessage} (${response.status})`);
+        setUploadSuccess(null);
+        return;
       }
+
+      toast.success('Marks submitted successfully!');
+      setUploadError(null);
+      setRows([]);
+      setHasBlankMarks(false);
+      setUploadedFile(null);
+      setRowCount(0);
+      fetchMarks();
+      setUploadSuccess('Marks submitted successfully!');
     } catch (error) {
-      toast.error('Failed to submit marks');
+      console.error('Error submitting marks:', error);
+      toast.error((error as Error).message || 'Failed to submit marks');
+      setUploadSuccess(null);
     } finally {
       setLoading(false);
     }
@@ -324,27 +427,49 @@ const MarksUpload = () => {
               type="file"
               accept=".csv,.xlsx,.xls"
               onChange={handleExcelUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
               id="excel-upload"
+              disabled={isParsing}
             />
-            <Button variant="outline" asChild>
-              <label htmlFor="excel-upload" className="cursor-pointer">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Excel
+            <Button variant="outline" asChild disabled={isParsing}>
+              <label
+                htmlFor="excel-upload"
+                className={isParsing ? 'flex items-center cursor-not-allowed' : 'flex items-center cursor-pointer'}
+              >
+                {isParsing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Excel
+                  </>
+                )}
               </label>
             </Button>
           </div>
-
-          {rows.length > 0 && (
-            <Button
-              onClick={submitMarks}
-              disabled={loading}
-              className="bg-gradient-to-r from-primary to-primary/80"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Submit Marks
-            </Button>
+          {uploadedFile && (
+            <div className="text-sm text-muted-foreground">
+              {uploadedFile.name} — {rowCount} row{rowCount === 1 ? '' : 's'}
+              {rowCount === 0 && (
+                <span className="ml-2 text-red-500">No valid rows found</span>
+              )}
+            </div>
           )}
+          {uploadError && (
+            <p className="text-sm text-red-500">{uploadError}</p>
+          )}
+          {uploadSuccess && (
+            <p className="text-sm text-green-500">{uploadSuccess}</p>
+          )}
+
+          <Button
+            onClick={submitMarks}
+            disabled={loading || rowCount === 0 || hasBlankMarks}
+            className="bg-gradient-to-r from-primary to-primary/80"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Submit Marks
+          </Button>
         </CardContent>
       </Card>
 

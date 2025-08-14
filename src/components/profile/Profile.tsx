@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   User, 
   Edit,
@@ -24,24 +25,156 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
   const { user } = useAuth();
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [department, setDepartment] = useState('');
+  const [profileImage, setProfileImage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone: '+91 9876543210',
     dateOfBirth: '1995-06-15',
     address: '123 Main Street, City, State - 560001',
-    bloodGroup: 'O+',
-    parentContact: '+91 9876543211'
+    bloodGroup: 'O+'
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.id) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!res.ok) {
+          throw new Error('Failed to load profile');
+        }
+        const data = await res.json();
+        setFormData(prev => ({
+          ...prev,
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          dateOfBirth: data.dateOfBirth || '',
+          address: data.address || '',
+          bloodGroup: data.bloodGroup || ''
+        }));
+        setDepartment(data.department || '');
+        setProfileImage(data.profileImage || '');
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user?.id, apiBase]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    // Save logic here
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!user?.id) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const payload: Record<string, unknown> = {
+        phone: formData.phone,
+        profileImage,
+        name: formData.name,
+        email: formData.email,
+        dateOfBirth: formData.dateOfBirth,
+        address: formData.address,
+        bloodGroup: formData.bloodGroup
+      };
+      const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to update profile');
+      }
+      const data = await res.json();
+      setFormData(prev => ({ ...prev, ...data }));
+      if (data.profileImage !== undefined) {
+        setProfileImage(data.profileImage);
+      }
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          const updatedUser = { ...parsed, ...data };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch {
+          // ignore invalid stored user
+        }
+      }
+      setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const data = new FormData();
+      data.append('image', file);
+      const res = await fetch(`${apiBase}/uploads/profile`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: data
+      });
+      if (!res.ok) {
+        throw new Error('Failed to upload image');
+      }
+      const result = await res.json();
+      if (result.url) {
+        const updateRes = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ profileImage: result.url })
+        });
+        if (!updateRes.ok) {
+          throw new Error('Failed to update profile image');
+        }
+        const updated = await updateRes.json();
+        setProfileImage(updated.profileImage || result.url);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            const updatedUser = { ...parsed, ...updated };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } catch {
+            // ignore invalid stored user
+          }
+        }
+      }
+    } catch (err) {
+      setError((err as Error).message);
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -91,6 +224,18 @@ const Profile = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-6 px-4 sm:px-6 md:px-0">
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
+
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
       <div className="flex items-center justify-between">
@@ -121,19 +266,35 @@ const Profile = () => {
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="relative mx-auto w-24 h-24 mb-4">
-              <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary-foreground">
-                  {user?.name?.charAt(0)}
-                </span>
-              </div>
-              <Button 
-                size="sm" 
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-foreground">
+                    {formData.name?.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <Button
+                size="sm"
                 className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Camera className="h-4 w-4" />
               </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
             </div>
-            <CardTitle className="text-xl">{user?.name}</CardTitle>
+            <CardTitle className="text-xl">{formData.name}</CardTitle>
             <div className="flex justify-center">
               <Badge className={getRoleBadgeColor(user?.role || '')}>
                 {user?.role?.toUpperCase()}
@@ -165,15 +326,15 @@ const Profile = () => {
               <Building className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="font-medium">Department</p>
-                <p className="text-sm text-muted-foreground">Electronics & Communication</p>
+                <p className="text-sm text-muted-foreground">{department || 'N/A'}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Mail className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <p className="text-sm text-muted-foreground">{formData.email}</p>
               </div>
             </div>
           </CardContent>
@@ -211,60 +372,49 @@ const Profile = () => {
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         disabled={!isEditing}
                       />
-                    </div>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Phone Number</label>
-                      <Input
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Date of Birth</label>
-                      <Input
-                        type="date"
-                        value={formData.dateOfBirth}
-                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Address</label>
-                    <Textarea
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
+                    <label className="text-sm font-medium">Phone Number</label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
                       disabled={!isEditing}
-                      rows={3}
                     />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Blood Group</label>
-                      <Input
-                        value={formData.bloodGroup}
-                        onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Parent Contact</label>
-                      <Input
-                        value={formData.parentContact}
-                        onChange={(e) => handleInputChange('parentContact', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium">Date of Birth</label>
+                    <Input
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                      disabled={!isEditing}
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Address</label>
+                  <Textarea
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    disabled={!isEditing}
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Blood Group</label>
+                  <Input
+                    value={formData.bloodGroup}
+                    onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
             {user?.role === 'student' && (
               <TabsContent value="academic">

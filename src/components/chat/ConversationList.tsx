@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Search, UserPlus, X, Pin, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 
 interface Conversation {
   id: string;
   title: string;
+  avatar?: string | null;
   last_message?: string;
   last_activity?: string | null;
   unread_count?: number;
@@ -103,9 +105,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
                   className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
                   onClick={() => onStartChat(u)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                    {u.name.charAt(0)}
-                  </div>
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={u.profileImage} alt={u.name} />
+                    <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                      {u.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 overflow-hidden">
                     <p className="text-sm font-medium truncate">{u.name}</p>
                   </div>
@@ -121,9 +126,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
             onClick={() => onSelectConversation(c)}
           >
             <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                {c.title.charAt(0)}
-              </div>
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={c.avatar} />
+                <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                  {c.title.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
               {c.type === 'direct' && onlineUsers.has(Number(c.id)) && (
                 <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
               )}

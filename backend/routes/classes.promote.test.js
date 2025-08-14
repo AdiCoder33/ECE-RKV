@@ -2,7 +2,10 @@ const request = require('supertest');
 const express = require('express');
 
 jest.mock('../middleware/auth', () => ({
-  authenticateToken: (req, res, next) => next(),
+  authenticateToken: (req, res, next) => {
+    req.user = { role: req.headers['x-user-role'] || 'admin' };
+    next();
+  },
 }));
 
 const mockDbState = {
@@ -167,7 +170,11 @@ describe('class promotion', () => {
   });
 
   it('promotes students and graduates final years', async () => {
-    await request(app).post('/classes/promote').send({ currentSemester: 2 }).expect(200);
+    await request(app)
+      .post('/classes/promote')
+      .set('x-user-role', 'admin')
+      .send({ currentSemester: 2 })
+      .expect(200);
 
     expect(mockDbState.classes.filter(c => c.year === 5).length).toBe(1);
     expect(
@@ -176,7 +183,11 @@ describe('class promotion', () => {
       )
     ).toBe(false);
 
-    await request(app).post('/classes/promote').send({ currentSemester: 2 }).expect(200);
+    await request(app)
+      .post('/classes/promote')
+      .set('x-user-role', 'admin')
+      .send({ currentSemester: 2 })
+      .expect(200);
 
     expect(mockDbState.classes.some(c => c.year >= 6)).toBe(false);
     expect(mockDbState.classes.filter(c => c.year === 5).length).toBe(0);

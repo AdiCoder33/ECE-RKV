@@ -21,7 +21,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
 
     const query = `
       SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
-             u.name as sender_name, u.role as sender_role
+             u.name as sender_name, u.role as sender_role, u.profile_image AS sender_profileImage
       FROM chat_messages cm
       JOIN chat_group_members gm ON gm.group_id = cm.group_id AND gm.user_id = ?
       JOIN users u ON cm.sender_id = u.id
@@ -41,6 +41,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
         senderId: msg.sender_id.toString(),
         senderName: msg.sender_name,
         senderRole: msg.sender_role,
+        sender_profileImage: msg.sender_profileImage,
         content: msg.content,
         timestamp: msg.timestamp,
         groupId: msg.group_id.toString(),
@@ -85,7 +86,8 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id, INSERTED.content,
              INSERTED.timestamp, INSERTED.attachments,
              (SELECT name FROM users WHERE id = INSERTED.sender_id) AS sender_name,
-             (SELECT role FROM users WHERE id = INSERTED.sender_id) AS sender_role
+             (SELECT role FROM users WHERE id = INSERTED.sender_id) AS sender_role,
+             (SELECT profile_image FROM users WHERE id = INSERTED.sender_id) AS sender_profileImage
       VALUES (?, ?, ?, ?)
     `;
     const { recordset } = await executeQuery(insertQuery, [

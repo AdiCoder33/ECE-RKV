@@ -37,6 +37,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/uploads/profile', express.static(path.join(__dirname, 'uploads', 'profile')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
@@ -83,7 +84,7 @@ app.get('/api/health', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  console.error('Unhandled error:', err.stack || err);
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 

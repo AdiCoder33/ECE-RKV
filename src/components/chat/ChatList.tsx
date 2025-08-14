@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, MessageSquare, Search, Users, Link2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
@@ -108,7 +109,10 @@ const ChatList: React.FC = () => {
                       className="w-full justify-start h-12 px-3"
                       onClick={() => navigate(`/dashboard/chat/user/${result.id}`)}
                     >
-                      <MessageSquare className="h-4 w-4 mr-3" />
+                      <Avatar className="h-8 w-8 mr-3">
+                        <AvatarImage src={result.profileImage} alt={result.name} />
+                        <AvatarFallback>{result.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
                       <div className="flex-1 text-left">
                         <p className="font-medium text-sm">{result.name}</p>
                       </div>

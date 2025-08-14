@@ -110,10 +110,18 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
 // Bulk enter marks
 router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
-    const { type, date, enteredBy, marksData } = req.body;
+    const { type, date, marksData } = req.body;
+    const enteredBy = Number(req.user.id);
+    if (Number.isNaN(enteredBy)) {
+      const message = 'Invalid user ID';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
+    }
 
     if (!Array.isArray(marksData)) {
-      return res.status(400).json({ error: 'marksData must be an array' });
+      const message = 'marksData must be an array';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
     }
 
     const errors = [];
@@ -122,6 +130,11 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     // Resolve student and subject IDs for each record
     for (const record of marksData) {
       const { rollNumber, email, subject, maxMarks, marks } = record;
+
+      if (marks == null || isNaN(Number(marks))) {
+        errors.push(`Invalid marks for ${email}`);
+        continue;
+      }
 
       let student;
       if (rollNumber) {
@@ -161,7 +174,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     }
 
     if (errors.length) {
-      return res.status(400).json({ errors });
+      const message = errors.join('; ');
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
     }
 
     // Insert marks
