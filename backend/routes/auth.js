@@ -37,7 +37,8 @@ router.post('/login', async (req, res, next) => {
       { expiresIn: '24h' }
     );
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, profile_image, ...rest } = user;
+    const userWithoutPassword = { ...rest, profileImage: profile_image };
 
     res.json({
       message: 'Login successful',
