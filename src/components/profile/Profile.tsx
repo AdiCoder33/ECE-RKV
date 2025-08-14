@@ -39,7 +39,7 @@ const Profile = () => {
     dateOfBirth: '1995-06-15',
     address: '123 Main Street, City, State - 560001',
     bloodGroup: 'O+',
-    parentContact: '+91 9876543211'
+    emergencyContact: '+91 9876543211'
   });
 
   useEffect(() => {
@@ -62,7 +62,11 @@ const Profile = () => {
           ...prev,
           name: data.name || '',
           email: data.email || '',
-          phone: data.phone || ''
+          phone: data.phone || '',
+          dateOfBirth: data.dateOfBirth || '',
+          address: data.address || '',
+          bloodGroup: data.bloodGroup || '',
+          emergencyContact: data.emergencyContact || ''
         }));
         setDepartment(data.department || '');
         setProfileImage(data.profileImage || '');
@@ -89,14 +93,12 @@ const Profile = () => {
         phone: formData.phone,
         profileImage,
         name: formData.name,
-        email: formData.email
+        email: formData.email,
+        dateOfBirth: formData.dateOfBirth,
+        address: formData.address,
+        bloodGroup: formData.bloodGroup,
+        emergencyContact: formData.emergencyContact
       };
-      if (user?.role === 'student') {
-        payload.dateOfBirth = formData.dateOfBirth;
-        payload.address = formData.address;
-        payload.bloodGroup = formData.bloodGroup;
-        payload.parentContact = formData.parentContact;
-      }
       const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
         method: 'PUT',
         headers: {
@@ -385,50 +387,44 @@ const Profile = () => {
                       disabled={!isEditing}
                     />
                   </div>
-                  {user?.role === 'student' && (
-                    <div>
-                      <label className="text-sm font-medium">Date of Birth</label>
-                      <Input
-                        type="date"
-                        value={formData.dateOfBirth}
-                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-sm font-medium">Date of Birth</label>
+                    <Input
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
                 </div>
-                {user?.role === 'student' && (
-                  <>
-                    <div>
-                      <label className="text-sm font-medium">Address</label>
-                      <Textarea
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        disabled={!isEditing}
-                        rows={3}
-                      />
-                    </div>
+                <div>
+                  <label className="text-sm font-medium">Address</label>
+                  <Textarea
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    disabled={!isEditing}
+                    rows={3}
+                  />
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Blood Group</label>
-                        <Input
-                          value={formData.bloodGroup}
-                          onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Parent Contact</label>
-                        <Input
-                          value={formData.parentContact}
-                          onChange={(e) => handleInputChange('parentContact', e.target.value)}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Blood Group</label>
+                    <Input
+                      value={formData.bloodGroup}
+                      onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Emergency Contact</label>
+                    <Input
+                      value={formData.emergencyContact}
+                      onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
