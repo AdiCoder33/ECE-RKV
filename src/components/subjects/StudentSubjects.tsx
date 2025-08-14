@@ -42,20 +42,34 @@ const StudentSubjects = () => {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setSubjects(data);
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          toast({
+            variant: 'destructive',
+            title: 'Error fetching subjects',
+            description: data?.message || 'Failed to fetch subjects'
+          });
+          setSubjects([]);
+          return;
         }
+
+        setSubjects(data);
       } catch (error) {
         console.error('Error fetching subjects:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error fetching subjects',
+          description: error instanceof Error ? error.message : 'An unexpected error occurred'
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchSubjects();
-  }, [user]);
+  }, [user, toast]);
 
   const getAttendanceColor = (percentage: number) => {
     if (percentage >= 75) return 'text-green-600';
@@ -98,12 +112,12 @@ const StudentSubjects = () => {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Subjects</h1>
           <p className="text-muted-foreground">
-            Current semester subjects for {user?.year} Year - Section {user?.section}
+            Subjects for Year {user?.year}, Semester {user?.semester} - Section {user?.section}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          Academic Year 2024-25 | Semester {Math.ceil((new Date().getMonth() + 1) / 6)}
+          Academic Year 2024-25 | Year {user?.year} - Semester {user?.semester}
         </div>
       </div>
 
