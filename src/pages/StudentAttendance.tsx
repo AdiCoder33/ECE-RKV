@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, AlertTriangle, CheckCircle, XCircle, TrendingDown } from 'lucide-react';
+import { Calendar, AlertTriangle, CheckCircle, XCircle, TrendingDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,6 +23,12 @@ interface SubjectStat {
   attended: number;
   total: number;
   percentage: number;
+}
+
+interface Subject {
+  id: string;
+  name: string;
+  code: string;
 }
 
 interface ApiRecord {
@@ -47,14 +52,43 @@ const StudentAttendance = () => {
   const [classesAttended, setClassesAttended] = useState(0);
   const [classesMissed, setClassesMissed] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
 
-  const subjects = [
-    { id: 'dsp', name: 'Digital Signal Processing', code: 'EC301' },
-    { id: 'vlsi', name: 'VLSI Design', code: 'EC302' },
-    { id: 'cn', name: 'Computer Networks', code: 'EC303' },
-    { id: 'mp', name: 'Microprocessors', code: 'EC304' },
-    { id: 'cs', name: 'Control Systems', code: 'EC305' }
-  ];
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch(`${apiBase}/students/${user?.id}/subjects`, {
+          headers: {
+            Authorization: 'Bearer ' + token
+          }
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          toast({
+            title: 'Error',
+            description: data.message || 'Failed to load subjects',
+            variant: 'destructive'
+          });
+          return;
+        }
+        const data = await response.json();
+        setSubjects(data);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load subjects',
+          variant: 'destructive'
+        });
+      } finally {
+        setSubjectsLoading(false);
+      }
+    };
+    if (user?.id) {
+      fetchSubjects();
+    }
+  }, [user, token, toast]);
 
   useEffect(() => {
     const fetchAttendance = async () => {
@@ -84,24 +118,10 @@ const StudentAttendance = () => {
         }));
         setRecords(mappedRecords);
 
-        const subjectMap: Record<string, { subject: string; attended: number; total: number }> = {};
         let attended = 0;
         data.forEach((rec: ApiRecord) => {
-          const key = rec.subjectId;
-          if (!subjectMap[key]) {
-            subjectMap[key] = { subject: rec.subjectName, attended: 0, total: 0 };
-          }
-          subjectMap[key].total += 1;
-          if (rec.present) {
-            subjectMap[key].attended += 1;
-            attended += 1;
-          }
+          if (rec.present) attended += 1;
         });
-        const stats = Object.values(subjectMap).map(stat => ({
-          ...stat,
-          percentage: stat.total > 0 ? Math.round((stat.attended / stat.total) * 100) : 0
-        }));
-        setSubjectStats(stats);
 
         const totalClasses = data.length;
         const missed = totalClasses - attended;
@@ -137,6 +157,18 @@ const StudentAttendance = () => {
     }
   }, [user, token, toast]);
 
+  useEffect(() => {
+    if (!subjects.length) return;
+    const stats = subjects.map(subject => {
+      const subjectRecords = records.filter(r => r.subjectName === subject.name);
+      const attended = subjectRecords.filter(r => r.status === 'present').length;
+      const total = subjectRecords.length;
+      const percentage = total > 0 ? Math.round((attended / total) * 100) : 0;
+      return { subject: subject.name, attended, total, percentage };
+    });
+    setSubjectStats(stats);
+  }, [subjects, records]);
+
   const filteredAttendance = records.filter(record => {
     const selected = subjects.find(s => s.id === selectedSubject)?.name;
     const matchesSubject = selectedSubject === 'all' || record.subjectName === selected;
@@ -168,8 +200,12 @@ const StudentAttendance = () => {
       : 0;
   const belowThreshold = subjectStats.filter(s => s.percentage < 75).length;
 
-  if (loading) {
+  if (loading || subjectsLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (!subjects.length) {
+    return null;
   }
 
   return (
