@@ -38,8 +38,7 @@ const Profile = () => {
     phone: '+91 9876543210',
     dateOfBirth: '1995-06-15',
     address: '123 Main Street, City, State - 560001',
-    bloodGroup: 'O+',
-    emergencyContact: '+91 9876543211'
+    bloodGroup: 'O+'
   });
 
   useEffect(() => {
@@ -65,8 +64,7 @@ const Profile = () => {
           phone: data.phone || '',
           dateOfBirth: data.dateOfBirth || '',
           address: data.address || '',
-          bloodGroup: data.bloodGroup || '',
-          emergencyContact: data.emergencyContact || ''
+          bloodGroup: data.bloodGroup || ''
         }));
         setDepartment(data.department || '');
         setProfileImage(data.profileImage || '');
@@ -96,8 +94,7 @@ const Profile = () => {
         email: formData.email,
         dateOfBirth: formData.dateOfBirth,
         address: formData.address,
-        bloodGroup: formData.bloodGroup,
-        emergencyContact: formData.emergencyContact
+        bloodGroup: formData.bloodGroup
       };
       const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
         method: 'PUT',
@@ -407,23 +404,13 @@ const Profile = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Blood Group</label>
-                    <Input
-                      value={formData.bloodGroup}
-                      onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Emergency Contact</label>
-                    <Input
-                      value={formData.emergencyContact}
-                      onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
+                <div>
+                  <label className="text-sm font-medium">Blood Group</label>
+                  <Input
+                    value={formData.bloodGroup}
+                    onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                    disabled={!isEditing}
+                  />
                 </div>
               </CardContent>
             </Card>
