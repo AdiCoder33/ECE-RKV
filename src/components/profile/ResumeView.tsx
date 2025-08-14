@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef, useRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,10 +56,29 @@ interface ResumeViewProps {
   showDownload?: boolean;
 }
 
-const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true }) => {
+const ResumeView = forwardRef<HTMLDivElement, ResumeViewProps>(({ resumeData, showDownload = true }, ref) => {
+  const resumeRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => resumeRef.current as HTMLDivElement);
+
   const downloadResume = () => {
-    // Create a downloadable PDF version
-    window.print();
+    if (!resumeRef.current) return;
+    const printWindow = window.open('', '', 'width=800,height=900');
+    if (!printWindow) return;
+    const styles = Array.from(
+      document.querySelectorAll('link[rel="stylesheet"], style')
+    )
+      .map(node => node.outerHTML)
+      .join('');
+    printWindow.document.write('<html><head><title>Resume</title>');
+    printWindow.document.write(styles);
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(resumeRef.current.outerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   const formatDate = (dateStr: string) => {
@@ -69,7 +88,7 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 print:space-y-4 print:bg-white">
+    <div ref={resumeRef} className="max-w-4xl mx-auto space-y-6 print:space-y-4 print:bg-white">
       {showDownload && (
         <div className="flex justify-between items-center print:hidden">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -252,6 +271,6 @@ const ResumeView: React.FC<ResumeViewProps> = ({ resumeData, showDownload = true
       </Card>
     </div>
   );
-};
+});
 
 export default ResumeView;
