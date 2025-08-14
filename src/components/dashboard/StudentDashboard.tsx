@@ -32,19 +32,16 @@ const StudentDashboard = () => {
   const [classmates, setClassmates] = useState([]);
   const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
-  
+  const token = localStorage.getItem('token');
+
+  const [attendancePercentage, setAttendancePercentage] = useState(0);
+  const [attendanceData, setAttendanceData] = useState<
+    { month: string; attendance: number }[]
+  >([]);
+
   const currentGPA = 8.4;
-  const attendancePercentage = 87;
   const completedCredits = 142;
   const totalCredits = 180;
-
-  const attendanceData = [
-    { month: 'Aug', attendance: 92 },
-    { month: 'Sep', attendance: 88 },
-    { month: 'Oct', attendance: 85 },
-    { month: 'Nov', attendance: 89 },
-    { month: 'Dec', attendance: 87 }
-  ];
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -55,35 +52,88 @@ const StudentDashboard = () => {
         }
 
         // Fetch student's subjects
-        const subjectsResponse = await fetch(`${apiBase}/students/${String(user.id)}/subjects`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        const subjectsResponse = await fetch(
+          `${apiBase}/students/${String(user.id)}/subjects`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
         if (subjectsResponse.ok) {
           const subjects = await subjectsResponse.json();
           setStudentSubjects(subjects);
         }
 
         // Fetch classmates
-        const classmatesResponse = await fetch(`${apiBase}/students/classmates?year=${user.year}&semester=${user.semester}&section=${user.section}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        const classmatesResponse = await fetch(
+          `${apiBase}/students/classmates?year=${user.year}&semester=${user.semester}&section=${user.section}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
-        });
+        );
         if (classmatesResponse.ok) {
           const classmatesData = await classmatesResponse.json();
           setClassmates(classmatesData.filter(student => student.id !== user.id));
         }
+
+        // Fetch attendance data
+        const attendanceResponse = await fetch(
+          `${apiBase}/attendance?studentId=${user.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        if (!attendanceResponse.ok) {
+          const data = await attendanceResponse.json().catch(() => ({}));
+          toast({
+            title: 'Error',
+            description: data.message || 'Failed to load attendance',
+            variant: 'destructive'
+          });
+        } else {
+          const records = await attendanceResponse.json();
+          const total = records.length;
+          let attended = 0;
+          const monthMap: Record<string, { attended: number; total: number }> = {};
+          records.forEach((rec: { date: string; present: number | boolean }) => {
+            const isPresent = rec.present === true || rec.present === 1;
+            const month = new Date(rec.date).toLocaleString('default', {
+              month: 'short'
+            });
+            if (!monthMap[month]) monthMap[month] = { attended: 0, total: 0 };
+            monthMap[month].total += 1;
+            if (isPresent) {
+              attended += 1;
+              monthMap[month].attended += 1;
+            }
+          });
+          const overall = total > 0 ? Math.round((attended / total) * 100) : 0;
+          setAttendancePercentage(overall);
+          const trend = Object.entries(monthMap).map(([month, m]) => ({
+            month,
+            attendance: m.total > 0 ? Math.round((m.attended / m.total) * 100) : 0
+          }));
+          setAttendanceData(trend);
+        }
       } catch (error) {
         console.error('Error fetching student data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load dashboard data',
+          variant: 'destructive'
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchStudentData();
-  }, [user]);
+  }, [user, apiBase, token, toast]);
 
   const upcomingAssignments = [
     {
