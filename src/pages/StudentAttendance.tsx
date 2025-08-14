@@ -1,14 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, AlertTriangle, CheckCircle, XCircle, TrendingDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+interface AttendanceRecord {
+  date: string;
+  subjectName: string;
+  period: number;
+  status: 'present' | 'absent';
+  professor: string;
+  reason?: string;
+}
+
+interface SubjectStat {
+  subject: string;
+  attended: number;
+  total: number;
+  percentage: number;
+}
+
+interface ApiRecord {
+  subjectId: string;
+  subjectName: string;
+  date: string;
+  period: number;
+  present: number | boolean;
+  markedByName: string;
+}
 
 const StudentAttendance = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const token = localStorage.getItem('token');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [subjectStats, setSubjectStats] = useState<SubjectStat[]>([]);
+  const [trend, setTrend] = useState<{ month: string; percentage: number }[]>([]);
+  const [classesAttended, setClassesAttended] = useState(0);
+  const [classesMissed, setClassesMissed] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const subjects = [
     { id: 'dsp', name: 'Digital Signal Processing', code: 'EC301' },
@@ -18,64 +56,90 @@ const StudentAttendance = () => {
     { id: 'cs', name: 'Control Systems', code: 'EC305' }
   ];
 
-  const attendanceData = [
-    {
-      date: '2024-01-15',
-      subject: 'Digital Signal Processing',
-      period: 1,
-      status: 'present',
-      professor: 'Dr. Sharma'
-    },
-    {
-      date: '2024-01-15',
-      subject: 'VLSI Design',
-      period: 2,
-      status: 'absent',
-      professor: 'Prof. Kumar',
-      reason: 'Medical'
-    },
-    {
-      date: '2024-01-16',
-      subject: 'Computer Networks',
-      period: 1,
-      status: 'present',
-      professor: 'Dr. Singh'
-    },
-    {
-      date: '2024-01-16',
-      subject: 'Digital Signal Processing',
-      period: 3,
-      status: 'absent',
-      professor: 'Dr. Sharma',
-      reason: 'Late arrival'
-    },
-    {
-      date: '2024-01-17',
-      subject: 'Microprocessors',
-      period: 2,
-      status: 'present',
-      professor: 'Prof. Patel'
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const response = await fetch(`${apiBase}/attendance?studentId=${user?.id}`, {
+          headers: {
+            Authorization: 'Bearer ' + token
+          }
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          toast({
+            title: 'Error',
+            description: data.message || 'Failed to load attendance',
+            variant: 'destructive'
+          });
+          setLoading(false);
+          return;
+        }
+        const data: ApiRecord[] = await response.json();
+        const mappedRecords = data.map((rec: ApiRecord) => ({
+          date: rec.date,
+          subjectName: rec.subjectName,
+          period: rec.period,
+          status: rec.present ? 'present' : 'absent',
+          professor: rec.markedByName
+        }));
+        setRecords(mappedRecords);
+
+        const subjectMap: Record<string, { subject: string; attended: number; total: number }> = {};
+        let attended = 0;
+        data.forEach((rec: ApiRecord) => {
+          const key = rec.subjectId;
+          if (!subjectMap[key]) {
+            subjectMap[key] = { subject: rec.subjectName, attended: 0, total: 0 };
+          }
+          subjectMap[key].total += 1;
+          if (rec.present) {
+            subjectMap[key].attended += 1;
+            attended += 1;
+          }
+        });
+        const stats = Object.values(subjectMap).map(stat => ({
+          ...stat,
+          percentage: stat.total > 0 ? Math.round((stat.attended / stat.total) * 100) : 0
+        }));
+        setSubjectStats(stats);
+
+        const totalClasses = data.length;
+        const missed = totalClasses - attended;
+        setClassesAttended(attended);
+        setClassesMissed(missed);
+
+        const monthMap: Record<string, { attended: number; total: number }> = {};
+        data.forEach((rec: ApiRecord) => {
+          const month = new Date(rec.date).toLocaleString('default', { month: 'short' });
+          if (!monthMap[month]) monthMap[month] = { attended: 0, total: 0 };
+          monthMap[month].total += 1;
+          if (rec.present) monthMap[month].attended += 1;
+        });
+        const trendData = Object.entries(monthMap).map(([month, m]) => ({
+          month,
+          percentage: m.total > 0 ? Math.round((m.attended / m.total) * 100) : 0
+        }));
+        setTrend(trendData);
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load attendance',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchAttendance();
     }
-  ];
+  }, [user, token, toast]);
 
-  const subjectAttendance = [
-    { subject: 'DSP', attended: 18, total: 20, percentage: 90 },
-    { subject: 'VLSI', attended: 16, total: 20, percentage: 80 },
-    { subject: 'CN', attended: 19, total: 20, percentage: 95 },
-    { subject: 'MP', attended: 15, total: 18, percentage: 83 },
-    { subject: 'CS', attended: 17, total: 19, percentage: 89 }
-  ];
-
-  const monthlyTrend = [
-    { month: 'Aug', percentage: 92 },
-    { month: 'Sep', percentage: 88 },
-    { month: 'Oct', percentage: 85 },
-    { month: 'Nov', percentage: 89 },
-    { month: 'Dec', percentage: 87 }
-  ];
-
-  const filteredAttendance = attendanceData.filter(record => {
-    const matchesSubject = selectedSubject === 'all' || record.subject.toLowerCase().includes(selectedSubject);
+  const filteredAttendance = records.filter(record => {
+    const selected = subjects.find(s => s.id === selectedSubject)?.name;
+    const matchesSubject = selectedSubject === 'all' || record.subjectName === selected;
     const matchesMonth = selectedMonth === 'all' || new Date(record.date).getMonth() === parseInt(selectedMonth);
     return matchesSubject && matchesMonth;
   });
@@ -98,9 +162,15 @@ const StudentAttendance = () => {
     return 'bg-red-600 text-white';
   };
 
-  const overallAttendance = Math.round(
-    subjectAttendance.reduce((sum, subject) => sum + subject.percentage, 0) / subjectAttendance.length
-  );
+  const overallAttendance =
+    classesAttended + classesMissed > 0
+      ? Math.round((classesAttended / (classesAttended + classesMissed)) * 100)
+      : 0;
+  const belowThreshold = subjectStats.filter(s => s.percentage < 75).length;
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
@@ -134,7 +204,7 @@ const StudentAttendance = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Classes Attended</p>
-                <p className="text-2xl font-bold">85</p>
+                <p className="text-2xl font-bold">{classesAttended}</p>
               </div>
             </div>
           </CardContent>
@@ -148,7 +218,7 @@ const StudentAttendance = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Classes Missed</p>
-                <p className="text-2xl font-bold">12</p>
+                <p className="text-2xl font-bold">{classesMissed}</p>
               </div>
             </div>
           </CardContent>
@@ -162,7 +232,7 @@ const StudentAttendance = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Below 75%</p>
-                <p className="text-2xl font-bold">1</p>
+                <p className="text-2xl font-bold">{belowThreshold}</p>
               </div>
             </div>
           </CardContent>
@@ -178,7 +248,7 @@ const StudentAttendance = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={subjectAttendance}>
+              <BarChart data={subjectStats}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="subject" stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
@@ -202,7 +272,7 @@ const StudentAttendance = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyTrend}>
+              <LineChart data={trend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[70, 100]} stroke="hsl(var(--muted-foreground))" />
@@ -228,15 +298,15 @@ const StudentAttendance = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {subjectAttendance.map((subject, index) => (
+            {subjectStats.map((subject, index) => (
               <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="space-y-1">
-                  <h4 className="font-medium">{subjects.find(s => s.name.includes(subject.subject))?.name || subject.subject}</h4>
+                  <h4 className="font-medium">{subject.subject}</h4>
                   <p className="text-sm text-muted-foreground">
                     {subject.attended} of {subject.total} classes attended
                   </p>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <Badge className={getAttendanceBadge(subject.percentage)}>
@@ -300,7 +370,7 @@ const StudentAttendance = () => {
                   
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{record.subject}</h4>
+                      <h4 className="font-medium">{record.subjectName}</h4>
                       <Badge variant="outline">Period {record.period}</Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
