@@ -29,8 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        const parsed: User = JSON.parse(storedUser);
+        const parsed = JSON.parse(storedUser) as User & { profile_image?: string };
         if (typeof parsed.id === 'number') {
+          if ('profile_image' in parsed) {
+            parsed.profileImage = parsed.profile_image;
+            delete parsed.profile_image;
+          }
+          localStorage.setItem('user', JSON.stringify(parsed));
           setUser(parsed);
         }
       } catch {
@@ -60,12 +65,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const data = await response.json();
     const { token, user: userInfo } = data;
+    const normalizedUserInfo = { ...userInfo } as typeof userInfo & {
+      profile_image?: string;
+      profileImage?: string;
+    };
+    if ('profile_image' in normalizedUserInfo) {
+      normalizedUserInfo.profileImage = normalizedUserInfo.profile_image;
+      delete normalizedUserInfo.profile_image;
+    }
 
-    const id = Number(userInfo.id);
+    const id = Number(normalizedUserInfo.id);
     if (typeof id !== 'number' || Number.isNaN(id)) {
       throw new Error('Invalid user ID');
     }
-    const sanitizedUser: User = { ...userInfo, id };
+    const sanitizedUser: User = { ...normalizedUserInfo, id };
 
     setUser(sanitizedUser);
     // Only persist the user if the ID is a valid number
