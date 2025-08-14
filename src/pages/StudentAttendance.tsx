@@ -93,11 +93,14 @@ const StudentAttendance = () => {
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        const response = await fetch(`${apiBase}/attendance?studentId=${user?.id}`, {
-          headers: {
-            Authorization: 'Bearer ' + token
+        const response = await fetch(
+          `${apiBase}/attendance?studentId=${user?.id}&year=${user?.year}&semester=${user?.semester}`,
+          {
+            headers: {
+              Authorization: 'Bearer ' + token
+            }
           }
-        });
+        );
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
           toast({
