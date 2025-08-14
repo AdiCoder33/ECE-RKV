@@ -130,7 +130,7 @@ const Profile = () => {
       setError(null);
       const token = localStorage.getItem('token');
       const data = new FormData();
-      data.append('file', file);
+      data.append('image', file);
       const res = await fetch(`${apiBase}/uploads/profile`, {
         method: 'POST',
         headers: {
