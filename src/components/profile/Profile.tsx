@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   User, 
   Edit,
@@ -24,7 +25,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
   const { user } = useAuth();
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [department, setDepartment] = useState('');
+  const [profileImage, setProfileImage] = useState('');
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -34,6 +40,40 @@ const Profile = () => {
     bloodGroup: 'O+',
     parentContact: '+91 9876543211'
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.id) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!res.ok) {
+          throw new Error('Failed to load profile');
+        }
+        const data = await res.json();
+        setFormData(prev => ({
+          ...prev,
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || ''
+        }));
+        setDepartment(data.department || '');
+        setProfileImage(data.profileImage || '');
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user?.id, apiBase]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -91,6 +131,18 @@ const Profile = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-6 px-4 sm:px-6 md:px-0">
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
+
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
       <div className="flex items-center justify-between">
@@ -121,19 +173,27 @@ const Profile = () => {
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="relative mx-auto w-24 h-24 mb-4">
-              <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary-foreground">
-                  {user?.name?.charAt(0)}
-                </span>
-              </div>
-              <Button 
-                size="sm" 
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-foreground">
+                    {formData.name?.charAt(0)}
+                  </span>
+                </div>
+              )}
+              <Button
+                size="sm"
                 className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
               >
                 <Camera className="h-4 w-4" />
               </Button>
             </div>
-            <CardTitle className="text-xl">{user?.name}</CardTitle>
+            <CardTitle className="text-xl">{formData.name}</CardTitle>
             <div className="flex justify-center">
               <Badge className={getRoleBadgeColor(user?.role || '')}>
                 {user?.role?.toUpperCase()}
@@ -165,15 +225,15 @@ const Profile = () => {
               <Building className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="font-medium">Department</p>
-                <p className="text-sm text-muted-foreground">Electronics & Communication</p>
+                <p className="text-sm text-muted-foreground">{department || 'N/A'}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Mail className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <p className="text-sm text-muted-foreground">{formData.email}</p>
               </div>
             </div>
           </CardContent>
