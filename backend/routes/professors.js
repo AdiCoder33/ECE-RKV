@@ -50,7 +50,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const { phone, profileImage } = req.body;
+    const { phone, profileImage, name, email } = req.body;
     const fields = [];
     const params = [];
     if (phone !== undefined) {
@@ -60,6 +60,14 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     if (profileImage !== undefined) {
       fields.push('profile_image = ?');
       params.push(profileImage);
+    }
+    if (name !== undefined) {
+      fields.push('name = ?');
+      params.push(name);
+    }
+    if (email !== undefined) {
+      fields.push('email = ?');
+      params.push(email);
     }
 
     if (!fields.length) {
