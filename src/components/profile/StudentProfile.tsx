@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -69,6 +69,28 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
     { month: 'Nov', attendance: 89 },
     { month: 'Dec', attendance: 87 }
   ];
+
+  const [resume, setResume] = useState<any | null>(null);
+  const [loadingResume, setLoadingResume] = useState(true);
+
+  useEffect(() => {
+    const fetchResume = async () => {
+      try {
+        const res = await fetch(`/api/resumes/${studentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setResume(data);
+        } else {
+          setResume(null);
+        }
+      } catch {
+        setResume(null);
+      } finally {
+        setLoadingResume(false);
+      }
+    };
+    fetchResume();
+  }, [studentId]);
 
   return (
     <div className="space-y-6">
@@ -307,50 +329,12 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
         <TabsContent value="resume" className="space-y-6">
           {user?.role === 'student' ? (
             <ResumeBuilder />
+          ) : loadingResume ? (
+            <div className="text-center">Loading...</div>
+          ) : resume ? (
+            <ResumeView resumeData={resume} showDownload={true} />
           ) : (
-            <ResumeView 
-              resumeData={{
-                personalInfo: {
-                  name: student.name,
-                  email: student.email,
-                  phone: '+91 9876543210',
-                  location: 'Mumbai, Maharashtra',
-                  linkedIn: 'linkedin.com/in/student',
-                  github: 'github.com/student',
-                  objective: 'Passionate computer science student seeking internship opportunities in software development.'
-                },
-                education: [
-                  {
-                    institution: 'ABC Engineering College',
-                    degree: 'Bachelor of Technology',
-                    fieldOfStudy: 'Electronics and Communication Engineering',
-                    startYear: '2020',
-                    endYear: '2024',
-                    grade: '8.4 CGPA'
-                  }
-                ],
-                experience: [
-                  {
-                    company: 'TechCorp Solutions',
-                    position: 'Software Development Intern',
-                    startDate: '2023-06-01',
-                    endDate: '2023-08-31',
-                    description: 'Developed web applications using React and Node.js. Improved application performance by 30%.',
-                    current: false
-                  }
-                ],
-                projects: [
-                  {
-                    name: 'E-Commerce Platform',
-                    description: 'Full-stack web application with React frontend and Node.js backend',
-                    technologies: ['React', 'Node.js', 'MongoDB', 'Express'],
-                    link: 'github.com/student/ecommerce'
-                  }
-                ],
-                skills: ['React', 'JavaScript', 'Node.js', 'Python', 'Java', 'SQL', 'MongoDB', 'Git']
-              }}
-              showDownload={true}
-            />
+            <p className="text-center text-muted-foreground">No resume available</p>
           )}
         </TabsContent>
       </Tabs>
