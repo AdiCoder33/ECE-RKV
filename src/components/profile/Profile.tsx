@@ -79,9 +79,47 @@ const Profile = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    // Save logic here
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!user?.id) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const payload = {
+        phone: formData.phone,
+        profileImage,
+        name: formData.name,
+        email: formData.email
+      };
+      const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to update profile');
+      }
+      const data = await res.json();
+      setFormData(prev => ({ ...prev, ...data }));
+      if (data.profileImage !== undefined) {
+        setProfileImage(data.profileImage);
+      }
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          const updatedUser = { ...parsed, ...data };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch {
+          // ignore invalid stored user
+        }
+      }
+      setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message);
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
