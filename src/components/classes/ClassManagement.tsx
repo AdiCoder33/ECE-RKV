@@ -402,11 +402,13 @@ const ClassManagement = () => {
         </CardContent>
       </Card>
 
-      <PromoteStudentsModal
-        isOpen={isPromoteModalOpen}
-        onClose={() => setIsPromoteModalOpen(false)}
-        onPromote={handlePromoteStudents}
-      />
+      {!isProfessor && (
+        <PromoteStudentsModal
+          isOpen={isPromoteModalOpen}
+          onClose={() => setIsPromoteModalOpen(false)}
+          onPromote={handlePromoteStudents}
+        />
+      )}
 
       <ClassStudentsModal
         isOpen={isStudentsModalOpen}
@@ -422,68 +424,70 @@ const ClassManagement = () => {
         classData={selectedClass}
       />
 
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg shadow-xl">
-          <DialogHeader className="p-4 border-b border-stone-200 dark:border-gray-700">
-            <DialogTitle className="text-2xl font-bold">Create Class</DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-400">
-              Create a new class for the ECE Department.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 p-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="year" className="text-right font-medium">
-                Year
-              </Label>
-              <Select onValueChange={(value) => setNewClassYear(parseInt(value))} defaultValue="1">
-                <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
-                  <SelectValue placeholder="Select a year" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800">
-                  <SelectItem value="1">1st Year</SelectItem>
-                  <SelectItem value="2">2nd Year</SelectItem>
-                  <SelectItem value="3">3rd Year</SelectItem>
-                  <SelectItem value="4">4th Year</SelectItem>
-                </SelectContent>
-              </Select>
+      {!isProfessor && (
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg shadow-xl">
+            <DialogHeader className="p-4 border-b border-stone-200 dark:border-gray-700">
+              <DialogTitle className="text-2xl font-bold">Create Class</DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
+                Create a new class for the ECE Department.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-6 p-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="year" className="text-right font-medium">
+                  Year
+                </Label>
+                <Select onValueChange={(value) => setNewClassYear(parseInt(value))} defaultValue="1">
+                  <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
+                    <SelectValue placeholder="Select a year" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800">
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="semester" className="text-right font-medium">
+                  Semester
+                </Label>
+                <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)} defaultValue="1">
+                  <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
+                    <SelectValue placeholder="Select a semester" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800">
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="section" className="text-right font-medium">
+                  Section
+                </Label>
+                <Input
+                  id="section"
+                  value={newClassSection}
+                  onChange={(e) => setNewClassSection(e.target.value)}
+                  className="col-span-3 border-stone-300 dark:border-gray-600"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="semester" className="text-right font-medium">
-                Semester
-              </Label>
-              <Select onValueChange={(value) => setNewClassSemester(parseInt(value) as 1 | 2)} defaultValue="1">
-                <SelectTrigger className="col-span-3 border-stone-300 dark:border-gray-600">
-                  <SelectValue placeholder="Select a semester" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800">
-                  <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="section" className="text-right font-medium">
-                Section
-              </Label>
-              <Input
-                id="section"
-                value={newClassSection}
-                onChange={(e) => setNewClassSection(e.target.value)}
-                className="col-span-3 border-stone-300 dark:border-gray-600"
-              />
-            </div>
-          </div>
-          <DialogFooter className="bg-stone-100 dark:bg-gray-800 p-4 rounded-b-lg">
-            <Button
-              type="submit"
-              onClick={handleCreateClass}
-              className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
-            >
-              Create class
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="bg-stone-100 dark:bg-gray-800 p-4 rounded-b-lg">
+              <Button
+                type="submit"
+                onClick={handleCreateClass}
+                className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200"
+              >
+                Create class
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
