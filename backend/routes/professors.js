@@ -14,7 +14,7 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     const { recordset } = await executeQuery(
-      "SELECT id, name, email, department, phone, profile_image FROM users WHERE id = ? AND role = 'professor'",
+      "SELECT id, name, email, department, phone, profile_image, address, blood_group, emergency_contact, date_of_birth FROM users WHERE id = ? AND role = 'professor'",
       [professorId]
     );
 
@@ -29,7 +29,11 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
       email: prof.email,
       department: prof.department,
       phone: prof.phone,
-      profileImage: prof.profile_image
+      profileImage: prof.profile_image,
+      address: prof.address,
+      bloodGroup: prof.blood_group,
+      emergencyContact: prof.emergency_contact,
+      dateOfBirth: prof.date_of_birth
     });
   } catch (error) {
     console.error('Professor profile fetch error:', error);
@@ -50,7 +54,16 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const { phone, profileImage, name, email } = req.body;
+    const {
+      phone,
+      profileImage,
+      name,
+      email,
+      address,
+      bloodGroup,
+      emergencyContact,
+      dateOfBirth
+    } = req.body;
     const fields = [];
     const params = [];
     if (phone !== undefined) {
@@ -69,6 +82,22 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       fields.push('email = ?');
       params.push(email);
     }
+    if (address !== undefined) {
+      fields.push('address = ?');
+      params.push(address);
+    }
+    if (bloodGroup !== undefined) {
+      fields.push('blood_group = ?');
+      params.push(bloodGroup);
+    }
+    if (emergencyContact !== undefined) {
+      fields.push('emergency_contact = ?');
+      params.push(emergencyContact);
+    }
+    if (dateOfBirth !== undefined) {
+      fields.push('date_of_birth = ?');
+      params.push(dateOfBirth);
+    }
 
     if (!fields.length) {
       return res.status(400).json({ error: 'No fields to update' });
@@ -82,7 +111,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     const { recordset } = await executeQuery(
-      "SELECT id, name, email, department, phone, profile_image FROM users WHERE id = ? AND role = 'professor'",
+      "SELECT id, name, email, department, phone, profile_image, address, blood_group, emergency_contact, date_of_birth FROM users WHERE id = ? AND role = 'professor'",
       [professorId]
     );
     const prof = recordset[0];
@@ -92,7 +121,11 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       email: prof.email,
       department: prof.department,
       phone: prof.phone,
-      profileImage: prof.profile_image
+      profileImage: prof.profile_image,
+      address: prof.address,
+      bloodGroup: prof.blood_group,
+      emergencyContact: prof.emergency_contact,
+      dateOfBirth: prof.date_of_birth
     });
   } catch (error) {
     console.error('Professor profile update error:', error);
