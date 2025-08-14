@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ const Profile = () => {
   const [error, setError] = useState<string | null>(null);
   const [department, setDepartment] = useState('');
   const [profileImage, setProfileImage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -117,6 +118,33 @@ const Profile = () => {
         }
       }
       setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const data = new FormData();
+      data.append('file', file);
+      const res = await fetch(`${apiBase}/uploads/profile`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: data
+      });
+      if (!res.ok) {
+        throw new Error('Failed to upload image');
+      }
+      const result = await res.json();
+      if (result.url) {
+        setProfileImage(result.url);
+      }
     } catch (err) {
       setError((err as Error).message);
     }
@@ -227,9 +255,17 @@ const Profile = () => {
               <Button
                 size="sm"
                 className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Camera className="h-4 w-4" />
               </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
             </div>
             <CardTitle className="text-xl">{formData.name}</CardTitle>
             <div className="flex justify-center">
