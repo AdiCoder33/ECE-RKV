@@ -85,12 +85,18 @@ const Profile = () => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      const payload = {
+      const payload: Record<string, unknown> = {
         phone: formData.phone,
         profileImage,
         name: formData.name,
         email: formData.email
       };
+      if (user?.role === 'student') {
+        payload.dateOfBirth = formData.dateOfBirth;
+        payload.address = formData.address;
+        payload.bloodGroup = formData.bloodGroup;
+        payload.parentContact = formData.parentContact;
+      }
       const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
         method: 'PUT',
         headers: {
@@ -345,18 +351,19 @@ const Profile = () => {
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         disabled={!isEditing}
                       />
-                    </div>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Phone Number</label>
-                      <Input
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Phone Number</label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  {user?.role === 'student' && (
                     <div>
                       <label className="text-sm font-medium">Date of Birth</label>
                       <Input
@@ -366,39 +373,43 @@ const Profile = () => {
                         disabled={!isEditing}
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium">Address</label>
-                    <Textarea
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      disabled={!isEditing}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  )}
+                </div>
+                {user?.role === 'student' && (
+                  <>
                     <div>
-                      <label className="text-sm font-medium">Blood Group</label>
-                      <Input
-                        value={formData.bloodGroup}
-                        onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                      <label className="text-sm font-medium">Address</label>
+                      <Textarea
+                        value={formData.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
                         disabled={!isEditing}
+                        rows={3}
                       />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Parent Contact</label>
-                      <Input
-                        value={formData.parentContact}
-                        onChange={(e) => handleInputChange('parentContact', e.target.value)}
-                        disabled={!isEditing}
-                      />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Blood Group</label>
+                        <Input
+                          value={formData.bloodGroup}
+                          onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                          disabled={!isEditing}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Parent Contact</label>
+                        <Input
+                          value={formData.parentContact}
+                          onChange={(e) => handleInputChange('parentContact', e.target.value)}
+                          disabled={!isEditing}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
             {user?.role === 'student' && (
               <TabsContent value="academic">
