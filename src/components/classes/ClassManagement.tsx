@@ -80,70 +80,24 @@ const ClassManagement = () => {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBase}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      if (isProfessor) {
-        // Fetch classes taught by the professor
-        const profResp = await fetch(`${apiBase}/professors/${user?.id}/classes`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!profResp.ok) {
-          throw new Error('Failed to fetch professor classes');
-        }
-
-        const profData = await profResp.json();
-
-        if (profData.length === 0) {
-          setClasses([]);
-          setError('No classes found for your account');
-          toast({
-            title: 'No Classes Found',
-            description: 'No classes are assigned to you yet.',
-          });
-          return;
-        }
-
-        // Merge with /classes to obtain class IDs and full details
-        const allResp = await fetch(`${apiBase}/classes`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!allResp.ok) {
-          throw new Error('Failed to fetch classes');
-        }
-
-        const allClasses: Class[] = await allResp.json();
-        const filtered = allClasses.filter(c =>
-          profData.some((p: any) => p.year === c.year && p.semester === c.semester && p.section === c.section)
-        );
-        setClasses(filtered);
-      } else {
-        // Admin/HOD fetches all classes
-        const response = await fetch(`${apiBase}/classes`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch classes');
-        }
-
-        const data: Class[] = await response.json();
-        setClasses(data);
+      if (!response.ok) {
+        throw new Error('Failed to fetch classes');
       }
-    } catch (err) {
-      setError(
-        isProfessor ? 'Failed to load your classes' : 'Failed to load classes'
-      );
+
+      const data: Class[] = await response.json();
+      setClasses(data);
+    } catch {
+      setError('Failed to load classes');
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: isProfessor ? 'Failed to load your classes' : 'Failed to load classes',
+        description: 'Failed to load classes',
       });
     } finally {
       setLoading(false);
