@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   GraduationCap,
   LogOut,
@@ -303,6 +303,7 @@ const DashboardLayout: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profileImage} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {user?.name?.charAt(0)}
                     </AvatarFallback>
