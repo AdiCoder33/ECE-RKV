@@ -33,14 +33,18 @@ const StudentSubjects = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        if (typeof user?.id !== 'number') {
-          toast({ variant: 'destructive', title: 'Invalid user ID' });
+        const token = localStorage.getItem('token');
+        if (typeof user?.id !== 'number' || !token) {
+          console.warn('Skipping subjects fetch: missing user ID or auth token');
+          if (typeof user?.id !== 'number') {
+            toast({ variant: 'destructive', title: 'Invalid user ID' });
+          }
           return;
         }
 
         const response = await fetch(`${apiBase}/students/${String(user.id)}/subjects`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
 
