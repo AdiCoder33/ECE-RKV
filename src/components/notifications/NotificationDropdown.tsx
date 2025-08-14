@@ -22,26 +22,27 @@ interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   is_read: boolean;
   created_at: string;
-  data?: Record<string, unknown>;
+  data?: unknown;
 }
 
 const NotificationDropdown: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications', {
+      const response = await fetch(`${apiBase}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
       if (!response.ok) throw new Error('Failed to fetch notifications');
-      const data = await response.json();
-      return data.map((n: any) => ({
+      const data = (await response.json()) as Notification[];
+      return data.map((n) => ({
         ...n,
         data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data,
       }));
@@ -51,7 +52,7 @@ const NotificationDropdown: React.FC = () => {
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`${apiBase}/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -68,7 +69,7 @@ const NotificationDropdown: React.FC = () => {
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications/mark-all-read', {
+      const response = await fetch(`${apiBase}/notifications/mark-all-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -89,7 +90,7 @@ const NotificationDropdown: React.FC = () => {
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/notifications/${notificationId}`, {
+      const response = await fetch(`${apiBase}/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -70,15 +70,16 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
     { month: 'Dec', attendance: 87 }
   ];
 
-  const [resume, setResume] = useState<any | null>(null);
+  const [resume, setResume] = useState<Record<string, unknown> | null>(null);
   const [loadingResume, setLoadingResume] = useState(true);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   useEffect(() => {
     const fetchResume = async () => {
       try {
-        const res = await fetch(`/api/resumes/${studentId}`);
+        const res = await fetch(`${apiBase}/resumes/${studentId}`);
         if (res.ok) {
-          const data = await res.json();
+          const data: Record<string, unknown> = await res.json();
           setResume(data);
         } else {
           setResume(null);
