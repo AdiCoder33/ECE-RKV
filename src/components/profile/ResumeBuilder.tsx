@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Plus, 
   Trash2, 
@@ -53,56 +54,72 @@ interface Project {
 
 const ResumeBuilder = () => {
   const { user } = useAuth();
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const token = localStorage.getItem('token');
   const [isEditing, setIsEditing] = useState(true);
-  
-  // Mock data - replace with actual API calls
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const [personalInfo, setPersonalInfo] = useState({
-    name: user?.name || 'Aarav Patel',
-    email: user?.email || 'aarav.patel@student.edu',
-    phone: '+91 9876543210',
-    location: 'Mumbai, Maharashtra',
-    linkedIn: 'linkedin.com/in/aaravpatel',
-    github: 'github.com/aaravpatel',
-    objective: 'Passionate computer science student seeking internship opportunities in software development.'
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
+    location: '',
+    linkedIn: '',
+    github: '',
+    objective: ''
   });
 
-  const [education, setEducation] = useState<Education[]>([
-    {
-      id: '1',
-      institution: 'ABC Engineering College',
-      degree: 'Bachelor of Technology',
-      fieldOfStudy: 'Electronics and Communication Engineering',
-      startYear: '2020',
-      endYear: '2024',
-      grade: '8.4 CGPA'
-    }
-  ]);
+  const [education, setEducation] = useState<Education[]>([]);
 
-  const [experience, setExperience] = useState<Experience[]>([
-    {
-      id: '1',
-      company: 'TechCorp Solutions',
-      position: 'Software Development Intern',
-      startDate: '2023-06',
-      endDate: '2023-08',
-      description: 'Developed web applications using React and Node.js. Improved application performance by 30%.',
-      current: false
-    }
-  ]);
+  const [experience, setExperience] = useState<Experience[]>([]);
 
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: '1',
-      name: 'E-Commerce Platform',
-      description: 'Full-stack web application with React frontend and Node.js backend',
-      technologies: ['React', 'Node.js', 'MongoDB', 'Express'],
-      link: 'github.com/aaravpatel/ecommerce'
-    }
-  ]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  const [skills] = useState([
-    'JavaScript', 'React', 'Node.js', 'Python', 'Java', 'MongoDB', 'MySQL', 'Git', 'Docker'
-  ]);
+  const [skills, setSkills] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchResume = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(`${apiBase}/resumes/${user.id}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setPersonalInfo(data.personalInfo || {
+            name: user?.name || '',
+            email: user?.email || '',
+            phone: '',
+            location: '',
+            linkedIn: '',
+            github: '',
+            objective: ''
+          });
+          setEducation(data.education || []);
+          setExperience(data.experience || []);
+          setProjects(data.projects || []);
+          setSkills(data.skills || []);
+        } else if (res.status !== 404) {
+          throw new Error('Failed to load resume');
+        }
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResume();
+  }, [user?.id, apiBase, token]);
 
   const addEducation = () => {
     const newEducation: Education = {
@@ -153,16 +170,52 @@ const ResumeBuilder = () => {
     setProjects(projects.filter(proj => proj.id !== id));
   };
 
-  const saveResume = () => {
-    // Save resume data to backend
-    console.log('Saving resume...');
-    setIsEditing(false);
+  const saveResume = async () => {
+    if (!user?.id) return;
+    try {
+      setSaving(true);
+      setError(null);
+      const res = await fetch(`${apiBase}/resumes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          personalInfo,
+          education,
+          experience,
+          projects,
+          skills
+        })
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save resume');
+      }
+      setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const downloadResume = () => {
     // Generate and download PDF
     console.log('Downloading resume...');
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
 
   if (!isEditing) {
     // Resume Preview Mode - Use the standardized ResumeView component
@@ -205,9 +258,9 @@ const ResumeBuilder = () => {
             <Eye className="h-4 w-4 mr-2" />
             Preview
           </Button>
-          <Button onClick={saveResume}>
+          <Button onClick={saveResume} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
-            Save Resume
+            {saving ? 'Saving...' : 'Save Resume'}
           </Button>
         </div>
       </div>
