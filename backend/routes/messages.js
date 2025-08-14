@@ -19,7 +19,7 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
     params.push(fetchLimit);
 
     const query = `
-      SELECT m.*, u.name as sender_name
+      SELECT m.*, u.name as sender_name, u.profile_image AS sender_profileImage
       FROM Messages m
       JOIN Users u ON u.id = m.sender_id
       WHERE (m.sender_id = ? AND m.receiver_id = ?)
@@ -87,7 +87,7 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       INTO @Inserted
       VALUES (?, ?, ?, ?, ?, 0, GETDATE());
 
-      SELECT i.*, u.name AS sender_name
+      SELECT i.*, u.name AS sender_name, u.profile_image AS sender_profileImage
       FROM @Inserted i
       JOIN Users u ON u.id = i.sender_id;
     `;

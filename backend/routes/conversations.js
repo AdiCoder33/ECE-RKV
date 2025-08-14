@@ -23,7 +23,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
         'direct' AS type,
         conv.contact_id AS id,
         u.name AS title,
-        NULL AS avatar,
+        u.profile_image AS avatar,
         m.content AS last_message,
         conv.last_activity AS last_activity,
         (

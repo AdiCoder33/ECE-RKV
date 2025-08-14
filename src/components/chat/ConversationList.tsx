@@ -12,6 +12,7 @@ import { User } from '@/types';
 interface Conversation {
   id: string;
   title: string;
+  avatar?: string | null;
   last_message?: string;
   last_activity?: string | null;
   unread_count?: number;

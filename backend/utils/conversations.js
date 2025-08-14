@@ -14,7 +14,7 @@ async function getConversationSummary(userId, type, id) {
         'direct' AS type,
         u.id AS id,
         u.name AS title,
-        NULL AS avatar,
+        u.profile_image AS avatar,
         m.content AS last_message,
         conv.last_activity AS last_activity,
         (
