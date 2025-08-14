@@ -39,7 +39,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     }
     
     if (studentId) {
-      query += ' AND a.student_id = ?';
+      query += ' AND a.student_id = ? AND s.year = u.year AND s.semester = u.semester';
       params.push(studentId);
     }
     
@@ -159,9 +159,10 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
         a.marked_by,
         mb.name as marked_by_name
       FROM attendance a
-      LEFT JOIN subjects s ON a.subject_id = s.id
+      JOIN users u ON a.student_id = u.id
+      JOIN subjects s ON a.subject_id = s.id
       LEFT JOIN users mb ON a.marked_by = mb.id
-      WHERE a.student_id = ?${dateFilter}
+      WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
       ORDER BY a.date DESC, a.period
     `;
     const recordsResult = await executeQuery(recordsQuery, params);
@@ -189,7 +190,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
         ) as percentage
       FROM attendance a
       JOIN subjects s ON a.subject_id = s.id
-      WHERE a.student_id = ?${dateFilter}
+      JOIN users u ON a.student_id = u.id
+      WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
       GROUP BY a.subject_id, s.name
       ORDER BY s.name
     `;
@@ -211,7 +213,9 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
           2
         ) as percentage
       FROM attendance a
-      WHERE a.student_id = ?${dateFilter}
+      JOIN subjects s ON a.subject_id = s.id
+      JOIN users u ON a.student_id = u.id
+      WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
       GROUP BY YEAR(a.date), MONTH(a.date)
       ORDER BY YEAR(a.date), MONTH(a.date)
     `;
@@ -224,14 +228,16 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
     // Overall attendance
     const overallQuery = `
       SELECT
-        SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) as attended,
-        SUM(CASE WHEN present = 0 THEN 1 ELSE 0 END) as missed,
+        SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended,
+        SUM(CASE WHEN a.present = 0 THEN 1 ELSE 0 END) as missed,
         ROUND(
-          (CAST(SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
+          (CAST(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
           2
         ) as percentage
-      FROM attendance
-      WHERE student_id = ?${dateFilter}
+      FROM attendance a
+      JOIN subjects s ON a.subject_id = s.id
+      JOIN users u ON a.student_id = u.id
+      WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
     `;
     const overallResult = await executeQuery(overallQuery, params);
     const overallRow = overallResult.recordset[0] || {};
