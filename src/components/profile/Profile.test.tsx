@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, fireEvent, waitFor, screen, cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
 expect.extend(matchers);
 
+const mockUseAuth = vi.fn();
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { id: 1, name: 'Alice', role: 'professor' } }),
+  useAuth: () => mockUseAuth(),
 }));
 
 import Profile from './Profile';
@@ -15,8 +16,13 @@ describe('Profile image upload', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
+    mockUseAuth.mockReturnValue({ user: { id: 1, name: 'Alice', role: 'professor' } });
     localStorage.setItem('token', 'test-token');
     localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Alice', role: 'professor' }));
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it('uploads image and updates profileImage state with returned URL', async () => {
@@ -56,5 +62,51 @@ describe('Profile image upload', () => {
 
     const stored = JSON.parse(localStorage.getItem('user') || '{}');
     expect(stored.profileImage).toBe('http://example.com/avatar.png');
+  });
+});
+
+describe('Student profile endpoints', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.clear();
+    mockUseAuth.mockReturnValue({ user: { id: 2, name: 'Bob', role: 'student' } });
+    localStorage.setItem('token', 'test-token');
+    localStorage.setItem('user', JSON.stringify({ id: 2, name: 'Bob', role: 'student' }));
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('fetches and updates student profile using student endpoints', async () => {
+    const file = new File(['hello'], 'avatar.png', { type: 'image/png' });
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ name: 'Bob', email: 'bob@example.com', phone: '123', rollNumber: 'R1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ url: 'http://example.com/avatar.png' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ profileImage: 'http://example.com/avatar.png' }),
+      });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    const { container } = render(<Profile />);
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+    expect(mockFetch.mock.calls[0][0]).toContain('/students/2/profile');
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
+    await waitFor(() =>
+      expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'http://example.com/avatar.png')
+    );
   });
 });
