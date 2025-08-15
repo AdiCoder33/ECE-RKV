@@ -25,7 +25,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import PromoteStudentsModal from './PromoteStudentsModal';
-import ClassStudentsModal from './ClassStudentsModal';
 import EditClassModal from './EditClassModal';
 import { useNavigate } from 'react-router-dom';
 import loaderMp2 from '@/Assets/loader.mp4';
@@ -52,7 +51,6 @@ const ClassManagement: React.FC = () => {
   const { toast } = useToast();
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Loader component using loader.mp2 video
@@ -268,11 +266,6 @@ const ClassManagement: React.FC = () => {
     navigate(`/dashboard/classes/${cls.id}/students`);
   };
 
-  const handleStudentClick = (studentId: string) => {
-    setIsStudentsModalOpen(false);
-    navigate(`/dashboard/profile/student/${studentId}`);
-  };
-
   const getSemesterColor = (semester: number) => {
     return semester === 1
       ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
@@ -417,13 +410,6 @@ const ClassManagement: React.FC = () => {
           onPromote={handlePromoteStudents}
         />
       )}
-
-      <ClassStudentsModal
-        isOpen={isStudentsModalOpen}
-        onClose={() => setIsStudentsModalOpen(false)}
-        classData={selectedClass}
-        onStudentClick={handleStudentClick}
-      />
 
       <EditClassModal
         isOpen={isEditModalOpen}
