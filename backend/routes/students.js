@@ -4,6 +4,47 @@ const { authenticateToken } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 
+// Helper to fetch a single student's profile
+async function fetchStudentProfile(id) {
+  const query = `
+      SELECT u.*,
+             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             ar.cgpa
+      FROM users u
+      LEFT JOIN (
+        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
+        FROM attendance
+        GROUP BY student_id
+      ) att ON u.id = att.student_id
+      LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
+      WHERE u.id = ? AND u.role = 'student'
+    `;
+  const result = await executeQuery(query, [id]);
+  return result.recordset[0];
+}
+
+// Helper to format student response
+function formatStudent(student) {
+  return {
+    id: student.id.toString(),
+    name: student.name,
+    email: student.email,
+    rollNumber: student.roll_number,
+    phone: student.phone,
+    year: student.year,
+    semester: student.semester,
+    section: student.section,
+    profileImage: student.profile_image,
+    dateOfBirth: student.date_of_birth,
+    address: student.address,
+    parentContact: student.parent_contact,
+    bloodGroup: student.blood_group,
+    admissionYear: student.admission_year,
+    attendancePercentage: Math.round(student.attendance_percentage || 0),
+    cgpa: student.cgpa || 0,
+  };
+}
+
 // Get all students with filtering
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
@@ -140,48 +181,103 @@ router.get('/', authenticateToken, async (req, res, next) => {
 router.get('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-
-    const query = `
-      SELECT u.*,
-             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
-             ar.cgpa
-      FROM users u
-      LEFT JOIN (
-        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
-        FROM attendance
-        GROUP BY student_id
-      ) att ON u.id = att.student_id
-      LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
-      WHERE u.id = ? AND u.role = 'student'
-    `;
-
-    const result = await executeQuery(query, [id]);
-    const student = result.recordset[0];
+    const student = await fetchStudentProfile(id);
 
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    res.json({
-      id: student.id.toString(),
-      name: student.name,
-      email: student.email,
-      rollNumber: student.roll_number,
-      phone: student.phone,
-      year: student.year,
-      semester: student.semester,
-      section: student.section,
-      profileImage: student.profile_image,
-      dateOfBirth: student.date_of_birth,
-      address: student.address,
-      parentContact: student.parent_contact,
-      bloodGroup: student.blood_group,
-      admissionYear: student.admission_year,
-      attendancePercentage: Math.round(student.attendance_percentage || 0),
-      cgpa: student.cgpa || 0,
-    });
+    res.json(formatStudent(student));
   } catch (error) {
     console.error('Student fetch error:', error);
+    next(error);
+  }
+});
+
+// Get student profile (alias of /:id)
+router.get('/:id/profile', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const student = await fetchStudentProfile(id);
+
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    res.json(formatStudent(student));
+  } catch (error) {
+    console.error('Student profile fetch error:', error);
+    next(error);
+  }
+});
+
+// Update student profile
+router.put('/:id/profile', authenticateToken, async (req, res, next) => {
+  try {
+    const studentId = parseInt(req.params.id, 10);
+    if (Number.isNaN(studentId)) {
+      console.warn('Invalid student id:', req.params.id);
+      return res.status(400).json({ error: 'Invalid student id' });
+    }
+
+    if (
+      req.user.id !== studentId &&
+      !['admin', 'professor', 'hod'].includes(req.user.role)
+    ) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const {
+      phone,
+      profileImage,
+      address,
+      dateOfBirth,
+      bloodGroup,
+      parentContact,
+    } = req.body;
+
+    const fields = [];
+    const params = [];
+    if (phone !== undefined) {
+      fields.push('phone = ?');
+      params.push(phone);
+    }
+    if (profileImage !== undefined) {
+      fields.push('profile_image = ?');
+      params.push(profileImage);
+    }
+    if (address !== undefined) {
+      fields.push('address = ?');
+      params.push(address);
+    }
+    if (dateOfBirth !== undefined) {
+      fields.push('date_of_birth = ?');
+      params.push(dateOfBirth);
+    }
+    if (bloodGroup !== undefined) {
+      fields.push('blood_group = ?');
+      params.push(bloodGroup);
+    }
+    if (parentContact !== undefined) {
+      fields.push('parent_contact = ?');
+      params.push(parentContact);
+    }
+
+    if (!fields.length) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    params.push(studentId);
+    const updateQuery = `UPDATE users SET ${fields.join(', ')}, updated_at = GETDATE() WHERE id = ? AND role = 'student'`;
+    const result = await executeQuery(updateQuery, params);
+    if (!result.rowsAffected || result.rowsAffected[0] === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const updated = await fetchStudentProfile(studentId);
+    res.json(formatStudent(updated));
+  } catch (error) {
+    console.error('Student profile update error:', error);
     next(error);
   }
 });
