@@ -52,6 +52,104 @@ router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get mark summary for a student
+router.get('/student/:id/summary', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { year, semester } = req.query;
+
+    let query = `
+      SELECT im.id, im.subject_id, im.type, im.marks, im.max_marks, im.date,
+             s.name AS subject_name
+      FROM InternalMarks im
+      INNER JOIN Subjects s ON im.subject_id = s.id
+      INNER JOIN Users u ON im.student_id = u.id
+      WHERE im.student_id = ?
+    `;
+    const params = [id];
+
+    if (year) {
+      query += ' AND s.year = ?';
+      params.push(year);
+    } else {
+      query += ' AND s.year = u.year';
+    }
+
+    if (semester) {
+      query += ' AND s.semester = ?';
+      params.push(semester);
+    } else {
+      query += ' AND s.semester = u.semester';
+    }
+
+    query += ' ORDER BY im.date DESC';
+
+    const result = await executeQuery(query, params);
+    const rawRecords = result.recordset || [];
+
+    const subjectStatsMap = {};
+    const monthlyTrendMap = {};
+    let overallObtained = 0;
+    let overallTotal = 0;
+
+    for (const r of rawRecords) {
+      overallObtained += r.marks;
+      overallTotal += r.max_marks;
+
+      if (!subjectStatsMap[r.subject_id]) {
+        subjectStatsMap[r.subject_id] = {
+          subjectId: r.subject_id,
+          subjectName: r.subject_name,
+          obtained: 0,
+          total: 0,
+        };
+      }
+      subjectStatsMap[r.subject_id].obtained += r.marks;
+      subjectStatsMap[r.subject_id].total += r.max_marks;
+
+      const monthKey = new Date(r.date).toISOString().slice(0, 7);
+      if (!monthlyTrendMap[monthKey]) {
+        monthlyTrendMap[monthKey] = { month: monthKey, obtained: 0, total: 0 };
+      }
+      monthlyTrendMap[monthKey].obtained += r.marks;
+      monthlyTrendMap[monthKey].total += r.max_marks;
+    }
+
+    const subjectStats = Object.values(subjectStatsMap).map((s) => ({
+      ...s,
+      percentage: s.total ? (s.obtained / s.total) * 100 : 0,
+    }));
+
+    const monthlyTrend = Object.values(monthlyTrendMap)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map((m) => ({
+        month: new Date(m.month + '-01').toLocaleString('default', { month: 'short' }),
+        percentage: m.total ? (m.obtained / m.total) * 100 : 0,
+      }));
+
+    const overall = {
+      obtained: overallObtained,
+      total: overallTotal,
+      percentage: overallTotal ? (overallObtained / overallTotal) * 100 : 0,
+    };
+
+    const records = rawRecords.map((r) => ({
+      id: r.id,
+      subjectId: r.subject_id,
+      subjectName: r.subject_name,
+      type: r.type,
+      marks: r.marks,
+      maxMarks: r.max_marks,
+      date: r.date,
+    }));
+
+    res.json({ subjectStats, monthlyTrend, records, overall });
+  } catch (error) {
+    console.error('Get student marks summary error:', error);
+    next(error);
+  }
+});
+
 // Get all marks (for faculty)
 router.get('/', authenticateToken, async (req, res, next) => {
   try {

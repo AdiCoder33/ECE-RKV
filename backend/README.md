@@ -43,3 +43,30 @@ Fetch attendance statistics for a student.
 
 ### Authorization
 Requires a valid JWT token.
+
+## GET /marks/student/:id/summary
+
+Fetch mark statistics and recent records for a student.
+
+### Query Parameters
+- `year` (optional)
+- `semester` (optional)
+
+### Response
+```json
+{
+  "subjectStats": [
+    { "subjectId": number, "subjectName": string, "obtained": number, "total": number, "percentage": number }
+  ],
+  "monthlyTrend": [
+    { "month": string, "percentage": number }
+  ],
+  "records": [
+    { "id": number, "subjectId": number, "subjectName": string, "type": string, "marks": number, "maxMarks": number, "date": string }
+  ],
+  "overall": { "obtained": number, "total": number, "percentage": number }
+}
+```
+
+### Authorization
+Requires a valid JWT token.

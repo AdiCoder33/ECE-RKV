@@ -25,6 +25,25 @@ interface Mark {
   grade: string;
 }
 
+interface SubjectStat {
+  subjectId: number;
+  subjectName: string;
+  obtained: number;
+  total: number;
+  percentage: number;
+}
+
+interface TrendPoint {
+  month: string;
+  percentage: number;
+}
+
+interface Overall {
+  obtained: number;
+  total: number;
+  percentage: number;
+}
+
 const StudentMarks = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -32,6 +51,9 @@ const StudentMarks = () => {
   const [selectedSemester, setSelectedSemester] = useState('current');
   const [marks, setMarks] = useState<Mark[]>([]);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [subjectStats, setSubjectStats] = useState<SubjectStat[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<TrendPoint[]>([]);
+  const [overall, setOverall] = useState<Overall>({ obtained: 0, total: 0, percentage: 0 });
   const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('token');
@@ -44,7 +66,7 @@ const StudentMarks = () => {
       }
 
       try {
-        const response = await fetch(`${apiBase}/marks/student/${user.id}`, {
+        const response = await fetch(`${apiBase}/marks/student/${user.id}/summary`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -59,6 +81,9 @@ const StudentMarks = () => {
           });
           setMarks([]);
           setSubjects([]);
+          setSubjectStats([]);
+          setMonthlyTrend([]);
+          setOverall({ obtained: 0, total: 0, percentage: 0 });
           return;
         }
 
@@ -66,8 +91,8 @@ const StudentMarks = () => {
 
         try {
           const data = await response.json();
-          const mapped: Mark[] = data.map((row: any) => {
-            const percent = (row.marks / row.max_marks) * 100;
+          const mapped: Mark[] = (data.records || []).map((row: any) => {
+            const percent = (row.marks / row.maxMarks) * 100;
             const grade =
               percent >= 90
                 ? 'A+'
@@ -80,21 +105,24 @@ const StudentMarks = () => {
                 : 'C';
             return {
               id: String(row.id),
-              subject: row.subject_name,
+              subject: row.subjectName,
               examType: row.type,
               marks: row.marks,
-              maxMarks: row.max_marks,
+              maxMarks: row.maxMarks,
               date: row.date,
               grade
             };
           });
 
           setMarks(mapped);
-          const uniqueSubjects = Array.from(new Set(mapped.map(m => m.subject))).map(sub => ({
-            value: sub,
-            label: sub
+          setSubjectStats(data.subjectStats || []);
+          setMonthlyTrend(data.monthlyTrend || []);
+          setOverall(data.overall || { obtained: 0, total: 0, percentage: 0 });
+          const subjOptions = (data.subjectStats || []).map((s: SubjectStat) => ({
+            value: s.subjectName,
+            label: s.subjectName
           }));
-          setSubjects([{ value: 'all', label: 'All Subjects' }, ...uniqueSubjects]);
+          setSubjects([{ value: 'all', label: 'All Subjects' }, ...subjOptions]);
         } catch (parseError) {
           const rawText = await cloned.text();
           console.error('Error parsing marks response:', rawText, parseError);
@@ -105,6 +133,9 @@ const StudentMarks = () => {
           });
           setMarks([]);
           setSubjects([]);
+          setSubjectStats([]);
+          setMonthlyTrend([]);
+          setOverall({ obtained: 0, total: 0, percentage: 0 });
         }
       } catch (error) {
         console.error('Error fetching marks:', error);
@@ -115,6 +146,9 @@ const StudentMarks = () => {
         });
         setMarks([]);
         setSubjects([]);
+        setSubjectStats([]);
+        setMonthlyTrend([]);
+        setOverall({ obtained: 0, total: 0, percentage: 0 });
       } finally {
         setLoading(false);
       }
@@ -127,36 +161,19 @@ const StudentMarks = () => {
     ? marks
     : marks.filter(mark => mark.subject === selectedSubject);
 
-  // Calculate statistics
-  const totalMarks = filteredMarks.reduce((sum, mark) => sum + mark.marks, 0);
-  const totalMaxMarks = filteredMarks.reduce((sum, mark) => sum + mark.maxMarks, 0);
-  const overallPercentage = totalMaxMarks > 0 ? (totalMarks / totalMaxMarks) * 100 : 0;
+  const { obtained: totalMarks, total: totalMaxMarks, percentage: overallPercentage } = overall;
 
-  // Subject-wise performance
-  const subjectPerformance = marks.reduce((acc, mark) => {
-    if (!acc[mark.subject]) {
-      acc[mark.subject] = { total: 0, maxTotal: 0, count: 0 };
-    }
-    acc[mark.subject].total += mark.marks;
-    acc[mark.subject].maxTotal += mark.maxMarks;
-    acc[mark.subject].count += 1;
-    return acc;
-  }, {} as Record<string, { total: number; maxTotal: number; count: number }>);
-
-  const chartData = Object.entries(subjectPerformance).map(([subject, data]) => ({
-    subject: subject.replace(' ', '\n'),
-    percentage: ((data.total / data.maxTotal) * 100).toFixed(1),
-    marks: data.total,
-    maxMarks: data.maxTotal
+  const chartData = subjectStats.map(stat => ({
+    subject: stat.subjectName.replace(' ', '\n'),
+    percentage: stat.percentage.toFixed(1),
+    marks: stat.obtained,
+    maxMarks: stat.total
   }));
 
-  const performanceTrend = marks
-    .slice()
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(m => ({
-      month: new Date(m.date).toLocaleString('default', { month: 'short' }),
-      percentage: Number(((m.marks / m.maxMarks) * 100).toFixed(1))
-    }));
+  const performanceTrend = monthlyTrend.map(t => ({
+    month: t.month,
+    percentage: Number(t.percentage.toFixed(1))
+  }));
 
   const getGradeColor = (grade: string) => {
     switch (grade) {
@@ -280,7 +297,7 @@ const StudentMarks = () => {
             <GraduationCap className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(subjectPerformance).length}</div>
+            <div className="text-2xl font-bold">{subjectStats.length}</div>
             <p className="text-xs text-muted-foreground">
               Currently enrolled
             </p>
