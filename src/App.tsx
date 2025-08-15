@@ -1,14 +1,13 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
 import Homepage from './pages/Homepage';
-import StudentProfile from './components/profile/StudentProfile';
 import StudentAttendance from './pages/StudentAttendance';
 import AdminDashboard from './components/dashboard/AdminDashboard';
 import StudentDashboard from './components/dashboard/StudentDashboard';
@@ -48,11 +47,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const ProfilePage = () => {
-  const { user } = useAuth();
-  return user?.role === 'student' ? <StudentProfile /> : <Profile />;
-};
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -79,9 +73,8 @@ function App() {
                   <Route path="attendance" element={<AttendanceManager />} />
                   <Route path="analytics" element={<Analytics />} />
                   <Route path="announcements" element={<Announcements />} />
-                  <Route path="profile" element={<ProfilePage />} />
-                  <Route path="profile/student/:studentId" element={<StudentProfile />} />
-                  <Route path="students/:studentId" element={<StudentProfile />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="students/:userId" element={<Profile />} />
                   <Route path="student-attendance" element={<StudentAttendance />} />
                   <Route path="alumni" element={<AlumniDirectory />} />
                   <Route path="alumni/profile" element={<AlumniProfile />} />

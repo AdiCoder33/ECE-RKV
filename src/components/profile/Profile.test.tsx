@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, waitFor, screen, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
 expect.extend(matchers);
@@ -43,7 +44,11 @@ describe('Profile image upload', () => {
       });
     global.fetch = mockFetch as unknown as typeof fetch;
 
-    const { container } = render(<Profile />);
+    const { container } = render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
 
@@ -96,7 +101,11 @@ describe('Student profile endpoints', () => {
       });
     global.fetch = mockFetch as unknown as typeof fetch;
 
-    const { container } = render(<Profile />);
+    const { container } = render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
     expect(mockFetch.mock.calls[0][0]).toContain('/students/2/profile');

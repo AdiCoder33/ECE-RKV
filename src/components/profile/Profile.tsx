@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  User, 
+import {
+  User,
   Edit,
   Save,
   Camera,
@@ -21,10 +21,19 @@ import {
   GraduationCap,
   Building
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
   const { user } = useAuth();
+  const { userId, studentId } = useParams();
+  const viewedId = studentId || userId || user?.id;
+  const viewedRole = studentId || userId
+    ? 'student'
+    : user?.role === 'student'
+      ? 'student'
+      : 'professor';
+  const canEdit = viewedId === user?.id || ['admin', 'hod', 'professor'].includes(user?.role || '');
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -57,27 +66,27 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user?.id) return;
+      if (!viewedId) return;
       try {
         setLoading(true);
         setError(null);
         const token = localStorage.getItem('token');
         let res: Response;
-        if (user.role === 'student') {
-          res = await fetch(`${apiBase}/students/${user.id}/profile`, {
+        if (viewedRole === 'student') {
+          res = await fetch(`${apiBase}/students/${viewedId}/profile`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
           if (!res.ok) {
-            res = await fetch(`${apiBase}/students/${user.id}`, {
+            res = await fetch(`${apiBase}/students/${viewedId}`, {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
             });
           }
         } else {
-          res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+          res = await fetch(`${apiBase}/professors/${viewedId}/profile`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -98,7 +107,7 @@ const Profile = () => {
         }));
         setDepartment(data.department || '');
         setProfileImage(data.profileImage || '');
-        if (user.role === 'student') {
+        if (viewedRole === 'student') {
           setAcademicData({
             year: data.year || '',
             semester: data.semester || '',
@@ -117,14 +126,14 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, [user?.id, apiBase]);
+  }, [viewedId, viewedRole, apiBase]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
-    if (!user?.id) return;
+    if (!viewedId || !canEdit) return;
     try {
       setError(null);
       const token = localStorage.getItem('token');
@@ -137,16 +146,16 @@ const Profile = () => {
         address: formData.address,
         bloodGroup: formData.bloodGroup,
       };
-      if (user.role === 'student') {
+      if (viewedRole === 'student') {
         payload.rollNumber = academicData.rollNumber;
         payload.year = academicData.year;
         payload.semester = academicData.semester;
         payload.section = academicData.section;
       }
       const endpoint =
-        user.role === 'student'
-          ? `${apiBase}/students/${user.id}/profile`
-          : `${apiBase}/professors/${user.id}/profile`;
+        viewedRole === 'student'
+          ? `${apiBase}/students/${viewedId}/profile`
+          : `${apiBase}/professors/${viewedId}/profile`;
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: {
@@ -163,17 +172,19 @@ const Profile = () => {
       if (data.profileImage !== undefined) {
         setProfileImage(data.profileImage);
       }
-      if (user.role === 'student') {
+      if (viewedRole === 'student') {
         setAcademicData((prev) => ({ ...prev, ...data }));
       }
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser);
-          const updatedUser = { ...parsed, ...data };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        } catch {
-          // ignore invalid stored user
+      if (viewedId === user?.id) {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            const updatedUser = { ...parsed, ...data };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } catch {
+            // ignore invalid stored user
+          }
         }
       }
       setIsEditing(false);
@@ -184,7 +195,7 @@ const Profile = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user?.id) return;
+    if (!file || !viewedId || !canEdit) return;
     try {
       setError(null);
       const token = localStorage.getItem('token');
@@ -203,9 +214,9 @@ const Profile = () => {
       const result = await res.json();
       if (result.url) {
         const endpoint =
-          user.role === 'student'
-            ? `${apiBase}/students/${user.id}/profile`
-            : `${apiBase}/professors/${user.id}/profile`;
+          viewedRole === 'student'
+            ? `${apiBase}/students/${viewedId}/profile`
+            : `${apiBase}/professors/${viewedId}/profile`;
         const updateRes = await fetch(endpoint, {
           method: 'PUT',
           headers: {
@@ -219,17 +230,19 @@ const Profile = () => {
         }
         const updated = await updateRes.json();
         setProfileImage(updated.profileImage || result.url);
-        if (user.role === 'student') {
+        if (viewedRole === 'student') {
           setAcademicData((prev) => ({ ...prev, ...updated }));
         }
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const parsed = JSON.parse(storedUser);
-            const updatedUser = { ...parsed, ...updated };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-          } catch {
-            // ignore invalid stored user
+        if (viewedId === user?.id) {
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            try {
+              const parsed = JSON.parse(storedUser);
+              const updatedUser = { ...parsed, ...updated };
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+            } catch {
+              // ignore invalid stored user
+            }
           }
         }
       }
@@ -289,22 +302,24 @@ const Profile = () => {
           <h1 className="text-3xl font-bold">Profile</h1>
           <p className="text-muted-foreground">Manage your personal information and preferences</p>
         </div>
-        <Button 
-          onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-          variant={isEditing ? "default" : "outline"}
-        >
-          {isEditing ? (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </>
-          ) : (
-            <>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Profile
-            </>
-          )}
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+            variant={isEditing ? 'default' : 'outline'}
+          >
+            {isEditing ? (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </>
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -325,13 +340,15 @@ const Profile = () => {
                   </span>
                 </div>
               )}
-              <Button
-                size="sm"
-                className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Camera className="h-4 w-4" />
-              </Button>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -342,14 +359,14 @@ const Profile = () => {
             </div>
             <CardTitle className="text-xl">{formData.name}</CardTitle>
             <div className="flex justify-center">
-              <Badge className={getRoleBadgeColor(user?.role || '')}>
-                {user?.role?.toUpperCase()}
+              <Badge className={getRoleBadgeColor(viewedRole)}>
+                {viewedRole.toUpperCase()}
               </Badge>
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
-            {user?.role === 'student' && (
+            {viewedRole === 'student' && (
               <>
                 <div className="flex items-center gap-3">
                   <GraduationCap className="h-5 w-5 text-muted-foreground" />
@@ -391,7 +408,7 @@ const Profile = () => {
           <Tabs defaultValue="personal" className="space-y-4">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
-              {user?.role === 'student' && <TabsTrigger value="academic">Academic</TabsTrigger>}
+              {viewedRole === 'student' && <TabsTrigger value="academic">Academic</TabsTrigger>}
               <TabsTrigger value="achievements">Achievements</TabsTrigger>
             </TabsList>
 
@@ -462,7 +479,7 @@ const Profile = () => {
             </Card>
           </TabsContent>
 
-            {user?.role === 'student' && (
+            {viewedRole === 'student' && (
               <TabsContent value="academic">
                 <Card>
                   <CardHeader>
@@ -535,10 +552,12 @@ const Profile = () => {
                     ))}
                   </div>
                   
-                  <Button variant="outline" className="w-full mt-4">
-                    <Award className="h-4 w-4 mr-2" />
-                    Add Achievement
-                  </Button>
+                  {canEdit && (
+                    <Button variant="outline" className="w-full mt-4">
+                      <Award className="h-4 w-4 mr-2" />
+                      Add Achievement
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
