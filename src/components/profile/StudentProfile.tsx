@@ -20,6 +20,7 @@ import { useParams } from 'react-router-dom';
 const StudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const { user } = useAuth();
+  const id = studentId ?? user?.id;
   const [student, setStudent] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +30,12 @@ const StudentProfile = () => {
 
   useEffect(() => {
     const fetchStudent = async () => {
-      if (!studentId) return;
+      if (!id) return;
       try {
         setLoading(true);
         setError(null);
         const token = localStorage.getItem('token');
-        const res = await fetch(`${apiBase}/students/${studentId}`, {
+        const res = await fetch(`${apiBase}/students/${id}`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           }
@@ -58,14 +59,14 @@ const StudentProfile = () => {
       }
     };
     fetchStudent();
-  }, [studentId, apiBase]);
+  }, [id, apiBase]);
 
   useEffect(() => {
     const fetchResume = async () => {
-      if (!studentId) return;
+      if (!id) return;
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${apiBase}/resumes/${studentId}`, {
+        const res = await fetch(`${apiBase}/resumes/${id}`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           }
@@ -83,7 +84,7 @@ const StudentProfile = () => {
       }
     };
     fetchResume();
-  }, [studentId, apiBase]);
+  }, [id, apiBase]);
 
   if (loading) {
     return <div className="text-center">Loading...</div>;
