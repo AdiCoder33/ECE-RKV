@@ -136,6 +136,47 @@ router.get('/', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get classmates
+router.get('/classmates', authenticateToken, async (req, res, next) => {
+  try {
+    const { year, semester, section } = req.query;
+
+    if (!year || !semester || !section) {
+      return res.status(400).json({ error: 'Year, semester, and section are required' });
+    }
+
+    const result = await executeQuery(`
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.roll_number,
+        u.phone,
+        u.profile_image,
+        AVG(CASE WHEN a.present = 1 THEN 1.0 ELSE 0.0 END) * 100 as attendance_percentage
+      FROM users u
+      LEFT JOIN attendance a ON u.id = a.student_id
+      WHERE u.role = ? AND u.year = ? AND u.semester = ? AND u.section = ?
+      GROUP BY u.id, u.name, u.email, u.roll_number, u.phone, u.profile_image
+      ORDER BY u.roll_number
+    `, ['student', year, semester, section]);
+
+    const classmates = result.recordset || [];
+    res.json(classmates.map(student => ({
+      id: student.id.toString(),
+      name: student.name,
+      email: student.email,
+      rollNumber: student.roll_number,
+      phone: student.phone,
+      profileImage: student.profile_image,
+      attendancePercentage: Math.round(student.attendance_percentage || 0)
+    })));
+  } catch (error) {
+    console.error('Classmates fetch error:', error);
+    next(error);
+  }
+});
+
 router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
   try {
     const studentId = parseInt(req.params.id, 10);
@@ -308,47 +349,6 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
     res.json(formattedSubjects);
   } catch (error) {
     console.error('Student subjects fetch error:', error);
-    next(error);
-  }
-});
-
-// Get classmates
-router.get('/classmates', authenticateToken, async (req, res, next) => {
-  try {
-    const { year, semester, section } = req.query;
-
-    if (!year || !semester || !section) {
-      return res.status(400).json({ error: 'Year, semester, and section are required' });
-    }
-
-    const result = await executeQuery(`
-      SELECT
-        u.id,
-        u.name,
-        u.email,
-        u.roll_number,
-        u.phone,
-        u.profile_image,
-        AVG(CASE WHEN a.present = 1 THEN 1.0 ELSE 0.0 END) * 100 as attendance_percentage
-      FROM users u
-      LEFT JOIN attendance a ON u.id = a.student_id
-      WHERE u.role = ? AND u.year = ? AND u.semester = ? AND u.section = ?
-      GROUP BY u.id, u.name, u.email, u.roll_number, u.phone, u.profile_image
-      ORDER BY u.roll_number
-    `, ['student', year, semester, section]);
-    
-    const classmates = result.recordset || [];
-    res.json(classmates.map(student => ({
-      id: student.id.toString(),
-      name: student.name,
-      email: student.email,
-      rollNumber: student.roll_number,
-      phone: student.phone,
-      profileImage: student.profile_image,
-      attendancePercentage: Math.round(student.attendance_percentage || 0)
-    })));
-  } catch (error) {
-    console.error('Classmates fetch error:', error);
     next(error);
   }
 });
