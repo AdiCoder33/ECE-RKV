@@ -136,56 +136,6 @@ router.get('/', authenticateToken, async (req, res, next) => {
   }
 });
 
-// Get a single student by ID
-router.get('/:id(\\d+)', authenticateToken, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const query = `
-      SELECT u.*,
-             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
-             ar.cgpa
-      FROM users u
-      LEFT JOIN (
-        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
-        FROM attendance
-        GROUP BY student_id
-      ) att ON u.id = att.student_id
-      LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
-      WHERE u.id = ? AND u.role = 'student'
-    `;
-
-    const result = await executeQuery(query, [id]);
-    const student = result.recordset[0];
-
-    if (!student) {
-      return res.status(404).json({ error: 'Student not found' });
-    }
-
-    res.json({
-      id: student.id.toString(),
-      name: student.name,
-      email: student.email,
-      rollNumber: student.roll_number,
-      phone: student.phone,
-      year: student.year,
-      semester: student.semester,
-      section: student.section,
-      profileImage: student.profile_image,
-      dateOfBirth: student.date_of_birth,
-      address: student.address,
-      parentContact: student.parent_contact,
-      bloodGroup: student.blood_group,
-      admissionYear: student.admission_year,
-      attendancePercentage: Math.round(student.attendance_percentage || 0),
-      cgpa: student.cgpa || 0,
-    });
-  } catch (error) {
-    console.error('Student fetch error:', error);
-    next(error);
-  }
-});
-
 router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
   try {
     const studentId = parseInt(req.params.id, 10);
@@ -410,10 +360,60 @@ router.get('/alumni', authenticateToken, async (req, res, next) => {
       'SELECT id, name, email, department, graduation_year, phone, linkedin_profile, current_company, current_position FROM users WHERE role = ? ORDER BY graduation_year DESC',
       ['alumni']
     );
-    
+
     res.json(result.recordset || []);
   } catch (error) {
     console.error('Alumni fetch error:', error);
+    next(error);
+  }
+});
+
+// Get a single student by ID
+router.get('/:id(\\d+)', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const query = `
+      SELECT u.*,
+             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             ar.cgpa
+      FROM users u
+      LEFT JOIN (
+        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
+        FROM attendance
+        GROUP BY student_id
+      ) att ON u.id = att.student_id
+      LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
+      WHERE u.id = ? AND u.role = 'student'
+    `;
+
+    const result = await executeQuery(query, [id]);
+    const student = result.recordset[0];
+
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    res.json({
+      id: student.id.toString(),
+      name: student.name,
+      email: student.email,
+      rollNumber: student.roll_number,
+      phone: student.phone,
+      year: student.year,
+      semester: student.semester,
+      section: student.section,
+      profileImage: student.profile_image,
+      dateOfBirth: student.date_of_birth,
+      address: student.address,
+      parentContact: student.parent_contact,
+      bloodGroup: student.blood_group,
+      admissionYear: student.admission_year,
+      attendancePercentage: Math.round(student.attendance_percentage || 0),
+      cgpa: student.cgpa || 0,
+    });
+  } catch (error) {
+    console.error('Student fetch error:', error);
     next(error);
   }
 });
