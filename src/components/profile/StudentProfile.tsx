@@ -4,80 +4,72 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  GraduationCap, 
-  Award,
-  BookOpen,
-  TrendingUp,
-  Clock,
-  FileText
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  GraduationCap
 } from 'lucide-react';
 import ResumeBuilder from './ResumeBuilder';
 import { useAuth } from '@/contexts/AuthContext';
 import ResumeView from './ResumeView';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useParams } from 'react-router-dom';
 
-interface StudentProfileProps {
-  studentId: string;
-}
-
-const StudentProfile = ({ studentId }: StudentProfileProps) => {
+const StudentProfile = () => {
+  const { studentId } = useParams<{ studentId: string }>();
   const { user } = useAuth();
-  // Mock data - replace with actual API call
-  const student = {
-    id: studentId,
-    name: 'Aarav Patel',
-    email: 'aarav.patel@student.edu',
-    rollNumber: '20ECE001',
-    phone: '+91 9876543210',
-    year: 3,
-    section: 'A',
-    admissionYear: 2020,
-    currentGPA: 8.4,
-    attendance: 87,
-    parentContact: '+91 9876543220',
-    address: '123 Main Street, Mumbai, Maharashtra'
-  };
-
-  const semesterRecords = [
-    { semester: 'Year 1 Sem 1', sgpa: 8.2, cgpa: 8.2 },
-    { semester: 'Year 1 Sem 2', sgpa: 8.0, cgpa: 8.1 },
-    { semester: 'Year 2 Sem 1', sgpa: 8.5, cgpa: 8.2 },
-    { semester: 'Year 2 Sem 2', sgpa: 8.3, cgpa: 8.25 },
-    { semester: 'Year 3 Sem 1', sgpa: 8.6, cgpa: 8.33 },
-    { semester: 'Year 3 Sem 2', sgpa: 8.4, cgpa: 8.36 },
-    { semester: 'Year 4 Sem 1', sgpa: 8.7, cgpa: 8.4 },
-    { semester: 'Year 4 Sem 2', sgpa: 8.5, cgpa: 8.45 }
-  ];
-
-  const currentSubjects = [
-    { name: 'Digital Signal Processing', marks: 92, attendance: 95, credits: 4 },
-    { name: 'VLSI Design', marks: 88, attendance: 82, credits: 3 },
-    { name: 'Computer Networks', marks: 90, attendance: 91, credits: 4 },
-    { name: 'Microprocessors', marks: 85, attendance: 89, credits: 3 },
-    { name: 'Control Systems', marks: 87, attendance: 85, credits: 4 }
-  ];
-
-  const attendanceHistory = [
-    { month: 'Aug', attendance: 92 },
-    { month: 'Sep', attendance: 88 },
-    { month: 'Oct', attendance: 85 },
-    { month: 'Nov', attendance: 89 },
-    { month: 'Dec', attendance: 87 }
-  ];
-
+  const [student, setStudent] = useState<Record<string, any> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [resume, setResume] = useState<Record<string, unknown> | null>(null);
   const [loadingResume, setLoadingResume] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   useEffect(() => {
-    const fetchResume = async () => {
+    const fetchStudent = async () => {
+      if (!studentId) return;
       try {
-        const res = await fetch(`${apiBase}/resumes/${studentId}`);
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/students/${studentId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+        if (!res.ok) {
+          if (res.status === 404) {
+            setStudent(null);
+            setError('Student not found');
+          } else {
+            throw new Error('Failed to fetch student');
+          }
+        } else {
+          const data = await res.json();
+          setStudent(data);
+        }
+      } catch (err) {
+        setError((err as Error).message);
+        setStudent(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStudent();
+  }, [studentId, apiBase]);
+
+  useEffect(() => {
+    const fetchResume = async () => {
+      if (!studentId) return;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/resumes/${studentId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
         if (res.ok) {
           const data: Record<string, unknown> = await res.json();
           setResume(data);
@@ -91,7 +83,19 @@ const StudentProfile = ({ studentId }: StudentProfileProps) => {
       }
     };
     fetchResume();
-  }, [studentId]);
+  }, [studentId, apiBase]);
+
+  if (loading) {
+    return <div className="text-center">Loading...</div>;
+  }
+
+  if (error || !student) {
+    return <div className="text-center text-muted-foreground">{error || 'Student not found'}</div>;
+  }
+
+  const currentSubjects = student.currentSubjects || [];
+  const semesterRecords = student.semesterRecords || [];
+  const attendanceHistory = student.attendanceHistory || [];
 
   return (
     <div className="space-y-6">

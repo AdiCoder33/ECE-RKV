@@ -75,8 +75,8 @@ function App() {
                   <Route path="analytics" element={<Analytics />} />
                   <Route path="announcements" element={<Announcements />} />
                   <Route path="profile" element={<Profile />} />
-                  <Route path="profile/student/:studentId" element={<StudentProfile studentId="" />} />
-                  <Route path="students/:studentId" element={<StudentProfile studentId="" />} />
+                  <Route path="profile/student/:studentId" element={<StudentProfile />} />
+                  <Route path="students/:studentId" element={<StudentProfile />} />
                   <Route path="student-attendance" element={<StudentAttendance />} />
                   <Route path="alumni" element={<AlumniDirectory />} />
                   <Route path="alumni/profile" element={<AlumniProfile />} />
