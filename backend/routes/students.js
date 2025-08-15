@@ -186,6 +186,141 @@ router.get('/:id', authenticateToken, async (req, res, next) => {
   }
 });
 
+router.put('/:id/profile', authenticateToken, async (req, res, next) => {
+  try {
+    const studentId = parseInt(req.params.id, 10);
+    if (req.user.role !== 'admin' && req.user.id !== studentId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const {
+      phone,
+      profileImage,
+      name,
+      email,
+      dateOfBirth,
+      address,
+      bloodGroup,
+      rollNumber,
+      year,
+      semester,
+      section,
+    } = req.body;
+
+    const fields = [];
+    const params = [];
+    if (phone !== undefined) {
+      fields.push('phone = ?');
+      params.push(phone);
+    }
+    if (profileImage !== undefined) {
+      fields.push('profile_image = ?');
+      params.push(profileImage);
+    }
+    if (name !== undefined) {
+      fields.push('name = ?');
+      params.push(name);
+    }
+    if (email !== undefined) {
+      fields.push('email = ?');
+      params.push(email);
+    }
+    if (dateOfBirth !== undefined) {
+      fields.push('date_of_birth = ?');
+      params.push(dateOfBirth);
+    }
+    if (address !== undefined) {
+      fields.push('address = ?');
+      params.push(address);
+    }
+    if (bloodGroup !== undefined) {
+      fields.push('blood_group = ?');
+      params.push(bloodGroup);
+    }
+    if (rollNumber !== undefined) {
+      fields.push('roll_number = ?');
+      params.push(rollNumber);
+    }
+    if (year !== undefined) {
+      fields.push('year = ?');
+      params.push(year);
+    }
+    if (semester !== undefined) {
+      fields.push('semester = ?');
+      params.push(semester);
+    }
+    if (section !== undefined) {
+      fields.push('section = ?');
+      params.push(section);
+    }
+    if (!fields.length)
+      return res.status(400).json({ error: 'No fields to update' });
+    params.push(studentId);
+    await executeQuery(
+      `UPDATE users SET ${fields.join(', ')}, updated_at = GETDATE() WHERE id = ? AND role = 'student'`,
+      params
+    );
+    const { recordset } = await executeQuery(
+      `SELECT id,name,email,phone,profile_image,date_of_birth,address,blood_group,roll_number,year,semester,section
+       FROM users WHERE id = ? AND role = 'student'`,
+      [studentId]
+    );
+    const s = recordset[0];
+    res.json({
+      id: s.id.toString(),
+      name: s.name,
+      email: s.email,
+      phone: s.phone,
+      profileImage: s.profile_image,
+      dateOfBirth: s.date_of_birth,
+      address: s.address,
+      bloodGroup: s.blood_group,
+      rollNumber: s.roll_number,
+      year: s.year,
+      semester: s.semester,
+      section: s.section,
+    });
+  } catch (error) {
+    console.error('Student profile update error:', error);
+    next(error);
+  }
+});
+
+router.get('/:id/profile', authenticateToken, async (req, res, next) => {
+  try {
+    const studentId = parseInt(req.params.id, 10);
+    if (req.user.role !== 'admin' && req.user.id !== studentId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const { recordset } = await executeQuery(
+      `SELECT id,name,email,phone,profile_image,date_of_birth,address,blood_group,roll_number,year,semester,section
+       FROM users WHERE id = ? AND role = 'student'`,
+      [studentId]
+    );
+    const s = recordset[0];
+    if (!s) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    res.json({
+      id: s.id.toString(),
+      name: s.name,
+      email: s.email,
+      phone: s.phone,
+      profileImage: s.profile_image,
+      dateOfBirth: s.date_of_birth,
+      address: s.address,
+      bloodGroup: s.blood_group,
+      rollNumber: s.roll_number,
+      year: s.year,
+      semester: s.semester,
+      section: s.section,
+    });
+  } catch (error) {
+    console.error('Student profile fetch error:', error);
+    next(error);
+  }
+});
+
 // Get student's subjects
 router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => {
   try {
