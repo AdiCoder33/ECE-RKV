@@ -40,6 +40,20 @@ const Profile = () => {
     address: '123 Main Street, City, State - 560001',
     bloodGroup: 'O+'
   });
+  const [academicData, setAcademicData] = useState({
+    year: '',
+    semester: '',
+    section: '',
+    rollNumber: '',
+    cgpa: 0,
+    attendance: 0,
+    subjects: [] as {
+      name: string;
+      code: string;
+      grade: string;
+      credits: number;
+    }[],
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -48,26 +62,53 @@ const Profile = () => {
         setLoading(true);
         setError(null);
         const token = localStorage.getItem('token');
-        const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        let res: Response;
+        if (user.role === 'student') {
+          res = await fetch(`${apiBase}/students/${user.id}/profile`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (!res.ok) {
+            res = await fetch(`${apiBase}/students/${user.id}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
           }
-        });
+        } else {
+          res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
         if (!res.ok) {
           throw new Error('Failed to load profile');
         }
         const data = await res.json();
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           name: data.name || '',
           email: data.email || '',
           phone: data.phone || '',
           dateOfBirth: data.dateOfBirth || '',
           address: data.address || '',
-          bloodGroup: data.bloodGroup || ''
+          bloodGroup: data.bloodGroup || '',
         }));
         setDepartment(data.department || '');
         setProfileImage(data.profileImage || '');
+        if (user.role === 'student') {
+          setAcademicData({
+            year: data.year || '',
+            semester: data.semester || '',
+            section: data.section || '',
+            rollNumber: data.rollNumber || '',
+            cgpa: data.cgpa || 0,
+            attendance: data.attendance || 0,
+            subjects: data.subjects || [],
+          });
+        }
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -94,9 +135,19 @@ const Profile = () => {
         email: formData.email,
         dateOfBirth: formData.dateOfBirth,
         address: formData.address,
-        bloodGroup: formData.bloodGroup
+        bloodGroup: formData.bloodGroup,
       };
-      const res = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+      if (user.role === 'student') {
+        payload.rollNumber = academicData.rollNumber;
+        payload.year = academicData.year;
+        payload.semester = academicData.semester;
+        payload.section = academicData.section;
+      }
+      const endpoint =
+        user.role === 'student'
+          ? `${apiBase}/students/${user.id}/profile`
+          : `${apiBase}/professors/${user.id}/profile`;
+      const res = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -108,9 +159,12 @@ const Profile = () => {
         throw new Error('Failed to update profile');
       }
       const data = await res.json();
-      setFormData(prev => ({ ...prev, ...data }));
+      setFormData((prev) => ({ ...prev, ...data }));
       if (data.profileImage !== undefined) {
         setProfileImage(data.profileImage);
+      }
+      if (user.role === 'student') {
+        setAcademicData((prev) => ({ ...prev, ...data }));
       }
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -148,7 +202,11 @@ const Profile = () => {
       }
       const result = await res.json();
       if (result.url) {
-        const updateRes = await fetch(`${apiBase}/professors/${user.id}/profile`, {
+        const endpoint =
+          user.role === 'student'
+            ? `${apiBase}/students/${user.id}/profile`
+            : `${apiBase}/professors/${user.id}/profile`;
+        const updateRes = await fetch(endpoint, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -161,6 +219,9 @@ const Profile = () => {
         }
         const updated = await updateRes.json();
         setProfileImage(updated.profileImage || result.url);
+        if (user.role === 'student') {
+          setAcademicData((prev) => ({ ...prev, ...updated }));
+        }
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           try {
@@ -186,21 +247,6 @@ const Profile = () => {
       case 'alumni': return 'bg-orange-600 text-white';
       default: return 'bg-gray-600 text-white';
     }
-  };
-
-  // Mock academic data
-  const academicData = {
-    currentYear: user?.year || 3,
-    section: user?.section || 'A',
-    rollNumber: user?.rollNumber || '21ECE045',
-    cgpa: 8.45,
-    attendance: 87,
-    subjects: [
-      { name: 'Digital Signal Processing', code: 'ECE301', grade: 'A', credits: 4 },
-      { name: 'VLSI Design', code: 'ECE302', grade: 'A+', credits: 3 },
-      { name: 'Microprocessors', code: 'ECE303', grade: 'B+', credits: 4 },
-      { name: 'Control Systems', code: 'ECE304', grade: 'A', credits: 3 }
-    ]
   };
 
   const achievements = [
@@ -309,7 +355,7 @@ const Profile = () => {
                   <GraduationCap className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Year & Section</p>
-                    <p className="text-sm text-muted-foreground">{academicData.currentYear}-{academicData.section}</p>
+                    <p className="text-sm text-muted-foreground">{academicData.year}-{academicData.section}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
