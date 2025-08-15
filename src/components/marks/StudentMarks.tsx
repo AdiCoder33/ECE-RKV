@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +12,8 @@ import {
   Target
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Mark {
   id: string;
@@ -24,31 +26,105 @@ interface Mark {
 }
 
 const StudentMarks = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('current');
+  const [marks, setMarks] = useState<Mark[]>([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const token = localStorage.getItem('token');
 
-  // Mock data - replace with actual API calls
-  const marks: Mark[] = [
-    { id: '1', subject: 'Digital Signal Processing', examType: 'Mid Term 1', marks: 42, maxMarks: 50, date: '2024-02-15', grade: 'A' },
-    { id: '2', subject: 'Digital Signal Processing', examType: 'Internal Assessment 1', marks: 18, maxMarks: 20, date: '2024-02-28', grade: 'A+' },
-    { id: '3', subject: 'VLSI Design', examType: 'Mid Term 1', marks: 38, maxMarks: 50, date: '2024-02-16', grade: 'B+' },
-    { id: '4', subject: 'VLSI Design', examType: 'Assignment', marks: 23, maxMarks: 25, date: '2024-03-01', grade: 'A+' },
-    { id: '5', subject: 'Communication Systems', examType: 'Mid Term 1', marks: 45, maxMarks: 50, date: '2024-02-17', grade: 'A+' },
-    { id: '6', subject: 'Communication Systems', examType: 'Quiz', marks: 8, maxMarks: 10, date: '2024-02-25', grade: 'A' },
-    { id: '7', subject: 'Microprocessors', examType: 'Mid Term 1', marks: 40, maxMarks: 50, date: '2024-02-18', grade: 'A' },
-    { id: '8', subject: 'Microprocessors', examType: 'Internal Assessment 1', marks: 17, maxMarks: 20, date: '2024-03-02', grade: 'A' }
-  ];
+  useEffect(() => {
+    const fetchMarks = async () => {
+      if (typeof user?.id !== 'number' || !token) {
+        console.warn('Skipping marks fetch: missing user ID or auth token');
+        return;
+      }
 
-  const subjects = [
-    { value: 'all', label: 'All Subjects' },
-    { value: 'Digital Signal Processing', label: 'Digital Signal Processing' },
-    { value: 'VLSI Design', label: 'VLSI Design' },
-    { value: 'Communication Systems', label: 'Communication Systems' },
-    { value: 'Microprocessors', label: 'Microprocessors' }
-  ];
+      try {
+        const response = await fetch(`${apiBase}/marks/student/${user.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
-  const filteredMarks = selectedSubject === 'all' 
-    ? marks 
+        if (!response.ok) {
+          const text = await response.text();
+          toast({
+            variant: 'destructive',
+            title: 'Error fetching marks',
+            description: text || 'Failed to fetch marks'
+          });
+          setMarks([]);
+          setSubjects([]);
+          return;
+        }
+
+        const cloned = response.clone();
+
+        try {
+          const data = await response.json();
+          const mapped: Mark[] = data.map((row: any) => {
+            const percent = (row.marks / row.max_marks) * 100;
+            const grade =
+              percent >= 90
+                ? 'A+'
+                : percent >= 80
+                ? 'A'
+                : percent >= 70
+                ? 'B+'
+                : percent >= 60
+                ? 'B'
+                : 'C';
+            return {
+              id: String(row.id),
+              subject: row.subject_name,
+              examType: row.type,
+              marks: row.marks,
+              maxMarks: row.max_marks,
+              date: row.date,
+              grade
+            };
+          });
+
+          setMarks(mapped);
+          const uniqueSubjects = Array.from(new Set(mapped.map(m => m.subject))).map(sub => ({
+            value: sub,
+            label: sub
+          }));
+          setSubjects([{ value: 'all', label: 'All Subjects' }, ...uniqueSubjects]);
+        } catch (parseError) {
+          const rawText = await cloned.text();
+          console.error('Error parsing marks response:', rawText, parseError);
+          toast({
+            variant: 'destructive',
+            title: 'Error fetching marks',
+            description: 'Invalid response format'
+          });
+          setMarks([]);
+          setSubjects([]);
+        }
+      } catch (error) {
+        console.error('Error fetching marks:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error fetching marks',
+          description: error instanceof Error ? error.message : 'An unexpected error occurred'
+        });
+        setMarks([]);
+        setSubjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMarks();
+  }, [user, token, apiBase, toast]);
+
+  const filteredMarks = selectedSubject === 'all'
+    ? marks
     : marks.filter(mark => mark.subject === selectedSubject);
 
   // Calculate statistics
@@ -74,13 +150,13 @@ const StudentMarks = () => {
     maxMarks: data.maxTotal
   }));
 
-  // Performance trend (mock data)
-  const performanceTrend = [
-    { month: 'Jan', percentage: 78 },
-    { month: 'Feb', percentage: 82 },
-    { month: 'Mar', percentage: 85 },
-    { month: 'Apr', percentage: 88 }
-  ];
+  const performanceTrend = marks
+    .slice()
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map(m => ({
+      month: new Date(m.date).toLocaleString('default', { month: 'short' }),
+      percentage: Number(((m.marks / m.maxMarks) * 100).toFixed(1))
+    }));
 
   const getGradeColor = (grade: string) => {
     switch (grade) {
@@ -101,6 +177,25 @@ const StudentMarks = () => {
   };
 
   const performance = getPerformanceLevel(overallPercentage);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 p-4 md:p-0">
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="border-border">
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  <div className="h-6 bg-muted rounded animate-pulse"></div>
+                  <div className="h-4 bg-muted rounded animate-pulse w-2/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
