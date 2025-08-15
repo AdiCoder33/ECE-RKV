@@ -137,7 +137,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
 });
 
 // Get a single student by ID
-router.get('/:id', authenticateToken, async (req, res, next) => {
+router.get('/:id(\\d+)', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -186,7 +186,7 @@ router.get('/:id', authenticateToken, async (req, res, next) => {
   }
 });
 
-router.put('/:id/profile', authenticateToken, async (req, res, next) => {
+router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
   try {
     const studentId = parseInt(req.params.id, 10);
     if (req.user.role !== 'admin' && req.user.id !== studentId) {
@@ -286,7 +286,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
   }
 });
 
-router.get('/:id/profile', authenticateToken, async (req, res, next) => {
+router.get('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
   try {
     const studentId = parseInt(req.params.id, 10);
     if (req.user.role !== 'admin' && req.user.id !== studentId) {
@@ -322,7 +322,7 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
 });
 
 // Get student's subjects
-router.get('/:studentId/subjects', authenticateToken, async (req, res, next) => {
+router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, next) => {
   try {
     const { studentId } = req.params;
     
