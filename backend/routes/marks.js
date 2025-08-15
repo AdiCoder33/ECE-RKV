@@ -7,28 +7,43 @@ const router = express.Router();
 router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
   try {
     const { studentId } = req.params;
-    const { subjectId, type } = req.query;
-    
+    const { subjectId, type, year, semester } = req.query;
+
     let query = `
       SELECT im.*, s.name as subject_name, s.code as subject_code
-      FROM InternalMarks im 
-      LEFT JOIN Subjects s ON im.subject_id = s.id 
+      FROM InternalMarks im
+      INNER JOIN Subjects s ON im.subject_id = s.id
+      INNER JOIN Users u ON im.student_id = u.id
       WHERE im.student_id = ?
     `;
     const params = [studentId];
-    
+
+    if (year) {
+      query += ' AND s.year = ?';
+      params.push(year);
+    } else {
+      query += ' AND s.year = u.year';
+    }
+
+    if (semester) {
+      query += ' AND s.semester = ?';
+      params.push(semester);
+    } else {
+      query += ' AND s.semester = u.semester';
+    }
+
     if (subjectId) {
       query += ' AND im.subject_id = ?';
       params.push(subjectId);
     }
-    
+
     if (type) {
       query += ' AND im.type = ?';
       params.push(type);
     }
-    
+
     query += ' ORDER BY im.date DESC';
-    
+
     const result = await executeQuery(query, params);
     res.json(result.recordset);
   } catch (error) {
