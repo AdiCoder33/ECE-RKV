@@ -505,6 +505,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const socket = io(socketUrl, { auth: { token } });
 
     socket.on('group-message', (message: ChatMessage) => {
+      if (message.senderId === user?.id) return; // skip echoes
       const msgWithStatus = { ...message, status: message.status ?? 'sent' };
       setMessages(prev =>
         prev.some(m => m.id === msgWithStatus.id)
@@ -514,6 +515,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     socket.on('private-message', (message: PrivateMessage) => {
+      if (message.sender_id === user?.id) return; // skip echoes
       const msgWithStatus = { ...message, status: message.status ?? 'sent' };
       setPrivateMessages(prev => mergePrivateMessages(prev, [msgWithStatus]));
     });
