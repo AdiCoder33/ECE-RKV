@@ -82,13 +82,21 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     }
 
     const insertQuery = `
+      DECLARE @Inserted TABLE (
+        id INT, group_id INT, sender_id INT,
+        content NVARCHAR(MAX), timestamp DATETIME, attachments NVARCHAR(MAX)
+      );
+
       INSERT INTO chat_messages (group_id, sender_id, content, attachments)
-      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id, INSERTED.content,
-             INSERTED.timestamp, INSERTED.attachments,
-             (SELECT name FROM users WHERE id = INSERTED.sender_id) AS sender_name,
-             (SELECT role FROM users WHERE id = INSERTED.sender_id) AS sender_role,
-             (SELECT profile_image FROM users WHERE id = INSERTED.sender_id) AS sender_profileImage
-      VALUES (?, ?, ?, ?)
+      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
+             INSERTED.content, INSERTED.timestamp, INSERTED.attachments
+      INTO @Inserted
+      VALUES (?, ?, ?, ?);
+
+      SELECT i.*, u.name AS sender_name, u.role AS sender_role,
+             u.profile_image AS sender_profileImage
+      FROM @Inserted i
+      JOIN users u ON u.id = i.sender_id;
     `;
     const { recordset } = await executeQuery(insertQuery, [
       groupId,
