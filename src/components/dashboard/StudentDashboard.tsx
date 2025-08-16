@@ -8,20 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   BookOpen,
   Calendar,
-  TrendingUp,
   Award,
-  Clock,
   Target,
-  FileText,
-  CheckCircle,
-  UserCheck,
   Users,
-  GraduationCap,
-  MessageCircle,
   MapPin,
   User
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -148,52 +141,6 @@ const StudentDashboard = () => {
 
     fetchStudentData();
   }, [user?.id, user?.year, user?.semester, user?.section, apiBase, token, toast]);
-
-  const upcomingAssignments = [
-    {
-      id: 1,
-      subject: 'Data Structures',
-      title: 'Binary Tree Implementation',
-      dueDate: '2024-01-15',
-      status: 'pending',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      subject: 'Database Systems',
-      title: 'SQL Query Optimization',
-      dueDate: '2024-01-18',
-      status: 'in-progress',
-      priority: 'medium'
-    },
-    {
-      id: 3,
-      subject: 'Software Engineering',
-      title: 'Project Documentation',
-      dueDate: '2024-01-20',
-      status: 'pending',
-      priority: 'low'
-    }
-  ];
-
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-600 text-white';
-      case 'medium': return 'bg-yellow-600 text-white';
-      case 'low': return 'bg-green-600 text-white';
-      default: return 'bg-gray-600 text-white';
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-600 text-white';
-      case 'in-progress': return 'bg-blue-600 text-white';
-      case 'pending': return 'bg-gray-600 text-white';
-      default: return 'bg-gray-600 text-white';
-    }
-  };
-
   return (
     <div className="space-y-4 md:space-y-6 px-4 py-2 sm:px-6 md:px-0">
       {/* Header */}
@@ -466,43 +413,6 @@ const StudentDashboard = () => {
         </Card>
       </div>
 
-      {/* Assignments Section */}
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="text-base md:text-lg text-foreground">Upcoming Assignments</CardTitle>
-          <CardDescription className="text-muted-foreground text-sm">
-            Deadlines and current status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 md:space-y-4">
-            {upcomingAssignments.map((assignment) => (
-              <div key={assignment.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 rounded-lg bg-muted/30 gap-3">
-                <div className="flex-1">
-                  <h4 className="font-medium text-sm md:text-base text-foreground">{assignment.title}</h4>
-                  <p className="text-xs md:text-sm text-muted-foreground">{assignment.subject}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className={`text-xs ${getPriorityBadge(assignment.priority)}`}>
-                      {assignment.priority.toUpperCase()}
-                    </Badge>
-                    <Badge variant="secondary" className={`text-xs ${getStatusBadge(assignment.status)}`}>
-                      {assignment.status.replace('-', ' ').toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-left md:text-right">
-                  <p className="text-xs md:text-sm font-medium text-foreground">
-                    Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {Math.ceil((new Date(assignment.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
