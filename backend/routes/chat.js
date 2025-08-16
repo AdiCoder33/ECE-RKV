@@ -149,6 +149,31 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
   }
 });
 
+router.put('/groups/:groupId/messages/:messageId',
+  authenticateToken, async (req, res, next) => {
+    try {
+      const { groupId, messageId } = req.params;
+      const { content } = req.body;
+      const userId = req.user.id;
+      // Ensure sender owns the message and belongs to the group
+      const query = `
+        UPDATE chat_messages
+        SET content = ?, edited_at = GETUTCDATE()
+        OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
+               INSERTED.content, INSERTED.timestamp, INSERTED.attachments
+        WHERE id = ? AND group_id = ? AND sender_id = ?;
+      `;
+      const { recordset } = await executeQuery(query, [content, messageId, groupId, userId]);
+      if (!recordset.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
+      const updated = { ...recordset[0], attachments: JSON.parse(recordset[0].attachments || '[]') };
+      req.app.get('io')?.to(`group-${groupId}`).emit('chat-message-edit', updated);
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // Mark group messages as read
 router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, next) => {
   try {
