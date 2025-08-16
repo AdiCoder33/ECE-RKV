@@ -28,36 +28,42 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
   const status = message.status || 'sent';
   const avatar = message.sender_profileImage;
   const initials = senderName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .slice(0, 2);
+    ? senderName
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .slice(0, 2)
+    : '?';
 
   const formatTime = (t: string) =>
     formatIST(t, { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
     <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-      {!isOwn && (
+      {!isOwn && (avatar || senderName) && (
         <div className="flex-shrink-0">
           {avatar ? (
             <img
               src={avatar}
-              alt={senderName}
+              alt={senderName || 'Avatar'}
               className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-xs font-medium text-primary-foreground">
-                {initials}
-              </span>
-            </div>
+            senderName && (
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                <span className="text-xs font-medium text-primary-foreground">
+                  {initials}
+                </span>
+              </div>
+            )
           )}
         </div>
       )}
       <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
         <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
-          {!isOwn && <span className="text-sm font-medium">{senderName}</span>}
+          {!isOwn && senderName && (
+            <span className="text-sm font-medium">{senderName}</span>
+          )}
           {isGroup && role && !isOwn && (
             <Badge variant="secondary" className="text-xs">
               {role.toUpperCase()}
