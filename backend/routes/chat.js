@@ -38,7 +38,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
     const formatted = sliced
       .map(msg => ({
         id: msg.id.toString(),
-        senderId: msg.sender_id.toString(),
+        senderId: Number(msg.sender_id),
         senderName: msg.sender_name,
         senderRole: msg.sender_role,
         sender_profileImage: msg.sender_profileImage,
@@ -112,7 +112,7 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     const formatted = {
       ...recordset[0],
       id: recordset[0].id.toString(),
-      senderId: recordset[0].sender_id.toString(),
+      senderId: Number(recordset[0].sender_id),
       groupId: recordset[0].group_id.toString(),
       attachments: recordset[0].attachments
         ? JSON.parse(recordset[0].attachments)
