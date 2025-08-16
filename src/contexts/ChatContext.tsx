@@ -451,21 +451,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  const markAsRead = async (
-    type: 'direct' | 'group',
-    id: string
-  ): Promise<void> => {
-    const url =
-      type === 'group'
-        ? `/chat/groups/${id}/mark-read`
-        : `/messages/mark-read/${id}`;
-    await fetchWithAuth(url, { method: 'PUT' });
-    setConversations(prev =>
-      prev.map(c =>
-        c.type === type && c.id === id ? { ...c, unread_count: 0 } : c
-      )
-    );
-  };
+  const markAsRead = useCallback(
+    async (type: 'direct' | 'group', id: string): Promise<void> => {
+      const url =
+        type === 'group'
+          ? `/chat/groups/${id}/mark-read`
+          : `/messages/mark-read/${id}`;
+      await fetchWithAuth(url, { method: 'PUT' });
+      setConversations(prev =>
+        prev.map(c =>
+          c.type === type && c.id === id ? { ...c, unread_count: 0 } : c
+        )
+      );
+    },
+    [fetchWithAuth]
+  );
 
   const searchUsers = useCallback(
     async (query: string): Promise<User[]> => {
