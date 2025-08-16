@@ -405,7 +405,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <Button variant="ghost" size="icon" onClick={onToggle}>
             <MessageSquare className="h-5 w-5" />
           </Button>
-          {conversations.slice(0, 4).map(c => (
+          {conversations.slice(0, 10).map(c => (
             <button
               key={`${c.type}-${c.id}`}
               onClick={() => {
