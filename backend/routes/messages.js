@@ -172,6 +172,41 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
   }
 });
 
+router.put('/:messageId', authenticateToken, async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+    const query = `
+      UPDATE Messages
+      SET content = ?, edited_at = GETUTCDATE()
+      OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id,
+             INSERTED.content, INSERTED.message_type, INSERTED.attachments,
+             INSERTED.is_read, INSERTED.created_at, INSERTED.edited_at
+      WHERE id = ? AND sender_id = ?;
+    `;
+    const { recordset } = await executeQuery(query, [content, messageId, userId]);
+    if (!recordset.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
+
+    const updatedMessage = {
+      ...recordset[0],
+      attachments: recordset[0].attachments
+        ? JSON.parse(recordset[0].attachments)
+        : [],
+    };
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${updatedMessage.receiver_id}`).emit('private-message-edit', updatedMessage);
+      io.to(`user:${updatedMessage.sender_id}`).emit('private-message-edit', updatedMessage);
+    }
+
+    res.json(updatedMessage);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Delete a message
 router.delete('/:messageId', authenticateToken, async (req, res, next) => {
   try {
