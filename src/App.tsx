@@ -35,6 +35,7 @@ import MarksOverview from './components/marks/MarksOverview';
 import NonStudentRoute from './components/auth/NonStudentRoute';
 import ChatList from './components/chat/ChatList';
 import ChatConversation from './components/chat/ChatConversation';
+import StudentProfile from './components/profile/StudentProfile';
 import './App.css';
 
 // Create a client instance
@@ -74,13 +75,15 @@ function App() {
                   <Route path="analytics" element={<Analytics />} />
                   <Route path="announcements" element={<Announcements />} />
                   <Route path="profile" element={<Profile />} />
-                  <Route path="students/:userId" element={<Profile />} />
+                  <Route path="students/:userId" element={<StudentProfile />} />
                   <Route path="student-attendance" element={<StudentAttendance />} />
                   <Route path="alumni" element={<AlumniDirectory />} />
                   <Route path="alumni/profile" element={<AlumniProfile />} />
                   <Route path="contact-alumni" element={<ContactAlumni />} />
                   <Route path="resume" element={<ResumeBuilder />} />
                   <Route path="my-marks" element={<StudentMarks />} />
+                  <Route path="profile/student/:studentId" element={<StudentProfile />} />
+                  <Route path="students/:studentId" element={<StudentProfile />} />
                   <Route
                     path="marks-overview"
                     element={
