@@ -65,6 +65,11 @@ interface ChatContextType {
   markAsRead: (type: 'direct' | 'group', id: string) => Promise<void>;
   searchUsers: (query: string) => Promise<User[]>;
   setTyping: (targetId: string | number, type: 'typing' | 'stop_typing') => void;
+  deleteMessage: (m: ChatMessage | PrivateMessage) => Promise<void>;
+  updateMessage: (
+    m: ChatMessage | PrivateMessage,
+    content: string
+  ) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -447,6 +452,55 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteMessage = async (
+    m: ChatMessage | PrivateMessage
+  ): Promise<void> => {
+    const isGroup = (m as ChatMessage).groupId !== undefined;
+    try {
+      if (isGroup) {
+        await fetchWithAuth(
+          `/chat/groups/${(m as ChatMessage).groupId}/messages/${m.id}`,
+          { method: 'DELETE' }
+        );
+        setMessages(prev => prev.filter(msg => msg.id !== m.id));
+      } else {
+        await fetchWithAuth(`/messages/${m.id}`, { method: 'DELETE' });
+        setPrivateMessages(prev => prev.filter(msg => msg.id !== m.id));
+      }
+    } catch {
+      // ignore errors
+    }
+  };
+
+  const updateMessage = async (
+    m: ChatMessage | PrivateMessage,
+    content: string
+  ): Promise<void> => {
+    const sanitized = DOMPurify.sanitize(content);
+    const isGroup = (m as ChatMessage).groupId !== undefined;
+    try {
+      if (isGroup) {
+        await fetchWithAuth(
+          `/chat/groups/${(m as ChatMessage).groupId}/messages/${m.id}`,
+          { method: 'PUT', body: JSON.stringify({ content: sanitized }) }
+        );
+        setMessages(prev =>
+          prev.map(msg => (msg.id === m.id ? { ...msg, content: sanitized } : msg))
+        );
+      } else {
+        await fetchWithAuth(`/messages/${m.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ content: sanitized }),
+        });
+        setPrivateMessages(prev =>
+          prev.map(msg => (msg.id === m.id ? { ...msg, content: sanitized } : msg))
+        );
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const pinConversation = async (
     type: 'direct' | 'group',
     id: string,
@@ -625,6 +679,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           markAsRead,
           searchUsers,
           setTyping,
+          deleteMessage,
+          updateMessage,
         }}
     >
       {children}
