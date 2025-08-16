@@ -9,6 +9,7 @@ import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
+import { formatIST } from '@/utils/date';
 
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
@@ -65,7 +66,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           activeChat.type === 'direct'
             ? (msg as PrivateMessage).created_at
             : (msg as ChatMessage).timestamp;
-        const dateStr = new Date(timestamp).toDateString();
+        const dateStr = formatIST(timestamp, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
         if (dateStr !== lastDate) {
           items.push({ type: 'date', date: dateStr });
           lastDate = dateStr;
