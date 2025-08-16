@@ -183,31 +183,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return formatted;
   }, [fetchWithAuth]);
 
-  const fetchGroupMessages = async (
-    groupId: string,
-    params: { before?: string; limit?: number } = {},
-    signal?: AbortSignal
-  ): Promise<Paginated<ChatMessage>> => {
-    const { before, limit } = params;
-    const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
-    const data = (await fetchWithAuth(`/chat/groups/${groupId}/messages${qs}`, { signal })) as Paginated<ChatMessage>;
-    const withStatus = data.messages.map(m => ({ ...m, status: m.status ?? 'sent' }));
-    setMessages(prev => {
-      const existing = prev.filter(m => m.groupId === groupId);
-      const others = prev.filter(m => m.groupId !== groupId);
-      const combined = before ? [...withStatus, ...existing] : withStatus;
-      const unique: ChatMessage[] = [];
-      const seen = new Set<string>();
-      for (const msg of combined) {
-        if (!seen.has(msg.id)) {
-          seen.add(msg.id);
-          unique.push(msg);
+  const fetchGroupMessages = useCallback(
+    async (
+      groupId: string,
+      params: { before?: string; limit?: number } = {},
+      signal?: AbortSignal
+    ): Promise<Paginated<ChatMessage>> => {
+      const { before, limit } = params;
+      const qs = `?limit=${limit ?? 50}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
+      const data = (await fetchWithAuth(`/chat/groups/${groupId}/messages${qs}`, { signal })) as Paginated<ChatMessage>;
+      const withStatus = data.messages.map(m => ({ ...m, status: m.status ?? 'sent' }));
+      setMessages(prev => {
+        const existing = prev.filter(m => m.groupId === groupId);
+        const others = prev.filter(m => m.groupId !== groupId);
+        const combined = before ? [...withStatus, ...existing] : withStatus;
+        const unique: ChatMessage[] = [];
+        const seen = new Set<string>();
+        for (const msg of combined) {
+          if (!seen.has(msg.id)) {
+            seen.add(msg.id);
+            unique.push(msg);
+          }
         }
-      }
-      return [...others, ...unique];
-    });
-    return { ...data, messages: withStatus };
-  };
+        return [...others, ...unique];
+      });
+      return { ...data, messages: withStatus };
+    },
+    [fetchWithAuth]
+  );
 
   const fetchMoreGroupMessages = async (
     groupId: string
