@@ -35,7 +35,6 @@ const StudentDashboard = () => {
   >([]);
   const [todaySchedule, setTodaySchedule] = useState([]);
 
-  const currentGPA = 8.4;
   const completedCredits = 142;
   const totalCredits = 180;
 
@@ -171,11 +170,7 @@ const StudentDashboard = () => {
             <Award className="h-3 w-3 md:h-4 md:w-4 text-yellow-600" />
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl font-bold text-foreground">{currentGPA}</div>
-            <Progress value={(currentGPA / 10) * 100} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600">+0.2</span> from last sem
-            </p>
+            <div className="text-lg md:text-2xl font-bold text-foreground">No data available</div>
           </CardContent>
         </Card>
 
