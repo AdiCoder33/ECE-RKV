@@ -85,7 +85,7 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id, INSERTED.content,
              INSERTED.message_type, INSERTED.attachments, INSERTED.is_read, INSERTED.created_at
       INTO @Inserted
-      VALUES (?, ?, ?, ?, ?, 0, GETDATE());
+      VALUES (?, ?, ?, ?, ?, 0, GETUTCDATE());
 
       SELECT i.*, u.name AS sender_name, u.profile_image AS sender_profileImage
       FROM @Inserted i
@@ -120,9 +120,9 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       MERGE conversation_users AS target
       USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
       ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
       WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETDATE());
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETUTCDATE());
     `;
     await executeQuery(convUpdate, [senderId, receiverId, senderId, receiverId]);
 
@@ -156,9 +156,9 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
       MERGE conversation_users AS target
       USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
       ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
       WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETDATE());
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETUTCDATE());
     `;
     await executeQuery(convUpdate, [userId, contactId, userId, contactId]);
 
