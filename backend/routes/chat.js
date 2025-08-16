@@ -87,11 +87,11 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
         content NVARCHAR(MAX), timestamp DATETIME, attachments NVARCHAR(MAX)
       );
 
-      INSERT INTO chat_messages (group_id, sender_id, content, attachments)
+      INSERT INTO chat_messages (group_id, sender_id, content, attachments, timestamp)
       OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
              INSERTED.content, INSERTED.timestamp, INSERTED.attachments
       INTO @Inserted
-      VALUES (?, ?, ?, ?);
+      VALUES (?, ?, ?, ?, GETUTCDATE());
 
       SELECT i.*, u.name AS sender_name, u.role AS sender_role,
              u.profile_image AS sender_profileImage
@@ -129,9 +129,9 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       MERGE conversation_users AS target
       USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
       ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
       WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETDATE());
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETUTCDATE());
     `;
     await executeQuery(convUpdate, [userId, groupId, userId, groupId]);
 
@@ -159,9 +159,9 @@ router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, nex
       MERGE conversation_users AS target
       USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
       ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETDATE()
+      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
       WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETDATE());
+        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETUTCDATE());
     `;
     await executeQuery(query, [userId, groupId, userId, groupId]);
 
