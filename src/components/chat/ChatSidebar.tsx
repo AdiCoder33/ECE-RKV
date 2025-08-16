@@ -164,27 +164,29 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const handleSendMessage = useCallback(async () => {
     if ((!message.trim() && attachments.length === 0) || !activeChat) return;
+    const text = message;
+    const files = attachments.map(a => a.file);
+    setMessage('');
+    attachments.forEach(a => URL.revokeObjectURL(a.preview));
+    setAttachments([]);
+    const target =
+      activeChat.type === 'group'
+        ? `group-${activeChat.id}`
+        : String(activeChat.id);
     try {
-      const files = attachments.map(a => a.file);
       if (activeChat.type === 'direct') {
-        await sendDirectMessage(Number(activeChat.id), message, files);
+        await sendDirectMessage(Number(activeChat.id), text, files);
         if (!conversations.some(c => c.id === activeChat.id)) {
           fetchConversations().catch(() => {});
         }
       } else {
-        await sendGroupMessage(activeChat.id, message, files);
+        await sendGroupMessage(activeChat.id, text, files);
       }
-      const target =
-        activeChat.type === 'group'
-          ? `group-${activeChat.id}`
-          : String(activeChat.id);
-      setMessage('');
-      attachments.forEach(a => URL.revokeObjectURL(a.preview));
-      setAttachments([]);
-      setTyping(target, 'stop_typing');
-      typingRef.current = false;
     } catch {
       // ignore
+    } finally {
+      setTyping(target, 'stop_typing');
+      typingRef.current = false;
     }
   }, [
     message,
