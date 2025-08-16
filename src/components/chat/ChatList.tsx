@@ -53,8 +53,8 @@ const ChatList: React.FC = () => {
     .map(c => ({
       id: Number(c.id),
       name: c.title,
-      last: c.last_message || '',
-      unread: c.unread_count,
+      last: c.lastMessage || '',
+      unread: c.unreadCount,
     }));
 
   const filteredGroups = groups.filter(g =>

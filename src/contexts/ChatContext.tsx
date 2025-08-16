@@ -9,9 +9,9 @@ interface Conversation {
   type: 'direct' | 'group';
   title: string;
   avatar: string | null;
-  last_message: string | null;
-  last_activity: string | null;
-  unread_count: number;
+  lastMessage: string | null;
+  lastActivity: string | null;
+  unreadCount: number;
   pinned: number | boolean;
 }
 
@@ -105,7 +105,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [...list].sort((a, b) => {
       const pinDiff = Number(b.pinned) - Number(a.pinned);
       if (pinDiff !== 0) return pinDiff;
-      return new Date(b.last_activity || 0).getTime() - new Date(a.last_activity || 0).getTime();
+      return new Date(b.lastActivity || 0).getTime() - new Date(a.lastActivity || 0).getTime();
     });
   }, []);
 
@@ -338,15 +338,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           })
         )
       );
-      const newMessage = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
+      const raw = await fetchWithAuth(`/chat/groups/${groupId}/messages`, {
         method: 'POST',
         body: JSON.stringify({ content: sanitizedContent, attachments: uploaded }),
       });
-      const finalMessage = {
-        ...newMessage,
+
+      const finalMessage: ChatMessage = {
+        id: raw.id.toString(),
+        senderId: Number(raw.sender_id),
+        senderName: raw.sender_name,
+        senderRole: raw.sender_role,
+        timestamp: raw.timestamp,
+        content: DOMPurify.sanitize(raw.content ?? ''),
+        groupId: raw.group_id.toString(),
+        sender_profileImage: raw.sender_profileImage,
+        attachments: raw.attachments ?? [],
         status: 'sent',
-        content: DOMPurify.sanitize(newMessage.content ?? ''),
-      } as ChatMessage;
+      };
+
       setMessages(prev => prev.map(m => (m.id === tempId ? finalMessage : m)));
       socketRef.current?.emit('group-message', { groupId, message: finalMessage });
       return finalMessage;
@@ -463,7 +472,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await fetchWithAuth(url, { method: 'PUT' });
       setConversations(prev =>
         prev.map(c =>
-          c.type === type && c.id === id ? { ...c, unread_count: 0 } : c
+          c.type === type && c.id === id ? { ...c, unreadCount: 0 } : c
         )
       );
     },

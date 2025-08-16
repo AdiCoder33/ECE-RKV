@@ -29,7 +29,19 @@ async function getConversationSummary(userId, type, id) {
       LEFT JOIN conversation_users cu ON cu.user_id=@userId AND cu.conversation_type='direct' AND cu.conversation_id=@contactId;
     `;
     const { recordset } = await executeQuery(query, [userId, id]);
-    return recordset[0] || null;
+    const row = recordset[0];
+    return row
+      ? {
+          type: row.type,
+          id: row.id.toString(),
+          title: row.title,
+          avatar: row.avatar,
+          lastMessage: row.last_message,
+          lastActivity: row.last_activity,
+          unreadCount: row.unread_count,
+          pinned: row.pinned,
+        }
+      : null;
   } else {
     const query = `
       DECLARE @userId INT = ?;
@@ -59,7 +71,19 @@ async function getConversationSummary(userId, type, id) {
       LEFT JOIN conversation_users cu ON cu.user_id=@userId AND cu.conversation_type='group' AND cu.conversation_id=@groupId;
     `;
     const { recordset } = await executeQuery(query, [userId, id]);
-    return recordset[0] || null;
+    const row = recordset[0];
+    return row
+      ? {
+          type: row.type,
+          id: row.id.toString(),
+          title: row.title,
+          avatar: row.avatar,
+          lastMessage: row.last_message,
+          lastActivity: row.last_activity,
+          unreadCount: row.unread_count,
+          pinned: row.pinned,
+        }
+      : null;
   }
 }
 
