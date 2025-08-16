@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Search, UserPlus, X, Pin, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
+import { formatIST } from '@/utils/date';
 
 interface Conversation {
   id: string;
@@ -51,11 +52,14 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onOpenGroupDialog,
   onClose,
 }) => {
-  const formatTime = (timestamp: string | null | undefined) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (timestamp: string | null | undefined) =>
+    timestamp
+      ? formatIST(timestamp, {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
+      : '';
 
   return (
     <>
@@ -74,7 +78,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
             </Button>
           </div>
         </div>
-        <Tabs value={tab} onValueChange={(v) => onTabChange(v as any)}>
+        <Tabs
+          value={tab}
+          onValueChange={(
+            v: 'all' | 'direct' | 'group',
+          ) => onTabChange(v)}
+        >
           <TabsList className="grid grid-cols-3 mb-2">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="direct">DMs</TabsTrigger>

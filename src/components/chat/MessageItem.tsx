@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, CheckCheck } from 'lucide-react';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
+import { formatIST } from '@/utils/date';
 
 interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
@@ -32,10 +33,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
     .join('')
     .slice(0, 2);
 
-  const formatTime = (t: string) => {
-    const date = new Date(t);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (t: string) =>
+    formatIST(t, { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
     <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>

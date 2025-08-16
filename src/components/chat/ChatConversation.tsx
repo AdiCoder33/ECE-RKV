@@ -11,6 +11,7 @@ import FileUpload from './FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { ChatMessage, User } from '@/types';
+import { formatIST } from '@/utils/date';
 
 interface PrivateMessage {
   id: string;
@@ -157,10 +158,12 @@ const ChatConversation: React.FC = () => {
     }
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (timestamp: string) =>
+    formatIST(timestamp, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
 
   const contacts = conversations
     .filter(c => c.type === 'direct')
