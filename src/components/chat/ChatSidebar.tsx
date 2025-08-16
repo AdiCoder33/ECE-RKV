@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
@@ -404,8 +405,30 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <Button variant="ghost" size="icon" onClick={onToggle}>
             <MessageSquare className="h-5 w-5" />
           </Button>
+          {conversations.slice(0, 4).map(c => (
+            <button
+              key={`${c.type}-${c.id}`}
+              onClick={() => {
+                setActiveChat({ type: c.type, id: String(c.id), title: c.title });
+                onExpandedChange(true);
+              }}
+              className="relative"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={c.avatar || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {c.title.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              {c.unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
+                  {c.unreadCount}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-        ) : null}
+      ) : null}
       </div>
     </>
   );
