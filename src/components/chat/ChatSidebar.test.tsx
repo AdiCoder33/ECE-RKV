@@ -7,6 +7,25 @@ expect.extend(matchers);
 
 const mockFetchConversation = vi.fn();
 const mockToast = vi.fn();
+const mockUseChat = {
+  conversations: [] as any[],
+  fetchConversations: vi.fn().mockResolvedValue([]),
+  fetchConversation: mockFetchConversation,
+  fetchMoreConversation: vi.fn(),
+  fetchGroupMessages: vi.fn(),
+  fetchMoreGroupMessages: vi.fn(),
+  privateMessages: [],
+  messages: [],
+  sendDirectMessage: vi.fn(),
+  sendGroupMessage: vi.fn(),
+  markAsRead: vi.fn(),
+  pinConversation: vi.fn(),
+  fetchGroups: vi.fn().mockResolvedValue([]),
+  onlineUsers: new Set<number>(),
+  typingUsers: new Set<number>(),
+  setTyping: vi.fn(),
+  searchUsers: vi.fn().mockResolvedValue([]),
+};
 
 vi.mock('./ConversationList', () => ({
   default: ({ onStartChat }: { onStartChat: any }) => (
@@ -25,25 +44,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 }));
 
 vi.mock('@/contexts/ChatContext', () => ({
-  useChat: () => ({
-    conversations: [],
-    fetchConversations: vi.fn().mockResolvedValue([]),
-    fetchConversation: mockFetchConversation,
-    fetchMoreConversation: vi.fn(),
-    fetchGroupMessages: vi.fn(),
-    fetchMoreGroupMessages: vi.fn(),
-    privateMessages: [],
-    messages: [],
-    sendDirectMessage: vi.fn(),
-    sendGroupMessage: vi.fn(),
-    markAsRead: vi.fn(),
-    pinConversation: vi.fn(),
-    fetchGroups: vi.fn().mockResolvedValue([]),
-    onlineUsers: new Set<number>(),
-    typingUsers: new Set<number>(),
-    setTyping: vi.fn(),
-    searchUsers: vi.fn().mockResolvedValue([]),
-  }),
+  useChat: () => mockUseChat,
 }));
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
@@ -53,6 +54,7 @@ import ChatSidebar from './ChatSidebar';
 describe('ChatSidebar search start chat', () => {
   it('shows toast when fetchConversation fails', async () => {
     mockFetchConversation.mockRejectedValueOnce(new Error('fail'));
+    mockUseChat.conversations = [];
     render(
       <ChatSidebar
         isOpen
@@ -71,5 +73,32 @@ describe('ChatSidebar search start chat', () => {
         title: 'Error',
       })
     );
+  });
+});
+
+describe('ChatSidebar collapsed view', () => {
+  it('renders up to 10 avatars with unread badges', () => {
+    mockUseChat.conversations = Array.from({ length: 12 }).map((_, i) => ({
+      id: i + 1,
+      type: 'direct',
+      title: `User${i + 1}`,
+      avatar: null,
+      unreadCount: i + 1,
+    }));
+
+    render(
+      <ChatSidebar
+        isOpen
+        expanded={false}
+        onToggle={() => {}}
+        onExpandedChange={() => {}}
+      />
+    );
+
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByText(String(i))).toBeInTheDocument();
+    }
+    expect(screen.queryByText('11')).not.toBeInTheDocument();
+    expect(screen.queryByText('12')).not.toBeInTheDocument();
   });
 });
