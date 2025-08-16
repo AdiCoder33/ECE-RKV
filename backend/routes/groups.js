@@ -14,7 +14,16 @@ router.get('/', authenticateToken, async (req, res, next) => {
        GROUP BY g.id, g.name, g.description, g.type, g.created_by, g.created_at
        ORDER BY g.created_at DESC`
     );
-    res.json(result.recordset);
+    const formatted = result.recordset.map(g => ({
+      id: g.id,
+      name: g.name,
+      description: g.description,
+      type: g.type,
+      createdBy: g.created_by,
+      createdAt: g.created_at,
+      memberCount: g.member_count
+    }));
+    res.json(formatted);
   } catch (error) {
     console.error('Groups fetch error:', error);
     next(error);

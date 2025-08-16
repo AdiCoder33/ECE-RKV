@@ -70,10 +70,19 @@ router.get('/', authenticateToken, async (req, res, next) => {
       executeQuery(groupQuery, [userId])
     ]);
 
-    const conversations = [...direct, ...groups];
+    const conversations = [...direct, ...groups].map(c => ({
+      type: c.type,
+      id: c.id.toString(),
+      title: c.title,
+      avatar: c.avatar,
+      lastMessage: c.last_message,
+      lastActivity: c.last_activity,
+      unreadCount: c.unread_count,
+      pinned: c.pinned
+    }));
     conversations.sort((a, b) => {
       if (b.pinned !== a.pinned) return b.pinned - a.pinned;
-      return new Date(b.last_activity || 0) - new Date(a.last_activity || 0);
+      return new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0);
     });
 
     res.json(conversations);

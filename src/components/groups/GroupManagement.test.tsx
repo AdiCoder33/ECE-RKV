@@ -12,9 +12,9 @@ describe('GroupManagement', () => {
         name: 'Test Group',
         description: 'Desc',
         type: 'custom',
-        member_count: 0,
-        created_by: 1,
-        created_at: '2024-01-01'
+        memberCount: 0,
+        createdBy: 1,
+        createdAt: '2024-01-01'
       }
     ];
 

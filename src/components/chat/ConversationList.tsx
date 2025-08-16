@@ -14,9 +14,9 @@ interface Conversation {
   id: string;
   title: string;
   avatar?: string | null;
-  last_message?: string;
-  last_activity?: string | null;
-  unread_count?: number;
+  lastMessage?: string;
+  lastActivity?: string | null;
+  unreadCount?: number;
   type: 'direct' | 'group';
   pinned?: boolean;
 }
@@ -147,15 +147,15 @@ const ConversationList: React.FC<ConversationListProps> = ({
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-medium truncate">{c.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{c.last_message || ''}</p>
+              <p className="text-xs text-muted-foreground truncate">{c.lastMessage || ''}</p>
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-xs text-muted-foreground">
-                {formatTime(c.last_activity || null)}
+                {formatTime(c.lastActivity || null)}
               </span>
-              {c.unread_count && c.unread_count > 0 && (
+              {c.unreadCount && c.unreadCount > 0 && (
                 <Badge variant="destructive" className="text-xs">
-                  {c.unread_count}
+                  {c.unreadCount}
                 </Badge>
               )}
             </div>

@@ -34,9 +34,9 @@ interface ApiGroup {
   name: string;
   description: string | null;
   type: ChatGroup['type'];
-  member_count?: number;
-  created_by?: number;
-  created_at?: string;
+  memberCount?: number;
+  createdBy?: number;
+  createdAt?: string;
 }
 
 const GroupManagement = () => {
@@ -69,9 +69,9 @@ const GroupManagement = () => {
         name: g.name,
         description: g.description || '',
         type: g.type,
-        memberCount: g.member_count || 0,
-        createdBy: g.created_by ? g.created_by.toString() : '',
-        createdAt: g.created_at ? new Date(g.created_at).toISOString().split('T')[0] : ''
+        memberCount: g.memberCount || 0,
+        createdBy: g.createdBy ? g.createdBy.toString() : '',
+        createdAt: g.createdAt ? new Date(g.createdAt).toISOString().split('T')[0] : ''
       }));
       setGroups(formatted);
     } catch (err) {
