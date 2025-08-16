@@ -105,33 +105,45 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     setMessagesLoading(true);
     setDirectMessages([]);
     setGroupMessages([]);
-    if (type === 'direct') {
-      fetchConversation(Number(id), undefined, controller.signal)
-        .then(data => {
+
+    const loadMessages = async () => {
+      try {
+        if (type === 'direct') {
+          const data = await fetchConversation(
+            Number(id),
+            undefined,
+            controller.signal
+          );
           if (!ignore && activeChat?.id === id && activeChat.type === type) {
             setDirectMessages(data.messages);
             setHasMore(data.hasMore);
-            setMessagesLoading(false);
           }
-        })
-        .catch(() => {
-          if (!ignore) setMessagesLoading(false);
-        });
-      markAsRead('direct', id).catch(() => {});
-    } else {
-      fetchGroupMessages(id, undefined, controller.signal)
-        .then(data => {
+        } else {
+          const data = await fetchGroupMessages(
+            id,
+            undefined,
+            controller.signal
+          );
           if (!ignore && activeChat?.id === id && activeChat.type === type) {
             setGroupMessages(data.messages);
             setHasMore(data.hasMore);
-            setMessagesLoading(false);
           }
-        })
-        .catch(() => {
-          if (!ignore) setMessagesLoading(false);
-        });
+        }
+      } catch {
+        // ignore
+      } finally {
+        setMessagesLoading(false);
+      }
+    };
+
+    loadMessages();
+
+    if (type === 'direct') {
+      markAsRead('direct', id).catch(() => {});
+    } else {
       markAsRead('group', id).catch(() => {});
     }
+
     return () => {
       ignore = true;
       controller.abort();
