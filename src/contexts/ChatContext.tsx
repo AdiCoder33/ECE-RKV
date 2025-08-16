@@ -583,6 +583,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPrivateMessages(prev => mergePrivateMessages(prev, [msgWithStatus]));
     });
 
+    socket.on('chat-message-edit', (m: ChatMessage) => {
+      setMessages(prev =>
+        prev.map(msg => (msg.id === m.id ? { ...msg, ...m } : msg))
+      );
+    });
+
+    socket.on('private-message-edit', (m: PrivateMessage) => {
+      setPrivateMessages(prev =>
+        prev.map(msg => (msg.id === m.id ? { ...msg, ...m } : msg))
+      );
+    });
+
     socket.on('message-delivered', (data: { messageId: string }) => {
       const { messageId } = data;
       setPrivateMessages(prev =>
