@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Check, CheckCheck } from 'lucide-react';
 import AttachmentPreview from './AttachmentPreview';
@@ -9,9 +9,11 @@ interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
   isGroup: boolean;
   currentUserId?: number;
+  onHold?: (m: PrivateMessage | ChatMessage) => void;
+  selected?: boolean;
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUserId }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUserId, onHold, selected }) => {
   const isOwn = isGroup
     ? (message as ChatMessage).senderId === currentUserId
     : (message as PrivateMessage).sender_id === currentUserId;
@@ -38,8 +40,28 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
   const formatTime = (t: string) =>
     formatIST(t, { hour: '2-digit', minute: '2-digit', hour12: true });
 
+  const timer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleContext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onHold?.(message);
+  };
+
+  const handleTouchStart = () => {
+    timer.current = setTimeout(() => onHold?.(message), 600);
+  };
+
+  const handleTouchEnd = () => {
+    if (timer.current) clearTimeout(timer.current);
+  };
+
   return (
-    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
+    <div
+      className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+      onContextMenu={handleContext}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {!isOwn && (avatar || senderName) && (
         <div className="flex-shrink-0">
           {avatar ? (
@@ -76,7 +98,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
         <div
           className={`inline-block max-w-[80%] break-words break-all p-3 rounded-lg ${
             isOwn ? 'ml-auto bg-primary text-primary-foreground' : 'bg-muted'
-          }`}
+          } ${selected ? 'ring-2 ring-primary' : ''}`}
         >
           <p className="text-sm">{message.content}</p>
           {message.attachments && message.attachments.length > 0 && (

@@ -1,15 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useContext } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, UserPlus, X, Loader2, MessageSquare } from 'lucide-react';
+import { ArrowLeft, UserPlus, X, Loader2, MessageSquare, Pencil, Trash } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
+import ChatContext from '@/contexts/ChatContext';
 
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
@@ -56,6 +57,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onClose,
   onOpenGroupDialog,
 }) => {
+  const chat = useContext(ChatContext);
+  const [selectedMsg, setSelectedMsg] = useState<ChatMessage | PrivateMessage | null>(null);
+  const [editingMsg, setEditingMsg] = useState<ChatMessage | PrivateMessage | null>(null);
+
   const groupedItems = useMemo<GroupedItem[]>(() => {
     const items: GroupedItem[] = [];
     let lastDate = '';
@@ -83,6 +88,40 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const isTyping =
     activeChat.type === 'direct' && typingUsers.has(Number(activeChat.id));
 
+  const handleHold = (m: PrivateMessage | ChatMessage) => {
+    setSelectedMsg(m);
+  };
+
+  const handleDelete = async (m: PrivateMessage | ChatMessage) => {
+    await chat?.deleteMessage(m);
+    setSelectedMsg(null);
+  };
+
+  const handleEdit = (m: PrivateMessage | ChatMessage) => {
+    onMessageChange({ target: { value: m.content } } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+    setEditingMsg(m);
+    setSelectedMsg(null);
+  };
+
+  const handleSend = () => {
+    if (editingMsg) {
+      chat?.updateMessage(editingMsg, message).catch(() => {});
+      setEditingMsg(null);
+      onMessageChange({ target: { value: '' } } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+    } else {
+      onSend();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (editingMsg && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSend();
+    } else {
+      onKeyPress(e);
+    }
+  };
+
   return (
     <>
       <CardHeader className="pb-3 border-b">
@@ -94,12 +133,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <CardTitle className="text-lg">{activeChat.title}</CardTitle>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={onOpenGroupDialog}>
-              <UserPlus className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden">
-              <X className="h-4 w-4" />
-            </Button>
+            {selectedMsg ? (
+              <>
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(selectedMsg)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(selectedMsg)}>
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="icon" onClick={onOpenGroupDialog}>
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden">
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -129,6 +181,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     message={item.message}
                     isGroup={activeChat.type !== 'direct'}
                     currentUserId={currentUserId}
+                    onHold={handleHold}
+                    selected={selectedMsg?.id === item.message.id}
                   />
                 );
               }}
@@ -159,13 +213,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <Textarea
             value={message}
             onChange={onMessageChange}
-            onKeyDown={onKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder={`Message ${activeChat.title}...`}
             className="flex-1"
           />
           <EmojiPicker onEmojiSelect={onEmojiSelect} />
           <FileUpload onFileSelect={onFileSelect} disabled={false} />
-          <Button onClick={onSend} disabled={!message.trim() && attachments.length === 0}>
+          <Button onClick={handleSend} disabled={!message.trim() && attachments.length === 0}>
             <MessageSquare className="h-4 w-4" />
           </Button>
         </div>
