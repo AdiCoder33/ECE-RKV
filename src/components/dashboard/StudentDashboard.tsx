@@ -5,10 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  BookOpen, 
-  Calendar, 
-  TrendingUp, 
+import {
+  BookOpen,
+  Calendar,
+  TrendingUp,
   Award,
   Clock,
   Target,
@@ -17,7 +17,9 @@ import {
   UserCheck,
   Users,
   GraduationCap,
-  MessageCircle
+  MessageCircle,
+  MapPin,
+  User
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +40,7 @@ const StudentDashboard = () => {
   const [attendanceData, setAttendanceData] = useState<
     { month: string; attendance: number }[]
   >([]);
+  const [todaySchedule, setTodaySchedule] = useState([]);
 
   const currentGPA = 8.4;
   const completedCredits = 142;
@@ -120,6 +123,17 @@ const StudentDashboard = () => {
           }));
           setAttendanceData(trend);
         }
+
+        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        const scheduleRes = await fetch(
+          `${apiBase}/timetable?year=${user.year}&semester=${user.semester}&section=${user.section}&day=${today}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (scheduleRes.ok) {
+          setTodaySchedule(await scheduleRes.json());
+        } else {
+          toast({ title: 'Error', description: 'Failed to load schedule', variant: 'destructive' });
+        }
       } catch (error) {
         console.error('Error fetching student data:', error);
         toast({
@@ -133,7 +147,7 @@ const StudentDashboard = () => {
     };
 
     fetchStudentData();
-  }, [user, apiBase, token, toast]);
+  }, [user?.id, user?.year, user?.semester, user?.section, apiBase, token, toast]);
 
   const upcomingAssignments = [
     {
@@ -351,32 +365,34 @@ const StudentDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Alumni Network */}
-        <Card 
-          className="border-border hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => navigate('/dashboard/alumni')}
-        >
+        <Card className="border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Alumni Network
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <Calendar className="h-5 w-5" /> Today's Schedule
             </CardTitle>
-            <CardDescription className="text-muted-foreground text-sm">
-              Connect with graduates
+            <CardDescription className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="text-center py-4">
-              <div className="text-2xl font-bold text-foreground">120+</div>
-              <p className="text-sm text-muted-foreground">Alumni Available</p>
-              <Button variant="outline" size="sm" className="mt-3">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Connect Now
-              </Button>
-            </div>
-            <div className="text-xs text-primary text-center">
-              Click to explore →
-            </div>
+            {todaySchedule.length > 0 ? todaySchedule.map(slot => (
+              <div key={slot.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                <div>
+                  <div className="font-medium">{slot.subject}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <User className="h-3 w-3" /> {slot.faculty}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium">{slot.time}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> {slot.room}
+                  </div>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-muted-foreground text-center">No classes today</p>
+            )}
           </CardContent>
         </Card>
       </div>
