@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,8 +35,10 @@ const StudentDashboard = () => {
   >([]);
   const [todaySchedule, setTodaySchedule] = useState([]);
 
-  const completedCredits = 142;
-  const totalCredits = 180;
+  const totalCredits = useMemo(
+    () => studentSubjects.reduce((sum, s) => sum + (s.credits || 0), 0),
+    [studentSubjects]
+  );
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -196,11 +198,8 @@ const StudentDashboard = () => {
             <Target className="h-3 w-3 md:h-4 md:w-4 text-purple-600" />
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl font-bold text-foreground">{completedCredits}/{totalCredits}</div>
-            <Progress value={(completedCredits / totalCredits) * 100} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalCredits - completedCredits} remaining
-            </p>
+            <div className="text-lg md:text-2xl font-bold text-foreground">{totalCredits}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total credits this semester</p>
           </CardContent>
         </Card>
 
