@@ -14,7 +14,7 @@ import {
   MapPin,
   User
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,10 +26,17 @@ const StudentDashboard = () => {
 
   interface StudentSubject {
     name: string;
+    code?: string;
     credits?: number;
     mid1?: number;
     mid2?: number;
     mid3?: number;
+    attendance?: number;
+  }
+
+  interface RawSubject extends StudentSubject {
+    marks?: { mid1?: number; mid2?: number; mid3?: number };
+    [key: string]: unknown;
   }
 
   const [studentSubjects, setStudentSubjects] = useState<StudentSubject[]>([]);
@@ -39,8 +46,8 @@ const StudentDashboard = () => {
   const token = localStorage.getItem('token');
 
   const [attendancePercentage, setAttendancePercentage] = useState(0);
-  const [attendanceData, setAttendanceData] = useState<
-    { month: string; attendance: number }[]
+  const [subjectAttendanceData, setSubjectAttendanceData] = useState<
+    { name: string; attendance: number }[]
   >([]);
   const [todaySchedule, setTodaySchedule] = useState([]);
 
@@ -69,7 +76,7 @@ const StudentDashboard = () => {
         if (subjectsResponse.ok) {
           const subjects = await subjectsResponse.json();
           const formatted = (subjects || [])
-            .map((s: any) => ({
+            .map((s: RawSubject) => ({
               ...s,
               mid1: typeof s.mid1 === 'number' ? s.mid1 : s.marks?.mid1,
               mid2: typeof s.mid2 === 'number' ? s.mid2 : s.marks?.mid2,
@@ -81,6 +88,20 @@ const StudentDashboard = () => {
               )
             );
           setStudentSubjects(formatted);
+
+          const subjectData = formatted.map((s: StudentSubject) => ({
+            name: s.name,
+            attendance: s.attendance ?? 0
+          }));
+          setSubjectAttendanceData(subjectData);
+          const overall =
+            subjectData.length > 0
+              ? Math.round(
+                  subjectData.reduce((sum, s) => sum + s.attendance, 0) /
+                    subjectData.length
+                )
+              : 0;
+          setAttendancePercentage(overall);
         }
 
         // Fetch classmates
@@ -95,48 +116,6 @@ const StudentDashboard = () => {
         if (classmatesResponse.ok) {
           const classmatesData = await classmatesResponse.json();
           setClassmates(classmatesData.filter(student => student.id !== user.id));
-        }
-
-        // Fetch attendance data
-        const attendanceResponse = await fetch(
-          `${apiBase}/attendance?studentId=${user.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-        if (!attendanceResponse.ok) {
-          const data = await attendanceResponse.json().catch(() => ({}));
-          toast({
-            title: 'Error',
-            description: data.message || 'Failed to load attendance',
-            variant: 'destructive'
-          });
-        } else {
-          const records = await attendanceResponse.json();
-          const total = records.length;
-          let attended = 0;
-          const monthMap: Record<string, { attended: number; total: number }> = {};
-          records.forEach((rec: { date: string; present: number | boolean }) => {
-            const isPresent = rec.present === true || rec.present === 1;
-            const month = new Date(rec.date).toLocaleString('default', {
-              month: 'short'
-            });
-            if (!monthMap[month]) monthMap[month] = { attended: 0, total: 0 };
-            monthMap[month].total += 1;
-            if (isPresent) {
-              attended += 1;
-              monthMap[month].attended += 1;
-            }
-          });
-          const overall = total > 0 ? Math.round((attended / total) * 100) : 0;
-          setAttendancePercentage(overall);
-          const trend = Object.entries(monthMap).map(([month, m]) => ({
-            month,
-            attendance: m.total > 0 ? Math.round((m.attended / m.total) * 100) : 0
-          }));
-          setAttendanceData(trend);
         }
 
         const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -403,35 +382,40 @@ const StudentDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Attendance Trend */}
+        {/* Subject Attendance */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-base md:text-lg text-foreground">Attendance Trend</CardTitle>
+            <CardTitle className="text-base md:text-lg text-foreground">Subject Attendance</CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
-              Monthly attendance percentage
+              Attendance percentage per subject
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={attendanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                <YAxis domain={[70, 100]} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="attendance" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                />
-              </LineChart>
+              {subjectAttendanceData.length > 0 ? (
+                <BarChart data={subjectAttendanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Bar
+                    dataKey="attendance"
+                    fill="hsl(var(--primary))"
+                    barSize={40}
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No attendance data available</p>
+                </div>
+              )}
             </ResponsiveContainer>
           </CardContent>
         </Card>
