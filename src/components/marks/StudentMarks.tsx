@@ -25,12 +25,35 @@ interface Mark {
   grade: string;
 }
 
+interface MidRecord {
+  id: string;
+  type: string;
+  marks: number;
+  maxMarks: number;
+  date: string;
+}
+
 interface SubjectStat {
   subjectId: number;
   subjectName: string;
   obtained: number;
   total: number;
   percentage: number;
+  mids: MidRecord[];
+  internal: {
+    obtained: number;
+    total: number;
+  };
+}
+
+interface SubjectRecord {
+  subjectId: number;
+  subjectName: string;
+  mids: MidRecord[];
+  internal: {
+    obtained: number;
+    total: number;
+  };
 }
 
 interface TrendPoint {
@@ -91,28 +114,30 @@ const StudentMarks = () => {
 
         try {
           const data = await response.json();
-          const mapped: Mark[] = (data.records || []).map((row: any) => {
-            const percent = (row.marks / row.maxMarks) * 100;
-            const grade =
-              percent >= 90
-                ? 'A+'
-                : percent >= 80
-                ? 'A'
-                : percent >= 70
-                ? 'B+'
-                : percent >= 60
-                ? 'B'
-                : 'C';
-            return {
-              id: String(row.id),
-              subject: row.subjectName,
-              examType: row.type,
-              marks: row.marks,
-              maxMarks: row.maxMarks,
-              date: row.date,
-              grade
-            };
-          });
+          const mapped: Mark[] = (data.records || []).flatMap((row: SubjectRecord) =>
+            row.mids.map((mid) => {
+              const percent = (mid.marks / mid.maxMarks) * 100;
+              const grade =
+                percent >= 90
+                  ? 'A+'
+                  : percent >= 80
+                  ? 'A'
+                  : percent >= 70
+                  ? 'B+'
+                  : percent >= 60
+                  ? 'B'
+                  : 'C';
+              return {
+                id: String(mid.id),
+                subject: row.subjectName,
+                examType: mid.type,
+                marks: mid.marks,
+                maxMarks: mid.maxMarks,
+                date: mid.date,
+                grade
+              };
+            })
+          );
 
           setMarks(mapped);
           setSubjectStats(data.subjectStats || []);

@@ -87,38 +87,96 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
     const result = await executeQuery(query, params);
     const rawRecords = result.recordset || [];
 
-    const subjectStatsMap = {};
-    const monthlyTrendMap = {};
-    let overallObtained = 0;
-    let overallTotal = 0;
+    const groupedMids = {};
 
     for (const r of rawRecords) {
-      overallObtained += r.marks;
-      overallTotal += r.max_marks;
-
-      if (!subjectStatsMap[r.subject_id]) {
-        subjectStatsMap[r.subject_id] = {
-          subjectId: r.subject_id,
-          subjectName: r.subject_name,
-          obtained: 0,
-          total: 0,
+      const type = (r.type || '').toLowerCase();
+      const isMid = type.startsWith('mid');
+      if (!isMid) continue;
+      const key = `${r.subject_id}-${type}`;
+      if (!groupedMids[key]) {
+        groupedMids[key] = {
+          id: r.id,
+          subject_id: r.subject_id,
+          subject_name: r.subject_name,
+          type: r.type,
+          marks: 0,
+          max_marks: 0,
+          date: r.date,
         };
       }
-      subjectStatsMap[r.subject_id].obtained += r.marks;
-      subjectStatsMap[r.subject_id].total += r.max_marks;
+      groupedMids[key].marks += r.marks;
+      groupedMids[key].max_marks += r.max_marks;
+      if (new Date(r.date) > new Date(groupedMids[key].date)) {
+        groupedMids[key].date = r.date;
+      }
+    }
 
-      const monthKey = new Date(r.date).toISOString().slice(0, 7);
+    const subjectStatsMap = {};
+    const monthlyTrendMap = {};
+
+    for (const mid of Object.values(groupedMids)) {
+      const subjId = mid.subject_id;
+      if (!subjectStatsMap[subjId]) {
+        subjectStatsMap[subjId] = {
+          subjectId: subjId,
+          subjectName: mid.subject_name,
+          mids: [],
+        };
+      }
+      subjectStatsMap[subjId].mids.push({
+        id: mid.id,
+        type: mid.type,
+        marks: mid.marks,
+        maxMarks: mid.max_marks,
+        date: mid.date,
+      });
+
+      const monthKey = new Date(mid.date).toISOString().slice(0, 7);
       if (!monthlyTrendMap[monthKey]) {
         monthlyTrendMap[monthKey] = { month: monthKey, obtained: 0, total: 0 };
       }
-      monthlyTrendMap[monthKey].obtained += r.marks;
-      monthlyTrendMap[monthKey].total += r.max_marks;
+      monthlyTrendMap[monthKey].obtained += mid.marks;
+      monthlyTrendMap[monthKey].total += mid.max_marks;
     }
 
-    const subjectStats = Object.values(subjectStatsMap).map((s) => ({
-      ...s,
-      percentage: s.total ? (s.obtained / s.total) * 100 : 0,
+    const subjectStats = Object.values(subjectStatsMap).map((s) => {
+      const sortedMids = s.mids.sort((a, b) => b.marks - a.marks);
+      const bestTwo = sortedMids.slice(0, 2);
+      const internalObtained = bestTwo.reduce((sum, m) => sum + m.marks, 0);
+      const internalTotal = bestTwo.reduce((sum, m) => sum + m.maxMarks, 0);
+      return {
+        subjectId: s.subjectId,
+        subjectName: s.subjectName,
+        obtained: internalObtained,
+        total: internalTotal,
+        percentage: internalTotal ? (internalObtained / internalTotal) * 100 : 0,
+        mids: sortedMids,
+        internal: {
+          obtained: internalObtained,
+          total: internalTotal,
+        },
+      };
+    });
+
+    const records = subjectStats.map((s) => ({
+      subjectId: s.subjectId,
+      subjectName: s.subjectName,
+      mids: s.mids,
+      internal: s.internal,
     }));
+
+    let overallObtained = 0;
+    let overallTotal = 0;
+    for (const s of subjectStats) {
+      overallObtained += s.internal.obtained;
+      overallTotal += s.internal.total;
+    }
+    const overall = {
+      obtained: overallObtained,
+      total: overallTotal,
+      percentage: overallTotal ? (overallObtained / overallTotal) * 100 : 0,
+    };
 
     const monthlyTrend = Object.values(monthlyTrendMap)
       .sort((a, b) => a.month.localeCompare(b.month))
@@ -126,22 +184,6 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
         month: new Date(m.month + '-01').toLocaleString('default', { month: 'short' }),
         percentage: m.total ? (m.obtained / m.total) * 100 : 0,
       }));
-
-    const overall = {
-      obtained: overallObtained,
-      total: overallTotal,
-      percentage: overallTotal ? (overallObtained / overallTotal) * 100 : 0,
-    };
-
-    const records = rawRecords.map((r) => ({
-      id: r.id,
-      subjectId: r.subject_id,
-      subjectName: r.subject_name,
-      type: r.type,
-      marks: r.marks,
-      maxMarks: r.max_marks,
-      date: r.date,
-    }));
 
     res.json({ subjectStats, monthlyTrend, records, overall });
   } catch (error) {
