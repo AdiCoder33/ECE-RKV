@@ -300,7 +300,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
 
         // Attendance percentage
         const attendanceResult = await executeQuery(
-          `SELECT AVG(CASE WHEN status = 'present' THEN 1.0 ELSE 0 END) * 100 AS attendance
+          `SELECT AVG(CASE WHEN present = 1 THEN 1.0 ELSE 0 END) * 100 AS attendance
            FROM attendance
            WHERE subject_id IN (${placeholders})
              AND student_id IN (
