@@ -89,7 +89,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       setSearchLoading(true);
       try {
         const results = await searchUsers(search);
-        setSearchResults(results);
+        setSearchResults(results.filter(u => u.id !== user?.id));
       } catch {
         // ignore
       } finally {
@@ -97,7 +97,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [search, searchUsers]);
+  }, [search, searchUsers, user?.id]);
 
   useEffect(() => {
     if (!activeChat) return;
