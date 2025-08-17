@@ -33,6 +33,7 @@ interface ChatContextType {
   groups: Group[];
   onlineUsers: Set<number>;
   typingUsers: Set<number>;
+  socketRef: React.MutableRefObject<Socket | null>;
   fetchGroups: () => Promise<Group[]>;
   fetchGroupMessages: (
     groupId: string,
@@ -564,8 +565,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!user || !token || socketRef.current) return;
     const socket = io(socketUrl, { auth: { token } });
+    socketRef.current = socket;
 
     socket.on('group-message', (message: ChatMessage) => {
       if (message.senderId === user?.id) return; // skip echoes
@@ -653,11 +655,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
-    socketRef.current = socket;
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
-  }, [socketUrl, sortConversations]);
+  }, [user, socketUrl, sortConversations]);
 
   useEffect(() => {
     if (socketRef.current && groups.length) {
@@ -679,6 +681,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           groups,
           onlineUsers,
           typingUsers,
+          socketRef,
           fetchGroups,
           fetchGroupMessages,
           fetchMoreGroupMessages,
