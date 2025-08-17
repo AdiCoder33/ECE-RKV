@@ -56,6 +56,19 @@ const StudentDashboard = () => {
     [studentSubjects]
   );
 
+  const hasMid1 = useMemo(
+    () => studentSubjects.some(s => (s.mid1 ?? 0) > 0),
+    [studentSubjects]
+  );
+  const hasMid2 = useMemo(
+    () => studentSubjects.some(s => (s.mid2 ?? 0) > 0),
+    [studentSubjects]
+  );
+  const hasMid3 = useMemo(
+    () => studentSubjects.some(s => (s.mid3 ?? 0) > 0),
+    [studentSubjects]
+  );
+
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
@@ -84,7 +97,7 @@ const StudentDashboard = () => {
             }))
             .filter((s: StudentSubject) =>
               [s.mid1, s.mid2, s.mid3].some(
-                m => typeof m === 'number' && !isNaN(m as number)
+                m => typeof m === 'number' && (m as number) > 0
               )
             );
           setStudentSubjects(formatted);
@@ -373,9 +386,30 @@ const StudentDashboard = () => {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="mid1" fill="hsl(var(--primary))" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mid2" fill="hsl(var(--chart-2))" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mid3" fill="hsl(var(--chart-3))" barSize={10} radius={[4, 4, 0, 0]} />
+                  {hasMid1 && (
+                    <Bar
+                      dataKey="mid1"
+                      fill="hsl(var(--primary))"
+                      barSize={10}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  )}
+                  {hasMid2 && (
+                    <Bar
+                      dataKey="mid2"
+                      fill="hsl(var(--chart-2))"
+                      barSize={10}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  )}
+                  {hasMid3 && (
+                    <Bar
+                      dataKey="mid3"
+                      fill="hsl(var(--chart-3))"
+                      barSize={10}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  )}
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
