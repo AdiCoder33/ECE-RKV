@@ -351,16 +351,20 @@ const StudentDashboard = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               {studentSubjects.length > 0 ? (
-                <BarChart data={studentSubjects} layout="vertical">
+                <BarChart
+                  data={studentSubjects}
+                  barGap={2}
+                  barCategoryGap={20}
+                  margin={{ bottom: 40 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis
+                  <XAxis
                     dataKey="name"
-                    type="category"
-                    width={80}
                     stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
+                    tick={{ angle: -45, textAnchor: 'end' }}
+                    interval={0}
                   />
+                  <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
@@ -369,9 +373,9 @@ const StudentDashboard = () => {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="mid1" fill="hsl(var(--primary))" barSize={10} radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="mid2" fill="hsl(var(--chart-2))" barSize={10} radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="mid3" fill="hsl(var(--chart-3))" barSize={10} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="mid1" fill="hsl(var(--primary))" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mid2" fill="hsl(var(--chart-2))" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mid3" fill="hsl(var(--chart-3))" barSize={10} radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
