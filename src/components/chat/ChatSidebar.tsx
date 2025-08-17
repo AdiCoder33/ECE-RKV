@@ -175,7 +175,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       const newMsgs = messages.filter(m => m.groupId === activeChat.id);
       setGroupMessages(newMsgs);
     }
-  }, [privateMessages, messages, activeChat]);
+  }, [activeChat, privateMessages, messages]);
 
   const handleSendMessage = useCallback(async () => {
     if ((!message.trim() && attachments.length === 0) || !activeChat) return;

@@ -572,17 +572,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     socket.on('group-message', (message: ChatMessage) => {
       if (message.senderId === user?.id) return; // skip echoes
       const msgWithStatus = { ...message, status: message.status ?? 'sent' };
-      setMessages(prev =>
-        prev.some(m => m.id === msgWithStatus.id)
-          ? prev
-          : [...prev, msgWithStatus]
-      );
+      // Append the incoming group message to the shared messages state
+      setMessages(prev => [...prev, msgWithStatus]);
     });
 
     socket.on('private-message', (message: PrivateMessage) => {
       if (message.sender_id === user?.id) return; // skip echoes
       const msgWithStatus = { ...message, status: message.status ?? 'sent' };
-      setPrivateMessages(prev => mergePrivateMessages(prev, [msgWithStatus]));
+      // Append the incoming private message to the shared privateMessages state
+      setPrivateMessages(prev => [...prev, msgWithStatus]);
     });
 
     socket.on('chat-message-edit', (m: ChatMessage) => {
