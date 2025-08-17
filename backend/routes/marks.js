@@ -196,8 +196,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Get marks overview for a class and subject
 router.get('/overview', authenticateToken, async (req, res, next) => {
   try {
-    const { year, semester, section, subjectId } = req.query;
-    if (!year || !semester || !section || !subjectId) {
+    const { year, semester, section, subjectId, type } = req.query;
+    if (!year || !semester || !section || !subjectId || !type) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -207,11 +207,11 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       FROM classes c
       JOIN student_classes sc ON c.id = sc.class_id
       JOIN users u ON sc.student_id = u.id
-      LEFT JOIN InternalMarks im ON im.student_id = u.id AND im.subject_id = ?
+      LEFT JOIN InternalMarks im ON im.student_id = u.id AND im.subject_id = ? AND im.type = ?
       WHERE c.year = ? AND c.semester = ? AND c.section = ?
       ORDER BY u.roll_number
     `;
-    const params = [subjectId, year, semester, section];
+    const params = [subjectId, type, year, semester, section];
     const result = await executeQuery(query, params);
     res.json(result.recordset);
   } catch (error) {
