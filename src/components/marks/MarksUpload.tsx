@@ -68,6 +68,7 @@ const MarksUpload = () => {
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [section, setSection] = useState('');
+  const [examType, setExamType] = useState<'mid1' | 'mid2' | 'mid3'>('mid1');
   const [subject, setSubject] = useState('');
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [marks, setMarks] = useState<StudentMark[]>([]);
@@ -76,6 +77,8 @@ const MarksUpload = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const examTypeLabel =
+    examType === 'mid1' ? 'Mid 1' : examType === 'mid2' ? 'Mid 2' : 'Mid 3';
 
   // Fetch subjects when year and semester are selected
   useEffect(() => {
@@ -105,11 +108,11 @@ const MarksUpload = () => {
     setSubject('');
   }, [year, semester]);
 
-  const fetchMarks = async () => {
+  const fetchMarks = async (exam: 'mid1' | 'mid2' | 'mid3') => {
     if (year && semester && section && subject) {
       try {
         const res = await fetch(
-          `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
+          `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}&type=${exam}`,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           }
@@ -133,8 +136,8 @@ const MarksUpload = () => {
 
   // Fetch marks whenever filters change
   useEffect(() => {
-    fetchMarks();
-  }, [year, semester, section, subject]);
+    fetchMarks(examType);
+  }, [year, semester, section, subject, examType]);
 
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -224,7 +227,7 @@ const MarksUpload = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = async (exam: 'mid1' | 'mid2' | 'mid3') => {
     if (!year || !semester || !section || !subject) {
       toast.error('Please select year, semester, section and subject');
       return;
@@ -260,7 +263,7 @@ const MarksUpload = () => {
       }
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');
-      XLSX.writeFile(workbook, 'marks_template.xlsx');
+      XLSX.writeFile(workbook, `marks_template_${exam}.xlsx`);
       setIsDownloadModalOpen(false);
     } catch (err) {
       toast.error((err as Error).message ?? 'Failed to fetch students');
@@ -288,7 +291,7 @@ const MarksUpload = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          type: 'internal',
+          type: examType,
           date: new Date().toISOString(),
           marksData: rows, // rows must be a true Array
         }),
@@ -308,7 +311,7 @@ const MarksUpload = () => {
       setHasBlankMarks(false);
       setUploadedFile(null);
       setRowCount(0);
-      fetchMarks();
+      fetchMarks(examType);
       setUploadSuccess('Marks submitted successfully!');
     } catch (error) {
       console.error('Error submitting marks:', error);
@@ -352,7 +355,7 @@ const MarksUpload = () => {
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Year</label>
             <Select value={year} onValueChange={setYear}>
@@ -395,6 +398,20 @@ const MarksUpload = () => {
                     {sec}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Exam</label>
+            <Select value={examType} onValueChange={setExamType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mid1">Mid 1</SelectItem>
+                <SelectItem value="mid2">Mid 2</SelectItem>
+                <SelectItem value="mid3">Mid 3</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -514,9 +531,9 @@ const MarksUpload = () => {
       <Dialog open={isDownloadModalOpen} onOpenChange={setIsDownloadModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Download Template</DialogTitle>
+            <DialogTitle>Download {examTypeLabel} Template</DialogTitle>
             <DialogDescription>
-              Select class details to generate marks template.
+              Select class details to generate {examTypeLabel} marks template.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
@@ -586,7 +603,7 @@ const MarksUpload = () => {
             <Button variant="outline" onClick={() => setIsDownloadModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleDownloadTemplate}>Download</Button>
+            <Button onClick={() => handleDownloadTemplate(examType)}>Download</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
