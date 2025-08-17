@@ -14,7 +14,7 @@ import {
   MapPin,
   User
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,7 +23,16 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [studentSubjects, setStudentSubjects] = useState([]);
+
+  interface StudentSubject {
+    name: string;
+    credits?: number;
+    mid1?: number;
+    mid2?: number;
+    mid3?: number;
+  }
+
+  const [studentSubjects, setStudentSubjects] = useState<StudentSubject[]>([]);
   const [classmates, setClassmates] = useState([]);
   const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -59,7 +68,19 @@ const StudentDashboard = () => {
         );
         if (subjectsResponse.ok) {
           const subjects = await subjectsResponse.json();
-          setStudentSubjects(subjects);
+          const formatted = (subjects || [])
+            .map((s: any) => ({
+              ...s,
+              mid1: typeof s.mid1 === 'number' ? s.mid1 : s.marks?.mid1,
+              mid2: typeof s.mid2 === 'number' ? s.mid2 : s.marks?.mid2,
+              mid3: typeof s.mid3 === 'number' ? s.mid3 : s.marks?.mid3
+            }))
+            .filter((s: StudentSubject) =>
+              [s.mid1, s.mid2, s.mid3].some(
+                m => typeof m === 'number' && !isNaN(m as number)
+              )
+            );
+          setStudentSubjects(formatted);
         }
 
         // Fetch classmates
@@ -350,19 +371,28 @@ const StudentDashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              {studentSubjects.length > 0 && studentSubjects.some(s => s.marks && !isNaN(s.marks)) ? (
-                <BarChart data={studentSubjects.filter(s => s.marks && !isNaN(s.marks))} layout="horizontal">
+              {studentSubjects.length > 0 ? (
+                <BarChart data={studentSubjects} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis dataKey="name" type="category" width={80} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={80}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip
+                    contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '6px'
                     }}
                   />
-                  <Bar dataKey="marks" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  <Legend />
+                  <Bar dataKey="mid1" fill="hsl(var(--primary))" barSize={10} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="mid2" fill="hsl(var(--chart-2))" barSize={10} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="mid3" fill="hsl(var(--chart-3))" barSize={10} radius={[0, 4, 4, 0]} />
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
