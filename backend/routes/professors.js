@@ -151,10 +151,12 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 
+    const facultyIdStr = String(professorId);
+
     // Fetch distinct classes and subjects taught by the professor
     const classResult = await executeQuery(
-      'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE faculty = ?',
-      [professorId]
+      'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?',
+      [facultyIdStr]
     );
     const classes = classResult.recordset || [];
     const activeClasses = classes.length;
@@ -166,10 +168,10 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
        JOIN (
          SELECT DISTINCT year, semester, section
          FROM timetable
-         WHERE faculty = ?
+         WHERE CAST(faculty AS NVARCHAR) = ?
        ) t ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
        WHERE u.role = 'student'`,
-      [professorId]
+      [facultyIdStr]
     );
     const totalStudents = studentResult.recordset[0]?.total_students || 0;
 
@@ -178,9 +180,9 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
       `SELECT AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) AS avg_attendance
        FROM attendance
        WHERE subject_id IN (
-         SELECT DISTINCT subject FROM timetable WHERE faculty = ?
+         SELECT DISTINCT subject FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?
        )`,
-      [professorId]
+      [facultyIdStr]
     );
     const avgAttendance = Math.round((attendanceResult.recordset[0]?.avg_attendance || 0) * 100) / 100;
 
@@ -192,13 +194,13 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
          FROM (
            SELECT DISTINCT year, semester, section, subject
            FROM timetable
-           WHERE faculty = ?
+           WHERE CAST(faculty AS NVARCHAR) = ?
          ) t
          JOIN users u ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
          WHERE u.role = 'student'
          GROUP BY t.subject
        ) x`,
-      [professorId]
+      [facultyIdStr]
     );
     const expectedMarks = expectedResult.recordset[0]?.expected || 0;
 
@@ -206,9 +208,9 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
       `SELECT COUNT(*) AS graded
        FROM InternalMarks
        WHERE subject_id IN (
-         SELECT DISTINCT subject FROM timetable WHERE faculty = ?
+         SELECT DISTINCT subject FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?
        )`,
-      [professorId]
+      [facultyIdStr]
     );
     const graded = gradedResult.recordset[0]?.graded || 0;
     const pendingGrading = Math.max(expectedMarks - graded, 0);
@@ -234,10 +236,12 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 
+    const facultyIdStr = String(professorId);
+
     // Find distinct classes (year/semester/section) taught by the professor
     const classesResult = await executeQuery(
-      'SELECT DISTINCT year, semester, section FROM timetable WHERE faculty = ?',
-      [professorId]
+      'SELECT DISTINCT year, semester, section FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?',
+      [facultyIdStr]
     );
 
     const classes = classesResult.recordset || [];
@@ -260,8 +264,8 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
         `SELECT DISTINCT s.id
          FROM timetable t
          JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-         WHERE t.faculty = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
-        [professorId, year, semester, section]
+         WHERE CAST(t.faculty AS NVARCHAR) = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
+        [facultyIdStr, year, semester, section]
       );
 
       const subjectIds = subjectsResult.recordset.map(r => r.id);
@@ -323,6 +327,7 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
       console.warn('Invalid professor id:', req.params.id);
       return res.status(400).json({ error: 'Invalid professor id' });
     }
+    const facultyIdStr = String(professorId);
     const weeks = parseInt(req.query.weeks, 10) || 5;
 
     // Determine subject IDs taught by the professor
@@ -330,8 +335,8 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
       `SELECT DISTINCT s.id
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-       WHERE t.faculty = ?`,
-      [professorId]
+       WHERE CAST(t.faculty AS NVARCHAR) = ?`,
+      [facultyIdStr]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);
     if (subjectIds.length === 0) {
@@ -373,13 +378,15 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
       return res.status(400).json({ error: 'Invalid professor id' });
     }
 
+    const facultyIdStr = String(professorId);
+
     // Determine subject IDs taught by the professor
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-       WHERE t.faculty = ?`,
-      [professorId]
+       WHERE CAST(t.faculty AS NVARCHAR) = ?`,
+      [facultyIdStr]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);
     if (subjectIds.length === 0) {
