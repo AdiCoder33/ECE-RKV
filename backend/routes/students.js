@@ -324,7 +324,9 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
         s.code,
         s.credits,
         s.type,
-        ISNULL(AVG(m.marks), 0) as marks,
+        MAX(CASE WHEN m.exam_type = 'mid1' THEN m.marks END) AS mid1,
+        MAX(CASE WHEN m.exam_type = 'mid2' THEN m.marks END) AS mid2,
+        MAX(CASE WHEN m.exam_type = 'mid3' THEN m.marks END) AS mid3,
         COUNT(a.id) as total_classes,
         SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
@@ -336,15 +338,31 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
     `, [studentId]);
     
     const subjects = result.recordset || [];
-    const formattedSubjects = subjects.map(subject => ({
-      id: subject.id.toString(),
-      name: subject.name,
-      code: subject.code,
-      credits: subject.credits,
-      type: subject.type,
-      marks: Math.round(subject.marks || 0),
-      attendance: subject.total_classes > 0 ? Math.round((subject.attended_classes / subject.total_classes) * 100) : 0
-    }));
+    const formattedSubjects = subjects.map(subject => {
+      const mid1 = subject.mid1 ?? 0;
+      const mid2 = subject.mid2 ?? 0;
+      const mid3 = subject.mid3 ?? 0;
+      const bestTwo = [mid1, mid2, mid3]
+        .sort((a, b) => b - a)
+        .slice(0, 2)
+        .reduce((sum, val) => sum + val, 0);
+
+      return {
+        id: subject.id.toString(),
+        name: subject.name,
+        code: subject.code,
+        credits: subject.credits,
+        type: subject.type,
+        mid1: Math.round(mid1),
+        mid2: Math.round(mid2),
+        mid3: Math.round(mid3),
+        marks: Math.round(bestTwo),
+        attendance:
+          subject.total_classes > 0
+            ? Math.round((subject.attended_classes / subject.total_classes) * 100)
+            : 0,
+      };
+    });
     
     res.json(formattedSubjects);
   } catch (error) {
