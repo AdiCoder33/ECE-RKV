@@ -52,6 +52,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     typingUsers,
     setTyping,
     searchUsers,
+    socketRef,
   } = useChat();
 
   const [activeChat, setActiveChat] = useState<{
@@ -150,6 +151,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       controller.abort();
     };
   }, [activeChat, fetchConversation, fetchGroupMessages, markAsRead]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !activeChat) return;
+    const room =
+      activeChat.type === 'group'
+        ? `group-${activeChat.id}`
+        : `user:${activeChat.id}`;
+    socket.emit('join-room', room);
+    return () => {
+      socket.emit('leave-room', room);
+    };
+  }, [activeChat, socketRef]);
 
   useEffect(() => {
     if (!activeChat) return;
