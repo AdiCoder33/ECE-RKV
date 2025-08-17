@@ -174,46 +174,56 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
       [facultyIdStr]
     );
     const totalStudents = studentResult.recordset[0]?.total_students || 0;
-
-    // Average attendance for professor's subjects
-    const attendanceResult = await executeQuery(
-      `SELECT AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) AS avg_attendance
-       FROM attendance
-       WHERE subject_id IN (
-         SELECT DISTINCT subject FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?
-       )`,
+    const subjectsResult = await executeQuery(
+      `SELECT DISTINCT s.id
+       FROM timetable t
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       WHERE CAST(t.faculty AS NVARCHAR) = ?`,
       [facultyIdStr]
     );
-    const avgAttendance = Math.round((attendanceResult.recordset[0]?.avg_attendance || 0) * 100) / 100;
+    const subjectIds = subjectsResult.recordset.map(r => r.id);
 
-    // Pending grading calculation
-    const expectedResult = await executeQuery(
-      `SELECT SUM(cnt) AS expected
-       FROM (
-         SELECT t.subject, COUNT(DISTINCT u.id) AS cnt
+    let avgAttendance = 0;
+    let pendingGrading = 0;
+
+    if (subjectIds.length > 0) {
+      const placeholders = subjectIds.map(() => '?').join(',');
+
+      // Average attendance for professor's subjects
+      const attendanceResult = await executeQuery(
+        `SELECT AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) AS avg_attendance
+         FROM attendance
+         WHERE subject_id IN (${placeholders})`,
+        subjectIds
+      );
+      avgAttendance = Math.round((attendanceResult.recordset[0]?.avg_attendance || 0) * 100) / 100;
+
+      // Pending grading calculation
+      const expectedResult = await executeQuery(
+        `SELECT SUM(cnt) AS expected
          FROM (
-           SELECT DISTINCT year, semester, section, subject
-           FROM timetable
-           WHERE CAST(faculty AS NVARCHAR) = ?
-         ) t
-         JOIN users u ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
-         WHERE u.role = 'student'
-         GROUP BY t.subject
-       ) x`,
-      [facultyIdStr]
-    );
-    const expectedMarks = expectedResult.recordset[0]?.expected || 0;
+           SELECT s.id AS subject_id, COUNT(DISTINCT u.id) AS cnt
+           FROM timetable t
+           JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+           JOIN users u ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
+           WHERE CAST(t.faculty AS NVARCHAR) = ?
+             AND u.role = 'student'
+             AND s.id IN (${placeholders})
+           GROUP BY s.id
+         ) x`,
+        [facultyIdStr, ...subjectIds]
+      );
+      const expectedMarks = expectedResult.recordset[0]?.expected || 0;
 
-    const gradedResult = await executeQuery(
-      `SELECT COUNT(*) AS graded
-       FROM InternalMarks
-       WHERE subject_id IN (
-         SELECT DISTINCT subject FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?
-       )`,
-      [facultyIdStr]
-    );
-    const graded = gradedResult.recordset[0]?.graded || 0;
-    const pendingGrading = Math.max(expectedMarks - graded, 0);
+      const gradedResult = await executeQuery(
+        `SELECT COUNT(*) AS graded
+         FROM InternalMarks
+         WHERE subject_id IN (${placeholders})`,
+        subjectIds
+      );
+      const graded = gradedResult.recordset[0]?.graded || 0;
+      pendingGrading = Math.max(expectedMarks - graded, 0);
+    }
 
     res.json({
       totalStudents,
