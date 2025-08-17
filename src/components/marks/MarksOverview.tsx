@@ -49,12 +49,15 @@ const MarksOverview: React.FC = () => {
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [section, setSection] = useState('');
+  const [examType, setExamType] = useState<'mid1' | 'mid2' | 'mid3'>('mid1');
   const [subject, setSubject] = useState('');
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [marks, setMarks] = useState<StudentMark[]>([]);
   const [sortField, setSortField] = useState<'roll_number' | 'student_name' | 'marks'>('roll_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(false);
+  const examTypeLabel =
+    examType === 'mid1' ? 'Mid 1' : examType === 'mid2' ? 'Mid 2' : 'Mid 3';
 
   // Fetch subjects when year and semester selected
   useEffect(() => {
@@ -75,10 +78,10 @@ const MarksOverview: React.FC = () => {
 
   // Fetch marks when all filters selected
   useEffect(() => {
-    if (year && semester && section && subject) {
+    if (year && semester && section && subject && examType) {
       setLoading(true);
       fetch(
-        `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}`,
+        `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}&type=${examType}`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         }
@@ -90,7 +93,7 @@ const MarksOverview: React.FC = () => {
     } else {
       setMarks([]);
     }
-  }, [year, semester, section, subject]);
+  }, [year, semester, section, subject, examType]);
 
   const handleSort = (field: 'roll_number' | 'student_name' | 'marks') => {
     if (sortField === field) {
@@ -110,7 +113,8 @@ const MarksOverview: React.FC = () => {
   });
 
   // Loader while fetching filters or marks
-  const showLoader = loading && (year && semester && (!subject || (section && subject)));
+  const showLoader =
+    loading && (year && semester && (!subject || (section && subject && examType)));
 
   return (
     <div
@@ -127,7 +131,7 @@ const MarksOverview: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-[#8b0000]">Filters</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           <div>
             <label className="text-sm font-semibold text-[#8b0000] mb-2 block">Year</label>
             <Select value={year} onValueChange={setYear}>
@@ -174,6 +178,20 @@ const MarksOverview: React.FC = () => {
           </div>
 
           <div>
+            <label className="text-sm font-semibold text-[#a52a2a] mb-2 block">Exam Type</label>
+            <Select value={examType} onValueChange={setExamType}>
+              <SelectTrigger className="border-[#a52a2a] bg-[#fde8e6] text-[#a52a2a] font-semibold rounded-md">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mid1">Mid 1</SelectItem>
+                <SelectItem value="mid2">Mid 2</SelectItem>
+                <SelectItem value="mid3">Mid 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <label className="text-sm font-semibold text-[#0f766e] mb-2 block">Subject</label>
             <Select value={subject} onValueChange={setSubject} disabled={!subjects.length}>
               <SelectTrigger className="border-[#0f766e] bg-[#e8fbf5] text-[#0f766e] font-semibold rounded-md">
@@ -196,7 +214,7 @@ const MarksOverview: React.FC = () => {
       {!showLoader && marks.length > 0 && (
         <Card className="shadow-lg border-[#b86b2e]">
           <CardHeader>
-            <CardTitle className="text-[#8b0000]">Student Marks</CardTitle>
+            <CardTitle className="text-[#8b0000]">Student Marks - {examTypeLabel}</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
             <Table className="min-w-[400px]">
@@ -240,7 +258,7 @@ const MarksOverview: React.FC = () => {
         </Card>
       )}
 
-      {!showLoader && marks.length === 0 && year && semester && section && subject && (
+      {!showLoader && marks.length === 0 && year && semester && section && subject && examType && (
         <Card className="shadow-lg border-[#b86b2e]">
           <CardContent className="text-center py-12">
             <h3 className="text-lg font-semibold mb-2 text-[#8b0000]">No marks found</h3>
