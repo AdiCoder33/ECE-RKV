@@ -324,14 +324,14 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
         s.code,
         s.credits,
         s.type,
-        MAX(CASE WHEN m.exam_type = 'mid1' THEN m.marks END) AS mid1,
-        MAX(CASE WHEN m.exam_type = 'mid2' THEN m.marks END) AS mid2,
-        MAX(CASE WHEN m.exam_type = 'mid3' THEN m.marks END) AS mid3,
+        MAX(CASE WHEN im.type = 'mid1' THEN im.marks END) AS mid1,
+        MAX(CASE WHEN im.type = 'mid2' THEN im.marks END) AS mid2,
+        MAX(CASE WHEN im.type = 'mid3' THEN im.marks END) AS mid3,
         COUNT(a.id) as total_classes,
         SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
       INNER JOIN users u ON s.year = u.year AND s.semester = u.semester
-      LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = u.id
+      LEFT JOIN InternalMarks im ON s.id = im.subject_id AND im.student_id = u.id
       LEFT JOIN attendance a ON a.student_id = u.id AND a.subject_id = s.id
       WHERE u.id = ?
       GROUP BY s.id, s.name, s.code, s.credits, s.type
