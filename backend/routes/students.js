@@ -353,6 +353,136 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
   }
 });
 
+// Get detailed student information
+router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Basic student info with current CGPA and overall attendance
+    const studentResult = await executeQuery(`
+      SELECT u.*,
+             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             ar.cgpa
+      FROM users u
+      LEFT JOIN (
+        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
+        FROM attendance
+        GROUP BY student_id
+      ) att ON u.id = att.student_id
+      LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
+      WHERE u.id = ? AND u.role = 'student'
+    `, [id]);
+
+    const student = studentResult.recordset[0];
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // Current subjects with marks and attendance
+    const subjectsRes = await executeQuery(`
+      SELECT
+        s.id,
+        s.name,
+        s.code,
+        s.credits,
+        s.type,
+        ISNULL(AVG(m.marks), 0) as marks,
+        COUNT(a.id) as total_classes,
+        SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
+      FROM subjects s
+      INNER JOIN users u ON s.year = u.year AND s.semester = u.semester
+      LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = u.id
+      LEFT JOIN attendance a ON a.student_id = u.id AND a.subject_id = s.id
+      WHERE u.id = ?
+      GROUP BY s.id, s.name, s.code, s.credits, s.type
+    `, [id]);
+
+    const currentSubjects = (subjectsRes.recordset || []).map(subject => ({
+      id: subject.id.toString(),
+      name: subject.name,
+      code: subject.code,
+      credits: subject.credits,
+      type: subject.type,
+      marks: Math.round(subject.marks || 0),
+      attendance: subject.total_classes > 0 ? Math.round((subject.attended_classes / subject.total_classes) * 100) : 0
+    }));
+
+    // Semester-wise GPA records
+    const semestersRes = await executeQuery(`
+      SELECT year, semester, sgpa, cgpa
+      FROM academic_records
+      WHERE student_id = ?
+      ORDER BY year, semester
+    `, [id]);
+
+    const semesterRecords = (semestersRes.recordset || []).map(r => ({
+      semester: `Year ${r.year} - Sem ${r.semester}`,
+      sgpa: r.sgpa,
+      cgpa: r.cgpa
+    }));
+
+    // Attendance history (monthly) and overall percentage
+    const attendanceHistoryRes = await executeQuery(`
+      SELECT
+        FORMAT(MIN(a.date), 'MMM') as month,
+        ROUND(
+          (CAST(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
+          2
+        ) as percentage
+      FROM attendance a
+      JOIN subjects s ON a.subject_id = s.id
+      JOIN users u ON a.student_id = u.id
+      WHERE a.student_id = ? AND s.year = u.year AND s.semester = u.semester
+      GROUP BY YEAR(a.date), MONTH(a.date)
+      ORDER BY YEAR(a.date), MONTH(a.date)
+    `, [id]);
+
+    const attendanceHistory = (attendanceHistoryRes.recordset || []).map(row => ({
+      month: row.month,
+      attendance: row.percentage
+    }));
+
+    const overallAttendanceRes = await executeQuery(`
+      SELECT
+        ROUND(
+          (CAST(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
+          2
+        ) as percentage
+      FROM attendance a
+      JOIN subjects s ON a.subject_id = s.id
+      JOIN users u ON a.student_id = u.id
+      WHERE a.student_id = ? AND s.year = u.year AND s.semester = u.semester
+    `, [id]);
+
+    const attendance = overallAttendanceRes.recordset[0]?.percentage || 0;
+
+    res.json({
+      id: student.id.toString(),
+      name: student.name,
+      email: student.email,
+      rollNumber: student.roll_number,
+      phone: student.phone,
+      year: student.year,
+      semester: student.semester,
+      section: student.section,
+      profileImage: student.profile_image,
+      dateOfBirth: student.date_of_birth,
+      address: student.address,
+      parentContact: student.parent_contact,
+      bloodGroup: student.blood_group,
+      admissionYear: student.admission_year,
+      currentGPA: student.cgpa || 0,
+      attendance,
+      currentSubjects,
+      semesterRecords,
+      attendanceHistory
+    });
+  } catch (error) {
+    console.error('Student details fetch error:', error);
+    next(error);
+  }
+});
+
 // Get alumni
 router.get('/alumni', authenticateToken, async (req, res, next) => {
   try {

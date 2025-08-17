@@ -35,7 +35,7 @@ const StudentProfile = () => {
         setLoading(true);
         setError(null);
         const token = localStorage.getItem('token');
-        const res = await fetch(`${apiBase}/students/${id}`, {
+        const res = await fetch(`${apiBase}/students/${id}/details`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           }
@@ -49,7 +49,14 @@ const StudentProfile = () => {
           }
         } else {
           const data = await res.json();
-          setStudent(data);
+          setStudent({
+            ...data,
+            currentGPA: data.currentGPA ?? data.cgpa ?? 0,
+            attendance: data.attendance ?? data.attendancePercentage ?? 0,
+            currentSubjects: data.currentSubjects ?? [],
+            semesterRecords: data.semesterRecords ?? [],
+            attendanceHistory: data.attendanceHistory ?? [],
+          });
         }
       } catch (err) {
         setError((err as Error).message);
