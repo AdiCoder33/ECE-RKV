@@ -121,19 +121,16 @@ const StudentSubjects = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 flex items-center justify-center px-4 md:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center px-4 md:px-8">
         <Loader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-6 md:px-8 bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100">
-      {/* Add gap between sidebar and main content only on desktop */}
-      <div className="hidden md:block" aria-hidden="true">
-        <div className="h-0 w-0 md:w-8 lg:w-16 xl:w-24 2xl:w-32 float-left"></div>
-      </div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="min-h-screen space-y-8 px-2 py-6 sm:px-6 md:px-12 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+      {/* Section: Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-indigo-900">My Subjects</h1>
           <p className="text-indigo-600">
@@ -146,27 +143,27 @@ const StudentSubjects = () => {
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-gradient-to-br from-white via-blue-50 to-indigo-100 shadow border-0">
+      {/* Section: Stats Overview */}
+      <div className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-white shadow-lg border border-indigo-100 rounded-xl">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BookOpen className="h-5 w-5 text-blue-700" />
+            <div className="p-2 bg-indigo-50 rounded-lg">
+              <BookOpen className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-blue-700 font-medium">Total Subjects</p>
-              <p className="text-xl sm:text-2xl font-bold text-blue-900">{subjects.length}</p>
+              <p className="text-xs sm:text-sm text-indigo-600 font-medium">Total Subjects</p>
+              <p className="text-xl sm:text-2xl font-bold text-indigo-900">{subjects.length}</p>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-to-br from-white via-green-50 to-emerald-100 shadow border-0">
+        <Card className="bg-white shadow-lg border border-green-100 rounded-xl">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Award className="h-5 w-5 text-green-700" />
+            <div className="p-2 bg-green-50 rounded-lg">
+              <Award className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-green-700 font-medium">Avg Marks</p>
+              <p className="text-xs sm:text-sm text-green-600 font-medium">Avg Marks</p>
               <p className="text-xl sm:text-2xl font-bold text-green-900">
                 {subjects.length > 0 ? Math.round(subjects.reduce((acc, s) => acc + s.marks, 0) / subjects.length) : 0}
               </p>
@@ -174,13 +171,13 @@ const StudentSubjects = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-white via-yellow-50 to-orange-100 shadow border-0">
+        <Card className="bg-white shadow-lg border border-yellow-100 rounded-xl">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="h-5 w-5 text-yellow-700" />
+            <div className="p-2 bg-yellow-50 rounded-lg">
+              <Clock className="h-5 w-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-yellow-700 font-medium">Avg Attendance</p>
+              <p className="text-xs sm:text-sm text-yellow-600 font-medium">Avg Attendance</p>
               <p className="text-xl sm:text-2xl font-bold text-yellow-900">
                 {subjects.length > 0 ? Math.round(subjects.reduce((acc, s) => acc + s.attendance, 0) / subjects.length) : 0}%
               </p>
@@ -188,13 +185,13 @@ const StudentSubjects = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-white via-purple-50 to-indigo-100 shadow border-0">
+        <Card className="bg-white shadow-lg border border-purple-100 rounded-xl">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-purple-700" />
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-purple-700 font-medium">Total Credits</p>
+              <p className="text-xs sm:text-sm text-purple-600 font-medium">Total Credits</p>
               <p className="text-xl sm:text-2xl font-bold text-purple-900">
                 {subjects.reduce((acc, s) => acc + s.credits, 0)}
               </p>
@@ -203,31 +200,33 @@ const StudentSubjects = () => {
         </Card>
       </div>
 
-      {/* Subjects List */}
-      <div className="space-y-4">
+      {/* Section: Subjects List */}
+      <div className="space-y-6">
         {subjects.length > 0 ? (
           subjects.map((subject) => (
             <Card
               key={subject.id}
-              className={
-                subject.code.startsWith('AEC')
-                  ? 'border-border bg-gradient-to-br from-blue-50 via-blue-100 to-white hover:shadow-lg transition-shadow'
+              className={`
+                border-2 rounded-2xl shadow-md transition-shadow
+                ${subject.code.startsWith('AEC')
+                  ? 'border-blue-200 bg-white'
                   : subject.code.startsWith('CS2')
-                  ? 'border-border bg-gradient-to-br from-amber-50 via-yellow-100 to-white hover:shadow-lg transition-shadow'
-                  : 'border-border bg-gradient-to-br from-white via-gray-50 to-indigo-50 hover:shadow-lg transition-shadow'
-              }
+                  ? 'border-yellow-200 bg-white'
+                  : 'border-indigo-100 bg-white'}
+                hover:shadow-xl
+              `}
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 border-b border-dashed border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-white rounded-t-2xl">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                   <div className="flex-1">
                     <CardTitle className="text-lg md:text-xl text-indigo-900">{subject.name}</CardTitle>
                     <p className="text-sm text-indigo-600">{subject.code}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                    <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border border-indigo-200">
                       {subject.credits} Credits
                     </Badge>
-                    <Badge variant={subject.type === 'theory' ? 'outline' : 'default'} className="bg-gray-100 text-gray-700">
+                    <Badge variant={subject.type === 'theory' ? 'outline' : 'default'} className="bg-gray-50 text-gray-700 border border-gray-200">
                       {subject.type.charAt(0).toUpperCase() + subject.type.slice(1)}
                     </Badge>
                   </div>
@@ -254,7 +253,7 @@ const StudentSubjects = () => {
                         {subject.attendance}%
                       </span>
                     </div>
-                    <Progress value={subject.attendance} className="h-2 bg-indigo-100" />
+                    <Progress value={subject.attendance} className="h-2 bg-yellow-100" />
                     {subject.attendance < 75 && (
                       <p className="text-xs text-red-600">⚠️ Below minimum requirement (75%)</p>
                     )}
@@ -262,15 +261,15 @@ const StudentSubjects = () => {
                 </div>
 
                 {/* Performance Indicators */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-indigo-50">
                   {subject.marks >= 80 && (
-                    <Badge className="bg-green-100 text-green-800 text-xs">Excellent Performance</Badge>
+                    <Badge className="bg-green-100 text-green-800 text-xs border border-green-200">Excellent Performance</Badge>
                   )}
                   {subject.attendance >= 90 && (
-                    <Badge className="bg-blue-100 text-blue-800 text-xs">Perfect Attendance</Badge>
+                    <Badge className="bg-blue-100 text-blue-800 text-xs border border-blue-200">Perfect Attendance</Badge>
                   )}
                   {subject.marks < 40 && (
-                    <Badge className="bg-red-100 text-red-800 text-xs">Needs Improvement</Badge>
+                    <Badge className="bg-red-100 text-red-800 text-xs border border-red-200">Needs Improvement</Badge>
                   )}
                 </div>
               </CardContent>

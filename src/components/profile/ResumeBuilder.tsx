@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ResumeView from './ResumeView';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import loaderMp4 from '@/Assets/loader.mp4';
 
 interface Education {
   id: string;
@@ -222,10 +224,19 @@ const ResumeBuilder = () => {
     printWindow.close();
   };
 
+  // Loader for async actions
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-48 w-full" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 px-4 md:px-12">
+        <video
+          src={loaderMp4}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-24 h-24 object-contain rounded-lg shadow-lg"
+          aria-label="Loading animation"
+        />
       </div>
     );
   }
@@ -234,48 +245,223 @@ const ResumeBuilder = () => {
     return <div className="p-4 text-red-500">{error}</div>;
   }
 
-  if (!isEditing) {
-    // Resume Preview Mode - Use the standardized ResumeView component
-    const resumeData = {
-      personalInfo,
-      education,
-      experience,
-      projects,
-      skills
-    };
+  // --- TEMPLATES ---
+  // Template 1: Modern (default, as before)
+  // Template 2: Elegant (LaTeX-like, serif font, minimal, for PDF/print)
+  // Template 3: Colorful (subtle accent colors, for creative roles)
 
+  // --- TABS FOR TEMPLATES ---
+  const resumeData = { personalInfo, education, experience, projects, skills };
+
+  if (!isEditing) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center print:hidden">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Resume Preview</h2>
+      <div className="min-h-screen px-2 py-6 sm:px-6 md:px-12 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+        <div className="flex justify-between items-center print:hidden mb-4">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-700 via-yellow-600 to-orange-500 bg-clip-text text-transparent">Resume Preview</h2>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <Button
+              variant="outline"
+              className="border-pink-600 text-pink-700 hover:bg-pink-50"
+              onClick={() => setIsEditing(true)}
+            >
               <Code className="h-4 w-4 mr-2" />
               Edit Resume
             </Button>
-            <Button onClick={downloadResume} className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+            <Button
+              onClick={downloadResume}
+              className="bg-gradient-to-r from-yellow-500 via-pink-500 to-orange-500 text-white font-semibold shadow hover:from-yellow-600 hover:to-orange-600"
+            >
               <Download className="h-4 w-4 mr-2" />
               Download PDF
             </Button>
           </div>
         </div>
-
-        <ResumeView ref={resumeRef} resumeData={resumeData} showDownload={false} />
+        <Tabs defaultValue="elegant" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="modern">Modern</TabsTrigger>
+            <TabsTrigger value="elegant">Elegant (LaTeX)</TabsTrigger>
+            <TabsTrigger value="colorful">Colorful</TabsTrigger>
+          </TabsList>
+          {/* Modern Template */}
+          <TabsContent value="modern">
+            <ResumeView ref={resumeRef} resumeData={resumeData} showDownload={false} />
+          </TabsContent>
+          {/* Elegant (LaTeX-like) Template */}
+          <TabsContent value="elegant">
+            <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-xl border border-gray-200 p-10 font-serif text-gray-900">
+              <div className="flex flex-col items-center mb-10">
+                <h1 className="text-5xl font-extrabold tracking-tight text-pink-700">{personalInfo.name}</h1>
+                <div className="flex flex-wrap gap-6 mt-4 text-lg text-gray-700 font-medium">
+                  <span><Mail className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.email}</span>
+                  <span><Phone className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.phone}</span>
+                  <span><MapPin className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.location}</span>
+                </div>
+              </div>
+              {personalInfo.objective && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-2 border-b-2 border-yellow-400 pb-1 text-yellow-700 tracking-wide">Objective</h2>
+                  <p className="text-gray-800 text-lg leading-relaxed">{personalInfo.objective}</p>
+                </div>
+              )}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2 border-b-2 border-pink-400 pb-1 text-pink-700 tracking-wide">Education</h2>
+                <ul className="space-y-4">
+                  {education.map((edu, i) => (
+                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg">{edu.degree} in {edu.fieldOfStudy}</span>
+                        <span className="italic text-gray-600">{edu.startYear} - {edu.endYear}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-700 font-medium">
+                        <span>{edu.institution}</span>
+                        <span>Grade: <span className="font-bold">{edu.grade}</span></span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2 border-b-2 border-yellow-400 pb-1 text-yellow-700 tracking-wide">Experience</h2>
+                <ul className="space-y-4">
+                  {experience.map((exp, i) => (
+                    <li key={i} className="pl-4 border-l-4 border-pink-400">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg">{exp.position}</span>
+                        <span className="italic text-gray-600">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-700 font-medium">
+                        <span>{exp.company}</span>
+                      </div>
+                      <div className="text-gray-800 text-base leading-relaxed">{exp.description}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2 border-b-2 border-pink-400 pb-1 text-pink-700 tracking-wide">Projects</h2>
+                <ul className="space-y-4">
+                  {projects.map((proj, i) => (
+                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
+                      <span className="font-bold text-lg">{proj.name}</span>
+                      {proj.link && (
+                        <a href={proj.link} className="ml-2 text-pink-600 underline font-semibold" target="_blank" rel="noopener noreferrer">[Link]</a>
+                      )}
+                      <div className="text-gray-800 text-base">{proj.description}</div>
+                      <div className="text-xs text-gray-600 font-semibold">Tech: {proj.technologies.join(', ')}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2 border-b-2 border-yellow-400 pb-1 text-yellow-700 tracking-wide">Skills</h2>
+                <div className="flex flex-wrap gap-3">
+                  {skills.map((skill, i) => (
+                    <span key={i} className="bg-pink-50 border border-yellow-200 rounded px-4 py-2 text-base font-semibold text-pink-700">{skill}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          {/* Colorful Template */}
+          <TabsContent value="colorful">
+            <div className="max-w-3xl mx-auto bg-gradient-to-br from-yellow-50 via-pink-50 to-orange-50 shadow-xl rounded-xl border border-yellow-200 p-10">
+              <div className="flex flex-col items-center mb-10">
+                <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-700 via-yellow-600 to-orange-500">{personalInfo.name}</h1>
+                <div className="flex flex-wrap gap-6 mt-4 text-lg text-pink-700 font-medium">
+                  <span><Mail className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.email}</span>
+                  <span><Phone className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.phone}</span>
+                  <span><MapPin className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.location}</span>
+                </div>
+              </div>
+              {personalInfo.objective && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-2 text-yellow-700">Objective</h2>
+                  <p className="text-pink-900 text-lg leading-relaxed">{personalInfo.objective}</p>
+                </div>
+              )}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2 text-pink-700">Education</h2>
+                <ul className="space-y-4">
+                  {education.map((edu, i) => (
+                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg">{edu.degree} in {edu.fieldOfStudy}</span>
+                        <span className="italic text-gray-600">{edu.startYear} - {edu.endYear}</span>
+                      </div>
+                      <div className="flex justify-between text-pink-700 font-medium">
+                        <span>{edu.institution}</span>
+                        <span>Grade: <span className="font-bold">{edu.grade}</span></span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2 text-yellow-700">Experience</h2>
+                <ul className="space-y-4">
+                  {experience.map((exp, i) => (
+                    <li key={i} className="pl-4 border-l-4 border-pink-400">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg">{exp.position}</span>
+                        <span className="italic text-gray-600">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}</span>
+                      </div>
+                      <div className="flex justify-between text-pink-700 font-medium">
+                        <span>{exp.company}</span>
+                      </div>
+                      <div className="text-pink-900 text-base leading-relaxed">{exp.description}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2 text-pink-700">Projects</h2>
+                <ul className="space-y-4">
+                  {projects.map((proj, i) => (
+                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
+                      <span className="font-bold text-lg">{proj.name}</span>
+                      {proj.link && (
+                        <a href={proj.link} className="ml-2 text-pink-600 underline font-semibold" target="_blank" rel="noopener noreferrer">[Link]</a>
+                      )}
+                      <div className="text-pink-900 text-base">{proj.description}</div>
+                      <div className="text-xs text-pink-700 font-semibold">Tech: {proj.technologies.join(', ')}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2 text-yellow-700">Skills</h2>
+                <div className="flex flex-wrap gap-3">
+                  {skills.map((skill, i) => (
+                    <span key={i} className="bg-yellow-100 border border-pink-200 rounded px-4 py-2 text-base font-semibold text-pink-700">{skill}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
 
-  // Resume Edit Mode
+  // --- EDIT MODE ---
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen space-y-6 px-2 py-6 sm:px-6 md:px-12 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Resume Builder</h2>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-700 via-yellow-600 to-orange-500 bg-clip-text text-transparent">Resume Builder</h2>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsEditing(false)}>
+          <Button
+            variant="outline"
+            className="border-pink-600 text-pink-700 hover:bg-pink-50"
+            onClick={() => setIsEditing(false)}
+          >
             <Eye className="h-4 w-4 mr-2" />
             Preview
           </Button>
-          <Button onClick={saveResume} disabled={saving}>
+          <Button
+            onClick={saveResume}
+            disabled={saving}
+            className="bg-gradient-to-r from-yellow-500 via-pink-500 to-orange-500 text-white font-semibold shadow hover:from-yellow-600 hover:to-orange-600"
+          >
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Saving...' : 'Save Resume'}
           </Button>

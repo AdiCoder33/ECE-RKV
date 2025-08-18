@@ -181,19 +181,32 @@ const StudentDashboard = () => {
 
       {/* Greeting Card */}
       <div className="flex justify-center mb-4">
-        <div className={`w-full max-w-md rounded-2xl p-5 flex items-center gap-4 ${gradientCard}`}>
-          <Avatar className="w-14 h-14 border-4 border-white shadow">
+        <div
+          className={`
+            w-full
+            max-w-md
+            rounded-2xl
+            p-5
+            flex
+            items-center
+            gap-4
+            ${gradientCard}
+            md:max-w-full md:w-full md:rounded-3xl md:p-10
+          `}
+        >
+          <Avatar className="w-14 h-14 border-4 border-white shadow md:w-20 md:h-20">
             <AvatarImage src={user?.profileImage} alt={user?.name} />
-            <AvatarFallback className="text-lg">{user?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+            <AvatarFallback className="text-lg md:text-2xl">
+              {user?.name?.split(' ').map(n => n[0]).join('')}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <div className="hidden md:block">
               <div className="flex flex-col">
-                <div className="text-xl font-bold">
+                <div className="text-2xl md:text-3xl font-bold">
                   {getGreeting()}, {user?.name || 'Student'}!
                 </div>
-                <div className="text-sm opacity-90 mt-2 italic">
-                  {/* You can randomize or rotate quotes if you want */}
+                <div className="text-base md:text-lg opacity-90 mt-2 italic">
                   "Success is the sum of small efforts, repeated day in and day out."
                 </div>
               </div>

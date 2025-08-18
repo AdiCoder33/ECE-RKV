@@ -104,27 +104,25 @@ const StudentTimetable = () => {
   const nextClass = getNextClass();
 
   return (
-    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-6 md:px-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
-      {/* Add gap between sidebar and main content only on desktop */}
-      <div className="hidden md:block" aria-hidden="true">
-        <div className="h-0 w-0 md:w-8 lg:w-16 xl:w-24 2xl:w-32 float-left"></div>
-      </div>
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-purple-900">My Timetable</h1>
-        <p className="text-purple-700">
+    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-4 md:px-12 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+      {/* Header */}
+      <div className="mb-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-indigo-900">My Timetable</h1>
+        <p className="text-indigo-700">
           Class schedule for Year {studentYear}, Sem {studentSemester}, Section {studentSection}
         </p>
       </div>
 
-      {/* Today's Schedule Overview */}
+      {/* Today's Schedule & Next Class */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-gradient-to-br from-white via-purple-50 to-pink-100 border-0 shadow">
+        {/* Today's Classes */}
+        <Card className="bg-white/90 border-0 shadow-lg rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-pink-900">
-              <Calendar className="h-5 w-5 text-pink-600" />
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Calendar className="h-5 w-5 text-blue-600" />
               Today's Classes
             </CardTitle>
-            <CardDescription className="text-pink-500">
+            <CardDescription className="text-blue-500">
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -137,17 +135,17 @@ const StudentTimetable = () => {
             {todaySchedule.length > 0 ? (
               <div className="space-y-3">
                 {todaySchedule.map(slot => (
-                  <div key={slot.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-pink-50 via-white to-purple-50 rounded-lg border border-pink-100">
-                    <div className="w-2 h-12 bg-pink-400 rounded-full"></div>
+                  <div key={slot.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 via-white to-indigo-50 rounded-xl border border-blue-100">
+                    <div className="w-2 h-12 bg-blue-400 rounded-full"></div>
                     <div className="flex-1">
-                      <div className="font-medium text-pink-900">{slot.subject}</div>
-                      <div className="text-sm text-pink-700 flex items-center gap-2">
+                      <div className="font-medium text-blue-900">{slot.subject}</div>
+                      <div className="text-sm text-blue-700 flex items-center gap-2">
                         <Clock className="h-3 w-3" />
                         {slot.time}
                         <MapPin className="h-3 w-3" />
                         {slot.room}
                       </div>
-                      <div className="text-xs text-pink-500 flex items-center gap-1">
+                      <div className="text-xs text-blue-500 flex items-center gap-1">
                         <User className="h-3 w-3" />
                         {slot.faculty}
                       </div>
@@ -157,36 +155,37 @@ const StudentTimetable = () => {
               </div>
             ) : (
               <div className="text-center py-6">
-                <GraduationCap className="h-12 w-12 mx-auto text-pink-200 mb-2" />
-                <p className="text-pink-400">No classes today</p>
+                <GraduationCap className="h-12 w-12 mx-auto text-blue-200 mb-2" />
+                <p className="text-blue-400">No classes today</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-white via-green-50 to-teal-100 border-0 shadow">
+        {/* Next Class */}
+        <Card className="bg-white/90 border-0 shadow-lg rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-teal-900">
-              <Clock className="h-5 w-5 text-teal-600" />
+            <CardTitle className="flex items-center gap-2 text-green-900">
+              <Clock className="h-5 w-5 text-green-600" />
               Next Class
             </CardTitle>
-            <CardDescription className="text-teal-500">Upcoming class information</CardDescription>
+            <CardDescription className="text-green-500">Upcoming class information</CardDescription>
           </CardHeader>
           <CardContent>
             {nextClass ? (
               <div className="space-y-3">
-                <div className="p-4 bg-gradient-to-r from-teal-50 via-white to-green-50 border border-teal-100 rounded-lg">
-                  <div className="font-medium text-teal-900 text-lg mb-2">{nextClass.subject}</div>
+                <div className="p-4 bg-gradient-to-r from-green-50 via-white to-teal-50 border border-green-100 rounded-xl">
+                  <div className="font-medium text-green-900 text-lg mb-2">{nextClass.subject}</div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-teal-700">
+                    <div className="flex items-center gap-2 text-sm text-green-700">
                       <Clock className="h-4 w-4" />
                       <span className="font-medium">{nextClass.time}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-teal-600">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
                       <MapPin className="h-4 w-4" />
                       {nextClass.room}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-teal-600">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
                       <User className="h-4 w-4" />
                       {nextClass.faculty}
                     </div>
@@ -195,8 +194,8 @@ const StudentTimetable = () => {
               </div>
             ) : (
               <div className="text-center py-6">
-                <Clock className="h-12 w-12 mx-auto text-teal-200 mb-2" />
-                <p className="text-teal-400">No more classes today</p>
+                <Clock className="h-12 w-12 mx-auto text-green-200 mb-2" />
+                <p className="text-green-400">No more classes today</p>
               </div>
             )}
           </CardContent>
@@ -204,22 +203,22 @@ const StudentTimetable = () => {
       </div>
 
       {/* Weekly Timetable Grid */}
-      <Card className="bg-gradient-to-br from-white via-gray-50 to-blue-50 border-0 shadow">
+      <Card className="bg-white/95 border-0 shadow-lg rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <Calendar className="h-5 w-5 text-blue-600" />
+          <CardTitle className="flex items-center gap-2 text-indigo-900">
+            <Calendar className="h-5 w-5 text-indigo-600" />
             Weekly Schedule
           </CardTitle>
-          <CardDescription className="text-blue-500">Complete weekly class timetable</CardDescription>
+          <CardDescription className="text-indigo-500">Complete weekly class timetable</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-blue-700 bg-blue-50">Time</th>
+                  <th className="text-left p-3 font-medium text-indigo-700 bg-indigo-50">Time</th>
                   {days.map(day => (
-                    <th key={day} className="text-left p-3 font-medium min-w-[120px] text-blue-700 bg-blue-50">
+                    <th key={day} className="text-left p-3 font-medium min-w-[120px] text-indigo-700 bg-indigo-50">
                       {day}
                     </th>
                   ))}
@@ -228,7 +227,7 @@ const StudentTimetable = () => {
               <tbody>
                 {timeSlots.map(time => (
                   <tr key={time} className="border-b">
-                    <td className="p-3 font-medium text-sm bg-blue-50 text-blue-800">
+                    <td className="p-3 font-medium text-sm bg-indigo-50 text-indigo-800">
                       <Clock className="h-4 w-4 inline mr-2" />
                       {time}
                     </td>
@@ -244,32 +243,32 @@ const StudentTimetable = () => {
                       return (
                         <td key={`${day}-${time}`} className="p-2 align-top">
                           {slot ? (
-                            <div className={`rounded-lg p-3 transition-colors border
+                            <div className={`rounded-xl p-3 transition-colors border
                               ${isCurrentTime
-                                ? 'border-blue-500 bg-gradient-to-r from-blue-100 via-indigo-50 to-white shadow-md'
-                                : 'border-blue-100 bg-gradient-to-r from-white via-gray-50 to-blue-50 hover:bg-blue-50/60'
+                                ? 'border-indigo-500 bg-gradient-to-r from-indigo-100 via-blue-50 to-white shadow-md'
+                                : 'border-indigo-100 bg-gradient-to-r from-white via-gray-50 to-indigo-50 hover:bg-indigo-50/60'
                               }`}>
-                              <div className="font-medium text-blue-900 mb-1 flex items-center gap-1">
+                              <div className="font-medium text-indigo-900 mb-1 flex items-center gap-1">
                                 <BookOpen className="h-3 w-3" />
                                 {slot.subject}
                               </div>
-                              <div className="text-xs text-blue-600 flex items-center gap-1 mb-1">
+                              <div className="text-xs text-indigo-600 flex items-center gap-1 mb-1">
                                 <MapPin className="h-3 w-3" />
                                 {slot.room}
                               </div>
-                              <div className="text-xs text-blue-600 flex items-center gap-1">
+                              <div className="text-xs text-indigo-600 flex items-center gap-1">
                                 <User className="h-3 w-3" />
                                 {slot.faculty}
                               </div>
                               {isCurrentTime && (
-                                <div className="mt-2 text-xs font-medium text-blue-700 animate-pulse">
+                                <div className="mt-2 text-xs font-medium text-indigo-700 animate-pulse">
                                   ● Now
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <div className="min-h-[70px] bg-gradient-to-r from-gray-50 via-white to-blue-50 rounded-lg border-2 border-dashed border-blue-100 flex items-center justify-center">
-                              <span className="text-xs text-blue-300">Free</span>
+                            <div className="min-h-[70px] bg-gradient-to-r from-gray-50 via-white to-indigo-50 rounded-xl border-2 border-dashed border-indigo-100 flex items-center justify-center">
+                              <span className="text-xs text-indigo-300">Free</span>
                             </div>
                           )}
                         </td>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +18,16 @@ import {
   Award,
   BookOpen,
   GraduationCap,
-  Building
+  Building,
+  Sparkles,
+  Star,
+  Trophy,
+  School,
+  UserCircle2
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import loaderMp4 from '@/Assets/loader.mp4';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -63,6 +68,7 @@ const Profile = () => {
       credits: number;
     }[],
   });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -135,6 +141,7 @@ const Profile = () => {
   const handleSave = async () => {
     if (!viewedId || !canEdit) return;
     try {
+      setSaving(true);
       setError(null);
       const token = localStorage.getItem('token');
       const payload: Record<string, unknown> = {
@@ -190,6 +197,8 @@ const Profile = () => {
       setIsEditing(false);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -283,10 +292,21 @@ const Profile = () => {
     }
   ];
 
-  if (loading) {
+  if (loading || saving) {
     return (
-      <div className="space-y-6 px-4 sm:px-6 md:px-0">
-        <Skeleton className="h-48 w-full" />
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 bg-[#fff8f3]">
+        <video
+          src={loaderMp4}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-24 h-24 object-contain rounded-lg shadow-lg mb-4"
+          aria-label="Loading animation"
+        />
+        <div className="text-[#b91c1c] font-semibold text-lg tracking-wide">
+          {saving ? 'Saving...' : 'Loading Profile...'}
+        </div>
       </div>
     );
   }
@@ -296,16 +316,21 @@ const Profile = () => {
   }
 
   return (
-    <div className="space-y-6 px-4 sm:px-6 md:px-0">
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-4 md:px-6 bg-[#fff8f3]">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Profile</h1>
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-[#b91c1c] via-[#2563eb] to-[#fbeee6] bg-clip-text text-transparent">Profile</h1>
           <p className="text-muted-foreground">Manage your personal information and preferences</p>
         </div>
         {canEdit && (
           <Button
             onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
             variant={isEditing ? 'default' : 'outline'}
+            className={`font-semibold shadow ${
+              isEditing
+                ? 'bg-[#b91c1c] text-white hover:bg-[#a31515]'
+                : 'border-[#b91c1c] text-[#b91c1c] hover:bg-[#fbeee6]'
+            }`}
           >
             {isEditing ? (
               <>
@@ -324,29 +349,27 @@ const Profile = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 bg-[#e0edff] shadow-xl rounded-2xl border border-[#2563eb]">
           <CardHeader className="text-center">
-            <div className="relative mx-auto w-24 h-24 mb-4">
+            <div className="relative mx-auto w-28 h-28 mb-4 drop-shadow-lg">
               {profileImage ? (
                 <img
                   src={profileImage}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover"
+                  className="w-28 h-28 rounded-full object-cover border-4 border-[#b91c1c] shadow"
                 />
               ) : (
-                <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-foreground">
-                    {formData.name?.charAt(0)}
-                  </span>
+                <div className="w-28 h-28 bg-[#fbeee6] rounded-full flex items-center justify-center shadow border-4 border-[#b91c1c]">
+                  <UserCircle2 className="h-16 w-16 text-[#b91c1c]" />
                 </div>
               )}
               {canEdit && (
                 <Button
                   size="sm"
-                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                  className="absolute -bottom-2 -right-2 rounded-full w-9 h-9 p-0 bg-[#b91c1c] text-white shadow"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Camera className="h-4 w-4" />
+                  <Camera className="h-5 w-5" />
                 </Button>
               )}
               <input
@@ -357,9 +380,9 @@ const Profile = () => {
                 onChange={handleImageUpload}
               />
             </div>
-            <CardTitle className="text-xl">{formData.name}</CardTitle>
-            <div className="flex justify-center">
-              <Badge className={getRoleBadgeColor(viewedRole)}>
+            <CardTitle className="text-2xl font-bold text-[#b91c1c]">{formData.name}</CardTitle>
+            <div className="flex justify-center mt-2">
+              <Badge className={getRoleBadgeColor(viewedRole) + " px-3 py-1 text-xs rounded-full shadow"}>
                 {viewedRole.toUpperCase()}
               </Badge>
             </div>
@@ -369,14 +392,14 @@ const Profile = () => {
             {viewedRole === 'student' && (
               <>
                 <div className="flex items-center gap-3">
-                  <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                  <School className="h-5 w-5 text-[#2563eb]" />
                   <div>
                     <p className="font-medium">Year & Section</p>
                     <p className="text-sm text-muted-foreground">{academicData.year}-{academicData.section}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <BookOpen className="h-5 w-5 text-muted-foreground" />
+                  <BookOpen className="h-5 w-5 text-[#b91c1c]" />
                   <div>
                     <p className="font-medium">Roll Number</p>
                     <p className="text-sm text-muted-foreground">{academicData.rollNumber}</p>
@@ -384,17 +407,15 @@ const Profile = () => {
                 </div>
               </>
             )}
-            
             <div className="flex items-center gap-3">
-              <Building className="h-5 w-5 text-muted-foreground" />
+              <Building className="h-5 w-5 text-[#2563eb]" />
               <div>
                 <p className="font-medium">Department</p>
                 <p className="text-sm text-muted-foreground">{department || 'N/A'}</p>
               </div>
             </div>
-
             <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-muted-foreground" />
+              <Mail className="h-5 w-5 text-[#b91c1c]" />
               <div>
                 <p className="font-medium">Email</p>
                 <p className="text-sm text-muted-foreground">{formData.email}</p>
@@ -406,17 +427,40 @@ const Profile = () => {
         {/* Main Content */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="personal" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="personal">Personal Info</TabsTrigger>
-              {viewedRole === 'student' && <TabsTrigger value="academic">Academic</TabsTrigger>}
-              <TabsTrigger value="achievements">Achievements</TabsTrigger>
+            <TabsList
+              className="flex w-full bg-[#fbeee6] rounded-xl shadow overflow-x-auto no-scrollbar gap-2 sm:gap-0"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              <TabsTrigger
+                value="personal"
+                className="flex-1 min-w-[120px] data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-lg text-center"
+              >
+                <User className="h-4 w-4 mr-1 text-[#b91c1c] inline" />
+                <span className="align-middle">Personal Info</span>
+              </TabsTrigger>
+              {viewedRole === 'student' && (
+                <TabsTrigger
+                  value="academic"
+                  className="flex-1 min-w-[120px] data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-lg text-center"
+                >
+                  <BookOpen className="h-4 w-4 mr-1 text-[#b91c1c] inline" />
+                  <span className="align-middle">Academic</span>
+                </TabsTrigger>
+              )}
+              <TabsTrigger
+                value="achievements"
+                className="flex-1 min-w-[120px] data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-lg text-center"
+              >
+                <Trophy className="h-4 w-4 mr-1 text-[#b91c1c] inline" />
+                <span className="align-middle">Achievements</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="personal">
-              <Card>
+              <Card className="bg-[#fff8f3] rounded-xl shadow border border-[#e5e7eb]">
                 <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Your personal details and contact information</CardDescription>
+                  <CardTitle className="text-[#b91c1c]">Personal Information</CardTitle>
+                  <CardDescription className="text-[#2563eb]">Your personal details and contact information</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,6 +470,7 @@ const Profile = () => {
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         disabled={!isEditing}
+                        className="rounded-lg"
                       />
                     </div>
                     <div>
@@ -434,86 +479,91 @@ const Profile = () => {
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         disabled={!isEditing}
+                        className="rounded-lg"
                       />
+                    </div>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Phone Number</label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        disabled={!isEditing}
+                        className="rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Date of Birth</label>
+                      <Input
+                        type="date"
+                        value={formData.dateOfBirth}
+                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                        disabled={!isEditing}
+                        className="rounded-lg"
+                      />
+                    </div>
+                  </div>
                   <div>
-                    <label className="text-sm font-medium">Phone Number</label>
-                    <Input
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                    <label className="text-sm font-medium">Address</label>
+                    <Textarea
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
                       disabled={!isEditing}
+                      rows={3}
+                      className="rounded-lg"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Date of Birth</label>
+                    <label className="text-sm font-medium">Blood Group</label>
                     <Input
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                      value={formData.bloodGroup}
+                      onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
                       disabled={!isEditing}
+                      className="rounded-lg"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Address</label>
-                  <Textarea
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    disabled={!isEditing}
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Blood Group</label>
-                  <Input
-                    value={formData.bloodGroup}
-                    onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             {viewedRole === 'student' && (
               <TabsContent value="academic">
-                <Card>
+                <Card className="bg-[#fbeee6] rounded-xl shadow border border-[#b91c1c]">
                   <CardHeader>
-                    <CardTitle>Academic Information</CardTitle>
-                    <CardDescription>Your academic progress and performance</CardDescription>
+                    <CardTitle className="text-[#b91c1c]">Academic Information</CardTitle>
+                    <CardDescription className="text-[#2563eb]">Your academic progress and performance</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-primary">{academicData.cgpa}</p>
-                        <p className="text-sm text-muted-foreground">CGPA</p>
+                        <p className="text-2xl font-bold text-[#b91c1c]">{academicData.cgpa}</p>
+                        <p className="text-sm text-[#2563eb]">CGPA</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">{academicData.attendance}%</p>
-                        <p className="text-sm text-muted-foreground">Attendance</p>
+                        <p className="text-2xl font-bold text-[#2563eb]">{academicData.attendance}%</p>
+                        <p className="text-sm text-[#b91c1c]">Attendance</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">{academicData.subjects.length}</p>
-                        <p className="text-sm text-muted-foreground">Subjects</p>
+                        <p className="text-2xl font-bold text-[#b91c1c]">{academicData.subjects.length}</p>
+                        <p className="text-sm text-[#2563eb]">Subjects</p>
                       </div>
                     </div>
-
                     <div>
-                      <h4 className="font-semibold mb-3">Current Semester Subjects</h4>
+                      <h4 className="font-semibold mb-3 text-[#b91c1c]">Current Semester Subjects</h4>
                       <div className="space-y-3">
                         {academicData.subjects.map((subject, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-[#fbeee6] rounded-lg shadow-sm border border-[#2563eb]"
+                          >
                             <div>
-                              <p className="font-medium">{subject.name}</p>
-                              <p className="text-sm text-muted-foreground">{subject.code}</p>
+                              <p className="font-medium text-[#2563eb]">{subject.name}</p>
+                              <p className="text-sm text-[#b91c1c]">{subject.code}</p>
                             </div>
                             <div className="text-right">
-                              <Badge variant="outline">{subject.grade}</Badge>
-                              <p className="text-sm text-muted-foreground mt-1">{subject.credits} credits</p>
+                              <Badge variant="outline" className="border-[#b91c1c] text-[#b91c1c] bg-[#fff8f3]">{subject.grade}</Badge>
+                              <p className="text-sm text-[#2563eb] mt-1">{subject.credits} credits</p>
                             </div>
                           </div>
                         ))}
@@ -525,36 +575,46 @@ const Profile = () => {
             )}
 
             <TabsContent value="achievements">
-              <Card>
+              <Card className="bg-[#fff8f3] rounded-xl shadow border border-[#b91c1c]">
                 <CardHeader>
-                  <CardTitle>Achievements & Awards</CardTitle>
-                  <CardDescription>Your accomplishments and recognitions</CardDescription>
+                  <CardTitle className="text-[#b91c1c]">Achievements & Awards</CardTitle>
+                  <CardDescription className="text-[#2563eb]">Your accomplishments and recognitions</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {achievements.map((achievement, index) => (
-                      <div key={index} className="border-l-4 border-primary pl-4 py-3">
+                    {achievements.length > 0 ? achievements.map((achievement, index) => (
+                      <div
+                        key={index}
+                        className="border-l-4 border-[#b91c1c] pl-4 py-3 bg-[#fff8f3] rounded-lg shadow-sm border border-[#b91c1c]"
+                      >
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-semibold">{achievement.title}</h4>
-                            <p className="text-muted-foreground">{achievement.description}</p>
+                            <h4 className="font-semibold flex items-center gap-2 text-[#b91c1c]">
+                              <Star className="h-4 w-4 text-[#2563eb]" />
+                              {achievement.title}
+                            </h4>
+                            <p className="text-[#2563eb]">{achievement.description}</p>
                             <div className="flex items-center gap-2 mt-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4 text-[#b91c1c]" />
+                              <span className="text-sm text-[#b91c1c]">
                                 {new Date(achievement.date).toLocaleDateString()}
                               </span>
-                              <Badge variant="outline">{achievement.category}</Badge>
+                              <Badge variant="outline" className="border-[#2563eb] text-[#2563eb] bg-[#fff8f3]">{achievement.category}</Badge>
                             </div>
                           </div>
-                          <Award className="h-6 w-6 text-primary" />
+                          <Trophy className="h-6 w-6 text-[#b91c1c]" />
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-center text-[#b91c1c] py-6">
+                        <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#2563eb]" />
+                        No achievements added yet.
+                      </div>
+                    )}
                   </div>
-                  
                   {canEdit && (
-                    <Button variant="outline" className="w-full mt-4">
-                      <Award className="h-4 w-4 mr-2" />
+                    <Button variant="outline" className="w-full mt-4 border-[#b91c1c] text-[#b91c1c] hover:bg-[#fbeee6]">
+                      <Sparkles className="h-4 w-4 mr-2" />
                       Add Achievement
                     </Button>
                   )}
@@ -564,6 +624,27 @@ const Profile = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Responsive tweaks */}
+      <style>
+        {`
+        @media (max-width: 640px) {
+          .grid-cols-3 {
+            grid-template-columns: 1fr !important;
+          }
+          .lg\\:col-span-2, .lg\\:col-span-1 {
+            grid-column: span 1 / span 1 !important;
+          }
+          .rounded-xl, .rounded-2xl {
+            border-radius: 1rem !important;
+          }
+          .px-2, .sm\\:px-4, .md\\:px-6 {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+          }
+        }
+        `}
+      </style>
     </div>
   );
 };
