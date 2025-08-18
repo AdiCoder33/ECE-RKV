@@ -313,7 +313,9 @@ const ProfessorDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Professor Dashboard</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
+            Good morning, {user?.name}
+          </h1>
           <p className="text-sm lg:text-base text-muted-foreground mt-1 lg:mt-2">Manage your classes and track student performance</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
