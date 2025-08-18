@@ -332,52 +332,52 @@ const ProfessorDashboard = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <Card className="border-border hover:shadow-md transition-shadow">
+        <Card className="border-border bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs lg:text-sm font-medium text-muted-foreground">Total Students</CardTitle>
-            <Users className="h-3 w-3 lg:h-4 lg:w-4 text-blue-600" />
+            <CardTitle className="text-xs lg:text-sm font-medium text-white">Total Students</CardTitle>
+            <Users className="h-3 w-3 lg:h-4 lg:w-4 text-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">
+            <div className="text-xl lg:text-2xl font-bold text-white">
               {metricsLoading ? '...' : metricsError ? 'N/A' : totalStudents}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-indigo-100">
               {metricsLoading ? '...' : metricsError ? 'N/A' : `Across ${activeClasses} classes`}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card className="border-border bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Classes</CardTitle>
-            <BookOpen className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-white">Active Classes</CardTitle>
+            <BookOpen className="h-4 w-4 text-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className="text-2xl font-bold text-white">
               {metricsLoading ? '...' : metricsError ? 'N/A' : activeClasses}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-emerald-100">
               {metricsLoading || metricsError ? '' : 'This semester'}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card className="border-border bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Attendance</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-white">Avg Attendance</CardTitle>
+            <Calendar className="h-4 w-4 text-white" />
           </CardHeader>
           <CardContent>
             {metricsLoading ? (
-              <div className="text-2xl font-bold text-foreground">...</div>
+              <div className="text-2xl font-bold text-white">...</div>
             ) : metricsError ? (
-              <div className="text-2xl font-bold text-foreground">N/A</div>
+              <div className="text-2xl font-bold text-white">N/A</div>
             ) : (
               <>
-                <div className="text-2xl font-bold text-foreground">{avgAttendance}%</div>
-                <Progress value={avgAttendance} className="mt-2" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className={avgAttendance >= 80 ? 'text-green-600' : 'text-yellow-600'}>
+                <div className="text-2xl font-bold text-white">{avgAttendance}%</div>
+                <Progress value={avgAttendance} className="mt-2 bg-white/20" />
+                <p className="text-xs text-white mt-1">
+                  <span className={avgAttendance >= 80 ? 'text-green-200' : 'text-yellow-200'}>
                     {avgAttendance >= 80 ? 'Good' : 'Needs attention'}
                   </span>
                 </p>
@@ -386,16 +386,16 @@ const ProfessorDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card className="border-border bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Grading</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium text-white">Pending Grading</CardTitle>
+            <Clock className="h-4 w-4 text-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className="text-2xl font-bold text-white">
               {metricsLoading ? '...' : metricsError ? 'N/A' : pendingGrading}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-yellow-100">
               {metricsLoading || metricsError ? '' : 'Assignments to grade'}
             </p>
           </CardContent>
@@ -405,7 +405,7 @@ const ProfessorDashboard = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Class Performance */}
-        <Card className="border-border">
+        <Card className="border-border bg-gradient-to-r from-blue-50 to-indigo-100">
           <CardHeader>
             <CardTitle className="text-foreground">Class Performance</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -438,7 +438,7 @@ const ProfessorDashboard = () => {
         </Card>
 
         {/* Attendance Trend */}
-        <Card className="border-border">
+        <Card className="border-border bg-gradient-to-r from-purple-50 to-pink-100">
           <CardHeader>
             <CardTitle className="text-foreground">Attendance Trend</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -474,7 +474,7 @@ const ProfessorDashboard = () => {
       {/* Today's Schedule and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Today's Schedule */}
-        <Card className="lg:col-span-2 border-border">
+        <Card className="lg:col-span-2 border-border bg-gradient-to-r from-slate-50 to-gray-100">
           <CardHeader>
             <CardTitle className="text-foreground flex items-center gap-2">
               <Clock className="h-5 w-5" />
@@ -553,7 +553,7 @@ const ProfessorDashboard = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="border-border">
+        <Card className="border-border bg-gradient-to-r from-teal-50 to-emerald-100">
           <CardHeader>
             <CardTitle className="text-foreground">Quick Actions</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -590,7 +590,7 @@ const ProfessorDashboard = () => {
       </div>
 
       {/* Recent Activities */}
-      <Card className="border-border">
+      <Card className="border-border bg-gradient-to-r from-gray-50 to-gray-100">
         <CardHeader>
           <CardTitle className="text-foreground">Recent Activities</CardTitle>
           <CardDescription className="text-muted-foreground">
@@ -619,7 +619,7 @@ const ProfessorDashboard = () => {
       </Card>
 
       {/* Class Details */}
-      <Card className="border-border">
+      <Card className="border-border bg-gradient-to-r from-slate-50 to-slate-100">
         <CardHeader>
           <CardTitle className="text-foreground">Class Overview</CardTitle>
           <CardDescription className="text-muted-foreground">
