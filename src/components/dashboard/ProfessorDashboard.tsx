@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Users, 
-  BookOpen, 
-  Calendar, 
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Users,
+  BookOpen,
+  Calendar,
   TrendingUp,
   Clock,
   CheckCircle,
@@ -311,24 +312,34 @@ const ProfessorDashboard = () => {
   return (
     <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
-            Good morning, {user?.name}
-          </h1>
-          <p className="text-sm lg:text-base text-muted-foreground mt-1 lg:mt-2">Manage your classes and track student performance</p>
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={user?.profileImage} alt={user?.name} />
+              <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
+                Good morning, {user?.name}
+              </h1>
+              <p className="text-sm lg:text-base text-muted-foreground mt-1 lg:mt-2">
+                Manage your classes and track student performance
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+            <Button variant="outline" size="sm" className="text-xs lg:text-sm">
+              <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
+              Export Report
+            </Button>
+            <Button size="sm" className="text-xs lg:text-sm">
+              <TrendingUp className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
+              Analytics
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" size="sm" className="text-xs lg:text-sm">
-            <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
-            Export Report
-          </Button>
-          <Button size="sm" className="text-xs lg:text-sm">
-            <TrendingUp className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
-            Analytics
-          </Button>
-        </div>
-      </div>
+      </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
