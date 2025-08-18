@@ -311,7 +311,7 @@ const ProfessorDashboard = () => {
   return (
     <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-6 lg:px-8">
       {/* Header */}
-      <Card className="p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white">
+      <Card className="p-4 bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-400 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
