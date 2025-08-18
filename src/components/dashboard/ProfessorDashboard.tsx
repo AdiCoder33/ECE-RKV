@@ -41,8 +41,10 @@ const ProfessorDashboard = () => {
   const THEME = {
     bgBeige: '#fbf4ea',
     accent: '#8b0000',
-    cardFrom: '#fff8f5',
-    cardTo: '#f3d1ce'
+    headerFrom: '#fff1f0', // very light rose
+    headerTo: '#f8d7d7', // pale maroon
+    metricFrom: '#fff8f5', // light beige
+    metricTo: '#f3d1ce' // soft maroon
   };
   const [classData, setClassData] = useState([]);
 
@@ -341,7 +343,7 @@ const ProfessorDashboard = () => {
     >
       {/* Header */}
       <Card
-        className={`p-4 bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+        className={`p-4 bg-gradient-to-r from-[${THEME.headerFrom}] to-[${THEME.headerTo}] border-none shadow-sm`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -395,7 +397,7 @@ const ProfessorDashboard = () => {
       {/* Key Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm hover:shadow-md transition-shadow`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle
@@ -417,7 +419,7 @@ const ProfessorDashboard = () => {
         </Card>
 
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle
@@ -439,7 +441,7 @@ const ProfessorDashboard = () => {
         </Card>
 
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle
@@ -476,7 +478,7 @@ const ProfessorDashboard = () => {
         </Card>
 
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle
@@ -502,7 +504,7 @@ const ProfessorDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Class Performance */}
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader>
             <CardTitle style={{ color: THEME.accent }}>Class Performance</CardTitle>
@@ -537,7 +539,7 @@ const ProfessorDashboard = () => {
 
         {/* Attendance Trend */}
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader>
             <CardTitle style={{ color: THEME.accent }}>Attendance Trend</CardTitle>
@@ -575,7 +577,7 @@ const ProfessorDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Today's Schedule */}
         <Card
-          className={`lg:col-span-2 bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`lg:col-span-2 bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader>
             <CardTitle className="flex items center gap-2" style={{ color: THEME.accent }}>
@@ -673,7 +675,7 @@ const ProfessorDashboard = () => {
 
         {/* Quick Actions */}
         <Card
-          className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+          className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
         >
           <CardHeader>
             <CardTitle style={{ color: THEME.accent }}>Quick Actions</CardTitle>
@@ -719,7 +721,7 @@ const ProfessorDashboard = () => {
 
       {/* Recent Activities */}
       <Card
-        className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+        className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
       >
         <CardHeader>
           <CardTitle style={{ color: THEME.accent }}>Recent Activities</CardTitle>
@@ -753,7 +755,7 @@ const ProfessorDashboard = () => {
 
       {/* Class Details */}
       <Card
-        className={`bg-gradient-to-br from-[${THEME.cardFrom}] to-[${THEME.cardTo}] border-none shadow-sm`}
+        className={`bg-gradient-to-br from-[${THEME.metricFrom}] to-[${THEME.metricTo}] border-none shadow-sm`}
       >
           <CardHeader>
             <CardTitle style={{ color: THEME.accent }}>Class Overview</CardTitle>
