@@ -9,7 +9,30 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { User } from '@/types';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+
+const UserSearchResult: React.FC<{
+  result: User;
+  onSelect: () => void;
+}> = ({ result, onSelect }) => {
+  const avatarSrc = useProfileImageSrc(result.profileImage);
+  return (
+    <Button
+      key={result.id}
+      variant="ghost"
+      className="w-full justify-start h-12 px-3"
+      onClick={onSelect}
+    >
+      <Avatar className="h-8 w-8 mr-3">
+        <AvatarImage src={avatarSrc ?? '/placeholder.svg'} alt={result.name} />
+        <AvatarFallback>{result.name.charAt(0)}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 text-left">
+        <p className="font-medium text-sm">{result.name}</p>
+      </div>
+    </Button>
+  );
+};
 
 const ChatList: React.FC = () => {
   const navigate = useNavigate();
@@ -104,20 +127,11 @@ const ChatList: React.FC = () => {
                   </div>
                 ) : (
                   searchFilteredResults.map(result => (
-                    <Button
+                    <UserSearchResult
                       key={result.id}
-                      variant="ghost"
-                      className="w-full justify-start h-12 px-3"
-                      onClick={() => navigate(`/dashboard/chat/user/${result.id}`)}
-                    >
-                      <Avatar className="h-8 w-8 mr-3">
-                        <AvatarImage src={getProfileImageSrc(result.profileImage) ?? '/placeholder.svg'} alt={result.name} />
-                        <AvatarFallback>{result.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium text-sm">{result.name}</p>
-                      </div>
-                    </Button>
+                      result={result}
+                      onSelect={() => navigate(`/dashboard/chat/user/${result.id}`)}
+                    />
                   ))
                 )}
               </div>

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -65,7 +65,7 @@ const Profile = () => {
     }[],
   });
 
-  const profileImageSrc = getProfileImageSrc(profileImage);
+  const profileImageSrc = useProfileImageSrc(profileImage);
 
   useEffect(() => {
     const fetchProfile = async () => {

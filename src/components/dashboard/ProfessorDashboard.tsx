@@ -21,7 +21,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 const ProfessorDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -30,6 +30,7 @@ const ProfessorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const avatarSrc = useProfileImageSrc(user?.profileImage);
 
   const [totalStudents, setTotalStudents] = useState(0);
   const [activeClasses, setActiveClasses] = useState(0);
@@ -349,7 +350,7 @@ const ProfessorDashboard = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={getProfileImageSrc(user?.profileImage) ?? '/placeholder.svg'} alt={user?.name} />
+              <AvatarImage src={avatarSrc ?? '/placeholder.svg'} alt={user?.name} />
               <AvatarFallback style={{ backgroundColor: THEME.accent, color: '#fff' }}>
                 {user?.name?.split(' ').map((n) => n[0]).join('')}
               </AvatarFallback>

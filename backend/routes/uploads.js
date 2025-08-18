@@ -87,4 +87,11 @@ router.post('/profile', authenticateToken, profileUpload.single('image'), async 
   }
 });
 
+router.get('/profile/:key', authenticateToken, async (req, res) => {
+  const { key } = req.params;
+  const command = new GetObjectCommand({ Bucket: process.env.B2_BUCKET, Key: key });
+  const url = await getSignedUrl(client, command, { expiresIn: 3600 });
+  res.json({ url });
+});
+
 module.exports = router;
