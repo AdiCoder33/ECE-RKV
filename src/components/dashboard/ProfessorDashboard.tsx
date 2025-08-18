@@ -321,9 +321,12 @@ const ProfessorDashboard = () => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-white">
-                Good morning, {user?.name}
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-baseline">
+                <h1 className="text-3xl font-bold text-white">Good morning</h1>
+                <p className="text-xl text-white sm:ml-2 sm:mt-0 mt-1 block sm:inline">
+                  {user?.name}
+                </p>
+              </div>
               <p className="text-sm lg:text-base text-white/90 mt-1 lg:mt-2">
                 Manage your classes and track student performance
               </p>
