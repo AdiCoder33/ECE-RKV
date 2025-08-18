@@ -46,10 +46,10 @@ const ProfessorDashboard = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 16) return 'Good afternoon';
-    if (hour < 19) return 'Good evening';
-    return 'Good night';
+    if (hour < 12) return 'Good Morning';
+    if (hour < 16) return 'Good Afternoon';
+    if (hour < 19) return 'Good Evening';
+    return 'Good Night';
   };
 
   const [greeting, setGreeting] = useState('');
