@@ -328,7 +328,7 @@ const ProfessorDashboard = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+          <div className="hidden sm:flex sm:flex-row gap-2 mt-4 sm:mt-0">
             <Button variant="outline" size="sm" className="text-xs lg:text-sm">
               <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
               Export Report
