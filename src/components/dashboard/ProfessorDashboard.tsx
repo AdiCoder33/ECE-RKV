@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,7 @@ const ProfessorDashboard = () => {
   const [avgAttendance, setAvgAttendance] = useState(0);
   const [pendingGrading, setPendingGrading] = useState(0);
   const [metricsLoading, setMetricsLoading] = useState(true);
-  const [metricsError, setMetricsError] = useState(false);
+  the [metricsError, setMetricsError] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [classData, setClassData] = useState([]);
@@ -330,7 +329,7 @@ const ProfessorDashboard = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+          <div className="hidden sm:flex sm:flex-row gap-2 mt-4 sm:mt-0">
             <Button
               variant="outline"
               size="sm"
@@ -496,7 +495,7 @@ const ProfessorDashboard = () => {
         {/* Today's Schedule */}
         <Card className="lg:col-span-2 border-border bg-gradient-to-r from-slate-50 to-gray-100">
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
+            <CardTitle className="text-foreground flex items center gap-2">
               <Clock className="h-5 w-5" />
               Today's Schedule
             </CardTitle>
