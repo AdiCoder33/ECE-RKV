@@ -3,6 +3,7 @@ const router = express.Router();
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { emitConversationUpdate } = require('../utils/conversations');
+const { resolveProfileImage } = require('../utils/images');
 
 // Get messages between two users
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
@@ -45,12 +46,15 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       ? result.recordset.slice(0, fetchLimit - 1)
       : result.recordset;
 
-    const formatted = sliced
-      .reverse()
-      .map(m => ({
-        ...m,
-        attachments: m.attachments ? JSON.parse(m.attachments) : []
-      }));
+    const formatted = await Promise.all(
+      sliced
+        .reverse()
+        .map(async m => ({
+          ...m,
+          sender_profileImage: await resolveProfileImage(m.sender_profileImage),
+          attachments: m.attachments ? JSON.parse(m.attachments) : []
+        }))
+    );
 
     res.json({
       messages: formatted,
@@ -109,6 +113,7 @@ router.post('/send', authenticateToken, async (req, res, next) => {
         ? JSON.parse(recordset[0].attachments)
         : [],
     };
+    savedMessage.sender_profileImage = await resolveProfileImage(savedMessage.sender_profileImage);
     const io = req.app.get('io');
     if (io) {
       io.to(`user:${receiverId}`).emit('private-message', savedMessage);

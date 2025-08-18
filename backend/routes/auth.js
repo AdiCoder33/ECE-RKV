@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { executeQuery } = require('../config/database');
+const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -38,7 +39,10 @@ router.post('/login', async (req, res, next) => {
     );
 
     const { password: _, profile_image, ...rest } = user;
-    const userWithoutPassword = { ...rest, profileImage: profile_image };
+    const userWithoutPassword = {
+      ...rest,
+      profileImage: await resolveProfileImage(profile_image)
+    };
 
     res.json({
       message: 'Login successful',
