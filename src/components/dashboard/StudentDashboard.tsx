@@ -18,7 +18,33 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+
+interface Classmate {
+  id: string;
+  name: string;
+  profileImage?: string;
+  rollNumber?: string;
+  [key: string]: unknown;
+}
+
+const ClassmateItem: React.FC<{ classmate: Classmate }> = ({ classmate }) => {
+  const imageSrc = useProfileImageSrc(classmate.profileImage);
+  return (
+    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+      <Avatar className="w-8 h-8">
+        <AvatarImage src={imageSrc ?? '/placeholder.svg'} alt={classmate.name} />
+        <AvatarFallback className="text-xs">
+          {classmate.name.split(' ').map(n => n[0]).join('')}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">{classmate.name}</p>
+        <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber}</p>
+      </div>
+    </div>
+  );
+};
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -296,18 +322,7 @@ const StudentDashboard = () => {
               </div>
             ) : classmates.length > 0 ? (
               classmates.slice(0, 4).map((classmate) => (
-                <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={getProfileImageSrc(classmate.profileImage) ?? '/placeholder.svg'} alt={classmate.name} />
-                    <AvatarFallback className="text-xs">
-                      {classmate.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{classmate.name}</p>
-                    <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber}</p>
-                  </div>
-                </div>
+                <ClassmateItem key={classmate.id} classmate={classmate} />
               ))
             ) : (
               <p className="text-sm text-muted-foreground">No classmates found</p>

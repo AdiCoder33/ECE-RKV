@@ -4,7 +4,7 @@ import { Check, CheckCheck } from 'lucide-react';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
@@ -30,7 +30,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
   const role = isGroup ? (message as ChatMessage).senderRole : null;
   const status = message.status || 'sent';
   const avatar = message.sender_profileImage;
-  const avatarSrc = getProfileImageSrc(avatar);
+  const avatarSrc = useProfileImageSrc(avatar);
   const initials = senderName
     ? senderName
         .split(' ')

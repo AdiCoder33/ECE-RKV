@@ -9,7 +9,7 @@ import { MessageSquare, Search, UserPlus, X, Pin, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { formatIST } from '@/utils/date';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 interface Conversation {
   id: string;
@@ -37,6 +37,79 @@ interface ConversationListProps {
   onOpenGroupDialog: () => void;
   onClose: () => void;
 }
+const formatTime = (timestamp: string | null | undefined) =>
+  timestamp
+    ? formatIST(timestamp, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : '';
+
+const SearchResultItem: React.FC<{ user: User; onClick: () => void }> = ({ user, onClick }) => {
+  const src = useProfileImageSrc(user.profileImage);
+  return (
+    <div
+      className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
+      onClick={onClick}
+    >
+      <Avatar className="h-10 w-10">
+        <AvatarImage src={src ?? '/placeholder.svg'} alt={user.name} />
+        <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+          {user.name.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 overflow-hidden">
+        <p className="text-sm font-medium truncate">{user.name}</p>
+      </div>
+    </div>
+  );
+};
+
+const ConversationRow: React.FC<{
+  conversation: Conversation;
+  onSelect: (c: Conversation) => void;
+  onPin: (e: React.MouseEvent, c: Conversation) => void;
+  onlineUsers: Set<number>;
+}> = ({ conversation, onSelect, onPin, onlineUsers }) => {
+  const src = useProfileImageSrc(conversation.avatar || undefined);
+  return (
+    <div
+      key={`${conversation.type}-${conversation.id}`}
+      className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
+      onClick={() => onSelect(conversation)}
+    >
+      <div className="relative">
+        <Avatar className="h-10 w-10">
+          <AvatarImage src={src ?? '/placeholder.svg'} />
+          <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+            {conversation.title.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
+        {conversation.type === 'direct' && onlineUsers.has(Number(conversation.id)) && (
+          <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+        )}
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <p className="text-sm font-medium truncate">{conversation.title}</p>
+        <p className="text-xs text-muted-foreground truncate">{conversation.lastMessage || ''}</p>
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <span className="text-xs text-muted-foreground">
+          {formatTime(conversation.lastActivity || null)}
+        </span>
+        {conversation.unreadCount && conversation.unreadCount > 0 && (
+          <Badge variant="destructive" className="text-xs">
+            {conversation.unreadCount}
+          </Badge>
+        )}
+      </div>
+      <Button variant="ghost" size="icon" onClick={(e) => onPin(e, conversation)}>
+        <Pin className={`h-4 w-4 ${conversation.pinned ? 'text-primary' : 'text-muted-foreground'}`} />
+      </Button>
+    </div>
+  );
+};
 
 const ConversationList: React.FC<ConversationListProps> = ({
   tab,
@@ -53,15 +126,6 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onOpenGroupDialog,
   onClose,
 }) => {
-  const formatTime = (timestamp: string | null | undefined) =>
-    timestamp
-      ? formatIST(timestamp, {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        })
-      : '';
-
   return (
     <>
       <CardHeader className="pb-3 border-b">
@@ -110,60 +174,23 @@ const ConversationList: React.FC<ConversationListProps> = ({
               </div>
             ) : (
               searchResults.map(u => (
-                <div
+                <SearchResultItem
                   key={u.id}
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
+                  user={u}
                   onClick={() => onStartChat(u)}
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={getProfileImageSrc(u.profileImage) ?? '/placeholder.svg'} alt={u.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground font-medium">
-                      {u.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-medium truncate">{u.name}</p>
-                  </div>
-                </div>
+                />
               ))
             )}
           </div>
         )}
         {conversations.map(c => (
-          <div
+          <ConversationRow
             key={`${c.type}-${c.id}`}
-            className="flex items-center gap-2 px-4 py-2 hover:bg-muted cursor-pointer"
-            onClick={() => onSelectConversation(c)}
-          >
-            <div className="relative">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={getProfileImageSrc(c.avatar) ?? '/placeholder.svg'} />
-                <AvatarFallback className="bg-primary text-primary-foreground font-medium">
-                  {c.title.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              {c.type === 'direct' && onlineUsers.has(Number(c.id)) && (
-                <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
-              )}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">{c.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{c.lastMessage || ''}</p>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-xs text-muted-foreground">
-                {formatTime(c.lastActivity || null)}
-              </span>
-              {c.unreadCount && c.unreadCount > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  {c.unreadCount}
-                </Badge>
-              )}
-            </div>
-            <Button variant="ghost" size="icon" onClick={(e) => onPin(e, c)}>
-              <Pin className={`h-4 w-4 ${c.pinned ? 'text-primary' : 'text-muted-foreground'}`} />
-            </Button>
-          </div>
+            conversation={c}
+            onSelect={onSelectConversation}
+            onPin={onPin}
+            onlineUsers={onlineUsers}
+          />
         ))}
       </ScrollArea>
     </>

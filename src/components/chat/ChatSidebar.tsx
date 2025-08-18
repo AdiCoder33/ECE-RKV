@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
-import { getProfileImageSrc } from '@/lib/profileImage';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
@@ -27,6 +27,36 @@ interface ChatSidebarProps {
   onToggle: () => void;
   onExpandedChange: (value: boolean) => void;
 }
+
+interface ConversationSummary {
+  type: 'direct' | 'group';
+  id: string | number;
+  title: string;
+  avatar?: string;
+  unreadCount?: number;
+}
+
+const ConversationButton: React.FC<{
+  convo: ConversationSummary;
+  onClick: () => void;
+}> = ({ convo, onClick }) => {
+  const avatarSrc = useProfileImageSrc(convo.avatar);
+  return (
+    <button onClick={onClick} className="relative">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
+        <AvatarFallback className="bg-primary text-primary-foreground">
+          {convo.title.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+      {convo.unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
+          {convo.unreadCount}
+        </span>
+      )}
+    </button>
+  );
+};
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isOpen,
@@ -421,26 +451,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <MessageSquare className="h-5 w-5" />
           </Button>
           {conversations.slice(0, 10).map(c => (
-            <button
+            <ConversationButton
               key={`${c.type}-${c.id}`}
+              convo={c}
               onClick={() => {
                 setActiveChat({ type: c.type, id: String(c.id), title: c.title });
                 onExpandedChange(true);
               }}
-              className="relative"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={getProfileImageSrc(c.avatar) ?? '/placeholder.svg'} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {c.title.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              {c.unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
-                  {c.unreadCount}
-                </span>
-              )}
-            </button>
+            />
           ))}
         </div>
       ) : null}
