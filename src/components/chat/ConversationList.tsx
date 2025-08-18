@@ -9,6 +9,7 @@ import { MessageSquare, Search, UserPlus, X, Pin, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { formatIST } from '@/utils/date';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 interface Conversation {
   id: string;
@@ -115,7 +116,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                   onClick={() => onStartChat(u)}
                 >
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={u.profileImage} alt={u.name} />
+                    <AvatarImage src={getProfileImageSrc(u.profileImage) ?? '/placeholder.svg'} alt={u.name} />
                     <AvatarFallback className="bg-primary text-primary-foreground font-medium">
                       {u.name.charAt(0)}
                     </AvatarFallback>
@@ -136,7 +137,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
           >
             <div className="relative">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={c.avatar} />
+                <AvatarImage src={getProfileImageSrc(c.avatar) ?? '/placeholder.svg'} />
                 <AvatarFallback className="bg-primary text-primary-foreground font-medium">
                   {c.title.charAt(0)}
                 </AvatarFallback>

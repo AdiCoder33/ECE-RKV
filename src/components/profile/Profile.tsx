@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -63,6 +64,8 @@ const Profile = () => {
       credits: number;
     }[],
   });
+
+  const profileImageSrc = getProfileImageSrc(profileImage);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -326,19 +329,11 @@ const Profile = () => {
         <Card className="lg:col-span-1">
           <CardHeader className="text-center">
             <div className="relative mx-auto w-24 h-24 mb-4">
-              {profileImage ? (
-                <img
-                  src={profileImage}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-foreground">
-                    {formData.name?.charAt(0)}
-                  </span>
-                </div>
-              )}
+              <img
+                src={profileImageSrc ?? '/placeholder.svg'}
+                alt="Profile"
+                className="w-24 h-24 rounded-full object-cover"
+              />
               {canEdit && (
                 <Button
                   size="sm"

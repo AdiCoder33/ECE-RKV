@@ -40,6 +40,7 @@ import {
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -302,7 +303,7 @@ const DashboardLayout: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profileImage} />
+                    <AvatarImage src={getProfileImageSrc(user?.profileImage) ?? '/placeholder.svg'} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {user?.name?.charAt(0)}
                     </AvatarFallback>

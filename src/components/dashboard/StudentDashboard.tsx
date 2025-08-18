@@ -18,6 +18,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -297,7 +298,7 @@ const StudentDashboard = () => {
               classmates.slice(0, 4).map((classmate) => (
                 <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={classmate.profileImage} alt={classmate.name} />
+                    <AvatarImage src={getProfileImageSrc(classmate.profileImage) ?? '/placeholder.svg'} alt={classmate.name} />
                     <AvatarFallback className="text-xs">
                       {classmate.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
