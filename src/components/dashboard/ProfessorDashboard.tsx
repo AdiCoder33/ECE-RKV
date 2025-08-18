@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,7 @@ const ProfessorDashboard = () => {
   const [avgAttendance, setAvgAttendance] = useState(0);
   const [pendingGrading, setPendingGrading] = useState(0);
   const [metricsLoading, setMetricsLoading] = useState(true);
-  const [metricsError, setMetricsError] = useState(false);
+  the [metricsError, setMetricsError] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [classData, setClassData] = useState([]);
@@ -312,28 +311,37 @@ const ProfessorDashboard = () => {
   return (
     <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-6 lg:px-8">
       {/* Header */}
-      <Card className="p-4">
+      <Card className="p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
               <AvatarImage src={user?.profileImage} alt={user?.name} />
-              <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              <AvatarFallback className="bg-white/20 text-white">
+                {user?.name?.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
+              <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 Good morning, {user?.name}
               </h1>
-              <p className="text-sm lg:text-base text-muted-foreground mt-1 lg:mt-2">
+              <p className="text-sm lg:text-base text-white/90 mt-1 lg:mt-2">
                 Manage your classes and track student performance
               </p>
             </div>
           </div>
           <div className="hidden sm:flex sm:flex-row gap-2 mt-4 sm:mt-0">
-            <Button variant="outline" size="sm" className="text-xs lg:text-sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs lg:text-sm text-white border-white/50 hover:bg-white/10"
+            >
               <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
               Export Report
             </Button>
-            <Button size="sm" className="text-xs lg:text-sm">
+            <Button
+              size="sm"
+              className="text-xs lg:text-sm text-white bg-white/20 hover:bg-white/30"
+            >
               <TrendingUp className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
               Analytics
             </Button>
@@ -487,7 +495,7 @@ const ProfessorDashboard = () => {
         {/* Today's Schedule */}
         <Card className="lg:col-span-2 border-border bg-gradient-to-r from-slate-50 to-gray-100">
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
+            <CardTitle className="text-foreground flex items center gap-2">
               <Clock className="h-5 w-5" />
               Today's Schedule
             </CardTitle>
