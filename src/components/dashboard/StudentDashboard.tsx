@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +17,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import loaderMp4 from '@/Assets/loader.mp4';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -142,174 +142,126 @@ const StudentDashboard = () => {
 
     fetchStudentData();
   }, [user?.id, user?.year, user?.semester, user?.section, apiBase, token, toast]);
+
+  // Helper for greeting
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  // Helper for gradient backgrounds
+  const gradientCard =
+    'bg-gradient-to-br from-blue-500 via-indigo-400 to-purple-400 text-white shadow-lg border-0';
+  const gradientMetrics = [
+    'bg-gradient-to-br from-cyan-500 via-blue-400 to-indigo-400 text-white shadow-md border-0',
+    'bg-gradient-to-br from-pink-500 via-red-400 to-orange-400 text-white shadow-md border-0',
+    'bg-gradient-to-br from-green-400 via-teal-400 to-blue-400 text-white shadow-md border-0',
+    'bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-400 text-white shadow-md border-0'
+  ];
+
+  // Responsive padding for mobile and desktop
   return (
-    <div className="space-y-4 md:space-y-6 px-4 py-2 sm:px-6 md:px-0">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Student Dashboard</h1>
-          <p className="text-muted-foreground mt-1 md:mt-2">Track your academic progress and performance</p>
+    <div className="min-h-screen px-2 py-2 sm:px-4 md:px-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+      {/* Loader */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70">
+          <video
+            src={loaderMp4}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-24 h-24 object-contain rounded-lg shadow-lg"
+            aria-label="Loading animation"
+          />
         </div>
-        <div className="flex flex-wrap gap-2 md:gap-3">
-          <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/student-attendance')}>
-            <Calendar className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">View Attendance</span>
-            <span className="sm:hidden">Attendance</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/profile')}>
-            <Award className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">My Profile</span>
-            <span className="sm:hidden">Profile</span>
-          </Button>
+      )}
+
+      {/* Greeting Card */}
+      <div className="flex justify-center mb-4">
+        <div className={`w-full max-w-md rounded-2xl p-5 flex items-center gap-4 ${gradientCard}`}>
+          <Avatar className="w-14 h-14 border-4 border-white shadow">
+            <AvatarImage src={user?.profileImage} alt={user?.name} />
+            <AvatarFallback className="text-lg">{user?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="hidden md:block">
+              <div className="flex flex-col">
+                <div className="text-xl font-bold">
+                  {getGreeting()}, {user?.name || 'Student'}!
+                </div>
+                <div className="text-sm opacity-90 mt-2 italic">
+                  {/* You can randomize or rotate quotes if you want */}
+                  "Success is the sum of small efforts, repeated day in and day out."
+                </div>
+              </div>
+            </div>
+            <div className="block md:hidden">
+              <div className="text-lg font-semibold">{getGreeting()},</div>
+              <div className="text-xl font-bold">{user?.name || 'Student'}!</div>
+              <div className="text-sm opacity-80 mt-1">Welcome back 👋</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-        <Card className="border-border">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6 mb-2">
+        <Card className={gradientMetrics[0]}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Current GPA</CardTitle>
-            <Award className="h-3 w-3 md:h-4 md:w-4 text-yellow-600" />
+            <CardTitle className="text-xs md:text-sm font-medium">Current GPA</CardTitle>
+            <Award className="h-4 w-4 opacity-80" />
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl font-bold text-foreground">No data available</div>
+            <div className="text-lg md:text-2xl font-bold">No data</div>
           </CardContent>
         </Card>
-
-        <Card className="border-border">
+        <Card className={gradientMetrics[1]}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Attendance</CardTitle>
-            <Calendar className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
+            <CardTitle className="text-xs md:text-sm font-medium">Attendance</CardTitle>
+            <Calendar className="h-4 w-4 opacity-80" />
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl font-bold text-foreground">{attendancePercentage}%</div>
-            <Progress value={attendancePercentage} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className={attendancePercentage >= 75 ? 'text-green-600' : 'text-red-600'}>
+            <div className="text-lg md:text-2xl font-bold">{attendancePercentage}%</div>
+            <Progress value={attendancePercentage} className="mt-2 bg-white/30" />
+            <p className="text-xs mt-1">
+              <span className={attendancePercentage >= 75 ? 'text-green-100' : 'text-red-100'}>
                 {attendancePercentage >= 75 ? 'Good' : 'Below min'}
               </span>
             </p>
           </CardContent>
         </Card>
-
-        <Card className="border-border">
+        <Card className={gradientMetrics[2]}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Credits</CardTitle>
-            <Target className="h-3 w-3 md:h-4 md:w-4 text-purple-600" />
+            <CardTitle className="text-xs md:text-sm font-medium">Credits</CardTitle>
+            <Target className="h-4 w-4 opacity-80" />
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl font-bold text-foreground">{totalCredits}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total credits this semester</p>
+            <div className="text-lg md:text-2xl font-bold">{totalCredits}</div>
+            <p className="text-xs mt-1">Total credits</p>
           </CardContent>
         </Card>
-
-        <Card className="border-border">
+        <Card className={gradientMetrics[3]}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">My Subjects</CardTitle>
-            <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
+            <CardTitle className="text-xs md:text-sm font-medium">My Subjects</CardTitle>
+            <BookOpen className="h-4 w-4 opacity-80" />
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="text-lg md:text-2xl font-bold text-foreground">{studentSubjects.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              This semester
-            </p>
+            <div className="text-lg md:text-2xl font-bold">{studentSubjects.length}</div>
+            <p className="text-xs mt-1">This semester</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {/* My Subjects */}
-        <Card className="border-border">
+        {/* Today's Schedule (moved to first position) */}
+        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              My Subjects
-            </CardTitle>
-            <CardDescription className="text-muted-foreground text-sm">
-              Current semester subjects
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-muted rounded animate-pulse"></div>
-                ))}
-              </div>
-            ) : studentSubjects.length > 0 ? (
-              studentSubjects.slice(0, 3).map((subject, index) => (
-                <div key={index} className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm md:text-base text-foreground">{subject.name}</h4>
-                      <p className="text-xs text-muted-foreground">{subject.code}</p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {subject.credits} Credits
-                    </Badge>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No subjects assigned</p>
-            )}
-            {studentSubjects.length > 3 && (
-              <Button variant="ghost" size="sm" className="w-full">
-                View All ({studentSubjects.length})
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* My Class */}
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              My Class
-            </CardTitle>
-            <CardDescription className="text-muted-foreground text-sm">
-              {user?.year} Year - Sem {user?.semester} - Section {user?.section}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-12 bg-muted rounded animate-pulse"></div>
-                ))}
-              </div>
-            ) : classmates.length > 0 ? (
-              classmates.slice(0, 4).map((classmate) => (
-                <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={classmate.profileImage} alt={classmate.name} />
-                    <AvatarFallback className="text-xs">
-                      {classmate.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{classmate.name}</p>
-                    <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No classmates found</p>
-            )}
-            {classmates.length > 4 && (
-              <Button variant="ghost" size="sm" className="w-full">
-                View All ({classmates.length})
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5" /> Today's Schedule
+            <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
+              <Calendar className="h-5 w-5 text-purple-500" /> Today's Schedule
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -317,7 +269,7 @@ const StudentDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {todaySchedule.length > 0 ? todaySchedule.map(slot => (
-              <div key={slot.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+              <div key={slot.id} className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded">
                 <div>
                   <div className="font-medium">{slot.subject}</div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -336,12 +288,99 @@ const StudentDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* My Class */}
+        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-indigo-500" />
+              My Class
+            </CardTitle>
+            <CardDescription className="text-muted-foreground text-sm">
+              {user?.year} Year - Sem {user?.semester} - Section {user?.section}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded animate-pulse"></div>
+                ))}
+              </div>
+            ) : classmates.length > 0 ? (
+              classmates.slice(0, 4).map((classmate) => (
+                <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 transition-colors">
+                  <Avatar className="w-8 h-8 border-2 border-blue-200">
+                    <AvatarImage src={classmate.profileImage} alt={classmate.name} />
+                    <AvatarFallback className="text-xs">
+                      {classmate.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{classmate.name}</p>
+                    <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No classmates found</p>
+            )}
+            {classmates.length > 4 && (
+              <Button variant="ghost" size="sm" className="w-full text-indigo-600">
+                View All ({classmates.length})
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* My Subjects (moved to last position) */}
+        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-blue-500" />
+              My Subjects
+            </CardTitle>
+            <CardDescription className="text-muted-foreground text-sm">
+              Current semester subjects
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded animate-pulse"></div>
+                ))}
+              </div>
+            ) : studentSubjects.length > 0 ? (
+              studentSubjects.slice(0, 3).map((subject, index) => (
+                <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 hover:bg-indigo-100/60 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm md:text-base text-foreground">{subject.name}</h4>
+                      <p className="text-xs text-muted-foreground">{subject.code}</p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                      {subject.credits} Credits
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No subjects assigned</p>
+            )}
+            {studentSubjects.length > 3 && (
+              <Button variant="ghost" size="sm" className="w-full text-blue-600">
+                View All ({studentSubjects.length})
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4">
         {/* Subject Performance */}
-        <Card className="border-border">
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100">
           <CardHeader>
             <CardTitle className="text-base md:text-lg text-foreground">Subject Performance</CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
@@ -357,25 +396,25 @@ const StudentDashboard = () => {
                   barCategoryGap={20}
                   margin={{ bottom: 40 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
                   <XAxis
                     dataKey="name"
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ angle: -45, textAnchor: 'end' }}
+                    stroke="#6366f1"
+                    tick={{ angle: -45, textAnchor: 'end', fill: '#6366f1' }}
                     interval={0}
                   />
-                  <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis domain={[0, 100]} stroke="#6366f1" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
+                      background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
+                      border: '1px solid #a5b4fc',
+                      borderRadius: '8px'
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="mid1" fill="hsl(var(--primary))" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mid2" fill="hsl(var(--chart-2))" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mid3" fill="hsl(var(--chart-3))" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mid1" fill="#6366f1" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mid2" fill="#818cf8" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mid3" fill="#a5b4fc" barSize={10} radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
@@ -387,7 +426,7 @@ const StudentDashboard = () => {
         </Card>
 
         {/* Subject Attendance */}
-        <Card className="border-border">
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-purple-100 via-blue-100 to-indigo-100">
           <CardHeader>
             <CardTitle className="text-base md:text-lg text-foreground">Subject Attendance</CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
@@ -398,19 +437,19 @@ const StudentDashboard = () => {
             <ResponsiveContainer width="100%" height={250}>
               {subjectAttendanceData.length > 0 ? (
                 <BarChart data={subjectAttendanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
+                  <XAxis dataKey="name" stroke="#a78bfa" />
+                  <YAxis domain={[0, 100]} stroke="#a78bfa" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
+                      background: 'linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%)',
+                      border: '1px solid #a78bfa',
+                      borderRadius: '8px'
                     }}
                   />
                   <Bar
                     dataKey="attendance"
-                    fill="hsl(var(--primary))"
+                    fill="#a78bfa"
                     barSize={40}
                     radius={[4, 4, 0, 0]}
                   />
@@ -425,6 +464,21 @@ const StudentDashboard = () => {
         </Card>
       </div>
 
+      {/* Mobile-only: Quick Actions */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-2 flex justify-around md:hidden shadow-2xl">
+        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/student-attendance')}>
+          <Calendar className="h-6 w-6 mb-1" />
+          <span className="text-xs">Attendance</span>
+        </Button>
+        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/timetable')}>
+          <BookOpen className="h-6 w-6 mb-1" />
+          <span className="text-xs">Timetable</span>
+        </Button>
+        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/my-marks')}>
+          <Award className="h-6 w-6 mb-1" />
+          <span className="text-xs">Marks</span>
+        </Button>
+      </div>
     </div>
   );
 };
