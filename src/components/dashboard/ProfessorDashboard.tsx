@@ -35,7 +35,7 @@ const ProfessorDashboard = () => {
   const [avgAttendance, setAvgAttendance] = useState(0);
   const [pendingGrading, setPendingGrading] = useState(0);
   const [metricsLoading, setMetricsLoading] = useState(true);
-  the [metricsError, setMetricsError] = useState(false);
+  const [metricsError, setMetricsError] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [classData, setClassData] = useState([]);
