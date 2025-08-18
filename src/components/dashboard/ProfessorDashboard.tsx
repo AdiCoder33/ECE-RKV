@@ -323,7 +323,7 @@ const ProfessorDashboard = () => {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-baseline">
                 <h1 className="text-3xl font-bold text-white">Good morning</h1>
-                <p className="text-xl text-white sm:ml-2 sm:mt-0 mt-1 block sm:inline">
+                <p className="text-2xl font-bold text-white sm:ml-2 sm:mt-0 mt-1 block sm:inline">
                   {user?.name}
                 </p>
               </div>
