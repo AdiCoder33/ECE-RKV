@@ -65,20 +65,17 @@ interface PeriodOption {
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
-// Palette for the refreshed UI
-const COLORS = {
-  accent: '#8B0000', // Deep red for headlines
-  subAccent: '#B23A48', // Muted red for subheadlines
-  cream: '#f7ede0ff', // Cream background
-  card: '#FFFFFF', // Card background
-  border: '#E5E3DD', // Soft border
-  text: '#2D2D2D', // Main text
-  muted: '#6B7280', // Muted text
-  present: '#3BA55D', // Green for present
-  absent: '#E57373', // Soft red for absent
-  warning: '#FBC02D', // Yellow for warning
-  blue: '#4F8FC0', // Soft blue for accents
-  grayBtn: '#F3F4F6', // Light gray for buttons
+// Core theme colors
+const THEME = {
+  bgBeige: '#fbf4ea',
+  accent: '#8b0000',
+};
+
+// Status-specific colors
+const STATUS_COLORS = {
+  present: '#3BA55D',
+  absent: '#E57373',
+  warning: '#FBC02D',
 };
 
 // Map from "start-end" time to period number
@@ -455,8 +452,10 @@ const AttendanceManager: React.FC = () => {
         className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
         aria-label="Loading animation"
       />
-      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading Attendance...</div>
-      <div className="text-[#a52a2a] text-sm mt-1">Fetching attendance data, please wait</div>
+      <div className="font-semibold text-lg tracking-wide" style={{ color: THEME.accent }}>
+        Loading Attendance...
+      </div>
+      <div className="text-sm mt-1 text-gray-600">Fetching attendance data, please wait</div>
     </div>
   );
 
@@ -478,46 +477,41 @@ const AttendanceManager: React.FC = () => {
       }
     };
     fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading)
     return (
-      <div className="p-0 flex items-center justify-center min-h-screen" style={{ background: COLORS.cream }}>
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ background: THEME.bgBeige }}>
         <EceVideoLoader />
       </div>
     );
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   return (
-    <div className="min-h-screen w-full" style={{ background: COLORS.cream }}>
+    <div className="min-h-screen w-full" style={{ background: THEME.bgBeige }}>
       <div className="mx-auto w-full max-w-7xl px-2 sm:px-4 md:px-8 py-3 sm:py-6 md:py-8 space-y-3 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
           <div className="space-y-1">
             <h1
               className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight"
-              style={{ color: COLORS.accent }}
+              style={{ color: THEME.accent }}
             >
               Attendance Management
             </h1>
-            <p className="text-xs sm:text-base" style={{ color: COLORS.subAccent }}>
-              Mark and track student attendance
-            </p>
+            <p className="text-xs sm:text-base text-gray-600">Mark and track student attendance</p>
           </div>
           <div className="flex items-center gap-1 sm:gap-3">
             <Button
               variant="outline"
-              className="border rounded-md px-2 py-1 text-sm sm:text-base"
-              style={{ borderColor: COLORS.border, color: COLORS.blue, background: COLORS.grayBtn, minWidth: 0 }}
+              className="border border-stone-300 bg-gray-100 text-gray-700 rounded-md px-2 py-1 text-sm sm:text-base"
             >
               <Download className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Export</span>
             </Button>
             <Button
               variant="outline"
-              className="border rounded-md px-2 py-1 text-sm sm:text-base"
-              style={{ borderColor: COLORS.border, color: COLORS.blue, background: COLORS.grayBtn, minWidth: 0 }}
+              className="border border-stone-300 bg-gray-100 text-gray-700 rounded-md px-2 py-1 text-sm sm:text-base"
             >
               <Upload className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Import</span>
@@ -526,14 +520,11 @@ const AttendanceManager: React.FC = () => {
         </div>
 
         {/* Class / Slot / Date / Period */}
-        <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+        <Card className="bg-white border border-stone-300">
           <CardContent className="p-3 sm:p-5 md:p-6">
             {isProfessor && (
-              <div
-                className="rounded-lg p-2 mb-3"
-                style={{ background: '#FDEFEF', border: `1px solid ${COLORS.border}` }}
-              >
-                <p className="text-xs sm:text-sm" style={{ color: COLORS.accent }}>
+              <div className="rounded-lg p-2 mb-3 bg-red-50 border border-stone-300">
+                <p className="text-xs sm:text-sm" style={{ color: THEME.accent }}>
                   <strong>Professor Access:</strong> You can only mark attendance for your assigned classes and subjects.
                 </p>
               </div>
@@ -543,7 +534,7 @@ const AttendanceManager: React.FC = () => {
               {/* For Professors: Slot select; For others: Year & Section */}
               {isProfessor ? (
                 <div className="space-y-1 md:col-span-2">
-                  <Label htmlFor="slot-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                  <Label htmlFor="slot-select" style={{ color: THEME.accent, fontSize: 13 }}>
                     Choose Class Slot
                   </Label>
                   <select
@@ -565,8 +556,7 @@ const AttendanceManager: React.FC = () => {
                         setPeriodOptions([]);
                       }
                     }}
-                    className="w-full p-2 rounded-md text-sm"
-                    style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                    className="w-full p-2 rounded-md text-sm border border-stone-300 bg-white text-gray-800"
                   >
                     <option value="">Select Slot</option>
                     {slotOptions.map((option) => (
@@ -579,15 +569,14 @@ const AttendanceManager: React.FC = () => {
               ) : (
                 <>
                   <div className="space-y-1">
-                    <Label htmlFor="year-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                    <Label htmlFor="year-select" style={{ color: THEME.accent, fontSize: 13 }}>
                       Year
                     </Label>
                     <select
                       id="year-select"
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className="w-full p-2 rounded-md text-sm"
-                      style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                      className="w-full p-2 rounded-md text-sm border border-stone-300 bg-white text-gray-800"
                     >
                       {years.map((year) => (
                         <option key={year} value={year}>
@@ -598,15 +587,14 @@ const AttendanceManager: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="section-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                    <Label htmlFor="section-select" style={{ color: THEME.accent, fontSize: 13 }}>
                       Section
                     </Label>
                     <select
                       id="section-select"
                       value={selectedSection}
                       onChange={(e) => setSelectedSection(e.target.value)}
-                      className="w-full p-2 rounded-md text-sm"
-                      style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                      className="w-full p-2 rounded-md text-sm border border-stone-300 bg-white text-gray-800"
                     >
                       {sections.map((section) => (
                         <option key={section} value={section}>
@@ -619,7 +607,7 @@ const AttendanceManager: React.FC = () => {
               )}
 
               <div className="space-y-1">
-                <Label htmlFor="date-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                <Label htmlFor="date-select" style={{ color: THEME.accent, fontSize: 13 }}>
                   Date
                 </Label>
                 <Input
@@ -627,13 +615,12 @@ const AttendanceManager: React.FC = () => {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full text-sm"
-                  style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                  className="w-full text-sm border border-stone-300 bg-white text-gray-800"
                 />
               </div>
 
               <div className="space-y-1 xs:col-span-2 md:col-span-2">
-                <Label htmlFor="period-select" style={{ color: COLORS.accent, fontSize: 13 }}>
+                <Label htmlFor="period-select" style={{ color: THEME.accent, fontSize: 13 }}>
                   Period
                 </Label>
                 <select
@@ -645,8 +632,7 @@ const AttendanceManager: React.FC = () => {
                     const option = periodOptions.find((o) => o.value === value);
                     setSelectedSubject(option?.subjectId || '');
                   }}
-                  className="w-full p-2 rounded-md text-sm"
-                  style={{ background: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                  className="w-full p-2 rounded-md text-sm border border-stone-300 bg-white text-gray-800"
                 >
                   <option value="">Select Period</option>
                   {periodOptions.map((option) => (
@@ -662,68 +648,60 @@ const AttendanceManager: React.FC = () => {
 
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
-          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+          <Card className="bg-white border border-stone-300">
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
-                    Total Students
-                  </p>
-                  <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.accent }}>
+                  <p className="text-xs font-medium text-gray-500">Total Students</p>
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: THEME.accent }}>
                     {students.length}
                   </p>
                 </div>
-                <Users className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.blue }} />
+                <Users className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: THEME.accent }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+          <Card className="bg-white border border-stone-300">
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
-                    Present
-                  </p>
-                  <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.present }}>
+                  <p className="text-xs font-medium text-gray-500">Present</p>
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: STATUS_COLORS.present }}>
                     {presentCount}
                   </p>
                 </div>
-                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.present }} />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: STATUS_COLORS.present }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+          <Card className="bg-white border border-stone-300">
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
-                    Absent
-                  </p>
-                  <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.absent }}>
+                  <p className="text-xs font-medium text-gray-500">Absent</p>
+                  <p className="text-lg sm:text-2xl font-bold" style={{ color: STATUS_COLORS.absent }}>
                     {absentCount}
                   </p>
                 </div>
-                <XCircle className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.absent }} />
+                <XCircle className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: STATUS_COLORS.absent }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+          <Card className="bg-white border border-stone-300">
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
                 <div className="w-full">
-                  <p className="text-xs font-medium" style={{ color: COLORS.muted }}>
-                    Attendance Rate
-                  </p>
+                  <p className="text-xs font-medium text-gray-500">Attendance Rate</p>
                   <div className="flex items-end justify-between">
-                    <p className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.blue }}>
+                    <p className="text-lg sm:text-2xl font-bold" style={{ color: THEME.accent }}>
                       {attendanceRate}%
                     </p>
-                    <Calendar className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: COLORS.blue }} />
+                    <Calendar className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: THEME.accent }} />
                   </div>
-                  <Progress value={attendanceRate} className="mt-2 h-2" style={{ background: COLORS.cream }} />
+                  <Progress value={attendanceRate} className="mt-2 h-2 bg-gray-100" />
                 </div>
               </div>
             </CardContent>
@@ -731,14 +709,14 @@ const AttendanceManager: React.FC = () => {
         </div>
 
         {/* Students */}
-        <Card style={{ background: COLORS.card, borderColor: COLORS.border }}>
+        <Card className="bg-white border border-stone-300">
           <CardHeader className="pb-2 sm:pb-4">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-base sm:text-lg" style={{ color: COLORS.accent }}>
+                <CardTitle className="text-base sm:text-lg" style={{ color: THEME.accent }}>
                   Student Attendance – Year {selectedYear}, Section {selectedSection}
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm" style={{ color: COLORS.blue }}>
+                <CardDescription className="text-xs sm:text-sm text-gray-600">
                   {selectedDate} • {periodOptions.find((p) => p.value === selectedPeriod)?.label}
                 </CardDescription>
               </div>
@@ -746,8 +724,8 @@ const AttendanceManager: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border rounded px-2 py-1 text-xs sm:text-sm"
-                  style={{ borderColor: COLORS.border, color: COLORS.present, background: COLORS.grayBtn }}
+                  className="border border-stone-300 bg-gray-100 rounded px-2 py-1 text-xs sm:text-sm"
+                  style={{ color: STATUS_COLORS.present }}
                   onClick={markAllPresent}
                 >
                   Mark All Present
@@ -755,8 +733,8 @@ const AttendanceManager: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border rounded px-2 py-1 text-xs sm:text-sm"
-                  style={{ borderColor: COLORS.border, color: COLORS.absent, background: COLORS.grayBtn }}
+                  className="border border-stone-300 bg-gray-100 rounded px-2 py-1 text-xs sm:text-sm"
+                  style={{ color: STATUS_COLORS.absent }}
                   onClick={markAllAbsent}
                 >
                   Mark All Absent
@@ -771,14 +749,13 @@ const AttendanceManager: React.FC = () => {
                   placeholder="Search students..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-8 sm:h-10 border border-gray-200 focus-visible:ring-blue-200 bg-white text-sm"
+                  className="pl-9 h-8 sm:h-10 border border-gray-200 focus-visible:ring-gray-200 bg-white text-sm"
                 />
               </div>
               <Button
                 variant="outline"
                 size="icon"
-                className="border rounded text-blue-700 hover:bg-blue-50 h-8 w-8 sm:h-10 sm:w-10"
-                style={{ borderColor: COLORS.border, background: COLORS.grayBtn }}
+                className="border border-stone-300 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded h-8 w-8 sm:h-10 sm:w-10"
               >
                 <Filter className="h-4 w-4" />
               </Button>
@@ -815,7 +792,7 @@ const AttendanceManager: React.FC = () => {
                                 checked={student.present === true}
                                 onCheckedChange={() => toggleAttendance(student.id)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
+                                className="data-[state=checked]:border-red-800 data-[state=checked]:bg-red-800"
                               />
                               <div className="flex items-center gap-1">
                                 <div
@@ -827,7 +804,7 @@ const AttendanceManager: React.FC = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-5 w-5 text-gray-500 hover:text-blue-700"
+                                  className="h-5 w-5 text-gray-500 hover:text-gray-700"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     clearAttendance(student.id);
@@ -840,7 +817,7 @@ const AttendanceManager: React.FC = () => {
                             </div>
 
                             <div className="text-center space-y-1.5">
-                              <div className="text-lg sm:text-2xl font-extrabold text-blue-700 leading-none">
+                              <div className="text-lg sm:text-2xl font-extrabold leading-none" style={{ color: THEME.accent }}>
                                 {student.rollNumber}
                               </div>
                               <p className="font-medium text-[12px] sm:text-sm text-foreground line-clamp-1">
@@ -850,7 +827,7 @@ const AttendanceManager: React.FC = () => {
                                 {student.collegeId}
                               </p>
                               <div className="flex items-center justify-between mt-1.5">
-                                <span className="text-[10px] sm:text-xs font-medium text-blue-700">
+                                <span className="text-[10px] sm:text-xs font-medium" style={{ color: THEME.accent }}>
                                   {student.attendancePercentage}%
                                 </span>
                                 <Badge variant={attendanceBadge.variant} className="hidden md:inline-flex text-[10px]">
@@ -867,8 +844,8 @@ const AttendanceManager: React.FC = () => {
               </CarouselContent>
 
               <div className="mt-2 flex items-center justify-between">
-                <CarouselPrevious className="relative left-0 border border-gray-300 text-blue-700 hover:bg-blue-50 h-8 w-8" />
-                <CarouselNext className="relative right-0 border border-gray-300 text-blue-700 hover:bg-blue-50 h-8 w-8" />
+                <CarouselPrevious className="relative left-0 border border-stone-300 text-gray-700 hover:bg-gray-200 h-8 w-8" />
+                <CarouselNext className="relative right-0 border border-stone-300 text-gray-700 hover:bg-gray-200 h-8 w-8" />
               </div>
             </Carousel>
           </CardContent>
@@ -879,7 +856,7 @@ const AttendanceManager: React.FC = () => {
           <Button
             size="sm"
             style={{
-              background: COLORS.blue,
+              background: THEME.accent,
               color: '#fff',
               borderRadius: '0.75rem',
               height: '2.25rem',
