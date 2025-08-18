@@ -611,7 +611,7 @@ const ProfessorDashboard = () => {
             <Button 
               className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" 
               variant="outline"
-              onClick={() => navigate('/dashboard/marks-upload')}
+              onClick={() => navigate('/dashboard/marks?tab=upload')}
             >
               <FileText className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Upload Marks

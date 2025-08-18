@@ -30,9 +30,7 @@ import AlumniProfile from './components/profile/AlumniProfile';
 import ContactAlumni from './pages/ContactAlumni';
 import ResumeBuilder from './components/profile/ResumeBuilder';
 import StudentMarks from './components/marks/StudentMarks';
-import MarksUpload from './components/marks/MarksUpload';
-import MarksOverview from './components/marks/MarksOverview';
-import NonStudentRoute from './components/auth/NonStudentRoute';
+import Marks from './components/marks/Marks';
 import ChatList from './components/chat/ChatList';
 import ChatConversation from './components/chat/ChatConversation';
 import StudentProfile from './components/profile/StudentProfile';
@@ -82,15 +80,7 @@ function App() {
                   <Route path="resume" element={<ResumeBuilder />} />
                   <Route path="my-marks" element={<StudentMarks />} />
                   <Route path="students/:studentId" element={<StudentProfile />} />
-                  <Route
-                    path="marks-overview"
-                    element={
-                      <NonStudentRoute>
-                        <MarksOverview />
-                      </NonStudentRoute>
-                    }
-                  />
-                  <Route path="marks-upload" element={<MarksUpload />} />
+                  <Route path="marks" element={<Marks />} />
                   <Route path="chat" element={<ChatList />} />
                   <Route path="chat/:type/:id" element={<ChatConversation />} />
                   <Route path="settings" element={<Settings />} />
