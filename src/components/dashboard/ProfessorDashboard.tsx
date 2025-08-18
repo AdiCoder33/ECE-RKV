@@ -44,6 +44,23 @@ const ProfessorDashboard = () => {
   const [gradingDistribution, setGradingDistribution] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 16) return 'Good afternoon';
+    if (hour < 19) return 'Good evening';
+    return 'Good night';
+  };
+
+  const [greeting, setGreeting] = useState('');
+
+  useEffect(() => {
+    const updateGreeting = () => setGreeting(getGreeting());
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Demo today's schedule
   const demoSchedule = [
     {
@@ -322,7 +339,7 @@ const ProfessorDashboard = () => {
             </Avatar>
             <div>
               <div className="flex flex-col sm:flex-row sm:items-baseline">
-                <h1 className="text-3xl font-bold text-white">Good morning</h1>
+                <h1 className="text-3xl font-bold text-white">{greeting}</h1>
                 <p className="text-xl text-white sm:ml-2 sm:mt-0 mt-1 block sm:inline">
                   {user?.name}
                 </p>
