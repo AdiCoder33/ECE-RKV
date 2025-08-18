@@ -38,6 +38,7 @@ const ProfessorDashboard = () => {
   const [metricsError, setMetricsError] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const THEME = { bgBeige: '#fbf4ea', accent: '#8b0000' };
   const [classData, setClassData] = useState([]);
 
   const [attendanceTrend, setAttendanceTrend] = useState([]);
@@ -320,31 +321,45 @@ const ProfessorDashboard = () => {
   if (authLoading || !user?.id) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2"
+          style={{ borderColor: THEME.accent }}
+        ></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-6 lg:px-8">
+    <div
+      className="min-h-screen space-y-4 lg:space-y-6 px-4 py-4 sm:px-6 md:px-6 lg:px-8"
+      style={{ backgroundColor: THEME.bgBeige }}
+    >
       {/* Header */}
-      <Card className="p-4 bg-gradient-to-r from-sky-600 via-blue-500 to-indigo-400 text-white">
+      <Card className="p-4 bg-white border-stone-300">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
               <AvatarImage src={user?.profileImage} alt={user?.name} />
-              <AvatarFallback className="bg-white/20 text-white">
-                {user?.name?.split(' ').map(n => n[0]).join('')}
+              <AvatarFallback style={{ backgroundColor: THEME.accent, color: '#fff' }}>
+                {user?.name?.split(' ').map((n) => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             <div>
               <div className="flex flex-col sm:flex-row sm:items-baseline">
-                <h1 className="text-3xl font-bold text-white">{greeting}</h1>
-                <p className="text-xl text-white sm:ml-2 sm:mt-0 mt-1 block sm:inline">
+                <h1
+                  className="text-3xl font-bold"
+                  style={{ color: THEME.accent }}
+                >
+                  {greeting}
+                </h1>
+                <p
+                  className="text-xl sm:ml-2 sm:mt-0 mt-1 block sm:inline"
+                  style={{ color: THEME.accent }}
+                >
                   {user?.name}
                 </p>
               </div>
-              <p className="text-sm lg:text-base text-white/90 mt-1 lg:mt-2">
+              <p className="text-sm lg:text-base mt-1 lg:mt-2 text-stone-700">
                 Manage your classes and track student performance
               </p>
             </div>
@@ -353,14 +368,15 @@ const ProfessorDashboard = () => {
             <Button
               variant="outline"
               size="sm"
-              className="text-xs lg:text-sm text-white border-white/50 hover:bg-white/10"
+              className={`text-xs lg:text-sm border-[${THEME.accent}] text-[${THEME.accent}] hover:bg-[${THEME.accent}] hover:text-white`}
             >
               <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
               Export Report
             </Button>
             <Button
               size="sm"
-              className="text-xs lg:text-sm text-white bg-white/20 hover:bg-white/30"
+              className="text-xs lg:text-sm"
+              style={{ backgroundColor: THEME.accent, color: '#fff' }}
             >
               <TrendingUp className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
               Analytics
@@ -371,52 +387,73 @@ const ProfessorDashboard = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <Card className="border-border bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:shadow-md transition-shadow">
+        <Card className="bg-white border-stone-300 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs lg:text-sm font-medium text-white">Total Students</CardTitle>
-            <Users className="h-3 w-3 lg:h-4 lg:w-4 text-white" />
+            <CardTitle
+              className="text-xs lg:text-sm font-medium"
+              style={{ color: THEME.accent }}
+            >
+              Total Students
+            </CardTitle>
+            <Users className="h-3 w-3 lg:h-4 lg:w-4" style={{ color: THEME.accent }} />
           </CardHeader>
           <CardContent>
-            <div className="text-xl lg:text-2xl font-bold text-white">
+            <div className="text-xl lg:text-2xl font-bold text-gray-900">
               {metricsLoading ? '...' : metricsError ? 'N/A' : totalStudents}
             </div>
-            <p className="text-xs text-indigo-100">
+            <p className="text-xs text-stone-500">
               {metricsLoading ? '...' : metricsError ? 'N/A' : `Across ${activeClasses} classes`}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white">
+        <Card className="bg-white border-stone-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Active Classes</CardTitle>
-            <BookOpen className="h-4 w-4 text-white" />
+            <CardTitle
+              className="text-sm font-medium"
+              style={{ color: THEME.accent }}
+            >
+              Active Classes
+            </CardTitle>
+            <BookOpen className="h-4 w-4" style={{ color: THEME.accent }} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-gray-900">
               {metricsLoading ? '...' : metricsError ? 'N/A' : activeClasses}
             </div>
-            <p className="text-xs text-emerald-100">
+            <p className="text-xs text-stone-500">
               {metricsLoading || metricsError ? '' : 'This semester'}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 text-white">
+        <Card className="bg-white border-stone-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Avg Attendance</CardTitle>
-            <Calendar className="h-4 w-4 text-white" />
+            <CardTitle
+              className="text-sm font-medium"
+              style={{ color: THEME.accent }}
+            >
+              Avg Attendance
+            </CardTitle>
+            <Calendar className="h-4 w-4" style={{ color: THEME.accent }} />
           </CardHeader>
           <CardContent>
             {metricsLoading ? (
-              <div className="text-2xl font-bold text-white">...</div>
+              <div className="text-2xl font-bold text-gray-900">...</div>
             ) : metricsError ? (
-              <div className="text-2xl font-bold text-white">N/A</div>
+              <div className="text-2xl font-bold text-gray-900">N/A</div>
             ) : (
               <>
-                <div className="text-2xl font-bold text-white">{avgAttendance}%</div>
-                <Progress value={avgAttendance} className="mt-2 bg-white/20" />
-                <p className="text-xs text-white mt-1">
-                  <span className={avgAttendance >= 80 ? 'text-green-200' : 'text-yellow-200'}>
+                <div className="text-2xl font-bold text-gray-900">{avgAttendance}%</div>
+                <Progress value={avgAttendance} className="mt-2" />
+                <p className="text-xs mt-1">
+                  <span
+                    className={
+                      avgAttendance >= 80
+                        ? 'text-stone-600'
+                        : `text-[${THEME.accent}]`
+                    }
+                  >
                     {avgAttendance >= 80 ? 'Good' : 'Needs attention'}
                   </span>
                 </p>
@@ -425,16 +462,21 @@ const ProfessorDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white">
+        <Card className="bg-white border-stone-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Pending Grading</CardTitle>
-            <Clock className="h-4 w-4 text-white" />
+            <CardTitle
+              className="text-sm font-medium"
+              style={{ color: THEME.accent }}
+            >
+              Pending Grading
+            </CardTitle>
+            <Clock className="h-4 w-4" style={{ color: THEME.accent }} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-gray-900">
               {metricsLoading ? '...' : metricsError ? 'N/A' : pendingGrading}
             </div>
-            <p className="text-xs text-yellow-100">
+            <p className="text-xs text-stone-500">
               {metricsLoading || metricsError ? '' : 'Assignments to grade'}
             </p>
           </CardContent>
@@ -444,9 +486,9 @@ const ProfessorDashboard = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Class Performance */}
-        <Card className="border-border bg-gradient-to-r from-blue-50 to-indigo-100">
+        <Card className="bg-white border-stone-300">
           <CardHeader>
-            <CardTitle className="text-foreground">Class Performance</CardTitle>
+            <CardTitle style={{ color: THEME.accent }}>Class Performance</CardTitle>
             <CardDescription className="text-muted-foreground">
               Average scores and attendance by class
             </CardDescription>
@@ -465,7 +507,7 @@ const ProfessorDashboard = () => {
                       borderRadius: '6px'
                     }}
                   />
-                  <Bar dataKey="avgScore" fill="#8B0000" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="avgScore" fill={THEME.accent} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -477,9 +519,9 @@ const ProfessorDashboard = () => {
         </Card>
 
         {/* Attendance Trend */}
-        <Card className="border-border bg-gradient-to-r from-purple-50 to-pink-100">
+        <Card className="bg-white border-stone-300">
           <CardHeader>
-            <CardTitle className="text-foreground">Attendance Trend</CardTitle>
+            <CardTitle style={{ color: THEME.accent }}>Attendance Trend</CardTitle>
             <CardDescription className="text-muted-foreground">
               Weekly attendance across all classes
             </CardDescription>
@@ -497,12 +539,12 @@ const ProfessorDashboard = () => {
                     borderRadius: '6px'
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="attendance" 
-                  stroke="#001F54" 
+                <Line
+                  type="monotone"
+                  dataKey="attendance"
+                  stroke={THEME.accent}
                   strokeWidth={3}
-                  dot={{ fill: '#001F54', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: THEME.accent, strokeWidth: 2, r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -513,10 +555,10 @@ const ProfessorDashboard = () => {
       {/* Today's Schedule and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Today's Schedule */}
-        <Card className="lg:col-span-2 border-border bg-gradient-to-r from-slate-50 to-gray-100">
+        <Card className="lg:col-span-2 bg-white border-stone-300">
           <CardHeader>
-            <CardTitle className="text-foreground flex items center gap-2">
-              <Clock className="h-5 w-5" />
+            <CardTitle className="flex items center gap-2" style={{ color: THEME.accent }}>
+              <Clock className="h-5 w-5" style={{ color: THEME.accent }} />
               Today's Schedule
             </CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -526,7 +568,10 @@ const ProfessorDashboard = () => {
           <CardContent>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div
+                  className="animate-spin rounded-full h-8 w-8 border-b-2"
+                  style={{ borderColor: THEME.accent }}
+                ></div>
               </div>
             ) : todaySchedule.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -538,27 +583,31 @@ const ProfessorDashboard = () => {
                 {todaySchedule.map((classItem) => {
                   const isCurrent = isCurrentClass(classItem.time);
                   return (
-                    <div 
-                      key={classItem.id} 
-                      className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                        isCurrent 
-                          ? 'bg-primary/10 border-primary shadow-sm' 
-                          : 'bg-muted/30 border-border hover:bg-muted/50'
-                      }`}
+                    <div
+                      key={classItem.id}
+                      className="p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md"
+                      style={
+                        isCurrent
+                          ? { backgroundColor: THEME.accent + '1a', borderColor: THEME.accent }
+                          : { backgroundColor: '#f5f5f4', borderColor: '#d6d3d1' }
+                      }
                       onClick={() => handleClassClick(classItem)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-foreground">{classItem.subject}</h4>
+                            <h4 className="font-semibold text-stone-700">{classItem.subject}</h4>
                             {isCurrent && (
-                              <Badge variant="default" className="bg-green-600 text-white">
+                              <Badge
+                                variant="default"
+                                style={{ backgroundColor: THEME.accent, color: '#fff' }}
+                              >
                                 <Play className="h-3 w-3 mr-1" />
                                 Live
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-4 text-sm text-stone-600">
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
                               {classItem.time}
@@ -572,15 +621,25 @@ const ProfessorDashboard = () => {
                             </Badge>
                           </div>
                         </div>
-                        <Button 
-                          variant={isCurrent ? "default" : "outline"} 
+                        <Button
+                          variant={isCurrent ? 'default' : 'outline'}
                           size="sm"
+                          className={
+                            isCurrent
+                              ? ''
+                              : `border-[${THEME.accent}] text-[${THEME.accent}] hover:bg-[${THEME.accent}] hover:text-white`
+                          }
+                          style={
+                            isCurrent
+                              ? { backgroundColor: THEME.accent, color: '#fff' }
+                              : undefined
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
                             handleClassClick(classItem);
                           }}
                         >
-                          {isCurrent ? "Mark Attendance" : "View Class"}
+                          {isCurrent ? 'Mark Attendance' : 'View Class'}
                         </Button>
                       </div>
                     </div>
@@ -592,35 +651,42 @@ const ProfessorDashboard = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="border-border bg-gradient-to-r from-teal-50 to-emerald-100">
+        <Card className="bg-white border-stone-300">
           <CardHeader>
-            <CardTitle className="text-foreground">Quick Actions</CardTitle>
+            <CardTitle style={{ color: THEME.accent }}>Quick Actions</CardTitle>
             <CardDescription className="text-muted-foreground">
               Common teaching tasks
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 lg:space-y-3">
-            <Button 
-              className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground text-xs lg:text-sm h-8 lg:h-10" 
+            <Button
+              className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10"
               variant="default"
+              style={{ backgroundColor: THEME.accent, color: '#fff' }}
               onClick={() => navigate('/dashboard/attendance')}
             >
               <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Mark Attendance
             </Button>
-            <Button 
-              className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" 
+            <Button
+              className={`w-full justify-start text-xs lg:text-sm h-8 lg:h-10 border-[${THEME.accent}] text-[${THEME.accent}] hover:bg-[${THEME.accent}] hover:text-white`}
               variant="outline"
               onClick={() => navigate('/dashboard/marks?tab=upload')}
             >
               <FileText className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Upload Marks
             </Button>
-            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+            <Button
+              className={`w-full justify-start text-xs lg:text-sm h-8 lg:h-10 border-[${THEME.accent}] text-[${THEME.accent}] hover:bg-[${THEME.accent}] hover:text-white`}
+              variant="outline"
+            >
               <TrendingUp className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Performance Reports
             </Button>
-            <Button className="w-full justify-start text-xs lg:text-sm h-8 lg:h-10" variant="outline">
+            <Button
+              className={`w-full justify-start text-xs lg:text-sm h-8 lg:h-10 border-[${THEME.accent}] text-[${THEME.accent}] hover:bg-[${THEME.accent}] hover:text-white`}
+              variant="outline"
+            >
               <BookOpen className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
               Course Materials
             </Button>
@@ -629,9 +695,9 @@ const ProfessorDashboard = () => {
       </div>
 
       {/* Recent Activities */}
-      <Card className="border-border bg-gradient-to-r from-gray-50 to-gray-100">
+      <Card className="bg-white border-stone-300">
         <CardHeader>
-          <CardTitle className="text-foreground">Recent Activities</CardTitle>
+          <CardTitle style={{ color: THEME.accent }}>Recent Activities</CardTitle>
           <CardDescription className="text-muted-foreground">
             Latest updates from your classes
           </CardDescription>
@@ -643,9 +709,12 @@ const ProfessorDashboard = () => {
                 key={activity.id}
                 className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
               >
-                <div className="w-2 h-2 bg-primary rounded-full" />
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: THEME.accent }}
+                />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                  <p className="text-sm font-medium text-stone-700">{activity.action}</p>
                   <p className="text-xs text-muted-foreground">{activity.details}</p>
                 </div>
                 <span className="text-xs text-muted-foreground">
@@ -658,45 +727,51 @@ const ProfessorDashboard = () => {
       </Card>
 
       {/* Class Details */}
-      <Card className="border-border bg-gradient-to-r from-slate-50 to-slate-100">
-        <CardHeader>
-          <CardTitle className="text-foreground">Class Overview</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Detailed information about your classes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {classData.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-              {classData.map((classItem, index) => (
-                <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-foreground">{classItem.name}</h4>
-                    <Badge variant="secondary" className="text-xs">
-                      {classItem.students} students
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Avg Score:</span>
-                      <span className="font-medium text-foreground">{classItem.avgScore}%</span>
+      <Card className="bg-white border-stone-300">
+          <CardHeader>
+            <CardTitle style={{ color: THEME.accent }}>Class Overview</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Detailed information about your classes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {classData.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                {classData.map((classItem, index) => (
+                  <div key={index} className="p-3 lg:p-4 rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-stone-700">{classItem.name}</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {classItem.students} students
+                      </Badge>
                     </div>
-                    <Progress value={classItem.avgScore} className="h-2" />
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Attendance:</span>
-                      <span className={`font-medium ${classItem.attendance >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                        {classItem.attendance}%
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Avg Score:</span>
+                        <span className="font-medium text-stone-700">{classItem.avgScore}%</span>
+                      </div>
+                      <Progress value={classItem.avgScore} className="h-2" />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Attendance:</span>
+                        <span
+                          className={`font-medium ${
+                            classItem.attendance >= 80
+                              ? 'text-stone-600'
+                              : `text-[${THEME.accent}]`
+                          }`}
+                        >
+                          {classItem.attendance}%
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground">No classes found</div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">No classes found</div>
+            )}
+          </CardContent>
+        </Card>
     </div>
   );
 };
