@@ -212,37 +212,36 @@ const Profile = () => {
         throw new Error('Failed to upload image');
       }
       const result = await res.json();
-      if (result.url) {
-        const endpoint =
-          viewedRole === 'student'
-            ? `${apiBase}/students/${viewedId}/profile`
-            : `${apiBase}/professors/${viewedId}/profile`;
-        const updateRes = await fetch(endpoint, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ profileImage: result.url })
-        });
-        if (!updateRes.ok) {
-          throw new Error('Failed to update profile image');
-        }
-        const updated = await updateRes.json();
-        setProfileImage(updated.profileImage || result.url);
-        if (viewedRole === 'student') {
-          setAcademicData((prev) => ({ ...prev, ...updated }));
-        }
-        if (viewedId === user?.id) {
-          const storedUser = localStorage.getItem('user');
-          if (storedUser) {
-            try {
-              const parsed = JSON.parse(storedUser);
-              const updatedUser = { ...parsed, ...updated };
-              localStorage.setItem('user', JSON.stringify(updatedUser));
-            } catch {
-              // ignore invalid stored user
-            }
+      const profileValue = import.meta.env.VITE_B2_PRIVATE === 'true' ? result.key : result.url;
+      const endpoint =
+        viewedRole === 'student'
+          ? `${apiBase}/students/${viewedId}/profile`
+          : `${apiBase}/professors/${viewedId}/profile`;
+      const updateRes = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ profileImage: profileValue })
+      });
+      if (!updateRes.ok) {
+        throw new Error('Failed to update profile image');
+      }
+      const updated = await updateRes.json();
+      setProfileImage(result.url);
+      if (viewedRole === 'student') {
+        setAcademicData((prev) => ({ ...prev, ...updated }));
+      }
+      if (viewedId === user?.id) {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            const updatedUser = { ...parsed, ...updated };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } catch {
+            // ignore invalid stored user
           }
         }
       }
