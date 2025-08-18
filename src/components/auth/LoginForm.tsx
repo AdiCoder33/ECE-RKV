@@ -10,6 +10,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useLoader, useFrame } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import * as THREE from 'three';
 
 // 3D primitives for fallback
 const Student3D = () => (
@@ -42,13 +43,13 @@ const Alumni3D = () => (
 
 // RGUKT 3D logo loader with spinning and color change, no user flipping
 const RGUKTLogo3D = () => {
-  const gltf = useLoader(GLTFLoader, '/src/Assets/rgukt.glb');
-  const logoRef = useRef();
+  const gltf = useLoader(GLTFLoader, '/rgukt.glb');
+  const logoRef = useRef<THREE.Object3D>();
 
   // Always spin the logo
   useFrame(() => {
     if (logoRef.current) {
-      // @ts-ignore
+      // @ts-expect-error rotation is not defined on Object3D in this context
       logoRef.current.rotation.y += 0.02;
     }
   });
@@ -56,12 +57,15 @@ const RGUKTLogo3D = () => {
   // Change color of all mesh materials to match website theme (red-700 and yellow-400)
   React.useEffect(() => {
     if (gltf.scene) {
-      gltf.scene.traverse((child: any) => {
-        if (child.isMesh && child.material) {
+      gltf.scene.traverse((child: THREE.Object3D) => {
+        if (child instanceof THREE.Mesh && child.material) {
           // Use a gradient or two colors for more branding effect
-          child.material.color.set('#b91c1c'); // Tailwind red-700
-          if (child.material.name && child.material.name.toLowerCase().includes('accent')) {
-            child.material.color.set('#facc15'); // Tailwind yellow-400
+          (child.material as THREE.MeshStandardMaterial).color.set('#b91c1c'); // Tailwind red-700
+          if (
+            child.material.name &&
+            child.material.name.toLowerCase().includes('accent')
+          ) {
+            (child.material as THREE.MeshStandardMaterial).color.set('#facc15'); // Tailwind yellow-400
           }
         }
       });
