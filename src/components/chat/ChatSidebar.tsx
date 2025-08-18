@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
@@ -429,7 +430,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               className="relative"
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={c.avatar || undefined} />
+                <AvatarImage src={getProfileImageSrc(c.avatar) ?? '/placeholder.svg'} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {c.title.charAt(0)}
                 </AvatarFallback>

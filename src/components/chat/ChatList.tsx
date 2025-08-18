@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { User } from '@/types';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 const ChatList: React.FC = () => {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ const ChatList: React.FC = () => {
                       onClick={() => navigate(`/dashboard/chat/user/${result.id}`)}
                     >
                       <Avatar className="h-8 w-8 mr-3">
-                        <AvatarImage src={result.profileImage} alt={result.name} />
+                        <AvatarImage src={getProfileImageSrc(result.profileImage) ?? '/placeholder.svg'} alt={result.name} />
                         <AvatarFallback>{result.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 text-left">

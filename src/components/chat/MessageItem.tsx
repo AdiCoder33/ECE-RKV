@@ -4,6 +4,7 @@ import { Check, CheckCheck } from 'lucide-react';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
@@ -29,6 +30,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
   const role = isGroup ? (message as ChatMessage).senderRole : null;
   const status = message.status || 'sent';
   const avatar = message.sender_profileImage;
+  const avatarSrc = getProfileImageSrc(avatar);
   const initials = senderName
     ? senderName
         .split(' ')
@@ -62,23 +64,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isGroup, currentUser
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {!isOwn && (avatar || senderName) && (
+      {!isOwn && (avatarSrc || senderName) && (
         <div className="flex-shrink-0">
-          {avatar ? (
-            <img
-              src={avatar}
-              alt={senderName || 'Avatar'}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          ) : (
-            senderName && (
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-xs font-medium text-primary-foreground">
-                  {initials}
-                </span>
-              </div>
-            )
-          )}
+          <img
+            src={avatarSrc ?? '/placeholder.svg'}
+            alt={senderName || 'Avatar'}
+            className="w-8 h-8 rounded-full object-cover"
+          />
         </div>
       )}
       <div className={`w-full pr-4 ${isOwn ? 'text-right' : ''}`}>
