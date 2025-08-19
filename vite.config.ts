@@ -25,29 +25,6 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
-        manifest: {
-          name: "ECE",
-          short_name: "ECE",
-          description: "Lovable Generated Project",
-          theme_color: "#ffffff",
-          background_color: "#ffffff",
-          display: "standalone",
-          start_url: "/",
-          icons: [
-            {
-              src: "/icons/manifest-icon-192.maskable.png",
-              sizes: "192x192",
-              type: "image/png",
-              purpose: "any maskable",
-            },
-            {
-              src: "/icons/manifest-icon-512.maskable.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "any maskable",
-            },
-          ],
-        },
       }),
       mode === "development" && componentTagger(),
     ].filter(Boolean),
