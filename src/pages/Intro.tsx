@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import introVideo from '../Assets/loader.mp4';
+import introVideo from '../Assets/intro.mp4';
 
 const Intro: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ const Intro: React.FC = () => {
         src={introVideo}
         className="w-full h-full object-cover"
         autoPlay
+        muted
         playsInline
         onEnded={handleEnd}
         onError={handleError}
