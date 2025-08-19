@@ -1,10 +1,10 @@
 {
   "name": "ECE",
   "short_name": "ECE",
-  "id": "/",
+  "id": "/login",
   "scope": "/",
   "description": "ECE Department Portal",
-  "start_url": "/",
+  "start_url": "/login",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
