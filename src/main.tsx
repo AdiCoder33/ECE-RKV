@@ -1,6 +1,9 @@
+import { registerSW } from 'virtual:pwa-register';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+
+const updateSW = registerSW({ immediate: true });
 
 // Attach JWT token to all fetch requests if available
 const originalFetch = window.fetch;
@@ -12,5 +15,14 @@ window.fetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
   }
   return originalFetch(input, { ...init, headers });
 };
+
+updateSW({
+  onNeedRefresh() {
+    /* show refresh UI */
+  },
+  onOfflineReady() {
+    /* notify offline ready */
+  },
+});
 
 createRoot(document.getElementById('root')!).render(<App />);
