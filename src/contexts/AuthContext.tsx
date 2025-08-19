@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
+import { cacheProfileImage, clearProfileImageCache } from '@/lib/profileImageCache';
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check for stored authentication
     const storedUser = localStorage.getItem('user');
+    const cachedImage = localStorage.getItem('profileImageCache');
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser) as User & { profile_image?: string };
@@ -37,6 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           localStorage.setItem('user', JSON.stringify(parsed));
           setUser(parsed);
+          if (!cachedImage && parsed.profileImage) {
+            cacheProfileImage(parsed.profileImage);
+          }
         }
       } catch {
         // ignore invalid stored user
@@ -84,6 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Only persist the user if the ID is a valid number
     localStorage.setItem('user', JSON.stringify(sanitizedUser));
     localStorage.setItem('token', token);
+    if (sanitizedUser.profileImage) {
+      cacheProfileImage(sanitizedUser.profileImage);
+    }
 
     // Redirect based on role
     const dashboardRoutes = {
@@ -101,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    clearProfileImageCache();
     window.location.href = '/';
   };
 
