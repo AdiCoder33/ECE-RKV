@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
@@ -36,6 +36,20 @@ import ChatConversation from './components/chat/ChatConversation';
 import StudentProfile from './components/profile/StudentProfile';
 import './App.css';
 
+function StandaloneRedirector() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone && location.pathname === '/') {
+      navigate('/login', { replace: true });
+    }
+  }, [location, navigate]);
+
+  return null;
+}
+
 // Create a client instance
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +65,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <Router>
+            <StandaloneRedirector />
             <AuthProvider>
               <ChatProvider>
                 <div className="min-h-screen bg-background">
