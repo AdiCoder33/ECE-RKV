@@ -24,6 +24,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+import { cacheProfileImage } from '@/lib/profileImageCache';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -189,6 +190,9 @@ const Profile = () => {
             // ignore invalid stored user
           }
         }
+        if (data.profileImage) {
+          await cacheProfileImage(data.profileImage);
+        }
       }
       setIsEditing(false);
     } catch (err) {
@@ -247,6 +251,7 @@ const Profile = () => {
             // ignore invalid stored user
           }
         }
+        await cacheProfileImage(result.url);
       }
     } catch (err) {
       setError((err as Error).message);
