@@ -7,8 +7,12 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 expect.extend(matchers);
 
 const mockUseAuth = vi.fn();
+const mockCacheProfileImage = vi.fn();
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
+}));
+vi.mock('@/lib/profileImageCache', () => ({
+  cacheProfileImage: (value: string) => mockCacheProfileImage(value),
 }));
 
 import Profile from './Profile';
@@ -67,6 +71,7 @@ describe('Profile image upload', () => {
 
     const stored = JSON.parse(localStorage.getItem('user') || '{}');
     expect(stored.profileImage).toBe('http://example.com/avatar.png');
+    expect(mockCacheProfileImage).toHaveBeenCalledWith('http://example.com/avatar.png');
   });
 });
 
@@ -117,5 +122,6 @@ describe('Student profile endpoints', () => {
     await waitFor(() =>
       expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'http://example.com/avatar.png')
     );
+    expect(mockCacheProfileImage).toHaveBeenCalledWith('http://example.com/avatar.png');
   });
 });
