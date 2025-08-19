@@ -1,6 +1,6 @@
 {
-  "name": "ECE",
-  "short_name": "ECE",
+  "name": "ECE Portal",
+  "short_name": "ECE Portal",
   "id": "/login",
   "scope": "/",
   "description": "ECE Department Portal",
