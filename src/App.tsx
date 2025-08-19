@@ -34,6 +34,7 @@ import Marks from './components/marks/Marks';
 import ChatList from './components/chat/ChatList';
 import ChatConversation from './components/chat/ChatConversation';
 import StudentProfile from './components/profile/StudentProfile';
+import Intro from './pages/Intro';
 import './App.css';
 
 function StandaloneRedirector() {
@@ -72,7 +73,8 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Homepage />} />
                   <Route path="/login" element={<LoginForm />} />
-                  <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route path="/intro" element={<Intro />} />
+                  <Route path="/dashboard" element={<DashboardLayout />}> 
                   <Route index element={<AdminDashboard />} />
                   <Route path="student" element={<StudentDashboard />} />
                   <Route path="professor" element={<ProfessorDashboard />} />
