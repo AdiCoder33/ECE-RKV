@@ -24,6 +24,30 @@ export default defineConfig(({ mode }) => {
         registerType: "autoUpdate",
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          runtimeCaching: [
+            {
+              urlPattern: ({ url }) => url.pathname.startsWith("/api"),
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "api-cache",
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60, // 1 hour
+                },
+              },
+            },
+            {
+              urlPattern: ({ request }) => request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "image-cache",
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                },
+              },
+            },
+          ],
         },
       }),
       mode === "development" && componentTagger(),
