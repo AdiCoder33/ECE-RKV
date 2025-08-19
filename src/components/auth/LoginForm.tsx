@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, User, Shield, Briefcase, ChevronRight, Building } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -118,9 +118,7 @@ const LoginForm = () => {
                   </Suspense>
                 </Canvas>
               </div>
-              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mt-2">
-                
-              </p>
+              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mt-2"></p>
             </div>
           </div>
 
