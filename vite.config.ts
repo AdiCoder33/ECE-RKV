@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
         includeAssets: ["offline.html"],
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          navigateFallback: "offline.html",
+          navigateFallback: "index.html",
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith("/api"),
@@ -47,6 +47,13 @@ export default defineConfig(({ mode }) => {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
                 },
+              },
+            },
+            {
+              urlPattern: ({ url }) => url.pathname === "/offline.html",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "offline-html",
               },
             },
           ],
