@@ -1,6 +1,8 @@
 {
   "name": "ECE",
   "short_name": "ECE",
+  "id": "/",
+  "scope": "/",
   "description": "ECE Department Portal",
   "start_url": "/",
   "display": "standalone",
