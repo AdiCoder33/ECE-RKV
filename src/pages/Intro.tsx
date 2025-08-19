@@ -7,6 +7,11 @@ const Intro: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    if (localStorage.getItem('introSeen')) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
     const video = videoRef.current;
     video?.play().catch(() => {
       navigate('/login', { replace: true });
@@ -14,6 +19,7 @@ const Intro: React.FC = () => {
   }, [navigate]);
 
   const handleEnd = () => {
+    localStorage.setItem('introSeen', '1');
     navigate('/login', { replace: true });
   };
 
