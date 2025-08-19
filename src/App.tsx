@@ -48,16 +48,16 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-        <AuthProvider>
-          <ChatProvider>
-            <Router>
-              <div className="min-h-screen bg-background">
-              <Routes>
-                <Route path="/" element={<Homepage />} />
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/dashboard" element={<DashboardLayout />}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          <Router>
+            <AuthProvider>
+              <ChatProvider>
+                <div className="min-h-screen bg-background">
+                <Routes>
+                  <Route path="/" element={<Homepage />} />
+                  <Route path="/login" element={<LoginForm />} />
+                  <Route path="/dashboard" element={<DashboardLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="student" element={<StudentDashboard />} />
                   <Route path="professor" element={<ProfessorDashboard />} />
@@ -85,13 +85,13 @@ function App() {
                   <Route path="chat/:type/:id" element={<ChatConversation />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
-              </Routes>
-            </div>
-            </Router>
-          </ChatProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+                </Routes>
+              </div>
+              </ChatProvider>
+            </AuthProvider>
+          </Router>
+        </ThemeProvider>
+      </QueryClientProvider>
   );
 }
 

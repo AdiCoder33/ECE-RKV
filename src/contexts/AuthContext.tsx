@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User } from '@/types';
 import { cacheProfileImage, clearProfileImageCache } from '@/lib/profileImageCache';
 
@@ -24,6 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for stored authentication
@@ -102,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       alumni: '/dashboard/alumni'
     } as const;
 
-    window.location.href = dashboardRoutes[userInfo.role as keyof typeof dashboardRoutes];
+    navigate(dashboardRoutes[userInfo.role as keyof typeof dashboardRoutes], { replace: true });
   };
 
   const logout = () => {
