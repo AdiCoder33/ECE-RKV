@@ -219,7 +219,7 @@ const Profile = () => {
         throw new Error('Failed to upload image');
       }
       const result = await res.json();
-      const profileValue = import.meta.env.VITE_B2_PRIVATE === 'true' ? result.key : result.url;
+      const profileValue = result.key;
       const endpoint =
         viewedRole === 'student'
           ? `${apiBase}/students/${viewedId}/profile`
