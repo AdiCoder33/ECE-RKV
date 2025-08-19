@@ -22,8 +22,10 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: "autoUpdate",
+        includeAssets: ["offline.html"],
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          navigateFallback: "offline.html",
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith("/api"),
