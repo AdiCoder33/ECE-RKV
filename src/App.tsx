@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
@@ -37,6 +37,11 @@ import StudentProfile from './components/profile/StudentProfile';
 import Intro from './pages/Intro';
 import './App.css';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 function StandaloneRedirector() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,6 +67,16 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handler = (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
   return (
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -70,6 +85,16 @@ function App() {
             <AuthProvider>
               <ChatProvider>
                 <div className="min-h-screen bg-background">
+                {deferredPrompt && (
+                  <button
+                    onClick={() => {
+                      deferredPrompt.prompt();
+                      deferredPrompt.userChoice.finally(() => setDeferredPrompt(null));
+                    }}
+                  >
+                    Install App
+                  </button>
+                )}
                 <Routes>
                   <Route path="/" element={<Homepage />} />
                   <Route path="/login" element={<LoginForm />} />
