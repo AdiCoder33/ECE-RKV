@@ -51,6 +51,28 @@ function StandaloneRedirector() {
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (isStandalone && location.pathname === '/') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser) as { role?: string };
+          const dashboardRoutes = {
+            admin: '/dashboard',
+            hod: '/dashboard',
+            professor: '/dashboard/professor',
+            student: '/dashboard/student',
+            alumni: '/dashboard/alumni',
+          } as const;
+          if (parsed.role && parsed.role in dashboardRoutes) {
+            navigate(
+              dashboardRoutes[parsed.role as keyof typeof dashboardRoutes],
+              { replace: true }
+            );
+            return;
+          }
+        } catch {
+          // ignore invalid stored user
+        }
+      }
       navigate('/login', { replace: true });
     }
   }, [location, navigate]);
