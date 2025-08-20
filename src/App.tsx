@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { Toaster } from '@/components/ui/sonner';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
 import ForgotPassword from './components/auth/ForgotPassword';
@@ -96,6 +97,7 @@ function App() {
                     Install App
                   </button>
                 )}
+                <Toaster />
                 <Routes>
                   <Route path="/" element={<Homepage />} />
                   <Route path="/login" element={<LoginForm />} />
