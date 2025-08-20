@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "seed": "node scripts/seedDatabase.js",
-    "test:backend": "jest"
+    "test:backend": "jest",
+    "push:demo": "curl -X POST http://localhost:5000/api/push -H 'Content-Type: application/json' -d '{\"payload\":{\"title\":\"Hello\",\"body\":\"It works!\",\"url\":\"/\"}}'"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
