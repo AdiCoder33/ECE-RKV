@@ -7,6 +7,7 @@ const NotifyToggle: React.FC = () => {
   const { user } = useAuth();
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     isSubscribed().then(setEnabled).catch(() => setEnabled(false));
@@ -18,12 +19,16 @@ const NotifyToggle: React.FC = () => {
       if (checked) {
         await enablePush([], user?.id);
         setEnabled(true);
+        setError(null);
       } else {
         await disablePush();
         setEnabled(false);
+        setError(null);
       }
     } catch (err) {
       console.error(err);
+      const message = err instanceof Error ? err.message : 'Failed to update notifications';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -36,6 +41,7 @@ const NotifyToggle: React.FC = () => {
         <p className="text-sm text-muted-foreground">
           {enabled ? 'Enabled' : 'Disabled'}
         </p>
+        {error && <p className="text-sm text-red-500">{error}</p>}
       </div>
       <Switch checked={enabled} onCheckedChange={handleChange} disabled={loading} />
     </div>

@@ -32,6 +32,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 export async function enablePush(topics: string[] = [], userId?: string | number): Promise<PushSubscription | null> {
   const registration = await registerServiceWorker();
   if (!registration) return null;
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Permission denied');
   const publicKey = await getPublicKey();
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
