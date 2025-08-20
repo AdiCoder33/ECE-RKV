@@ -11,6 +11,7 @@ import { OrbitControls } from '@react-three/drei';
 import { useLoader, useFrame } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import * as THREE from 'three';
+import { Link } from 'react-router-dom';
 
 // 3D primitives for fallback
 const Student3D = () => (
@@ -154,6 +155,11 @@ const LoginForm = () => {
                       required
                       className="transition-all duration-300 focus:border-red-700 dark:bg-gray-700 dark:text-white"
                     />
+                    <div className="text-right">
+                      <Link to="/forgot-password" className="text-sm text-red-700 hover:underline">
+                        Forgot Password?
+                      </Link>
+                    </div>
                   </div>
                   <Button
                     type="submit"
