@@ -270,6 +270,16 @@ CREATE TABLE conversation_users (
     UNIQUE(user_id, conversation_type, conversation_id)
 );
 
+-- Device tokens for push notifications
+CREATE TABLE device_tokens (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    user_id int NOT NULL,
+    token nvarchar(255) NOT NULL UNIQUE,
+    platform nvarchar(50),
+    created_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Insert sample data
 INSERT INTO users (name, email, password, role, department) VALUES 
 ('Admin User', 'admin@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'ECE'),
