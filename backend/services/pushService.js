@@ -1,5 +1,4 @@
 const admin = require('firebase-admin');
-const { executeQuery } = require('../config/database');
 require('dotenv').config();
 
 if (
@@ -7,6 +6,8 @@ if (
   process.env.FIREBASE_CLIENT_EMAIL &&
   process.env.FIREBASE_PRIVATE_KEY
 ) {
+  const { executeQuery } = require('../config/database');
+
   if (!admin.apps.length) {
     try {
       admin.initializeApp({
@@ -69,5 +70,46 @@ if (
 
   module.exports = { sendToUsers };
 } else {
-  module.exports = { sendToUsers: () => Promise.resolve() };
+  const webpush = require('web-push');
+  const { executeQuery } = require('../config/database');
+  const { VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT } = process.env;
+
+  if (VAPID_PUBLIC && VAPID_PRIVATE && VAPID_SUBJECT) {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  }
+
+  async function sendToUsers(userIds, { title, body, data = {} }) {
+    if (!Array.isArray(userIds) || userIds.length === 0) return;
+
+    try {
+      const placeholders = userIds.map(() => '?').join(',');
+      const { recordset } = await executeQuery(
+        `SELECT endpoint, keys_p256dh, keys_auth FROM push_subscriptions WHERE user_id IN (${placeholders})`,
+        userIds
+      );
+
+      if (!recordset.length) return;
+
+      const payload = JSON.stringify({ title, body, data });
+      for (const row of recordset) {
+        const subscription = {
+          endpoint: row.endpoint,
+          keys: { p256dh: row.keys_p256dh, auth: row.keys_auth },
+        };
+        try {
+          await webpush.sendNotification(subscription, payload);
+        } catch (err) {
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            await executeQuery('DELETE FROM push_subscriptions WHERE endpoint = ?', [row.endpoint]);
+          } else {
+            console.error('Web Push error:', err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('sendToUsers error:', err);
+    }
+  }
+
+  module.exports = { sendToUsers };
 }
