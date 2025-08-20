@@ -40,6 +40,23 @@ const ECE_COLORS = {
   accent9: '#e8fbf5', // light teal
 };
 
+const getTargetRoleLabel = (role?: string) => {
+  switch (role) {
+    case 'student':
+      return 'Students';
+    case 'professor':
+      return 'Faculty';
+    case 'alumni':
+      return 'Alumni';
+    case 'landing':
+      return 'Landing Page';
+    case 'all':
+      return 'All';
+    default:
+      return role;
+  }
+};
+
 const mapAnnouncement = (a: Record<string, unknown>): Announcement => {
   const {
     author_id,
@@ -360,6 +377,7 @@ const Announcements = () => {
                       <option value="student">Students</option>
                       <option value="professor">Faculty</option>
                       <option value="alumni">Alumni</option>
+                      <option value="landing">Landing Page</option>
                     </select>
                   </div>
                   <div>
@@ -478,7 +496,7 @@ const Announcements = () => {
                     </div>
                     {announcement.targetRole && (
                       <Badge variant="outline" className="border-[#8b0000] text-[#8b0000]">
-                        {announcement.targetRole}
+                        {getTargetRoleLabel(announcement.targetRole)}
                       </Badge>
                     )}
                     {announcement.targetYear && (
@@ -586,7 +604,7 @@ const Announcements = () => {
                 </Badge>
                 {selectedAnnouncement.targetRole && (
                   <Badge variant="outline" className="border-[#8b0000] text-[#8b0000]">
-                    {selectedAnnouncement.targetRole}
+                    {getTargetRoleLabel(selectedAnnouncement.targetRole)}
                   </Badge>
                 )}
                 {selectedAnnouncement.targetYear && (
