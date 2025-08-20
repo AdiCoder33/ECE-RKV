@@ -7,6 +7,8 @@ CREATE TABLE users (
     name nvarchar(255) NOT NULL,
     email nvarchar(255) UNIQUE NOT NULL,
     password nvarchar(255) NOT NULL,
+    reset_otp nvarchar(255),
+    reset_expires datetime2,
     role nvarchar(50) NOT NULL CHECK (role IN ('admin', 'hod', 'professor', 'student', 'alumni')),
     department nvarchar(100),
     year int,

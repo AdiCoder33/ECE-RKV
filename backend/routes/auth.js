@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { executeQuery } = require('../config/database');
 const { resolveProfileImage } = require('../utils/images');
+const { generateOTP, sendOTPEmail } = require('../utils/otp');
 const router = express.Router();
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -51,6 +52,70 @@ router.post('/login', async (req, res, next) => {
     });
   } catch (error) {
     console.error('Auth login error:', error);
+    next(error);
+  }
+});
+
+router.post('/request-reset', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const result = await executeQuery('SELECT id FROM users WHERE email = ?', [email]);
+    const user = result.recordset && result.recordset[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const otp = generateOTP();
+    const hashedOtp = await bcrypt.hash(otp, 10);
+    await executeQuery(
+      'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, 10, GETDATE()) WHERE id = ?',
+      [hashedOtp, user.id]
+    );
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: 'OTP sent' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ error: 'Email, OTP and newPassword are required' });
+    }
+
+    const result = await executeQuery(
+      'SELECT id, reset_otp, reset_expires FROM users WHERE email = ?',
+      [email]
+    );
+    const user = result.recordset && result.recordset[0];
+    if (!user || !user.reset_otp || !user.reset_expires) {
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    if (new Date(user.reset_expires) < new Date()) {
+      return res.status(400).json({ error: 'OTP expired' });
+    }
+
+    const valid = await bcrypt.compare(otp, user.reset_otp);
+    if (!valid) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await executeQuery(
+      'UPDATE users SET password = ?, reset_otp = NULL, reset_expires = NULL WHERE id = ?',
+      [hashedPassword, user.id]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
     next(error);
   }
 });
