@@ -1,10 +1,7 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const logger = require('../utils/logger');
-const routeLogger = require('../middleware/routeLogger');
 const router = express.Router();
-router.use(routeLogger());
 
 // Get analytics overview
 router.get('/overview', authenticateToken, async (req, res, next) => {
@@ -27,7 +24,7 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       avgAttendance: Math.round(attendanceStats[0].avg_attendance * 100) / 100
     });
   } catch (error) {
-    logger.error(`Analytics overview error: ${error.message}`, { stack: error.stack });
+    console.error('Analytics overview error:', error);
     next(error);
   }
 });

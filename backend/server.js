@@ -4,8 +4,6 @@ const path = require('path');
 const http = require('http');
 const cors = require('cors');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-const logger = require('./utils/logger');
-const requestLogger = require('./middleware/requestLogger');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,7 +38,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(requestLogger);
 
 // Database connection
 const { connectDB } = require('./config/database');
@@ -48,9 +45,9 @@ const { connectDB } = require('./config/database');
 async function connectToDatabase() {
   try {
     await connectDB();
-    logger.info('Connected to MSSQL database');
+    console.log('Connected to MSSQL database');
   } catch (error) {
-    logger.error(`Database connection failed: ${error.message}`, { stack: error.stack });
+    console.error('Database connection failed:', error);
     process.exit(1);
   }
 }
@@ -86,14 +83,14 @@ app.get('/api/health', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  logger.error(err.message, { stack: err.stack });
+  console.error('Unhandled error:', err.stack || err);
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
 // Start server
 connectToDatabase().then(() => {
   server.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 });
 
