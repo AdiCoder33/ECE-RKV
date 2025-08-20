@@ -21,7 +21,7 @@ const StudentProfile = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const { user } = useAuth();
   const id = studentId ?? user?.id;
-  const [student, setStudent] = useState<Record<string, any> | null>(null);
+  const [student, setStudent] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resume, setResume] = useState<Record<string, unknown> | null>(null);

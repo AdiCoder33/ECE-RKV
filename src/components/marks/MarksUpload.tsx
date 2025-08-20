@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,14 +9,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Upload, Download, Save, Loader2 } from 'lucide-react';
 import {
@@ -36,19 +28,6 @@ interface MarkRow {
   marks: number | null;
 }
 
-interface SubjectOption {
-  id: string;
-  name: string;
-}
-
-interface StudentMark {
-  student_id: string;
-  student_name: string;
-  roll_number: string;
-  marks: number | null;
-  max_marks: number | null;
-}
-
 interface ExcelRow {
   email: string | number;
   subject: string;
@@ -58,6 +37,12 @@ interface ExcelRow {
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
+// Theme colors consistent with Class Management
+const THEME = {
+  bgBeige: '#fbf4ea',
+  accent: '#8b0000',
+};
+
 const MarksUpload = () => {
   const [rows, setRows] = useState<MarkRow[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -65,79 +50,23 @@ const MarksUpload = () => {
   const [hasBlankMarks, setHasBlankMarks] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
-  const [year, setYear] = useState('');
-  const [semester, setSemester] = useState('');
-  const [section, setSection] = useState('');
-  const [examType, setExamType] = useState<'mid1' | 'mid2' | 'mid3'>('mid1');
-  const [subject, setSubject] = useState('');
-  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
-  const [marks, setMarks] = useState<StudentMark[]>([]);
-  const [sortField, setSortField] = useState<'roll_number' | 'student_name' | 'marks'>('roll_number');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // Class information used for generating templates
+  const [templateYear, setTemplateYear] = useState('');
+  const [templateSemester, setTemplateSemester] = useState('');
+  const [templateSection, setTemplateSection] = useState('');
+  const [templateExam, setTemplateExam] = useState<'mid1' | 'mid2' | 'mid3'>('mid1');
+  const [templateSubject, setTemplateSubject] = useState('');
+
   const examTypeLabel =
-    examType === 'mid1' ? 'Mid 1' : examType === 'mid2' ? 'Mid 2' : 'Mid 3';
-
-  // Fetch subjects when year and semester are selected
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      if (year && semester) {
-        try {
-          const res = await fetch(`${apiBase}/subjects?year=${year}&semester=${semester}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            toast.error(err.error ?? 'Failed to fetch subjects');
-            setSubjects([]);
-            return;
-          }
-          const data = await res.json();
-          setSubjects(data);
-        } catch (error) {
-          toast.error((error as Error).message ?? 'Failed to fetch subjects');
-          setSubjects([]);
-        }
-      } else {
-        setSubjects([]);
-      }
-    };
-    fetchSubjects();
-    setSubject('');
-  }, [year, semester]);
-
-  const fetchMarks = async (exam: 'mid1' | 'mid2' | 'mid3') => {
-    if (year && semester && section && subject) {
-      try {
-        const res = await fetch(
-          `${apiBase}/marks/overview?year=${year}&semester=${semester}&section=${section}&subjectId=${subject}&type=${exam}`,
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          }
-        );
-        if (!res.ok) {
-          const err = await res.json();
-          toast.error(err.error ?? 'Failed to fetch marks');
-          setMarks([]);
-          return;
-        }
-        const data = await res.json();
-        setMarks(data);
-      } catch (error) {
-        toast.error((error as Error).message ?? 'Failed to fetch marks');
-        setMarks([]);
-      }
-    } else {
-      setMarks([]);
-    }
-  };
-
-  // Fetch marks whenever filters change
-  useEffect(() => {
-    fetchMarks(examType);
-  }, [year, semester, section, subject, examType]);
+    templateExam === 'mid1'
+      ? 'Mid 1'
+      : templateExam === 'mid2'
+      ? 'Mid 2'
+      : 'Mid 3';
 
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -228,15 +157,15 @@ const MarksUpload = () => {
   };
 
   const handleDownloadTemplate = async (exam: 'mid1' | 'mid2' | 'mid3') => {
-    if (!year || !semester || !section || !subject) {
-      toast.error('Please select year, semester, section and subject');
+    if (!templateYear || !templateSemester || !templateSection || !templateSubject) {
+      toast.error('Please provide class details');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
-        `${apiBase}/students?year=${year}&semester=${semester}&section=${section}`,
+        `${apiBase}/students?year=${templateYear}&semester=${templateSemester}&section=${templateSection}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) {
@@ -246,11 +175,10 @@ const MarksUpload = () => {
       }
 
       const students: { email: string }[] = await res.json();
-      const subjectName = subjects.find((s) => String(s.id) === subject)?.name || '';
 
       const sheetData = students.map((s) => ({
         email: s.email,
-        subject: subjectName,
+        subject: templateSubject,
         maxMarks: '',
         obtainedMarks: '',
       }));
@@ -283,23 +211,33 @@ const MarksUpload = () => {
 
     try {
       setLoading(true);
-      console.log('Submitting rows', Array.isArray(rows), rows);
+
+      const examTypeMatch = uploadedFile?.name.toLowerCase().match(/mid[123]/);
+      const examType = (examTypeMatch ? examTypeMatch[0] : 'mid1') as
+        | 'mid1'
+        | 'mid2'
+        | 'mid3';
+
       const response = await fetch(`${apiBase}/marks/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           type: examType,
           date: new Date().toISOString(),
-          marksData: rows, // rows must be a true Array
+          marksData: rows,
         }),
       });
 
       if (!response.ok) {
         const err = await response.json();
-        const baseMessage = err.error || (Array.isArray(err.errors) ? err.errors.join(', ') : 'Failed to submit marks');
+        const baseMessage =
+          err.error ||
+          (Array.isArray(err.errors)
+            ? err.errors.join(', ')
+            : 'Failed to submit marks');
         toast.error(`${baseMessage} (${response.status})`);
         setUploadSuccess(null);
         return;
@@ -311,7 +249,6 @@ const MarksUpload = () => {
       setHasBlankMarks(false);
       setUploadedFile(null);
       setRowCount(0);
-      fetchMarks(examType);
       setUploadSuccess('Marks submitted successfully!');
     } catch (error) {
       console.error('Error submitting marks:', error);
@@ -322,117 +259,23 @@ const MarksUpload = () => {
     }
   };
 
-  const handleSort = (field: 'roll_number' | 'student_name' | 'marks') => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  const sortedMarks = [...marks].sort((a, b) => {
-    const aVal = a[sortField] ?? '';
-    const bVal = b[sortField] ?? '';
-    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
-  });
-
   return (
-    <div className="space-y-6 px-4 sm:px-6 md:px-0">
+    <div
+      className="space-y-6 px-4 sm:px-6 md:px-0"
+      style={{ backgroundColor: THEME.bgBeige }}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold" style={{ color: THEME.accent }}>
           Marks Upload
         </h1>
-        <Button variant="outline" onClick={() => setIsDownloadModalOpen(true)}>
+        <Button
+          onClick={() => setIsDownloadModalOpen(true)}
+          style={{ backgroundColor: THEME.accent, color: '#fff' }}
+        >
           <Download className="h-4 w-4 mr-2" />
           Download Template
         </Button>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Year</label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4].map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    Year {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Semester</label>
-            <Select value={semester} onValueChange={setSemester}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-  
-          <div>
-            <label className="text-sm font-medium mb-2 block">Section</label>
-            <Select value={section} onValueChange={setSection}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {['A', 'B', 'C', 'D', 'E'].map((sec) => (
-                  <SelectItem key={sec} value={sec}>
-                    {sec}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Exam</label>
-            <Select value={examType} onValueChange={setExamType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mid1">Mid 1</SelectItem>
-                <SelectItem value="mid2">Mid 2</SelectItem>
-                <SelectItem value="mid3">Mid 3</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Subject</label>
-            <Select value={subject} onValueChange={setSubject} disabled={!subjects.length}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((subj) => (
-                  <SelectItem key={subj.id} value={String(subj.id)}>
-                    {subj.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -442,91 +285,42 @@ const MarksUpload = () => {
           <div className="relative">
             <Input
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".xlsx,.xls"
               onChange={handleExcelUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-              id="excel-upload"
-              disabled={isParsing}
+              className="pr-24"
             />
-            <Button variant="outline" asChild disabled={isParsing}>
-              <label
-                htmlFor="excel-upload"
-                className={isParsing ? 'flex items-center cursor-not-allowed' : 'flex items-center cursor-pointer'}
-              >
-                {isParsing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Excel
-                  </>
-                )}
-              </label>
+            <Button
+              variant="outline"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              style={{ backgroundColor: THEME.accent, color: '#fff' }}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload
             </Button>
           </div>
-          {uploadedFile && (
-            <div className="text-sm text-muted-foreground">
-              {uploadedFile.name} — {rowCount} row{rowCount === 1 ? '' : 's'}
-              {rowCount === 0 && (
-                <span className="ml-2 text-red-500">No valid rows found</span>
-              )}
-            </div>
-          )}
           {uploadError && (
-            <p className="text-sm text-red-500">{uploadError}</p>
+            <p className="text-red-500 text-sm">{uploadError}</p>
           )}
           {uploadSuccess && (
-            <p className="text-sm text-green-500">{uploadSuccess}</p>
+            <p className="text-green-500 text-sm">{uploadSuccess}</p>
           )}
-
-          <Button
-            onClick={submitMarks}
-            disabled={loading || rowCount === 0 || hasBlankMarks}
-            className="bg-gradient-to-r from-primary to-primary/80"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Submit Marks
-          </Button>
+          <div className="flex justify-between items-center">
+            <p>{rowCount} rows uploaded</p>
+            <Button
+              onClick={submitMarks}
+              disabled={loading || isParsing || rowCount === 0 || hasBlankMarks}
+              style={{ backgroundColor: THEME.accent, color: '#fff' }}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Submit Marks
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {marks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Student Marks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('roll_number')}>
-                    Roll No
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('student_name')}>
-                    Name
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('marks')}>
-                    Marks
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedMarks.map((m) => (
-                  <TableRow key={m.student_id}>
-                    <TableCell>{m.roll_number}</TableCell>
-                    <TableCell>{m.student_name}</TableCell>
-                    <TableCell>
-                      {m.marks != null && m.max_marks != null
-                        ? `${m.marks}/${m.max_marks}`
-                        : '-'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
 
       <Dialog open={isDownloadModalOpen} onOpenChange={setIsDownloadModalOpen}>
         <DialogContent>
@@ -539,7 +333,7 @@ const MarksUpload = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Year</label>
-              <Select value={year} onValueChange={setYear}>
+              <Select value={templateYear} onValueChange={setTemplateYear}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -554,7 +348,10 @@ const MarksUpload = () => {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Semester</label>
-              <Select value={semester} onValueChange={setSemester}>
+              <Select
+                value={templateSemester}
+                onValueChange={setTemplateSemester}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -566,7 +363,10 @@ const MarksUpload = () => {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Section</label>
-              <Select value={section} onValueChange={setSection}>
+              <Select
+                value={templateSection}
+                onValueChange={setTemplateSection}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -580,30 +380,37 @@ const MarksUpload = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Subject</label>
-              <Select
-                value={subject}
-                onValueChange={setSubject}
-                disabled={!subjects.length}
-              >
+              <label className="text-sm font-medium mb-2 block">Exam</label>
+              <Select value={templateExam} onValueChange={setTemplateExam}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {subjects.map((subj) => (
-                    <SelectItem key={subj.id} value={String(subj.id)}>
-                      {subj.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="mid1">Mid 1</SelectItem>
+                  <SelectItem value="mid2">Mid 2</SelectItem>
+                  <SelectItem value="mid3">Mid 3</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <Input
+                value={templateSubject}
+                onChange={(e) => setTemplateSubject(e.target.value)}
+                placeholder="Subject Name"
+              />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDownloadModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => handleDownloadTemplate(examType)}>Download</Button>
+            <Button
+              onClick={() => handleDownloadTemplate(templateExam)}
+              style={{ backgroundColor: THEME.accent, color: '#fff' }}
+            >
+              Download
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

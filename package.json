@@ -1,5 +1,5 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "ece-portal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -96,10 +96,13 @@
     "jsdom": "^26.1.0",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
+    "pwa-asset-generator": "^8.0.5",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1",
-    "vitest": "^3.2.4"
+    "vite-plugin-pwa": "^1.0.2",
+    "vitest": "^3.2.4",
+    "workbox-window": "^7.3.0"
   }
 }

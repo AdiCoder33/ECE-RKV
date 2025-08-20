@@ -40,6 +40,7 @@ import {
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -52,6 +53,8 @@ const DashboardLayout: React.FC = () => {
   const [chatExpanded, setChatExpanded] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  const avatarSrc = useProfileImageSrc(user?.profileImage);
 
   useEffect(() => {
     setChatOpen(!isMobile);
@@ -69,7 +72,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
           { id: 'timetable', label: 'Timetable', icon: Clock, path: '/dashboard/timetable' },
           { id: 'attendance', label: 'Attendance Manager', icon: Calendar, path: '/dashboard/attendance' },
-          { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
+          { id: 'marks', label: 'Marks', icon: BarChart3, path: '/dashboard/marks' },
           { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/dashboard/analytics' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
@@ -82,7 +85,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'users', label: 'Faculty & Students', icon: Users, path: '/dashboard/users' },
           { id: 'subjects', label: 'Subject Management', icon: FileText, path: '/dashboard/subjects' },
           { id: 'analytics', label: 'Department Analytics', icon: BarChart3, path: '/dashboard/analytics' },
-          { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
+          { id: 'marks', label: 'Marks', icon: BarChart3, path: '/dashboard/marks' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
         ];
@@ -90,8 +93,7 @@ const DashboardLayout: React.FC = () => {
         return [
           { id: 'professor', label: 'Dashboard', icon: Home, path: '/dashboard/professor' },
           { id: 'classes', label: 'Class Management', icon: BookOpen, path: '/dashboard/classes' },
-          { id: 'marks-upload', label: 'Upload Marks', icon: FileText, path: '/dashboard/marks-upload' },
-          { id: 'marks-overview', label: 'View Marks', icon: BarChart3, path: '/dashboard/marks-overview' },
+          { id: 'marks', label: 'Marks', icon: BarChart3, path: '/dashboard/marks' },
           { id: 'attendance', label: 'Mark Attendance', icon: Calendar, path: '/dashboard/attendance' },
           { id: 'timetable', label: 'My Timetable', icon: Clock, path: '/dashboard/timetable' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
@@ -303,7 +305,7 @@ const DashboardLayout: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profileImage} />
+                    <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {user?.name?.charAt(0)}
                     </AvatarFallback>

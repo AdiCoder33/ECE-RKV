@@ -1,12 +1,14 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { Toaster } from '@/components/ui/sonner';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
+import ForgotPassword from './components/auth/ForgotPassword';
 import Homepage from './pages/Homepage';
 import StudentAttendance from './pages/StudentAttendance';
 import AdminDashboard from './components/dashboard/AdminDashboard';
@@ -30,13 +32,31 @@ import AlumniProfile from './components/profile/AlumniProfile';
 import ContactAlumni from './pages/ContactAlumni';
 import ResumeBuilder from './components/profile/ResumeBuilder';
 import StudentMarks from './components/marks/StudentMarks';
-import MarksUpload from './components/marks/MarksUpload';
-import MarksOverview from './components/marks/MarksOverview';
-import NonStudentRoute from './components/auth/NonStudentRoute';
+import Marks from './components/marks/Marks';
 import ChatList from './components/chat/ChatList';
 import ChatConversation from './components/chat/ChatConversation';
 import StudentProfile from './components/profile/StudentProfile';
+import Intro from './pages/Intro';
 import './App.css';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+function StandaloneRedirector() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone && location.pathname === '/') {
+      navigate('/login', { replace: true });
+    }
+  }, [location, navigate]);
+
+  return null;
+}
 
 // Create a client instance
 const queryClient = new QueryClient({
@@ -49,17 +69,41 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handler = (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-        <AuthProvider>
-          <ChatProvider>
-            <Router>
-              <div className="min-h-screen bg-background">
-              <Routes>
-                <Route path="/" element={<Homepage />} />
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/dashboard" element={<DashboardLayout />}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          <Router>
+            <StandaloneRedirector />
+            <AuthProvider>
+              <ChatProvider>
+                <div className="min-h-screen bg-background">
+                {deferredPrompt && (
+                  <button
+                    onClick={() => {
+                      deferredPrompt.prompt();
+                      deferredPrompt.userChoice.finally(() => setDeferredPrompt(null));
+                    }}
+                  >
+                    Install App
+                  </button>
+                )}
+                <Toaster />
+                <Routes>
+                  <Route path="/" element={<Homepage />} />
+                  <Route path="/login" element={<LoginForm />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/intro" element={<Intro />} />
+                  <Route path="/dashboard" element={<DashboardLayout />}> 
                   <Route index element={<AdminDashboard />} />
                   <Route path="student" element={<StudentDashboard />} />
                   <Route path="professor" element={<ProfessorDashboard />} />
@@ -82,26 +126,18 @@ function App() {
                   <Route path="resume" element={<ResumeBuilder />} />
                   <Route path="my-marks" element={<StudentMarks />} />
                   <Route path="students/:studentId" element={<StudentProfile />} />
-                  <Route
-                    path="marks-overview"
-                    element={
-                      <NonStudentRoute>
-                        <MarksOverview />
-                      </NonStudentRoute>
-                    }
-                  />
-                  <Route path="marks-upload" element={<MarksUpload />} />
+                  <Route path="marks" element={<Marks />} />
                   <Route path="chat" element={<ChatList />} />
                   <Route path="chat/:type/:id" element={<ChatConversation />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
-              </Routes>
-            </div>
-            </Router>
-          </ChatProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+                </Routes>
+              </div>
+              </ChatProvider>
+            </AuthProvider>
+          </Router>
+        </ThemeProvider>
+      </QueryClientProvider>
   );
 }
 

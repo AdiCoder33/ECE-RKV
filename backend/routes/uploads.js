@@ -9,19 +9,8 @@ const router = express.Router();
 const uploadDir = path.join(__dirname, '..', 'uploads', 'chat');
 fs.mkdirSync(uploadDir, { recursive: true });
 
-const profileDir = path.join(__dirname, '..', 'uploads', 'profile');
-fs.mkdirSync(profileDir, { recursive: true });
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  }
-});
-
-const profileStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, profileDir),
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, unique + path.extname(file.originalname));
@@ -46,6 +35,13 @@ const upload = multer({
   }
 });
 
+const profileDir = path.join(__dirname, '..', 'uploads', 'profile');
+fs.mkdirSync(profileDir, { recursive: true });
+const profileStorage = multer.diskStorage({
+  destination: profileDir,
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+});
+
 const profileUpload = multer({
   storage: profileStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -68,7 +64,15 @@ router.post('/profile', authenticateToken, profileUpload.single('image'), (req, 
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
-  const url = `${req.protocol}://${req.get('host')}/uploads/profile/${req.file.filename}`;
+
+  const key = req.file.filename;
+  const url = `${req.protocol}://${req.get('host')}/uploads/profile/${key}`;
+  res.json({ key, url });
+});
+
+router.get('/profile/:key', authenticateToken, (req, res) => {
+  const { key } = req.params;
+  const url = `${req.protocol}://${req.get('host')}/uploads/profile/${key}`;
   res.json({ url });
 });
 
