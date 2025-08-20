@@ -23,40 +23,11 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         includeAssets: ["offline.html"],
-        workbox: {
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
+        injectManifest: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          navigateFallback: "index.html",
-          runtimeCaching: [
-            {
-              urlPattern: ({ url }) => url.pathname.startsWith("/api"),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "api-cache",
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60, // 1 hour
-                },
-              },
-            },
-            {
-              urlPattern: ({ request }) => request.destination === "image",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "image-cache",
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-                },
-              },
-            },
-            {
-              urlPattern: ({ url }) => url.pathname === "/offline.html",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "offline-html",
-              },
-            },
-          ],
         },
       }),
       mode === "development" && componentTagger(),
