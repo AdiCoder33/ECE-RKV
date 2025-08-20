@@ -11,6 +11,11 @@ if (!jwtSecret) {
   throw new Error('JWT_SECRET is not defined');
 }
 
+const otpExpiryMinutes = (() => {
+  const value = parseInt(process.env.OTP_EXPIRY_MINUTES, 10);
+  return Number.isNaN(value) ? 10 : value;
+})();
+
 // Login route
 router.post('/login', async (req, res, next) => {
   try {
@@ -72,8 +77,8 @@ router.post('/request-reset', async (req, res, next) => {
     const otp = generateOTP();
     const hashedOtp = await bcrypt.hash(otp, 10);
     await executeQuery(
-      'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, 10, GETDATE()) WHERE id = ?',
-      [hashedOtp, user.id]
+      'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, ?, GETDATE()) WHERE id = ?',
+      [hashedOtp, otpExpiryMinutes, user.id]
     );
     await sendOTPEmail(email, otp);
 
