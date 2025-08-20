@@ -2,7 +2,7 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const pushService = require('../services/pushService');
+const { sendToUsers } = require('../services/pushService');
 const router = express.Router();
 
 // Get notifications for the current user
@@ -82,8 +82,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       [title, message, type, userId, JSON.stringify(data || {})]
     );
 
-    pushService
-      .sendToUsers([userId], { title, body: message, data })
+    sendToUsers([userId], { title, body: message, data })
       .catch((err) => console.error('Push notification error:', err));
 
     res.status(201).json({
