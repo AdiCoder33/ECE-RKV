@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoginForm from './components/auth/LoginForm';
+import ForgotPassword from './components/auth/ForgotPassword';
 import Homepage from './pages/Homepage';
 import StudentAttendance from './pages/StudentAttendance';
 import AdminDashboard from './components/dashboard/AdminDashboard';
@@ -98,6 +99,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Homepage />} />
                   <Route path="/login" element={<LoginForm />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/intro" element={<Intro />} />
                   <Route path="/dashboard" element={<DashboardLayout />}> 
                   <Route index element={<AdminDashboard />} />
