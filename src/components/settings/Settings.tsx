@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import NotifyToggle from '@/components/NotifyToggle';
 import { 
   Settings as SettingsIcon, 
   Bell,
@@ -22,7 +23,6 @@ const Settings = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
-    pushNotifications: true,
     announcementAlerts: true,
     attendanceReminders: true,
     gradeUpdates: true
@@ -130,16 +130,7 @@ const Settings = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Push Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive browser push notifications</p>
-                  </div>
-                  <Switch
-                    checked={notifications.pushNotifications}
-                    onCheckedChange={(value) => handleNotificationChange('pushNotifications', value)}
-                  />
-                </div>
+                <NotifyToggle />
 
                 <div className="flex items-center justify-between">
                   <div>
