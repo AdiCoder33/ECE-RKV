@@ -18,6 +18,7 @@ interface Announcement {
   time: string;
   title: string;
   content: string;
+  targetRole: string;
 }
 
 /** Explicitly typed framer-motion variants */
@@ -104,21 +105,20 @@ const LandingPage: React.FC = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const url = token ? `${apiBase}/announcements` : `${apiBase}/public/announcements`;
-        const response = await fetch(url, token ? {
-          headers: { Authorization: `Bearer ${token}` },
-        } : undefined);
+        const response = await fetch(`${apiBase}/public/announcements?scope=landing`);
         if (!response.ok) {
           throw new Error('Failed to fetch announcements');
         }
         const data: Array<Record<string, unknown>> = await response.json();
-        const mapped: Announcement[] = data.map((a) => ({
-          author: (a.author_name as string) || (a.authorName as string) || 'Unknown',
-          time: new Date((a.created_at as string) || (a.createdAt as string)).toLocaleString('en-IN'),
-          title: a.title as string,
-          content: a.content as string,
-        }));
+        const mapped: Announcement[] = data
+          .map((a) => ({
+            author: (a.author_name as string) || (a.authorName as string) || 'Unknown',
+            time: new Date((a.created_at as string) || (a.createdAt as string)).toLocaleString('en-IN'),
+            title: a.title as string,
+            content: a.content as string,
+            targetRole: (a.target_role as string) || (a.targetRole as string) || '',
+          }))
+          .filter((a) => a.targetRole === 'landing');
         setAnnouncements(mapped);
       } catch (error) {
         console.error('Error fetching announcements', error);
