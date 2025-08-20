@@ -2,6 +2,7 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const pushService = require('../services/pushService');
 const router = express.Router();
 
 // Get notifications for the current user
@@ -80,10 +81,14 @@ router.post('/', authenticateToken, async (req, res, next) => {
       'INSERT INTO notifications (title, message, type, user_id, data) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?)',
       [title, message, type, userId, JSON.stringify(data || {})]
     );
-    
-    res.status(201).json({ 
-      id: recordset[0].id, 
-      message: 'Notification created successfully' 
+
+    pushService
+      .sendToUsers([userId], { title, body: message, data })
+      .catch((err) => console.error('Push notification error:', err));
+
+    res.status(201).json({
+      id: recordset[0].id,
+      message: 'Notification created successfully'
     });
   } catch (error) {
     console.error('Create notification error:', error);

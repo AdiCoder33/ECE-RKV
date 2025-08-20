@@ -1,6 +1,7 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const pushService = require('../services/pushService');
 const router = express.Router();
 
 // Get announcements
@@ -64,6 +65,13 @@ router.post('/', authenticateToken, async (req, res, next) => {
       )
     );
     await Promise.all(notificationPromises);
+
+    pushService
+      .sendToUsers(
+        recipients.map((u) => u.id),
+        { title, body: snippet, data: { announcementId: newId } }
+      )
+      .catch((err) => console.error('Push notification error:', err));
 
     res.status(201).json({ id: newId, message: 'Announcement created successfully' });
   } catch (error) {
