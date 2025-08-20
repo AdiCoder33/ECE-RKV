@@ -77,7 +77,7 @@ router.post('/request-reset', async (req, res, next) => {
     const otp = generateOTP();
     const hashedOtp = await bcrypt.hash(otp, 10);
     await executeQuery(
-      'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, ?, GETDATE()) WHERE id = ?',
+      'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, ?, SYSUTCDATETIME()) WHERE id = ?',
       [hashedOtp, otpExpiryMinutes, user.id]
     );
     await sendOTPEmail(email, otp);
@@ -96,16 +96,12 @@ router.post('/verify-otp', async (req, res, next) => {
     }
 
     const result = await executeQuery(
-      'SELECT reset_otp, reset_expires FROM users WHERE email = ?',
+      'SELECT reset_otp FROM users WHERE email = ? AND reset_expires > SYSUTCDATETIME()',
       [email]
     );
     const user = result.recordset && result.recordset[0];
-    if (!user || !user.reset_otp || !user.reset_expires) {
-      return res.status(400).json({ error: 'Invalid request' });
-    }
-
-    if (new Date(user.reset_expires) < new Date()) {
-      return res.status(400).json({ error: 'OTP expired' });
+    if (!user || !user.reset_otp) {
+      return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
 
     const valid = await bcrypt.compare(otp, user.reset_otp);
