@@ -2,6 +2,7 @@ const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { fetchTimetable } = require('./timetable');
+const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
 
 // Get professor profile
@@ -29,7 +30,7 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
       email: prof.email,
       department: prof.department,
       phone: prof.phone,
-      profileImage: prof.profile_image,
+      profileImage: await resolveProfileImage(prof.profile_image),
       address: prof.address,
       bloodGroup: prof.blood_group,
       dateOfBirth: prof.date_of_birth
@@ -115,7 +116,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       email: prof.email,
       department: prof.department,
       phone: prof.phone,
-      profileImage: prof.profile_image,
+      profileImage: await resolveProfileImage(prof.profile_image),
       address: prof.address,
       bloodGroup: prof.blood_group,
       dateOfBirth: prof.date_of_birth

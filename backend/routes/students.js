@@ -2,6 +2,7 @@ const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
 
 // Get classmates
@@ -30,15 +31,18 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
     `, ['student', year, semester, section]);
 
     const classmates = result.recordset || [];
-    res.json(classmates.map(student => ({
-      id: student.id.toString(),
-      name: student.name,
-      email: student.email,
-      rollNumber: student.roll_number,
-      phone: student.phone,
-      profileImage: student.profile_image,
-      attendancePercentage: Math.round(student.attendance_percentage || 0)
-    })));
+    const formatted = await Promise.all(
+      classmates.map(async student => ({
+        id: student.id.toString(),
+        name: student.name,
+        email: student.email,
+        rollNumber: student.roll_number,
+        phone: student.phone,
+        profileImage: await resolveProfileImage(student.profile_image),
+        attendancePercentage: Math.round(student.attendance_percentage || 0)
+      }))
+    );
+    res.json(formatted);
   } catch (error) {
     console.error('Classmates fetch error:', error);
     next(error);
@@ -148,8 +152,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const result = await executeQuery(query, params);
     const students = result.recordset || [];
 
-    res.json(
-      students.map(student => ({
+    const formatted = await Promise.all(
+      students.map(async student => ({
         id: student.id.toString(),
         name: student.name,
         email: student.email,
@@ -166,11 +170,12 @@ router.get('/', authenticateToken, async (req, res, next) => {
         parentContact: student.parent_contact,
         bloodGroup: student.blood_group,
         admissionYear: student.admission_year,
-        profileImage: student.profile_image,
+        profileImage: await resolveProfileImage(student.profile_image),
         attendancePercentage: Math.round(student.attendance_percentage || 0),
         cgpa: student.cgpa || 0,
       }))
     );
+    res.json(formatted);
   } catch (error) {
     console.error('Students fetch error:', error);
     next(error);
@@ -262,7 +267,7 @@ router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
       name: s.name,
       email: s.email,
       phone: s.phone,
-      profileImage: s.profile_image,
+      profileImage: await resolveProfileImage(s.profile_image),
       dateOfBirth: s.date_of_birth,
       address: s.address,
       bloodGroup: s.blood_group,
@@ -297,7 +302,7 @@ router.get('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
       name: s.name,
       email: s.email,
       phone: s.phone,
-      profileImage: s.profile_image,
+      profileImage: await resolveProfileImage(s.profile_image),
       dateOfBirth: s.date_of_birth,
       address: s.address,
       bloodGroup: s.blood_group,
@@ -324,14 +329,14 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
         s.code,
         s.credits,
         s.type,
-        MAX(CASE WHEN m.exam_type = 'mid1' THEN m.marks END) AS mid1,
-        MAX(CASE WHEN m.exam_type = 'mid2' THEN m.marks END) AS mid2,
-        MAX(CASE WHEN m.exam_type = 'mid3' THEN m.marks END) AS mid3,
+        MAX(CASE WHEN im.type = 'mid1' THEN im.marks END) AS mid1,
+        MAX(CASE WHEN im.type = 'mid2' THEN im.marks END) AS mid2,
+        MAX(CASE WHEN im.type = 'mid3' THEN im.marks END) AS mid3,
         COUNT(a.id) as total_classes,
         SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
       INNER JOIN users u ON s.year = u.year AND s.semester = u.semester
-      LEFT JOIN marks m ON s.id = m.subject_id AND m.student_id = u.id
+      LEFT JOIN InternalMarks im ON s.id = im.subject_id AND im.student_id = u.id
       LEFT JOIN attendance a ON a.student_id = u.id AND a.subject_id = s.id
       WHERE u.id = ?
       GROUP BY s.id, s.name, s.code, s.credits, s.type
@@ -483,7 +488,7 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
       year: student.year,
       semester: student.semester,
       section: student.section,
-      profileImage: student.profile_image,
+      profileImage: await resolveProfileImage(student.profile_image),
       dateOfBirth: student.date_of_birth,
       address: student.address,
       parentContact: student.parent_contact,
@@ -551,7 +556,7 @@ router.get('/:id(\\d+)', authenticateToken, async (req, res, next) => {
       year: student.year,
       semester: student.semester,
       section: student.section,
-      profileImage: student.profile_image,
+      profileImage: await resolveProfileImage(student.profile_image),
       dateOfBirth: student.date_of_birth,
       address: student.address,
       parentContact: student.parent_contact,

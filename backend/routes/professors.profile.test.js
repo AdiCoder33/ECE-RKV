@@ -93,7 +93,7 @@ describe('PUT /professors/:id/profile', () => {
       email: 'new@example.com',
       department: null,
       phone: '123',
-      profileImage: 'img.jpg',
+      profileImage: '/uploads/profile/img.jpg',
       address: 'New Address',
       bloodGroup: 'A+',
       dateOfBirth: '2000-01-01',

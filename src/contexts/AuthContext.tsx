@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User } from '@/types';
+import { cacheProfileImage, clearProfileImageCache } from '@/lib/profileImageCache';
 
 interface AuthContextType {
   user: User | null;
@@ -23,10 +25,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for stored authentication
     const storedUser = localStorage.getItem('user');
+    const cachedImage = localStorage.getItem('profileImageCache');
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser) as User & { profile_image?: string };
@@ -37,6 +41,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           localStorage.setItem('user', JSON.stringify(parsed));
           setUser(parsed);
+          if (!cachedImage && parsed.profileImage) {
+            cacheProfileImage(parsed.profileImage);
+          }
         }
       } catch {
         // ignore invalid stored user
@@ -60,7 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Login failed');
+      throw new Error(
+        errorData.error || errorData.message || 'Login failed'
+      );
     }
 
     const data = await response.json();
@@ -84,6 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Only persist the user if the ID is a valid number
     localStorage.setItem('user', JSON.stringify(sanitizedUser));
     localStorage.setItem('token', token);
+    if (sanitizedUser.profileImage) {
+      cacheProfileImage(sanitizedUser.profileImage);
+    }
 
     // Redirect based on role
     const dashboardRoutes = {
@@ -94,13 +106,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       alumni: '/dashboard/alumni'
     } as const;
 
-    window.location.href = dashboardRoutes[userInfo.role as keyof typeof dashboardRoutes];
+    navigate(dashboardRoutes[userInfo.role as keyof typeof dashboardRoutes], { replace: true });
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    clearProfileImageCache();
     window.location.href = '/';
   };
 

@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
 
 // Get all users or search users
@@ -42,14 +43,15 @@ router.get('/', authenticateToken, async (req, res, next) => {
 
       const result = await executeQuery(query, params);
       const records = result.recordset || [];
-      return res.json(
-        records.map(({ id, name, role, profileImage }) => ({
+      const formatted = await Promise.all(
+        records.map(async ({ id, name, role, profileImage }) => ({
           id,
           name,
           role,
-          profileImage,
+          profileImage: await resolveProfileImage(profileImage),
         }))
       );
+      return res.json(formatted);
     }
 
     // Default behaviour: return full user records
@@ -79,12 +81,13 @@ router.get('/', authenticateToken, async (req, res, next) => {
     }
     const result = await executeQuery(query, params);
     const records = result.recordset || [];
-    res.json(
-      records.map(({ profile_image, ...rest }) => ({
+    const formatted = await Promise.all(
+      records.map(async ({ profile_image, ...rest }) => ({
         ...rest,
-        profileImage: profile_image,
+        profileImage: await resolveProfileImage(profile_image),
       }))
     );
+    res.json(formatted);
   } catch (error) {
     console.error('Users fetch error:', error);
     next(error);

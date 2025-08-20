@@ -340,7 +340,7 @@ const TimetableManagement = () => {
         const data = await response.json().catch(() => ({}));
         toast({
           title: 'Error',
-          description: data.message || 'Failed to add timetable slot',
+          description: data.error || data.message || 'Failed to add timetable slot',
           variant: 'destructive'
         });
         return;
@@ -383,7 +383,7 @@ const TimetableManagement = () => {
         const data = await response.json().catch(() => ({}));
         toast({
           title: 'Error',
-          description: data.message || 'Failed to delete timetable slot',
+          description: data.error || data.message || 'Failed to delete timetable slot',
           variant: 'destructive'
         });
       }
@@ -424,7 +424,7 @@ const TimetableManagement = () => {
         const data = await response.json().catch(() => ({}));
         toast({
           title: 'Error',
-          description: data.message || 'Failed to update timetable slot',
+          description: data.error || data.message || 'Failed to update timetable slot',
           variant: 'destructive'
         });
         return;

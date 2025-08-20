@@ -1,6 +1,7 @@
 const express = require('express');
 const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
 
 // Authorization helper to ensure the user has one of the required roles
@@ -222,24 +223,27 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
     const result = await executeQuery(query, [classId]);
     const students = result.recordset || [];
 
-    res.json(students.map(student => ({
-      id: student.id.toString(),
-      name: student.name,
-      email: student.email,
-      rollNumber: student.roll_number,
-      phone: student.phone,
-      department: student.department,
-      year: student.year,
-      section: student.section,
-      profileImage: student.profile_image,
-      dateOfBirth: student.date_of_birth,
-      address: student.address,
-      parentContact: student.parent_contact,
-      bloodGroup: student.blood_group,
-      admissionYear: student.admission_year,
-      attendancePercentage: Math.round(student.attendance_percentage || 0),
-      cgpa: student.cgpa || 0
-    })));
+    const formatted = await Promise.all(
+      students.map(async student => ({
+        id: student.id.toString(),
+        name: student.name,
+        email: student.email,
+        rollNumber: student.roll_number,
+        phone: student.phone,
+        department: student.department,
+        year: student.year,
+        section: student.section,
+        profileImage: await resolveProfileImage(student.profile_image),
+        dateOfBirth: student.date_of_birth,
+        address: student.address,
+        parentContact: student.parent_contact,
+        bloodGroup: student.blood_group,
+        admissionYear: student.admission_year,
+        attendancePercentage: Math.round(student.attendance_percentage || 0),
+        cgpa: student.cgpa || 0
+      }))
+    );
+    res.json(formatted);
   } catch (error) {
     console.error('Class students fetch error:', error);
     next(error);

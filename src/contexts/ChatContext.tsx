@@ -33,6 +33,7 @@ interface ChatContextType {
   groups: Group[];
   onlineUsers: Set<number>;
   typingUsers: Set<number>;
+  socketRef: React.MutableRefObject<Socket | null>;
   fetchGroups: () => Promise<Group[]>;
   fetchGroupMessages: (
     groupId: string,
@@ -128,7 +129,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Request failed');
+        throw new Error(
+          errorData.error || errorData.message || 'Request failed'
+        );
       }
 
       if (
@@ -564,23 +567,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!user || !token || socketRef.current) return;
     const socket = io(socketUrl, { auth: { token } });
+    socketRef.current = socket;
 
     socket.on('group-message', (message: ChatMessage) => {
       if (message.senderId === user?.id) return; // skip echoes
       const msgWithStatus = { ...message, status: message.status ?? 'sent' };
-      setMessages(prev =>
-        prev.some(m => m.id === msgWithStatus.id)
-          ? prev
-          : [...prev, msgWithStatus]
-      );
+      // Append the incoming group message to the shared messages state
+      setMessages(prev => [...prev, msgWithStatus]);
     });
 
     socket.on('private-message', (message: PrivateMessage) => {
       if (message.sender_id === user?.id) return; // skip echoes
       const msgWithStatus = { ...message, status: message.status ?? 'sent' };
-      setPrivateMessages(prev => mergePrivateMessages(prev, [msgWithStatus]));
+      // Append the incoming private message to the shared privateMessages state
+      setPrivateMessages(prev => [...prev, msgWithStatus]);
     });
 
     socket.on('chat-message-edit', (m: ChatMessage) => {
@@ -653,11 +655,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
-    socketRef.current = socket;
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
-  }, [socketUrl, sortConversations]);
+  }, [user, socketUrl, sortConversations]);
 
   useEffect(() => {
     if (socketRef.current && groups.length) {
@@ -679,6 +681,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           groups,
           onlineUsers,
           typingUsers,
+          socketRef,
           fetchGroups,
           fetchGroupMessages,
           fetchMoreGroupMessages,

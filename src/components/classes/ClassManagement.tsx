@@ -86,7 +86,10 @@ const ClassManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch classes');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to fetch classes'
+        );
       }
 
       const data: Class[] = await response.json();
@@ -126,7 +129,10 @@ const ClassManagement: React.FC = () => {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create class');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || errorData.message || 'Failed to create class'
+          );
         }
 
         const createdClass: Class = await response.json();
@@ -162,7 +168,10 @@ const ClassManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update class');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to update class'
+        );
       }
 
       const updatedClassData: Class = await response.json();
@@ -194,7 +203,8 @@ const ClassManagement: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const message = errorData.message || 'Failed to delete class';
+        const message =
+          errorData.error || errorData.message || 'Failed to delete class';
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -236,7 +246,8 @@ const ClassManagement: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const message = errorData.message || 'Failed to promote students';
+        const message =
+          errorData.error || errorData.message || 'Failed to promote students';
         toast({
           variant: 'destructive',
           title: 'Error',

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
@@ -26,6 +27,36 @@ interface ChatSidebarProps {
   onToggle: () => void;
   onExpandedChange: (value: boolean) => void;
 }
+
+interface ConversationSummary {
+  type: 'direct' | 'group';
+  id: string | number;
+  title: string;
+  avatar?: string;
+  unreadCount?: number;
+}
+
+const ConversationButton: React.FC<{
+  convo: ConversationSummary;
+  onClick: () => void;
+}> = ({ convo, onClick }) => {
+  const avatarSrc = useProfileImageSrc(convo.avatar);
+  return (
+    <button onClick={onClick} className="relative">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
+        <AvatarFallback className="bg-primary text-primary-foreground">
+          {convo.title.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+      {convo.unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
+          {convo.unreadCount}
+        </span>
+      )}
+    </button>
+  );
+};
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isOpen,
@@ -52,6 +83,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     typingUsers,
     setTyping,
     searchUsers,
+    socketRef,
   } = useChat();
 
   const [activeChat, setActiveChat] = useState<{
@@ -88,7 +120,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       setSearchLoading(true);
       try {
         const results = await searchUsers(search);
-        setSearchResults(results);
+        setSearchResults(results.filter(u => u.id !== user?.id));
       } catch {
         // ignore
       } finally {
@@ -96,7 +128,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [search, searchUsers]);
+  }, [search, searchUsers, user?.id]);
 
   useEffect(() => {
     if (!activeChat) return;
@@ -152,6 +184,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [activeChat, fetchConversation, fetchGroupMessages, markAsRead]);
 
   useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !activeChat) return;
+    const room =
+      activeChat.type === 'group'
+        ? `group-${activeChat.id}`
+        : `user:${activeChat.id}`;
+    socket.emit('join-room', room);
+    return () => {
+      socket.emit('leave-room', room);
+    };
+  }, [activeChat, socketRef]);
+
+  useEffect(() => {
     if (!activeChat) return;
     if (activeChat.type === 'direct') {
       const newMsgs = privateMessages
@@ -161,7 +206,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       const newMsgs = messages.filter(m => m.groupId === activeChat.id);
       setGroupMessages(newMsgs);
     }
-  }, [privateMessages, messages, activeChat]);
+  }, [activeChat, privateMessages, messages]);
 
   const handleSendMessage = useCallback(async () => {
     if ((!message.trim() && attachments.length === 0) || !activeChat) return;
@@ -406,26 +451,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <MessageSquare className="h-5 w-5" />
           </Button>
           {conversations.slice(0, 10).map(c => (
-            <button
+            <ConversationButton
               key={`${c.type}-${c.id}`}
+              convo={c}
               onClick={() => {
                 setActiveChat({ type: c.type, id: String(c.id), title: c.title });
                 onExpandedChange(true);
               }}
-              className="relative"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={c.avatar || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {c.title.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              {c.unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">
-                  {c.unreadCount}
-                </span>
-              )}
-            </button>
+            />
           ))}
         </div>
       ) : null}
