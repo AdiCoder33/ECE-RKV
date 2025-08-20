@@ -280,11 +280,10 @@ CREATE TABLE device_tokens (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Web Push subscriptions
 CREATE TABLE push_subscriptions (
-    id int IDENTITY(1,1) PRIMARY KEY,
-    endpoint nvarchar(500) NOT NULL UNIQUE,
-    keys nvarchar(max) NOT NULL,
+    endpoint nvarchar(500) PRIMARY KEY,
+    keys_p256dh nvarchar(255) NOT NULL,
+    keys_auth nvarchar(255) NOT NULL,
     topics nvarchar(max),
     user_id int NULL,
     created_at datetime2 DEFAULT GETDATE(),
