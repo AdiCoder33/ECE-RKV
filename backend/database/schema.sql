@@ -280,6 +280,17 @@ CREATE TABLE device_tokens (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Web Push subscriptions
+CREATE TABLE push_subscriptions (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    endpoint nvarchar(500) NOT NULL UNIQUE,
+    keys nvarchar(max) NOT NULL,
+    topics nvarchar(max),
+    user_id int NULL,
+    created_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Insert sample data
 INSERT INTO users (name, email, password, role, department) VALUES 
 ('Admin User', 'admin@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'ECE'),

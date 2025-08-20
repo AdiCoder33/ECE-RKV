@@ -31,6 +31,7 @@ const uploadRoutes = require('./routes/uploads');
 const professorRoutes = require('./routes/professors');
 const publicRoutes = require('./routes/public');
 const deviceRoutes = require('./routes/devices');
+const pushRoutes = require('./routes/push');
 
 // Middleware
 app.use(cors({
@@ -77,6 +78,7 @@ app.use('/api/marks', require('./routes/marks'));
 app.use('/api/timetable', require('./routes/timetable'));
 app.use('/api/public', publicRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/push', pushRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
