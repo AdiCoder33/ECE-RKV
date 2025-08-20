@@ -466,20 +466,7 @@ const StudentDashboard: React.FC = () => {
       </div>
 
       {/* Mobile Quick Actions */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-2 flex justify-around md:hidden shadow-2xl">
-        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/student-attendance')}>
-          <Calendar className="h-6 w-6 mb-1" />
-          <span className="text-xs">Attendance</span>
-        </Button>
-        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/timetable')}>
-          <BookOpen className="h-6 w-6 mb-1" />
-          <span className="text-xs">Timetable</span>
-        </Button>
-        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/my-marks')}>
-          <Award className="h-6 w-6 mb-1" />
-          <span className="text-xs">Marks</span>
-        </Button>
-      </div>
+      
     </div>
   );
 };
