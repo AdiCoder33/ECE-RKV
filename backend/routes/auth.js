@@ -13,7 +13,7 @@ if (!jwtSecret) {
 
 const otpExpiryMinutes = (() => {
   const value = parseInt(process.env.OTP_EXPIRY_MINUTES, 10);
-  return Number.isNaN(value) ? 10 : value;
+  return Number.isNaN(value) || value <= 0 ? 10 : value;
 })();
 
 // Login route
