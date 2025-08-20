@@ -67,7 +67,7 @@ const StudentAttendance = () => {
           const data = await response.json().catch(() => ({}));
           toast({
             title: 'Error',
-            description: data.message || 'Failed to load subjects',
+            description: data.error || data.message || 'Failed to load subjects',
             variant: 'destructive'
           });
           return;
@@ -105,7 +105,7 @@ const StudentAttendance = () => {
           const data = await response.json().catch(() => ({}));
           toast({
             title: 'Error',
-            description: data.message || 'Failed to load attendance',
+            description: data.error || data.message || 'Failed to load attendance',
             variant: 'destructive'
           });
           setLoading(false);

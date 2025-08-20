@@ -129,7 +129,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Request failed');
+        throw new Error(
+          errorData.error || errorData.message || 'Request failed'
+        );
       }
 
       if (
