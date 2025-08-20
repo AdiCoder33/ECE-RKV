@@ -2,6 +2,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { createRoot } from 'react-dom/client';
 import { toast } from 'sonner';
 import App from './App.tsx';
+import { registerServiceWorker } from './push.ts';
 import './index.css';
 
 const updateSW = registerSW({
@@ -18,6 +19,8 @@ const updateSW = registerSW({
     toast.success('App is ready to work offline.');
   },
 });
+
+registerServiceWorker();
 
 // Attach JWT token to all fetch requests if available
 const originalFetch = window.fetch;
