@@ -140,13 +140,22 @@ router.post('/reset-password', async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await executeQuery(
-      'UPDATE users SET password = ?, reset_otp = NULL, reset_expires = NULL WHERE id = ?',
-      [hashedPassword, user.id]
-    );
+    console.log('Hashed new password for user', user.id);
+
+    try {
+      const updateResult = await executeQuery(
+        'UPDATE users SET password = ?, reset_otp = NULL, reset_expires = NULL WHERE id = ?',
+        [hashedPassword, user.id]
+      );
+      console.log('Password update result:', updateResult);
+    } catch (updateError) {
+      console.error('Password update error:', updateError);
+      throw updateError;
+    }
 
     res.json({ message: 'Password reset successful' });
   } catch (error) {
+    console.error('Password reset failed:', error);
     next(error);
   }
 });
