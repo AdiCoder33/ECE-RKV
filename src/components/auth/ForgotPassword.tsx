@@ -28,7 +28,9 @@ const ForgotPassword = () => {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to send reset email');
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to send reset email'
+        );
       }
       toast.success('OTP sent to your email');
       setStep('verify');
@@ -53,7 +55,9 @@ const ForgotPassword = () => {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to verify OTP');
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to verify OTP'
+        );
       }
       toast.success('OTP verified');
       setStep('reset');
@@ -78,7 +82,9 @@ const ForgotPassword = () => {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to reset password');
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to reset password'
+        );
       }
       toast.success('Password reset successful');
       navigate('/login');
