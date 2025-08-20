@@ -4,10 +4,7 @@ const jwt = require('jsonwebtoken');
 const { executeQuery } = require('../config/database');
 const { resolveProfileImage } = require('../utils/images');
 const { generateOTP, sendOTPEmail } = require('../utils/otp');
-const logger = require('../utils/logger');
-const routeLogger = require('../middleware/routeLogger');
 const router = express.Router();
-router.use(routeLogger());
 
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
@@ -53,39 +50,38 @@ router.post('/login', async (req, res, next) => {
       token,
       user: userWithoutPassword
     });
-    } catch (error) {
-      logger.error(`Auth login error: ${error.message}`, { stack: error.stack });
-      next(error);
+  } catch (error) {
+    console.error('Auth login error:', error);
+    next(error);
+  }
+});
+
+router.post('/request-reset', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
-  });
 
-  router.post('/request-reset', async (req, res, next) => {
-    try {
-      const { email } = req.body;
-      if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
-      }
-
-      const result = await executeQuery('SELECT id FROM users WHERE email = ?', [email]);
-      const user = result.recordset && result.recordset[0];
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      const otp = generateOTP();
-      const hashedOtp = await bcrypt.hash(otp, 10);
-      await executeQuery(
-        'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, 10, GETDATE()) WHERE id = ?',
-        [hashedOtp, user.id]
-      );
-      await sendOTPEmail(email, otp);
-
-      res.json({ message: 'OTP sent' });
-    } catch (error) {
-      logger.error(`Request reset error: ${error.message}`, { stack: error.stack });
-      next(error);
+    const result = await executeQuery('SELECT id FROM users WHERE email = ?', [email]);
+    const user = result.recordset && result.recordset[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+
+    const otp = generateOTP();
+    const hashedOtp = await bcrypt.hash(otp, 10);
+    await executeQuery(
+      'UPDATE users SET reset_otp = ?, reset_expires = DATEADD(minute, 10, GETDATE()) WHERE id = ?',
+      [hashedOtp, user.id]
+    );
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: 'OTP sent' });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post('/reset-password', async (req, res, next) => {
   try {
@@ -120,7 +116,6 @@ router.post('/reset-password', async (req, res, next) => {
 
     res.json({ message: 'Password reset successful' });
   } catch (error) {
-    logger.error(`Reset password error: ${error.message}`, { stack: error.stack });
     next(error);
   }
 });

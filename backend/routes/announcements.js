@@ -1,10 +1,7 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const logger = require('../utils/logger');
-const routeLogger = require('../middleware/routeLogger');
 const router = express.Router();
-router.use(routeLogger());
 
 // Get announcements
 router.get('/', authenticateToken, async (req, res, next) => {
@@ -19,7 +16,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const rows = result.recordset;
     res.json(rows);
   } catch (error) {
-    logger.error(`Announcements fetch error: ${error.message}`, { stack: error.stack });
+    console.error('Announcements fetch error:', error);
     next(error);
   }
 });
@@ -70,7 +67,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     res.status(201).json({ id: newId, message: 'Announcement created successfully' });
   } catch (error) {
-    logger.error(`Create announcement error: ${error.message}`, { stack: error.stack });
+    console.error('Create announcement error:', error);
     next(error);
   }
 });
@@ -124,7 +121,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
 
     res.json({ message: 'Announcement updated successfully' });
   } catch (error) {
-    logger.error(`Update announcement error: ${error.message}`, { stack: error.stack });
+    console.error('Update announcement error:', error);
     next(error);
   }
 });
@@ -140,7 +137,7 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
 
     res.json({ message: 'Announcement deactivated successfully' });
   } catch (error) {
-    logger.error(`Delete announcement error: ${error.message}`, { stack: error.stack });
+    console.error('Delete announcement error:', error);
     next(error);
   }
 });
