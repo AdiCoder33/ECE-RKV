@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/types';
 import { cacheProfileImage, clearProfileImageCache } from '@/lib/profileImageCache';
+import { enablePush } from '@/push';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -107,6 +109,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } as const;
 
     navigate(dashboardRoutes[userInfo.role as keyof typeof dashboardRoutes], { replace: true });
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        enablePush([], sanitizedUser.id).catch(() =>
+          toast.error(
+            'Enable notifications in your browser settings to receive updates.'
+          )
+        );
+      } else if (Notification.permission === 'denied') {
+        toast.error(
+          'Enable notifications in your browser settings to receive updates.'
+        );
+      }
+    }
   };
 
   const logout = () => {

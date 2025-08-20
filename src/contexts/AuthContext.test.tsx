@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
@@ -9,7 +9,17 @@ expect.extend(matchers);
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
 
+vi.mock('@/push', () => ({ enablePush: vi.fn() }));
+import { enablePush } from '@/push';
+const enablePushMock = enablePush as unknown as ReturnType<typeof vi.fn>;
+enablePushMock.mockResolvedValue(null);
 import { AuthProvider, useAuth } from './AuthContext';
+
+afterEach(() => {
+  mockNavigate.mockClear();
+  enablePushMock.mockClear();
+  delete (globalThis as { Notification?: unknown }).Notification;
+});
 
 describe('AuthContext login', () => {
   it('navigates to role-based dashboard on login', async () => {
@@ -28,5 +38,28 @@ describe('AuthContext login', () => {
       await result.current.login('a', 'b');
     });
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+    expect(enablePushMock).not.toHaveBeenCalled();
+  });
+
+  it('calls enablePush when notification permission is default', async () => {
+    const fakeUser = { id: 1, role: 'admin' };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ token: 't', user: fakeUser }),
+    }) as unknown as typeof fetch;
+
+    (globalThis as { Notification?: { permission: string } }).Notification = {
+      permission: 'default',
+    };
+
+    const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await act(async () => {
+      await result.current.login('a', 'b');
+    });
+    expect(enablePushMock).toHaveBeenCalledWith([], fakeUser.id);
   });
 });
