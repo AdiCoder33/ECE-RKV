@@ -14,13 +14,17 @@ async function sendOTPEmail(to, otp) {
       pass: process.env.EMAIL_PASS
     }
   });
-
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to,
-    subject: 'Password Reset OTP',
-    text: `Your OTP for password reset is ${otp}`
-  });
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to,
+      subject: 'Password Reset OTP',
+      text: `Your OTP for password reset is ${otp}`
+    });
+  } catch (error) {
+    console.error(error.message);
+    throw error;
+  }
 }
 
 module.exports = { generateOTP, sendOTPEmail };
