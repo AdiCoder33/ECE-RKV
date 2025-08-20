@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { executeQuery } = require('../config/database');
 const { resolveProfileImage } = require('../utils/images');
 const { generateOTP, sendOTPEmail } = require('../utils/otp');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -59,6 +60,13 @@ router.post('/login', async (req, res, next) => {
     console.error('Auth login error:', error);
     next(error);
   }
+});
+
+// Refresh JWT
+router.get('/refresh', authenticateToken, (req, res) => {
+  const { id, email, role } = req.user;
+  const token = jwt.sign({ id, email, role }, jwtSecret, { expiresIn: '24h' });
+  res.json({ token });
 });
 
 router.post('/request-reset', async (req, res, next) => {

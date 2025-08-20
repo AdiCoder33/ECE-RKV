@@ -30,29 +30,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for stored authentication
-    const storedUser = localStorage.getItem('user');
-    const cachedImage = localStorage.getItem('profileImageCache');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser) as User & { profile_image?: string };
-        if (typeof parsed.id === 'number') {
-          if ('profile_image' in parsed) {
-            parsed.profileImage = parsed.profile_image;
-            delete parsed.profile_image;
+    const verifyStoredAuth = async () => {
+      // Check for stored authentication
+      const storedUser = localStorage.getItem('user');
+      const cachedImage = localStorage.getItem('profileImageCache');
+      const token = localStorage.getItem('token');
+      if (storedUser && token) {
+        try {
+          const parsed = JSON.parse(storedUser) as User & { profile_image?: string };
+          if (typeof parsed.id === 'number') {
+            if ('profile_image' in parsed) {
+              parsed.profileImage = parsed.profile_image;
+              delete parsed.profile_image;
+            }
+            localStorage.setItem('user', JSON.stringify(parsed));
+            setUser(parsed);
+            if (!cachedImage && parsed.profileImage) {
+              cacheProfileImage(parsed.profileImage);
+            }
+
+            const response = await fetch(`${apiBase}/auth/refresh`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+
+            if (response.ok) {
+              const data = await response.json().catch(() => ({}));
+              if (data.token) {
+                localStorage.setItem('token', data.token);
+              }
+            } else {
+              throw new Error('Token verification failed');
+            }
           }
-          localStorage.setItem('user', JSON.stringify(parsed));
-          setUser(parsed);
-          if (!cachedImage && parsed.profileImage) {
-            cacheProfileImage(parsed.profileImage);
-          }
+        } catch {
+          setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          clearProfileImageCache();
+          navigate('/login', { replace: true });
         }
-      } catch {
-        // ignore invalid stored user
       }
-    }
-    setLoading(false);
-  }, []);
+      setLoading(false);
+    };
+
+    verifyStoredAuth();
+  }, [apiBase, navigate]);
 
   const login = async (email: string, password: string): Promise<void> => {
     // Clear any previous auth data to avoid using stale IDs
