@@ -15,7 +15,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 const Student3D = () => (
   <mesh>
     <boxGeometry args={[1, 1.5, 1]} />
-    <meshStandardMaterial color="#2563eb" />
+    <meshStandardMaterial color="#b3112eff" />
   </mesh>
 );
 
@@ -42,7 +42,7 @@ const Alumni3D = () => (
 
 // RGUKT 3D logo loader with spinning and color change, no user flipping
 const RGUKTLogo3D = () => {
-  const gltf = useLoader(GLTFLoader, '/src/Assets/rgukt.glb');
+  const gltf = useLoader(GLTFLoader, '/src/Assets/rgukt-v1.glb');
   const logoRef = useRef();
 
   // Always spin the logo

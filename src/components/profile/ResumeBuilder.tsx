@@ -54,6 +54,20 @@ interface Project {
   link?: string;
 }
 
+// --- THEME COLORS (matches dashboard, attendance, timetable) ---
+const THEME = {
+  bgBeige: '#fbf4ea',
+  accent: '#b91c1c', // red-700
+  accent2: '#2563eb', // blue-700
+  indigo: '#6366f1',
+  cardBg: '#fff',
+  cardShadow: 'shadow-lg',
+  textMuted: '#64748b',
+  textPrimary: '#1e293b',
+  textSecondary: '#334155',
+  border: '#e5e7eb'
+};
+
 const ResumeBuilder = () => {
   const { user } = useAuth();
   const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -227,7 +241,7 @@ const ResumeBuilder = () => {
   // Loader for async actions
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 px-4 md:px-12">
+      <div className="min-h-screen flex items-center justify-center px-4 md:px-12" style={{ backgroundColor: THEME.bgBeige }}>
         <video
           src={loaderMp4}
           autoPlay
@@ -245,23 +259,26 @@ const ResumeBuilder = () => {
     return <div className="p-4 text-red-500">{error}</div>;
   }
 
-  // --- TEMPLATES ---
-  // Template 1: Modern (default, as before)
-  // Template 2: Elegant (LaTeX-like, serif font, minimal, for PDF/print)
-  // Template 3: Colorful (subtle accent colors, for creative roles)
-
-  // --- TABS FOR TEMPLATES ---
   const resumeData = { personalInfo, education, experience, projects, skills };
 
+  // --- MODERN TEMPLATE (DEFAULT) ---
   if (!isEditing) {
     return (
-      <div className="min-h-screen px-2 py-6 sm:px-6 md:px-12 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+      <div className="min-h-screen px-2 py-6 sm:px-6 md:px-12" style={{ background: `linear-gradient(135deg, ${THEME.bgBeige} 0%, #eef2ff 100%)` }}>
         <div className="flex justify-between items-center print:hidden mb-4">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-700 via-yellow-600 to-orange-500 bg-clip-text text-transparent">Resume Preview</h2>
+          <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: THEME.accent }}>
+            <img
+              src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f393.png"
+              alt="Graduation cap"
+              className="w-8 h-8 animate-bounce"
+              style={{ display: 'inline-block' }}
+            />
+            Resume Preview
+          </h2>
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="border-pink-600 text-pink-700 hover:bg-pink-50"
+              className="border border-[#2563eb] text-[#2563eb] hover:bg-[#eef2ff]"
               onClick={() => setIsEditing(true)}
             >
               <Code className="h-4 w-4 mr-2" />
@@ -269,189 +286,176 @@ const ResumeBuilder = () => {
             </Button>
             <Button
               onClick={downloadResume}
-              className="bg-gradient-to-r from-yellow-500 via-pink-500 to-orange-500 text-white font-semibold shadow hover:from-yellow-600 hover:to-orange-600"
+              className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] font-semibold shadow"
             >
               <Download className="h-4 w-4 mr-2" />
               Download PDF
             </Button>
           </div>
         </div>
-        <Tabs defaultValue="elegant" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="modern">Modern</TabsTrigger>
-            <TabsTrigger value="elegant">Elegant (LaTeX)</TabsTrigger>
-            <TabsTrigger value="colorful">Colorful</TabsTrigger>
-          </TabsList>
-          {/* Modern Template */}
-          <TabsContent value="modern">
-            <ResumeView ref={resumeRef} resumeData={resumeData} showDownload={false} />
-          </TabsContent>
-          {/* Elegant (LaTeX-like) Template */}
-          <TabsContent value="elegant">
-            <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-xl border border-gray-200 p-10 font-serif text-gray-900">
-              <div className="flex flex-col items-center mb-10">
-                <h1 className="text-5xl font-extrabold tracking-tight text-pink-700">{personalInfo.name}</h1>
-                <div className="flex flex-wrap gap-6 mt-4 text-lg text-gray-700 font-medium">
-                  <span><Mail className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.email}</span>
-                  <span><Phone className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.phone}</span>
-                  <span><MapPin className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.location}</span>
-                </div>
-              </div>
-              {personalInfo.objective && (
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-2 border-b-2 border-yellow-400 pb-1 text-yellow-700 tracking-wide">Objective</h2>
-                  <p className="text-gray-800 text-lg leading-relaxed">{personalInfo.objective}</p>
-                </div>
-              )}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2 border-b-2 border-pink-400 pb-1 text-pink-700 tracking-wide">Education</h2>
-                <ul className="space-y-4">
-                  {education.map((edu, i) => (
-                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-lg">{edu.degree} in {edu.fieldOfStudy}</span>
-                        <span className="italic text-gray-600">{edu.startYear} - {edu.endYear}</span>
-                      </div>
-                      <div className="flex justify-between text-gray-700 font-medium">
-                        <span>{edu.institution}</span>
-                        <span>Grade: <span className="font-bold">{edu.grade}</span></span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2 border-b-2 border-yellow-400 pb-1 text-yellow-700 tracking-wide">Experience</h2>
-                <ul className="space-y-4">
-                  {experience.map((exp, i) => (
-                    <li key={i} className="pl-4 border-l-4 border-pink-400">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-lg">{exp.position}</span>
-                        <span className="italic text-gray-600">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}</span>
-                      </div>
-                      <div className="flex justify-between text-gray-700 font-medium">
-                        <span>{exp.company}</span>
-                      </div>
-                      <div className="text-gray-800 text-base leading-relaxed">{exp.description}</div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2 border-b-2 border-pink-400 pb-1 text-pink-700 tracking-wide">Projects</h2>
-                <ul className="space-y-4">
-                  {projects.map((proj, i) => (
-                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
-                      <span className="font-bold text-lg">{proj.name}</span>
-                      {proj.link && (
-                        <a href={proj.link} className="ml-2 text-pink-600 underline font-semibold" target="_blank" rel="noopener noreferrer">[Link]</a>
-                      )}
-                      <div className="text-gray-800 text-base">{proj.description}</div>
-                      <div className="text-xs text-gray-600 font-semibold">Tech: {proj.technologies.join(', ')}</div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold mb-2 border-b-2 border-yellow-400 pb-1 text-yellow-700 tracking-wide">Skills</h2>
-                <div className="flex flex-wrap gap-3">
-                  {skills.map((skill, i) => (
-                    <span key={i} className="bg-pink-50 border border-yellow-200 rounded px-4 py-2 text-base font-semibold text-pink-700">{skill}</span>
-                  ))}
-                </div>
-              </div>
+        <div
+          ref={resumeRef}
+          className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-[#e5e7eb] p-8 print:p-0 print:shadow-none print:border-0 relative overflow-hidden"
+        >
+          {/* Decorative animated background image */}
+          <img
+            src="https://cdn.pixabay.com/photo/2017/01/31/13/14/animal-2023924_1280.png"
+            alt="Decorative"
+            className="absolute right-0 top-0 w-32 opacity-10 pointer-events-none animate-float"
+            style={{ zIndex: 0 }}
+          />
+          {/* Animated avatar or icon */}
+          <div className="flex flex-col items-center mb-8 relative z-10">
+            <img
+              src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f464.png"
+              alt="Profile"
+              className="w-20 h-20 rounded-full shadow-lg border-4 border-[#2563eb] mb-2 animate-fade-in"
+            />
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight" style={{ color: THEME.accent }}>
+              {personalInfo.name}
+            </h1>
+            <div className="flex flex-wrap gap-6 mt-2 text-base md:text-lg" style={{ color: THEME.accent2 }}>
+              <span><Mail className="inline h-5 w-5 mr-1" style={{ color: THEME.indigo }} />{personalInfo.email}</span>
+              <span><Phone className="inline h-5 w-5 mr-1" style={{ color: THEME.indigo }} />{personalInfo.phone}</span>
+              <span><MapPin className="inline h-5 w-5 mr-1" style={{ color: THEME.indigo }} />{personalInfo.location}</span>
             </div>
-          </TabsContent>
-          {/* Colorful Template */}
-          <TabsContent value="colorful">
-            <div className="max-w-3xl mx-auto bg-gradient-to-br from-yellow-50 via-pink-50 to-orange-50 shadow-xl rounded-xl border border-yellow-200 p-10">
-              <div className="flex flex-col items-center mb-10">
-                <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-700 via-yellow-600 to-orange-500">{personalInfo.name}</h1>
-                <div className="flex flex-wrap gap-6 mt-4 text-lg text-pink-700 font-medium">
-                  <span><Mail className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.email}</span>
-                  <span><Phone className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.phone}</span>
-                  <span><MapPin className="inline h-5 w-5 mr-1 text-yellow-600" />{personalInfo.location}</span>
-                </div>
+            {(personalInfo.linkedIn || personalInfo.github) && (
+              <div className="flex flex-col gap-2 items-center mt-2">
+                {personalInfo.linkedIn && (
+                  <a href={personalInfo.linkedIn} target="_blank" rel="noopener noreferrer" className="text-[#2563eb] underline font-semibold">
+                    LinkedIn
+                  </a>
+                )}
+                {personalInfo.github && (
+                  <a href={personalInfo.github} target="_blank" rel="noopener noreferrer" className="text-[#6366f1] underline font-semibold">
+                    GitHub
+                  </a>
+                )}
               </div>
-              {personalInfo.objective && (
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-2 text-yellow-700">Objective</h2>
-                  <p className="text-pink-900 text-lg leading-relaxed">{personalInfo.objective}</p>
-                </div>
-              )}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2 text-pink-700">Education</h2>
-                <ul className="space-y-4">
-                  {education.map((edu, i) => (
-                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-lg">{edu.degree} in {edu.fieldOfStudy}</span>
-                        <span className="italic text-gray-600">{edu.startYear} - {edu.endYear}</span>
-                      </div>
-                      <div className="flex justify-between text-pink-700 font-medium">
-                        <span>{edu.institution}</span>
-                        <span>Grade: <span className="font-bold">{edu.grade}</span></span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2 text-yellow-700">Experience</h2>
-                <ul className="space-y-4">
-                  {experience.map((exp, i) => (
-                    <li key={i} className="pl-4 border-l-4 border-pink-400">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-lg">{exp.position}</span>
-                        <span className="italic text-gray-600">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}</span>
-                      </div>
-                      <div className="flex justify-between text-pink-700 font-medium">
-                        <span>{exp.company}</span>
-                      </div>
-                      <div className="text-pink-900 text-base leading-relaxed">{exp.description}</div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-2 text-pink-700">Projects</h2>
-                <ul className="space-y-4">
-                  {projects.map((proj, i) => (
-                    <li key={i} className="pl-4 border-l-4 border-yellow-400">
-                      <span className="font-bold text-lg">{proj.name}</span>
-                      {proj.link && (
-                        <a href={proj.link} className="ml-2 text-pink-600 underline font-semibold" target="_blank" rel="noopener noreferrer">[Link]</a>
-                      )}
-                      <div className="text-pink-900 text-base">{proj.description}</div>
-                      <div className="text-xs text-pink-700 font-semibold">Tech: {proj.technologies.join(', ')}</div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold mb-2 text-yellow-700">Skills</h2>
-                <div className="flex flex-wrap gap-3">
-                  {skills.map((skill, i) => (
-                    <span key={i} className="bg-yellow-100 border border-pink-200 rounded px-4 py-2 text-base font-semibold text-pink-700">{skill}</span>
-                  ))}
-                </div>
-              </div>
+            )}
+          </div>
+          {personalInfo.objective && (
+            <div className="mb-8 relative z-10">
+              <h2 className="text-xl font-bold mb-2" style={{ color: THEME.accent2 }}>
+                <span className="inline-block animate-pulse">🎯</span> Objective
+              </h2>
+              <p className="text-gray-800 text-base leading-relaxed">{personalInfo.objective}</p>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+          {/* Education */}
+          <div className="mb-8 relative z-10">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: THEME.accent }}>
+              <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f393.png" alt="Edu" className="w-6 h-6 animate-bounce" />
+              Education
+            </h2>
+            <ul className="space-y-4">
+              {education.map((edu, i) => (
+                <li key={i} className="pl-4 border-l-4" style={{ borderColor: THEME.accent2 }}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-base md:text-lg">{edu.degree} in {edu.fieldOfStudy}</span>
+                    <span className="italic text-gray-600">{edu.startYear} - {edu.endYear}</span>
+                  </div>
+                  <div className="flex justify-between" style={{ color: THEME.indigo }}>
+                    <span>{edu.institution}</span>
+                    <span>Grade: <span className="font-bold">{edu.grade}</span></span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Experience */}
+          <div className="mb-8 relative z-10">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: THEME.accent2 }}>
+              <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4bc.png" alt="Exp" className="w-6 h-6 animate-wiggle" />
+              Experience
+            </h2>
+            <ul className="space-y-4">
+              {experience.map((exp, i) => (
+                <li key={i} className="pl-4 border-l-4" style={{ borderColor: THEME.accent }}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-base md:text-lg">{exp.position}</span>
+                    <span className="italic text-gray-600">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}</span>
+                  </div>
+                  <div className="flex justify-between" style={{ color: THEME.indigo }}>
+                    <span>{exp.company}</span>
+                  </div>
+                  <div className="text-gray-800 text-base leading-relaxed">{exp.description}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Projects */}
+          <div className="mb-8 relative z-10">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: THEME.accent }}>
+              <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4c8.png" alt="Proj" className="w-6 h-6 animate-float" />
+              Projects
+            </h2>
+            <ul className="space-y-4">
+              {projects.map((proj, i) => (
+                <li key={i} className="pl-4 border-l-4" style={{ borderColor: THEME.accent2 }}>
+                  <span className="font-bold text-base md:text-lg">{proj.name}</span>
+                  {proj.link && (
+                    <a href={proj.link} className="ml-2 text-[#2563eb] underline font-semibold" target="_blank" rel="noopener noreferrer">[Link]</a>
+                  )}
+                  <div className="text-gray-800 text-base">{proj.description}</div>
+                  <div className="text-xs" style={{ color: THEME.indigo, fontWeight: 600 }}>Tech: {proj.technologies.join(', ')}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Skills */}
+          <div className="relative z-10">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: THEME.accent2 }}>
+              <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9ee.png" alt="Skills" className="w-6 h-6 animate-spin-slow" />
+              Skills
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {skills.map((skill, i) => (
+                <span key={i} className="bg-[#eef2ff] border border-[#6366f1] rounded px-4 py-2 text-base font-semibold" style={{ color: THEME.accent2 }}>
+                  <span className="inline-block animate-pulse">{skill}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* Simple CSS Animations */}
+          <style>
+            {`
+              @keyframes float {
+                0% { transform: translateY(0px);}
+                50% { transform: translateY(-10px);}
+                100% { transform: translateY(0px);}
+              }
+              .animate-float { animation: float 3s ease-in-out infinite; }
+              @keyframes fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              .animate-fade-in { animation: fade-in 1.2s ease; }
+              @keyframes wiggle {
+                0%, 100% { transform: rotate(-3deg);}
+                50% { transform: rotate(3deg);}
+              }
+              .animate-wiggle { animation: wiggle 1.5s infinite; }
+              .animate-spin-slow { animation: spin 4s linear infinite; }
+              @keyframes spin {
+                100% { transform: rotate(360deg);}
+              }
+            `}
+          </style>
+        </div>
       </div>
     );
   }
 
   // --- EDIT MODE ---
   return (
-    <div className="min-h-screen space-y-6 px-2 py-6 sm:px-6 md:px-12 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen space-y-6 px-2 py-6 sm:px-6 md:px-12" style={{ background: `linear-gradient(135deg, ${THEME.bgBeige} 0%, #eef2ff 100%)` }}>
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-700 via-yellow-600 to-orange-500 bg-clip-text text-transparent">Resume Builder</h2>
+        <h2 className="text-2xl font-bold" style={{ color: THEME.accent }}>Resume Builder</h2>
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="border-pink-600 text-pink-700 hover:bg-pink-50"
+            className="border border-[#2563eb] text-[#2563eb] hover:bg-[#eef2ff]"
             onClick={() => setIsEditing(false)}
           >
             <Eye className="h-4 w-4 mr-2" />
@@ -460,7 +464,7 @@ const ResumeBuilder = () => {
           <Button
             onClick={saveResume}
             disabled={saving}
-            className="bg-gradient-to-r from-yellow-500 via-pink-500 to-orange-500 text-white font-semibold shadow hover:from-yellow-600 hover:to-orange-600"
+            className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] font-semibold shadow"
           >
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Saving...' : 'Save Resume'}

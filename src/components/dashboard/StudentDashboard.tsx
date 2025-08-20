@@ -161,24 +161,34 @@ const StudentDashboard = () => {
     'bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-400 text-white shadow-md border-0'
   ];
 
-  // Responsive padding for mobile and desktop
-  return (
-    <div className="min-h-screen px-2 py-2 sm:px-4 md:px-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
-      {/* Loader */}
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70">
-          <video
-            src={loaderMp4}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-24 h-24 object-contain rounded-lg shadow-lg"
-            aria-label="Loading animation"
-          />
-        </div>
-      )}
+  // Loader (centered, no blur, matches StudentMarks)
+  const EceVideoLoader = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
+      <video
+        src={loaderMp4}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-32 h-32 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="font-semibold text-lg tracking-wide text-[#6366f1]">Loading Dashboard...</div>
+      <div className="text-sm mt-1 text-[#2563eb]">Fetching your dashboard data, please wait</div>
+    </div>
+  );
 
+  // Only render dashboard after loading is false
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 md:px-8" style={{ backgroundColor: '#fbf4ea' }}>
+        <EceVideoLoader />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen px-2 py-2 sm:px-4 md:px-8" style={{ backgroundColor: '#fbf4ea' }}>
       {/* Greeting Card */}
       <div className="flex justify-center mb-4">
         <div
@@ -196,7 +206,13 @@ const StudentDashboard = () => {
         >
           <Avatar className="w-14 h-14 border-4 border-white shadow md:w-20 md:h-20">
             <AvatarImage src={user?.profileImage} alt={user?.name} />
-            <AvatarFallback className="text-lg md:text-2xl">
+            <AvatarFallback
+              className="text-lg md:text-2xl font-bold"
+              style={{
+                backgroundColor: '#fee2e2', // light red-100
+                color: '#b91c1c' // red-700 for text
+              }}
+            >
               {user?.name?.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
           </Avatar>
@@ -270,40 +286,43 @@ const StudentDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {/* Today's Schedule (moved to first position) */}
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+        {/* Today's Schedule */}
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
-              <Calendar className="h-5 w-5 text-purple-500" /> Today's Schedule
+            <CardTitle className="text-base md:text-lg flex items-center gap-2 text-[#2563eb]">
+              <Calendar className="h-5 w-5 text-[#2563eb]" /> Today's Schedule
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-[#2563eb]">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {todaySchedule.length > 0 ? todaySchedule.map(slot => (
-              <div key={slot.id} className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded">
+              <div
+                key={slot.id}
+                className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded"
+              >
                 <div>
-                  <div className="font-medium">{slot.subject}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="font-medium text-[#2563eb]">{slot.subject}</div>
+                  <div className="text-xs text-[#2563eb] flex items-center gap-1">
                     <User className="h-3 w-3" /> {slot.faculty}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium">{slot.time}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="text-sm font-medium text-[#2563eb]">{slot.time}</div>
+                  <div className="text-xs text-[#2563eb] flex items-center gap-1">
                     <MapPin className="h-3 w-3" /> {slot.room}
                   </div>
                 </div>
               </div>
             )) : (
-              <p className="text-sm text-muted-foreground text-center">No classes today</p>
+              <p className="text-sm text-[#2563eb] text-center">No classes today</p>
             )}
           </CardContent>
         </Card>
 
         {/* My Class */}
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
               <Users className="h-5 w-5 text-indigo-500" />
@@ -322,7 +341,7 @@ const StudentDashboard = () => {
               </div>
             ) : classmates.length > 0 ? (
               classmates.slice(0, 4).map((classmate) => (
-                <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 transition-colors">
+                <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 hover:bg-indigo-100/60 transition-colors">
                   <Avatar className="w-8 h-8 border-2 border-blue-200">
                     <AvatarImage src={classmate.profileImage} alt={classmate.name} />
                     <AvatarFallback className="text-xs">
@@ -346,8 +365,8 @@ const StudentDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* My Subjects (moved to last position) */}
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+        {/* My Subjects */}
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-blue-500" />
@@ -366,7 +385,7 @@ const StudentDashboard = () => {
               </div>
             ) : studentSubjects.length > 0 ? (
               studentSubjects.slice(0, 3).map((subject, index) => (
-                <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 hover:bg-indigo-100/60 transition-colors">
+                <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 hover:bg-indigo-100/60 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium text-sm md:text-base text-foreground">{subject.name}</h4>
@@ -420,14 +439,14 @@ const StudentDashboard = () => {
                   <Tooltip
                     contentStyle={{
                       background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                      border: '1px solid #a5b4fc',
+                      border: '1px solid #6366f1',
                       borderRadius: '8px'
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="mid1" fill="#6366f1" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mid2" fill="#818cf8" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mid3" fill="#a5b4fc" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mid1" fill="#60a5fa" barSize={10} radius={[4, 4, 0, 0]} name="Mid 1" />
+                  <Bar dataKey="mid2" fill="#f59e42" barSize={10} radius={[4, 4, 0, 0]} name="Mid 2" />
+                  <Bar dataKey="mid3" fill="#a78bfa" barSize={10} radius={[4, 4, 0, 0]} name="Mid 3" />
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
@@ -451,20 +470,21 @@ const StudentDashboard = () => {
               {subjectAttendanceData.length > 0 ? (
                 <BarChart data={subjectAttendanceData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
-                  <XAxis dataKey="name" stroke="#a78bfa" />
-                  <YAxis domain={[0, 100]} stroke="#a78bfa" />
+                  <XAxis dataKey="name" stroke="#6366f1" />
+                  <YAxis domain={[0, 100]} stroke="#6366f1" />
                   <Tooltip
                     contentStyle={{
-                      background: 'linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%)',
-                      border: '1px solid #a78bfa',
+                      background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
+                      border: '1px solid #6366f1',
                       borderRadius: '8px'
                     }}
                   />
                   <Bar
                     dataKey="attendance"
-                    fill="#a78bfa"
-                    barSize={40}
+                    fill="#6366f1"
+                    barSize={10}
                     radius={[4, 4, 0, 0]}
+                    name="Attendance %"
                   />
                 </BarChart>
               ) : (
@@ -475,22 +495,6 @@ const StudentDashboard = () => {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Mobile-only: Quick Actions */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-2 flex justify-around md:hidden shadow-2xl">
-        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/student-attendance')}>
-          <Calendar className="h-6 w-6 mb-1" />
-          <span className="text-xs">Attendance</span>
-        </Button>
-        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/timetable')}>
-          <BookOpen className="h-6 w-6 mb-1" />
-          <span className="text-xs">Timetable</span>
-        </Button>
-        <Button variant="ghost" className="text-white flex flex-col items-center" onClick={() => navigate('/dashboard/my-marks')}>
-          <Award className="h-6 w-6 mb-1" />
-          <span className="text-xs">Marks</span>
-        </Button>
       </div>
     </div>
   );

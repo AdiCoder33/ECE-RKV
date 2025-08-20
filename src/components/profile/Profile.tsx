@@ -292,6 +292,13 @@ const Profile = () => {
     }
   ];
 
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
   if (loading || saving) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 bg-[#fff8f3]">
@@ -359,8 +366,10 @@ const Profile = () => {
                   className="w-28 h-28 rounded-full object-cover border-4 border-[#b91c1c] shadow"
                 />
               ) : (
-                <div className="w-28 h-28 bg-[#fbeee6] rounded-full flex items-center justify-center shadow border-4 border-[#b91c1c]">
-                  <UserCircle2 className="h-16 w-16 text-[#b91c1c]" />
+                <div className="w-28 h-28 bg-[#b91c1c] rounded-full flex items-center justify-center shadow border-4 border-[#b91c1c]">
+                  <span className="text-4xl font-bold text-white select-none">
+                    {getInitials(formData.name)}
+                  </span>
                 </div>
               )}
               {canEdit && (
@@ -411,7 +420,7 @@ const Profile = () => {
               <Building className="h-5 w-5 text-[#2563eb]" />
               <div>
                 <p className="font-medium">Department</p>
-                <p className="text-sm text-muted-foreground">{department || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">{department || 'ECE'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

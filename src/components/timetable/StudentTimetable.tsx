@@ -35,6 +35,18 @@ const Loader = () => (
   </div>
 );
 
+// Gradient helpers for consistency
+const gradientBlue = "bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-50";
+const gradientGreen = "bg-gradient-to-br from-green-100 via-teal-50 to-blue-50";
+const gradientWhite = "bg-white/90";
+const gradientTableCurrent = "border-[#b91c1c] bg-gradient-to-r from-red-100 via-orange-50 to-yellow-50 shadow-md";
+const gradientTableNormal = "border-indigo-100 bg-gradient-to-r from-white via-gray-50 to-indigo-50 hover:bg-indigo-50/60";
+const gradientFree = "bg-gradient-to-r from-gray-50 via-white to-indigo-50 border-2 border-dashed border-indigo-100";
+
+const THEME = {
+  bgBeige: '#fbf4ea', // Matches StudentDashboard, StudentSubjects, StudentAttendance
+};
+
 const StudentTimetable = () => {
   const { user } = useAuth();
   const [timetable, setTimetable] = useState<TimeSlot[]>([]);
@@ -94,7 +106,7 @@ const StudentTimetable = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 flex items-center justify-center px-4 md:px-8">
+      <div className="min-h-screen flex items-center justify-center px-4 md:px-8" style={{ backgroundColor: THEME.bgBeige }}>
         <Loader />
       </div>
     );
@@ -104,10 +116,10 @@ const StudentTimetable = () => {
   const nextClass = getNextClass();
 
   return (
-    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-4 md:px-12 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-4 md:px-12" style={{ backgroundColor: THEME.bgBeige }}>
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-indigo-900">My Timetable</h1>
+        <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#b91c1c' }}>My Timetable</h1>
         <p className="text-indigo-700">
           Class schedule for Year {studentYear}, Sem {studentSemester}, Section {studentSection}
         </p>
@@ -116,7 +128,7 @@ const StudentTimetable = () => {
       {/* Today's Schedule & Next Class */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Today's Classes */}
-        <Card className="bg-white/90 border-0 shadow-lg rounded-2xl">
+        <Card className={`${gradientBlue} border-0 shadow-lg rounded-2xl`}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-900">
               <Calendar className="h-5 w-5 text-blue-600" />
@@ -140,10 +152,10 @@ const StudentTimetable = () => {
                     <div className="flex-1">
                       <div className="font-medium text-blue-900">{slot.subject}</div>
                       <div className="text-sm text-blue-700 flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        {slot.time}
-                        <MapPin className="h-3 w-3" />
-                        {slot.room}
+                        <Clock className="h-3 w-3 text-indigo-500" />
+                        <span className="font-semibold text-indigo-700">{slot.time}</span>
+                        <MapPin className="h-3 w-3 text-indigo-400" />
+                        <span className="text-indigo-600">{slot.room}</span>
                       </div>
                       <div className="text-xs text-blue-500 flex items-center gap-1">
                         <User className="h-3 w-3" />
@@ -163,7 +175,7 @@ const StudentTimetable = () => {
         </Card>
 
         {/* Next Class */}
-        <Card className="bg-white/90 border-0 shadow-lg rounded-2xl">
+        <Card className={`${gradientGreen} border-0 shadow-lg rounded-2xl`}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-900">
               <Clock className="h-5 w-5 text-green-600" />
@@ -203,10 +215,10 @@ const StudentTimetable = () => {
       </div>
 
       {/* Weekly Timetable Grid */}
-      <Card className="bg-white/95 border-0 shadow-lg rounded-2xl">
+      <Card className={`${gradientWhite} border-0 shadow-lg rounded-2xl`}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-900">
-            <Calendar className="h-5 w-5 text-indigo-600" />
+          <CardTitle className="flex items-center gap-2" style={{ color: '#b91c1c' }}>
+            <Calendar className="h-5 w-5 text-[#b91c1c]" />
             Weekly Schedule
           </CardTitle>
           <CardDescription className="text-indigo-500">Complete weekly class timetable</CardDescription>
@@ -228,8 +240,8 @@ const StudentTimetable = () => {
                 {timeSlots.map(time => (
                   <tr key={time} className="border-b">
                     <td className="p-3 font-medium text-sm bg-indigo-50 text-indigo-800">
-                      <Clock className="h-4 w-4 inline mr-2" />
-                      {time}
+                      <Clock className="h-4 w-4 inline mr-2 text-indigo-500" />
+                      <span className="font-semibold text-indigo-700">{time}</span>
                     </td>
                     {days.map(day => {
                       const slot = getSlotForTime(day, time);
@@ -245,29 +257,29 @@ const StudentTimetable = () => {
                           {slot ? (
                             <div className={`rounded-xl p-3 transition-colors border
                               ${isCurrentTime
-                                ? 'border-indigo-500 bg-gradient-to-r from-indigo-100 via-blue-50 to-white shadow-md'
-                                : 'border-indigo-100 bg-gradient-to-r from-white via-gray-50 to-indigo-50 hover:bg-indigo-50/60'
-                              }`}>
+                                ? gradientTableCurrent
+                                : gradientTableNormal
+                            }`}>
                               <div className="font-medium text-indigo-900 mb-1 flex items-center gap-1">
-                                <BookOpen className="h-3 w-3" />
+                                <BookOpen className="h-3 w-3 text-indigo-700" />
                                 {slot.subject}
                               </div>
                               <div className="text-xs text-indigo-600 flex items-center gap-1 mb-1">
-                                <MapPin className="h-3 w-3" />
+                                <MapPin className="h-3 w-3 text-indigo-400" />
                                 {slot.room}
                               </div>
                               <div className="text-xs text-indigo-600 flex items-center gap-1">
-                                <User className="h-3 w-3" />
+                                <User className="h-3 w-3 text-indigo-400" />
                                 {slot.faculty}
                               </div>
                               {isCurrentTime && (
-                                <div className="mt-2 text-xs font-medium text-indigo-700 animate-pulse">
+                                <div className="mt-2 text-xs font-medium text-[#b91c1c] animate-pulse">
                                   ● Now
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <div className="min-h-[70px] bg-gradient-to-r from-gray-50 via-white to-indigo-50 rounded-xl border-2 border-dashed border-indigo-100 flex items-center justify-center">
+                            <div className={`min-h-[70px] ${gradientFree} rounded-xl flex items-center justify-center`}>
                               <span className="text-xs text-indigo-300">Free</span>
                             </div>
                           )}

@@ -68,6 +68,29 @@ interface Overall {
   percentage: number;
 }
 
+// Blue/Indigo Theme (matches dashboard, avoids green/yellow/orange/pink)
+const gradientCard = 'bg-gradient-to-br from-blue-500 via-indigo-400 to-purple-400 text-white shadow-lg';
+const gradientMetrics = [
+  'bg-gradient-to-br from-cyan-500 via-blue-400 to-indigo-400 text-white shadow-md',
+  'bg-gradient-to-br from-pink-500 via-red-400 to-orange-400 text-white shadow-md',
+  'bg-gradient-to-br from-green-400 via-teal-400 to-blue-400 text-white shadow-md',
+  'bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-400 text-white shadow-md'
+];
+
+const THEME = {
+  bgBeige: '#fbf4ea',
+  accent: '#6366f1',
+  accent2: '#2563eb',
+  cardBg: '#fff',
+  cardShadow: 'shadow-lg',
+  textMuted: '#64748b',
+  textPrimary: '#1e293b',
+  textSecondary: '#334155',
+  textSilver: '#64748b',
+  red: '#b91c1c', // red-700
+  redBorder: 'border-2 border-[#fca5a5]' // light red-300
+};
+
 const StudentMarks = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -221,8 +244,8 @@ const StudentMarks = () => {
 
   const performance = getPerformanceLevel(overallPercentage);
 
-  // Loader component
-  const Loader = () => (
+  // ECE-themed loader matching UserManagement
+  const EceVideoLoader = () => (
     <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
       <video
         src={loaderMp4}
@@ -230,47 +253,66 @@ const StudentMarks = () => {
         loop
         muted
         playsInline
-        className="w-32 h-32 object-contain mb-4 rounded-lg shadow-lg"
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
         aria-label="Loading animation"
       />
-      <div className="text-indigo-700 font-semibold text-lg tracking-wide">Loading Marks...</div>
-      <div className="text-indigo-400 text-sm mt-1">Fetching your marks, please wait</div>
+      <div style={{ color: THEME.accent }} className="font-semibold text-lg tracking-wide">Loading Marks...</div>
+      <div style={{ color: THEME.accentHover }} className="text-sm mt-1">Fetching your marks, please wait</div>
     </div>
   );
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100">
-        <Loader />
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen space-y-8 px-2 py-4 sm:px-6 md:px-12 bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100">
+    <div className="min-h-screen px-2 py-4 sm:px-4 md:px-8" style={{ backgroundColor: THEME.bgBeige }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent">
-            My Marks
-          </h1>
-          <p className="text-muted-foreground mt-2">View your academic performance and progress</p>
-        </div>
+      <div className="mb-6 sm:mb-8">
+        <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+          <CardContent className="p-4 sm:p-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: THEME.red }}>
+                My Marks
+              </h1>
+              <p className="text-base font-medium" style={{ color: THEME.textMuted }}>
+                View your academic performance and progress
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
-      <Card className="bg-gradient-to-br from-white via-fuchsia-50 to-orange-50 border-0 shadow-md">
-        <CardContent className="p-4">
+      <Card className={`rounded-xl shadow bg-white mb-6`} /* removed red border for a cleaner look */>
+        <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Subject Filter</label>
+              <label className="text-sm font-bold mb-2 block" style={{ color: THEME.accent2 }}>
+                Subject Filter
+              </label>
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger>
+                <SelectTrigger
+                  className="border-2 focus:border-indigo-400 shadow-md bg-indigo-50 text-indigo-900 font-semibold"
+                  style={{
+                    borderColor: '#c7d2fe', // light indigo
+                    backgroundColor: '#eef2ff', // very light indigo
+                    color: '#3730a3' // indigo-800 for text
+                  }}
+                >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white text-indigo-900 font-semibold">
                   {subjects.map(subject => (
-                    <SelectItem key={subject.value} value={subject.value}>
+                    <SelectItem
+                      key={subject.value}
+                      value={subject.value}
+                      className="hover:bg-indigo-100 text-indigo-900 font-semibold"
+                    >
                       {subject.label}
                     </SelectItem>
                   ))}
@@ -278,15 +320,30 @@ const StudentMarks = () => {
               </Select>
             </div>
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Semester</label>
+              <label className="text-sm font-bold mb-2 block" style={{ color: THEME.accent2 }}>
+                Semester
+              </label>
               <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                <SelectTrigger>
+                <SelectTrigger
+                  className="border-2 focus:border-indigo-400 shadow-md bg-indigo-50 text-indigo-900 font-semibold"
+                  style={{
+                    borderColor: '#c7d2fe',
+                    backgroundColor: '#eef2ff',
+                    color: '#3730a3'
+                  }}
+                >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current">Current Semester</SelectItem>
-                  <SelectItem value="previous">Previous Semester</SelectItem>
-                  <SelectItem value="all">All Semesters</SelectItem>
+                <SelectContent className="bg-white text-indigo-900 font-semibold">
+                  <SelectItem value="current" className="hover:bg-indigo-100 text-indigo-900 font-semibold">
+                    Current Semester
+                  </SelectItem>
+                  <SelectItem value="previous" className="hover:bg-indigo-100 text-indigo-900 font-semibold">
+                    Previous Semester
+                  </SelectItem>
+                  <SelectItem value="all" className="hover:bg-indigo-100 text-indigo-900 font-semibold">
+                    All Semesters
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -294,72 +351,84 @@ const StudentMarks = () => {
         </CardContent>
       </Card>
 
-      {/* Performance Overview */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-gradient-to-br from-purple-500 via-fuchsia-400 to-pink-400 text-white shadow-md border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Overall Performance</CardTitle>
-            <Target className="h-4 w-4 opacity-80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{overallPercentage.toFixed(1)}%</div>
-            <Progress value={overallPercentage} className="mt-2 bg-white/30" />
-            <p className={`text-xs mt-1 ${performance.color}`}>
-              {performance.level}
-            </p>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+        {/* Overall Performance */}
+        <Card className={`rounded-lg shadow ${THEME.redBorder} ${gradientMetrics[0]}`}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="p-2 rounded-lg bg-white/20">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-white font-medium">Overall Performance</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                  {overallPercentage.toFixed(1)}%
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-gradient-to-br from-orange-400 via-pink-400 to-fuchsia-400 text-white shadow-md border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Marks</CardTitle>
-            <Award className="h-4 w-4 opacity-80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{totalMarks}/{totalMaxMarks}</div>
-            <p className="text-xs text-white/80">
-              Across {filteredMarks.length} assessments
-            </p>
+        {/* Total Marks */}
+        <Card className={`rounded-lg shadow ${THEME.redBorder} ${gradientMetrics[1]}`}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="p-2 rounded-lg bg-white/20">
+                <Award className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-white font-medium">Total Marks</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                  {totalMarks}/{totalMaxMarks}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-gradient-to-br from-teal-400 via-cyan-400 to-blue-400 text-white shadow-md border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Subjects</CardTitle>
-            <GraduationCap className="h-4 w-4 opacity-80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{subjectStats.length}</div>
-            <p className="text-xs text-white/80">
-              Currently enrolled
-            </p>
+        {/* Subjects */}
+        <Card className={`rounded-lg shadow ${THEME.redBorder} ${gradientMetrics[2]}`}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="p-2 rounded-lg bg-white/20">
+                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-white font-medium">Subjects</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                  {subjectStats.length}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-400 text-white shadow-md border-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Trend</CardTitle>
-            <TrendingUp className="h-4 w-4 opacity-80" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-green-100">+3.2%</div>
-            <p className="text-xs text-white/80">
-              From last month
-            </p>
+        {/* Trend */}
+        <Card className={`rounded-lg shadow ${THEME.redBorder} ${gradientMetrics[3]}`}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="p-2 rounded-lg bg-white/20">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-white font-medium">Trend</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                  +3.2%
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4">
         {/* Subject-wise Performance */}
-        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-white via-blue-50 to-gray-100">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-900 text-base sm:text-lg">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+        <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+          <CardHeader className="rounded-t-xl bg-indigo-50">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold" style={{ color: THEME.accent }}>
+              <BarChart3 className="h-5 w-5" />
               Subject-wise Performance
             </CardTitle>
-            <CardDescription className="text-blue-500 text-xs sm:text-sm">
+            <CardDescription className="text-sm font-medium" style={{ color: THEME.textSilver }}>
               Internal marks across all subjects
             </CardDescription>
           </CardHeader>
@@ -367,35 +436,42 @@ const StudentMarks = () => {
             <div className="w-full h-[220px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#c7d2fe" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
                   <XAxis
                     dataKey="subject"
-                    stroke="#2563eb"
+                    stroke={THEME.accent}
                     fontSize={12}
+                    fontWeight={600}
                   />
-                  <YAxis stroke="#2563eb" />
+                  <YAxis stroke={THEME.accent} fontWeight={600} />
                   <Tooltip
                     contentStyle={{
-                      background: 'linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%)',
-                      border: '1px solid #2563eb',
-                      borderRadius: '8px'
+                      background: 'white',
+                      border: `2px solid ${THEME.accent}`,
+                      borderRadius: '12px',
+                      color: THEME.textPrimary,
+                      fontWeight: 600,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
                     }}
                   />
-                  <Bar dataKey="percentage" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="percentage" 
+                    fill={THEME.accent} 
+                    radius={[4, 4, 0, 0]} 
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
-
         {/* Performance Trend */}
-        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-white via-green-50 to-gray-100">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-900 text-base sm:text-lg">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+        <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+          <CardHeader className="rounded-t-xl bg-indigo-50">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold" style={{ color: THEME.accent }}>
+              <TrendingUp className="h-5 w-5" />
               Performance Trend
             </CardTitle>
-            <CardDescription className="text-green-500 text-xs sm:text-sm">
+            <CardDescription className="text-sm font-medium" style={{ color: THEME.textSilver }}>
               Monthly performance trend
             </CardDescription>
           </CardHeader>
@@ -403,22 +479,25 @@ const StudentMarks = () => {
             <div className="w-full h-[220px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={performanceTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#bbf7d0" />
-                  <XAxis dataKey="month" stroke="#16a34a" />
-                  <YAxis domain={[70, 100]} stroke="#16a34a" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
+                  <XAxis dataKey="month" stroke={THEME.accent} fontWeight={600} />
+                  <YAxis domain={[70, 100]} stroke={THEME.accent} fontWeight={600} />
                   <Tooltip
                     contentStyle={{
-                      background: 'linear-gradient(135deg, #dcfce7 0%, #f1f5f9 100%)',
-                      border: '1px solid #16a34a',
-                      borderRadius: '8px'
+                      background: 'white',
+                      border: `2px solid ${THEME.accent}`,
+                      borderRadius: '12px',
+                      color: THEME.textPrimary,
+                      fontWeight: 600,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="percentage"
-                    stroke="#16a34a"
+                    stroke={THEME.accent}
                     strokeWidth={3}
-                    dot={{ fill: '#16a34a', strokeWidth: 2, r: 4 }}
+                    dot={{ fill: THEME.accent2, strokeWidth: 2, r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -427,48 +506,71 @@ const StudentMarks = () => {
         </Card>
       </div>
 
-      {/* Detailed Marks Table */}
-      <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-white via-gray-50 to-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-900 text-base sm:text-lg">
-            <Calendar className="h-5 w-5 text-blue-600" />
+      {/* Recent Assessments Table */}
+      <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+        <CardHeader className="rounded-t-xl bg-indigo-50">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold" style={{ color: THEME.accent }}>
+            <Calendar className="h-5 w-5" />
             Recent Assessments
           </CardTitle>
-          <CardDescription className="text-blue-500 text-xs sm:text-sm">
+          <CardDescription className="text-sm font-medium" style={{ color: THEME.textSilver }}>
             All your recent marks and grades
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 sm:space-y-4">
-            {filteredMarks.map((mark) => (
-              <div
-                key={mark.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 sm:p-4 border rounded-lg hover:bg-blue-50/60 transition-colors"
-              >
-                <div className="flex-1 w-full">
-                  <h4 className="font-semibold text-indigo-900 text-base">{mark.subject}</h4>
-                  <p className="text-sm text-indigo-600">{mark.examType}</p>
-                  <p className="text-xs text-indigo-400">
-                    {new Date(mark.date).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-center mx-0 sm:mx-4">
-                  <div className="text-xl sm:text-2xl font-bold text-indigo-900">
-                    {mark.marks}/{mark.maxMarks}
+            {filteredMarks.length > 0 ? (
+              filteredMarks.map((mark) => (
+                <div
+                  key={mark.id}
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 sm:p-4 border-2 rounded-lg hover:shadow-md transition-all ${THEME.redBorder}`}
+                  style={{ backgroundColor: `${THEME.gradientCard}20` }}
+                >
+                  <div className="flex-1 w-full">
+                    <h4 className="font-bold text-base" style={{ color: THEME.textPrimary }}>
+                      {mark.subject}
+                    </h4>
+                    <p className="text-sm font-medium" style={{ color: THEME.textSecondary }}>{mark.examType}</p>
+                    <p className="text-xs font-medium" style={{ color: THEME.textSilver }}>
+                      {new Date(mark.date).toLocaleDateString()}
+                    </p>
                   </div>
-                  <div className="text-sm text-indigo-600">
-                    {((mark.marks / mark.maxMarks) * 100).toFixed(1)}%
+                  <div className="text-center mx-0 sm:mx-4">
+                    <div className="text-xl sm:text-2xl font-bold" style={{ color: THEME.textPrimary }}>
+                      {mark.marks}/{mark.maxMarks}
+                    </div>
+                    <div className="text-sm font-medium" style={{ color: THEME.textSilver }}>
+                      {((mark.marks / mark.maxMarks) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge
+                      className={`${getGradeColor(mark.grade)} text-white font-bold shadow-lg`}
+                    >
+                      {mark.grade}
+                    </Badge>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge
-                    className={`${getGradeColor(mark.grade)} text-white`}
-                  >
-                    {mark.grade}
-                  </Badge>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div 
+                  className="p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center border-2 shadow-lg"
+                  style={{ 
+                    background: `linear-gradient(45deg, #e0e7ff, #c7d2fe)`,
+                    borderColor: THEME.red
+                  }}
+                >
+                  <Calendar className="h-8 w-8 text-white drop-shadow" />
                 </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: THEME.textPrimary }}>
+                  No Marks Available
+                </h3>
+                <p className="font-medium" style={{ color: THEME.textSilver }}>
+                  Your assessment marks will appear here once they are uploaded by faculty.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
