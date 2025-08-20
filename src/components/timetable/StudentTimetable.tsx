@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Calendar, BookOpen, MapPin, User, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import loaderMp4 from '@/Assets/loader.mp4';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -18,6 +19,22 @@ interface TimeSlot {
   section: string;
 }
 
+const Loader = () => (
+  <div className="flex flex-col items-center justify-center min-h-[300px] py-12 px-4">
+    <video
+      src={loaderMp4}                   
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-32 h-32 object-contain mb-4 rounded-lg shadow-lg"
+      aria-label="Loading animation"
+    />
+    <div className="text-indigo-700 font-semibold text-lg tracking-wide">Loading Timetable...</div>
+    <div className="text-indigo-400 text-sm mt-1">Fetching your timetable, please wait</div>
+  </div>
+);
+
 const StudentTimetable = () => {
   const { user } = useAuth();
   const [timetable, setTimetable] = useState<TimeSlot[]>([]);
@@ -29,13 +46,13 @@ const StudentTimetable = () => {
     '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'
   ];
 
-  // Mock student data - replace with actual user data
   const studentYear = user?.year || 3;
   const studentSemester = user?.semester || 1;
   const studentSection = user?.section || 'A';
 
   useEffect(() => {
     fetchTimetable();
+    // eslint-disable-next-line
   }, []);
 
   const fetchTimetable = async () => {
@@ -68,7 +85,6 @@ const StudentTimetable = () => {
   const getNextClass = () => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-    
     const todayClasses = getTodaySchedule();
     return todayClasses.find(slot => {
       const classTime = slot.time.split('-')[0];
@@ -78,11 +94,8 @@ const StudentTimetable = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-32 bg-muted rounded"></div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 flex items-center justify-center px-4 md:px-8">
+        <Loader />
       </div>
     );
   }
@@ -91,23 +104,25 @@ const StudentTimetable = () => {
   const nextClass = getNextClass();
 
   return (
-    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-      <div>
-        <h1 className="text-3xl font-bold">My Timetable</h1>
-        <p className="text-muted-foreground">
+    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-4 md:px-12 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+      {/* Header */}
+      <div className="mb-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-indigo-900">My Timetable</h1>
+        <p className="text-indigo-700">
           Class schedule for Year {studentYear}, Sem {studentSemester}, Section {studentSection}
         </p>
       </div>
 
-      {/* Today's Schedule Overview */}
+      {/* Today's Schedule & Next Class */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        {/* Today's Classes */}
+        <Card className="bg-white/90 border-0 shadow-lg rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Calendar className="h-5 w-5 text-blue-600" />
               Today's Classes
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-blue-500">
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -120,17 +135,17 @@ const StudentTimetable = () => {
             {todaySchedule.length > 0 ? (
               <div className="space-y-3">
                 {todaySchedule.map(slot => (
-                  <div key={slot.id} className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
-                    <div className="w-2 h-12 bg-primary rounded-full"></div>
+                  <div key={slot.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 via-white to-indigo-50 rounded-xl border border-blue-100">
+                    <div className="w-2 h-12 bg-blue-400 rounded-full"></div>
                     <div className="flex-1">
-                      <div className="font-medium">{slot.subject}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <div className="font-medium text-blue-900">{slot.subject}</div>
+                      <div className="text-sm text-blue-700 flex items-center gap-2">
                         <Clock className="h-3 w-3" />
                         {slot.time}
                         <MapPin className="h-3 w-3" />
                         {slot.room}
                       </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <div className="text-xs text-blue-500 flex items-center gap-1">
                         <User className="h-3 w-3" />
                         {slot.faculty}
                       </div>
@@ -140,36 +155,37 @@ const StudentTimetable = () => {
               </div>
             ) : (
               <div className="text-center py-6">
-                <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-muted-foreground">No classes today</p>
+                <GraduationCap className="h-12 w-12 mx-auto text-blue-200 mb-2" />
+                <p className="text-blue-400">No classes today</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Next Class */}
+        <Card className="bg-white/90 border-0 shadow-lg rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-green-900">
+              <Clock className="h-5 w-5 text-green-600" />
               Next Class
             </CardTitle>
-            <CardDescription>Upcoming class information</CardDescription>
+            <CardDescription className="text-green-500">Upcoming class information</CardDescription>
           </CardHeader>
           <CardContent>
             {nextClass ? (
               <div className="space-y-3">
-                <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                  <div className="font-medium text-primary text-lg mb-2">{nextClass.subject}</div>
+                <div className="p-4 bg-gradient-to-r from-green-50 via-white to-teal-50 border border-green-100 rounded-xl">
+                  <div className="font-medium text-green-900 text-lg mb-2">{nextClass.subject}</div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm text-green-700">
                       <Clock className="h-4 w-4" />
                       <span className="font-medium">{nextClass.time}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
                       <MapPin className="h-4 w-4" />
                       {nextClass.room}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
                       <User className="h-4 w-4" />
                       {nextClass.faculty}
                     </div>
@@ -178,8 +194,8 @@ const StudentTimetable = () => {
               </div>
             ) : (
               <div className="text-center py-6">
-                <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-muted-foreground">No more classes today</p>
+                <Clock className="h-12 w-12 mx-auto text-green-200 mb-2" />
+                <p className="text-green-400">No more classes today</p>
               </div>
             )}
           </CardContent>
@@ -187,22 +203,22 @@ const StudentTimetable = () => {
       </div>
 
       {/* Weekly Timetable Grid */}
-      <Card>
+      <Card className="bg-white/95 border-0 shadow-lg rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-indigo-900">
+            <Calendar className="h-5 w-5 text-indigo-600" />
             Weekly Schedule
           </CardTitle>
-          <CardDescription>Complete weekly class timetable</CardDescription>
+          <CardDescription className="text-indigo-500">Complete weekly class timetable</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Time</th>
+                  <th className="text-left p-3 font-medium text-indigo-700 bg-indigo-50">Time</th>
                   {days.map(day => (
-                    <th key={day} className="text-left p-3 font-medium min-w-[150px]">
+                    <th key={day} className="text-left p-3 font-medium min-w-[120px] text-indigo-700 bg-indigo-50">
                       {day}
                     </th>
                   ))}
@@ -211,7 +227,7 @@ const StudentTimetable = () => {
               <tbody>
                 {timeSlots.map(time => (
                   <tr key={time} className="border-b">
-                    <td className="p-3 font-medium text-sm bg-muted/30">
+                    <td className="p-3 font-medium text-sm bg-indigo-50 text-indigo-800">
                       <Clock className="h-4 w-4 inline mr-2" />
                       {time}
                     </td>
@@ -223,36 +239,36 @@ const StudentTimetable = () => {
                         const [startTime, endTime] = time.split('-');
                         return currentTime >= startTime && currentTime <= endTime;
                       })();
-                      
+
                       return (
-                        <td key={`${day}-${time}`} className="p-2">
+                        <td key={`${day}-${time}`} className="p-2 align-top">
                           {slot ? (
-                            <div className={`bg-primary/10 border rounded-lg p-3 transition-colors ${
-                              isCurrentTime 
-                                ? 'border-primary bg-primary/20 shadow-md' 
-                                : 'border-primary/20 hover:bg-primary/15'
-                            }`}>
-                              <div className="font-medium text-primary mb-1 flex items-center gap-1">
+                            <div className={`rounded-xl p-3 transition-colors border
+                              ${isCurrentTime
+                                ? 'border-indigo-500 bg-gradient-to-r from-indigo-100 via-blue-50 to-white shadow-md'
+                                : 'border-indigo-100 bg-gradient-to-r from-white via-gray-50 to-indigo-50 hover:bg-indigo-50/60'
+                              }`}>
+                              <div className="font-medium text-indigo-900 mb-1 flex items-center gap-1">
                                 <BookOpen className="h-3 w-3" />
                                 {slot.subject}
                               </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                              <div className="text-xs text-indigo-600 flex items-center gap-1 mb-1">
                                 <MapPin className="h-3 w-3" />
                                 {slot.room}
                               </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <div className="text-xs text-indigo-600 flex items-center gap-1">
                                 <User className="h-3 w-3" />
                                 {slot.faculty}
                               </div>
                               {isCurrentTime && (
-                                <div className="mt-2 text-xs font-medium text-primary">
+                                <div className="mt-2 text-xs font-medium text-indigo-700 animate-pulse">
                                   ● Now
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <div className="min-h-[80px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">Free</span>
+                            <div className="min-h-[70px] bg-gradient-to-r from-gray-50 via-white to-indigo-50 rounded-xl border-2 border-dashed border-indigo-100 flex items-center justify-center">
+                              <span className="text-xs text-indigo-300">Free</span>
                             </div>
                           )}
                         </td>
