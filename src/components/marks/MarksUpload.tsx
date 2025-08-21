@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +61,10 @@ const MarksUpload = () => {
   const [templateExam, setTemplateExam] = useState<'mid1' | 'mid2' | 'mid3'>('mid1');
   const [templateSubject, setTemplateSubject] = useState('');
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+
   const examTypeLabel =
     templateExam === 'mid1'
       ? 'Mid 1'
@@ -69,8 +73,12 @@ const MarksUpload = () => {
       : 'Mid 3';
 
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFileLoading(true);
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setFileLoading(false);
+      return;
+    }
     setUploadedFile(file);
     setIsParsing(true);
     setUploadError(null);
@@ -147,11 +155,13 @@ const MarksUpload = () => {
       } finally {
         input.value = '';
         setIsParsing(false);
+        setFileLoading(false);
       }
     };
     reader.onerror = () => {
       setUploadError('Failed to read file');
       setIsParsing(false);
+      setFileLoading(false);
     };
     reader.readAsArrayBuffer(file);
   };
@@ -161,7 +171,7 @@ const MarksUpload = () => {
       toast.error('Please provide class details');
       return;
     }
-
+    setDownloadLoading(true);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(
@@ -193,8 +203,11 @@ const MarksUpload = () => {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');
       XLSX.writeFile(workbook, `marks_template_${exam}.xlsx`);
       setIsDownloadModalOpen(false);
+      toast.success('Template downloaded successfully!');
     } catch (err) {
       toast.error((err as Error).message ?? 'Failed to fetch students');
+    } finally {
+      setDownloadLoading(false);
     }
   };
 
@@ -288,13 +301,26 @@ const MarksUpload = () => {
               accept=".xlsx,.xls"
               onChange={handleExcelUpload}
               className="pr-24"
+              ref={fileInputRef}
+              disabled={fileLoading}
             />
             <Button
               variant="outline"
               className="absolute right-2 top-1/2 -translate-y-1/2"
               style={{ backgroundColor: THEME.accent, color: '#fff' }}
+              onClick={() => {
+                if (!fileLoading && fileInputRef.current) {
+                  fileInputRef.current.click();
+                }
+              }}
+              disabled={fileLoading}
+              type="button"
             >
-              <Upload className="h-4 w-4 mr-2" />
+              {fileLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
               Upload
             </Button>
           </div>
@@ -322,19 +348,38 @@ const MarksUpload = () => {
         </CardContent>
       </Card>
 
+      {/* Small popup for loading file */}
+      {fileLoading && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#8b0000] text-white px-4 py-2 rounded shadow-lg flex items-center z-50 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Opening file manager...
+        </div>
+      )}
+
+      {/* Small popup for downloading template */}
+      {downloadLoading && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#8b0000] text-white px-4 py-2 rounded shadow-lg flex items-center z-50 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Downloading template...
+        </div>
+      )}
+
       <Dialog open={isDownloadModalOpen} onOpenChange={setIsDownloadModalOpen}>
-        <DialogContent>
+        <DialogContent
+          className="bg-[#fbf4ea] border-[#8b0000] rounded-lg"
+          style={{ backgroundColor: THEME.bgBeige, borderColor: THEME.accent }}
+        >
           <DialogHeader>
-            <DialogTitle>Download {examTypeLabel} Template</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-[#8b0000]">{`Download ${examTypeLabel} Template`}</DialogTitle>
+            <DialogDescription className="text-[#a52a2a]">
               Select class details to generate {examTypeLabel} marks template.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Year</label>
+              <label className="text-sm font-medium mb-2 block text-[#8b0000]">Year</label>
               <Select value={templateYear} onValueChange={setTemplateYear}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -347,12 +392,12 @@ const MarksUpload = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Semester</label>
+              <label className="text-sm font-medium mb-2 block text-[#b86b2e]">Semester</label>
               <Select
                 value={templateSemester}
                 onValueChange={setTemplateSemester}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -362,12 +407,12 @@ const MarksUpload = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Section</label>
+              <label className="text-sm font-medium mb-2 block text-[#345b7a]">Section</label>
               <Select
                 value={templateSection}
                 onValueChange={setTemplateSection}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-[#345b7a] bg-[#e8f0fb] text-[#345b7a] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -380,9 +425,9 @@ const MarksUpload = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Exam</label>
+              <label className="text-sm font-medium mb-2 block text-[#a52a2a]">Exam</label>
               <Select value={templateExam} onValueChange={setTemplateExam}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#a52a2a] bg-[#fde8e6] text-[#a52a2a] font-semibold rounded-md">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -393,11 +438,12 @@ const MarksUpload = () => {
               </Select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <label className="text-sm font-medium mb-2 block text-[#8b0000]">Subject</label>
               <Input
                 value={templateSubject}
                 onChange={(e) => setTemplateSubject(e.target.value)}
                 placeholder="Subject Name"
+                className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md"
               />
             </div>
           </div>
@@ -408,8 +454,13 @@ const MarksUpload = () => {
             <Button
               onClick={() => handleDownloadTemplate(templateExam)}
               style={{ backgroundColor: THEME.accent, color: '#fff' }}
+              disabled={downloadLoading}
             >
-              Download
+              {downloadLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                'Download'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
