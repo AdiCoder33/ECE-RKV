@@ -53,6 +53,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Notification";
   const options: NotificationOptions = {
     body: data.body,
+    icon: "/icons/manifest-icon-192.maskable.png",
+    badge: "/icons/manifest-icon-192.maskable.png",
     data,
   };
   event.waitUntil(self.registration.showNotification(title, options));
