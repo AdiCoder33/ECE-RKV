@@ -2,6 +2,7 @@ const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { emitConversationUpdate } = require('../utils/conversations');
+const { sendToUsers } = require('../services/pushService');
 
 const router = express.Router();
 
@@ -124,6 +125,23 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       io.to(`group-${groupId}`).emit('chat-message', formatted);
     }
 
+    const { recordset: members } = await executeQuery(
+      `SELECT gm.user_id, g.name AS group_name
+         FROM chat_group_members gm
+         JOIN chat_groups g ON gm.group_id = g.id
+         WHERE gm.group_id = ?`,
+      [groupId]
+    );
+
+    sendToUsers(
+      members.filter(m => m.user_id !== userId).map(m => m.user_id),
+      {
+        title: formatted.sender_name,
+        body: formatted.content,
+        data: { chatType: 'group', groupId, groupName: members[0]?.group_name }
+      }
+    ).catch(console.error);
+
     // Update sender's read timestamp and emit conversation updates
     const convUpdate = `
       MERGE conversation_users AS target
@@ -136,7 +154,6 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     await executeQuery(convUpdate, [userId, groupId, userId, groupId]);
 
     if (io) {
-      const { recordset: members } = await executeQuery('SELECT user_id FROM chat_group_members WHERE group_id = ?', [groupId]);
       for (const member of members) {
         await emitConversationUpdate(io, member.user_id, 'group', groupId);
       }
