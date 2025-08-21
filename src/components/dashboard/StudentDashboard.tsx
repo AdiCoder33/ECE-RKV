@@ -172,7 +172,6 @@ const StudentDashboard: React.FC = () => {
     'bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-400 text-white shadow-md border-0'
   ];
 
-<<<<<<< HEAD
   // Loader (centered, no blur, matches StudentMarks)
   const EceVideoLoader = () => (
     <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
@@ -189,24 +188,6 @@ const StudentDashboard: React.FC = () => {
       <div className="text-sm mt-1 text-[#2563eb]">Fetching your dashboard data, please wait</div>
     </div>
   );
-=======
-  return (
-    <div className="min-h-screen px-2 py-2 sm:px-4 md:px-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
-      {/* Loader */}
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70">
-          <video
-            src={loaderMp4}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-24 h-24 object-contain rounded-lg shadow-lg"
-            aria-label="Loading animation"
-          />
-        </div>
-      )}
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
 
   // Only render dashboard after loading is false
   if (loading) {
@@ -229,7 +210,6 @@ const StudentDashboard: React.FC = () => {
           `}
         >
           <Avatar className="w-14 h-14 border-4 border-white shadow md:w-20 md:h-20">
-<<<<<<< HEAD
             <AvatarImage src={user?.profileImage} alt={user?.name} />
             <AvatarFallback
               className="text-lg md:text-2xl font-bold"
@@ -239,18 +219,13 @@ const StudentDashboard: React.FC = () => {
               }}
             >
               {user?.name?.split(' ').map(n => n[0]).join('')}
-=======
-            <AvatarImage src={(user as any)?.profileImage} alt={(user as any)?.name} />
-            <AvatarFallback className="text-lg md:text-2xl">
-              {(user as any)?.name?.split(' ').map((n: string) => n[0]).join('')}
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <div className="hidden md:block">
               <div className="flex flex-col">
                 <div className="text-2xl md:text-3xl font-bold">
-                  {getGreeting()}, {(user as any)?.name || 'Student'}!
+                  {getGreeting()}, {user?.name || 'Student'}!
                 </div>
                 <div className="text-base md:text-lg opacity-90 mt-2 italic">
                   "Success is the sum of small efforts, repeated day in and day out."
@@ -259,7 +234,7 @@ const StudentDashboard: React.FC = () => {
             </div>
             <div className="block md:hidden">
               <div className="text-lg font-semibold">{getGreeting()},</div>
-              <div className="text-xl font-bold">{(user as any)?.name || 'Student'}!</div>
+              <div className="text-xl font-bold">{user?.name || 'Student'}!</div>
               <div className="text-sm opacity-80 mt-1">Welcome back 👋</div>
             </div>
           </div>
@@ -320,11 +295,7 @@ const StudentDashboard: React.FC = () => {
       {/* Quick Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Today's Schedule */}
-<<<<<<< HEAD
         <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
-=======
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg flex items-center gap-2 text-[#2563eb]">
               <Calendar className="h-5 w-5 text-[#2563eb]" /> Today's Schedule
@@ -334,7 +305,6 @@ const StudentDashboard: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-<<<<<<< HEAD
             {todaySchedule.length > 0 ? todaySchedule.map(slot => (
               <div
                 key={slot.id}
@@ -355,30 +325,6 @@ const StudentDashboard: React.FC = () => {
               </div>
             )) : (
               <p className="text-sm text-[#2563eb] text-center">No classes today</p>
-=======
-            {todaySchedule.length > 0 ? (
-              todaySchedule.map(slot => (
-                <div
-                  key={slot.id}
-                  className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded"
-                >
-                  <div>
-                    <div className="font-medium">{slot.subject}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <User className="h-3 w-3" /> {slot.faculty}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">{slot.time}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3" /> {slot.room}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center">No classes today</p>
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
             )}
           </CardContent>
         </Card>
@@ -391,7 +337,7 @@ const StudentDashboard: React.FC = () => {
               My Class
             </CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
-              {(user as any)?.year} Year - Sem {(user as any)?.semester} - Section {(user as any)?.section}
+              {user?.year} Year - Sem {user?.semester} - Section {user?.section}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -402,24 +348,8 @@ const StudentDashboard: React.FC = () => {
                 ))}
               </div>
             ) : classmates.length > 0 ? (
-<<<<<<< HEAD
-              classmates.slice(0, 4).map((classmate) => (
-                <div key={classmate.id} className="flex items-center gap-3 p-2 rounded-lg bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 hover:bg-indigo-100/60 transition-colors">
-                  <Avatar className="w-8 h-8 border-2 border-blue-200">
-                    <AvatarImage src={classmate.profileImage} alt={classmate.name} />
-                    <AvatarFallback className="text-xs">
-                      {classmate.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{classmate.name}</p>
-                    <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber}</p>
-                  </div>
-                </div>
-=======
               classmates.slice(0, 4).map(classmate => (
                 <ClassmateItem key={classmate.id} classmate={classmate} />
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
               ))
             ) : (
               <p className="text-sm text-muted-foreground">No classmates found</p>
@@ -433,11 +363,7 @@ const StudentDashboard: React.FC = () => {
         </Card>
 
         {/* My Subjects */}
-<<<<<<< HEAD
         <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 backdrop-blur">
-=======
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-blue-500" />
@@ -454,14 +380,7 @@ const StudentDashboard: React.FC = () => {
               </div>
             ) : studentSubjects.length > 0 ? (
               studentSubjects.slice(0, 3).map((subject, index) => (
-<<<<<<< HEAD
                 <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 hover:bg-indigo-100/60 transition-colors">
-=======
-                <div
-                  key={index}
-                  className="p-3 rounded-lg bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 hover:bg-indigo-100/60 transition-colors"
-                >
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium text-sm md:text-base text-foreground">{subject.name}</h4>
@@ -513,15 +432,9 @@ const StudentDashboard: React.FC = () => {
                     }}
                   />
                   <Legend />
-<<<<<<< HEAD
-                  <Bar dataKey="mid1" fill="#60a5fa" barSize={10} radius={[4, 4, 0, 0]} name="Mid 1" />
-                  <Bar dataKey="mid2" fill="#f59e42" barSize={10} radius={[4, 4, 0, 0]} name="Mid 2" />
-                  <Bar dataKey="mid3" fill="#a78bfa" barSize={10} radius={[4, 4, 0, 0]} name="Mid 3" />
-=======
                   {hasMid1 && <Bar dataKey="mid1" fill="hsl(var(--primary))" barSize={10} radius={[4, 4, 0, 0]} />}
                   {hasMid2 && <Bar dataKey="mid2" fill="hsl(var(--chart-2))" barSize={10} radius={[4, 4, 0, 0]} />}
                   {hasMid3 && <Bar dataKey="mid3" fill="hsl(var(--chart-3))" barSize={10} radius={[4, 4, 0, 0]} />}
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
@@ -552,17 +465,7 @@ const StudentDashboard: React.FC = () => {
                       borderRadius: '8px'
                     }}
                   />
-<<<<<<< HEAD
-                  <Bar
-                    dataKey="attendance"
-                    fill="#6366f1"
-                    barSize={10}
-                    radius={[4, 4, 0, 0]}
-                    name="Attendance %"
-                  />
-=======
                   <Bar dataKey="attendance" fill="#a78bfa" barSize={40} radius={[4, 4, 0, 0]} />
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
                 </BarChart>
               ) : (
                 <div className="flex items-center justify-center h-full">
@@ -573,8 +476,6 @@ const StudentDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-<<<<<<< HEAD
-=======
 
       {/* Mobile Quick Actions */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-2 flex justify-around md:hidden shadow-2xl">
@@ -591,7 +492,6 @@ const StudentDashboard: React.FC = () => {
           <span className="text-xs">Marks</span>
         </Button>
       </div>
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
     </div>
   );
 };
