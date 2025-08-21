@@ -120,7 +120,8 @@ const StudentProfile = () => {
           <div className="flex items-center gap-4 text-muted-foreground">
             <div className="flex items-center gap-1">
               <GraduationCap className="h-4 w-4" />
-              {student.rollNumber} • ECE {student.year}{student.year === 1 ? 'st' : student.year === 2 ? 'nd' : student.year === 3 ? 'rd' : 'th'} Year, Section {student.section}
+              {student.rollNumber} • ECE {student.year}
+              {student.year === 1 ? 'st' : student.year === 2 ? 'nd' : student.year === 3 ? 'rd' : 'th'} Year, Section {student.section}
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
@@ -178,32 +179,32 @@ const StudentProfile = () => {
             </Card>
 
             <Card>
-            <CardHeader>
-              <CardTitle>GPA Trend</CardTitle>
-              <CardDescription>Year and semester-wise academic progress</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={semesterRecords}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="semester"
-                    stroke="hsl(var(--muted-foreground))"
-                    label={{ value: 'Year & Semester', position: 'insideBottomRight', offset: -5 }}
-                  />
-                  <YAxis domain={[7, 9]} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Line type="monotone" dataKey="cgpa" stroke="#001F54" strokeWidth={3} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+              <CardHeader>
+                <CardTitle>GPA Trend</CardTitle>
+                <CardDescription>Year and semester-wise academic progress</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={semesterRecords}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="semester"
+                      stroke="hsl(var(--muted-foreground))"
+                      label={{ value: 'Year & Semester', position: 'insideBottomRight', offset: -5 }}
+                    />
+                    <YAxis domain={[7, 9]} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px'
+                      }}
+                    />
+                    <Line type="monotone" dataKey="cgpa" stroke="#001F54" strokeWidth={3} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Subject Details */}
