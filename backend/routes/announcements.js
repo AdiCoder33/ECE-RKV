@@ -69,14 +69,14 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const notificationPromises = recipients.map((user) =>
       executeQuery(
         'INSERT INTO notifications (title, message, type, user_id, data) VALUES (?, ?, ?, ?, ?)',
-        ['ECE Portal', messageBody, 'info', user.id, JSON.stringify({ announcementId: newId })]
+        [authorName, messageBody, 'info', user.id, JSON.stringify({ announcementId: newId })]
       )
     );
     await Promise.all(notificationPromises);
 
     sendToUsers(
       recipients.map((u) => u.id),
-      { title: 'ECE Portal', body: messageBody, data: { announcementId: newId } }
+      { title: authorName, body: messageBody, data: { announcementId: newId } }
     ).catch((err) => console.error('Push notification error:', err));
 
     res.status(201).json({ id: newId, message: 'Announcement created successfully' });

@@ -76,13 +76,15 @@ router.put('/mark-all-read', authenticateToken, async (req, res, next) => {
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
     const { title, message, type, userId, data } = req.body;
+    const authorName = (req.user && req.user.name ? req.user.name : 'ECE Portal').trim();
+    const finalTitle = (title || authorName).trim();
     
     const { recordset } = await executeQuery(
       'INSERT INTO notifications (title, message, type, user_id, data) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?)',
-      [title, message, type, userId, JSON.stringify(data || {})]
+      [finalTitle, message, type, userId, JSON.stringify(data || {})]
     );
 
-    sendToUsers([userId], { title, body: message, data })
+    sendToUsers([userId], { title: finalTitle, body: message, data })
       .catch((err) => console.error('Push notification error:', err));
 
     res.status(201).json({
