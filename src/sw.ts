@@ -56,7 +56,9 @@ self.addEventListener("push", (event) => {
     badge: "/icons/manifest-icon-192.maskable.png",
     data,
   };
-  event.waitUntil(self.registration.showNotification("ECE Portal", options));
+  event.waitUntil(
+    self.registration.showNotification(data.title || "ECE Portal", options)
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
