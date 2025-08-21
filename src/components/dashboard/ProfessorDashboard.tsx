@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+import loaderMp4 from '@/Assets/loader.mp4';
 
 const ProfessorDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -327,13 +328,27 @@ const ProfessorDashboard = () => {
   const formatActivityTime = (time: string) =>
     formatDistanceToNow(new Date(time), { addSuffix: true });
 
-  if (authLoading || !user?.id) {
+  // Loader component using loader.mp4
+  const Loader = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp4}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-32 h-32 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="font-semibold text-lg tracking-wide text-[#8b0000]">Loading Dashboard...</div>
+      <div className="text-sm mt-1 text-[#a52a2a]">Fetching your dashboard data, please wait</div>
+    </div>
+  );
+
+  if (authLoading || !user?.id || loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div
-          className="animate-spin rounded-full h-8 w-8 border-b-2"
-          style={{ borderColor: THEME.accent }}
-        ></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <Loader />
       </div>
     );
   }

@@ -121,6 +121,9 @@ const AttendanceManager: React.FC = () => {
   const [selectedSlot, setSelectedSlot] = React.useState(''); // for professors
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = React.useState<'success' | 'error' | null>(null);
+  const [fetching, setFetching] = React.useState(false);
+  const [missingPopup, setMissingPopup] = React.useState<string | null>(null);
 
   const isDesktop = useMediaQuery('(min-width:768px)');
   const itemsPerPage = isDesktop ? 15 : 9;
@@ -410,44 +413,6 @@ const AttendanceManager: React.FC = () => {
     return { variant: 'destructive' as const, label: 'Critical', color: ATTENDANCE_COLORS.absent };
   };
 
-  const handleSaveAttendance = async () => {
-    if (!selectedSubject) {
-      toast({ variant: 'destructive', title: 'Select a subject first' });
-      return;
-    }
-    if (!selectedPeriod) {
-      toast({ variant: 'destructive', title: 'Select a period first' });
-      return;
-    }
-    try {
-      const token = localStorage.getItem('token');
-      const attendanceData = students
-        .filter((s) => s.present !== null)
-        .map((s) => ({ studentId: Number(s.id), present: s.present }));
-      const response = await fetch(`${apiBase}/attendance/bulk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          subjectId: selectedSubject,
-          date: selectedDate,
-          period: selectedPeriod,
-          attendanceData,
-          markedBy: user?.id,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to save attendance');
-
-      toast({ title: 'Attendance Saved', description: 'Attendance has been saved successfully' });
-      await fetchAttendance();
-    } catch (err) {
-      console.error('Error saving attendance:', err);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save attendance' });
-    }
-  };
-
   // ECE-themed loader matching UserManagement
   const EceVideoLoader: React.FC = () => (
     <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
@@ -486,6 +451,147 @@ const AttendanceManager: React.FC = () => {
     };
     fetchAll();
   }, []);
+
+  // Helper: Check for missing required fields
+  const getMissingFields = () => {
+    const missing: string[] = [];
+    if (isProfessor && !selectedSlot) missing.push('Slot');
+    if (!isProfessor && !selectedYear) missing.push('Year');
+    if (!isProfessor && !selectedSection) missing.push('Section');
+    if (!selectedDate) missing.push('Date');
+    if (!selectedPeriod) missing.push('Period');
+    return missing;
+  };
+
+  // Modified fetchData logic: only fetch when all required fields are selected
+  React.useEffect(() => {
+    const shouldFetch =
+      (isProfessor
+        ? selectedSlot && selectedDate && selectedPeriod
+        : selectedYear && selectedSection && selectedDate && selectedPeriod);
+
+    if (!shouldFetch) {
+      const missing = getMissingFields();
+      if (missing.length > 0) {
+        setMissingPopup(`Please select: ${missing.join(', ')}`);
+        setTimeout(() => setMissingPopup(null), 2500);
+      }
+      return;
+    }
+
+    const fetchData = async () => {
+      setFetching(true);
+      try {
+        const token = localStorage.getItem('token');
+
+        // Classes
+        const classRes = await fetch(`${apiBase}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!classRes.ok) throw new Error('Failed to fetch classes');
+
+        type ClassResponse = { id: string; year: number; section: string };
+        const classes: ClassResponse[] = await classRes.json();
+        const cls = classes.find((c) => c.year.toString() === selectedYear && c.section === selectedSection);
+        const cid = cls?.id || null;
+        setClassId(cid);
+
+        // Students
+        const studentsRes = await fetch(
+          `${apiBase}/students?year=${selectedYear}&section=${selectedSection}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!studentsRes.ok) throw new Error('Failed to fetch students');
+
+        type StudentResponse = {
+          id: string;
+          name: string;
+          rollNumber: number;
+          collegeId: string;
+          attendancePercentage: number;
+        };
+
+        const sdata: StudentResponse[] = await studentsRes.json();
+        const mapped: AttendanceStudent[] = sdata.map((s) => ({
+          id: s.id,
+          name: s.name,
+          rollNumber: s.rollNumber,
+          collegeId: s.collegeId,
+          attendancePercentage: s.attendancePercentage,
+          present: null,
+        }));
+        setStudents(mapped);
+
+        // Sync period attendance immediately
+        await fetchAttendance();
+
+        // Attendance summary (per subject)
+        if (cid && selectedSubject) {
+          const summaryRes = await fetch(
+            `${apiBase}/attendance/summary?classId=${cid}&subjectId=${selectedSubject}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (summaryRes.ok) {
+            type SummaryResponse = { studentId: string; attendancePercentage: number };
+            const summary: SummaryResponse[] = await summaryRes.json();
+            setStudents((prev) =>
+              prev.map((student) => {
+                const rec = summary.find((s) => String(s.studentId) === String(student.id));
+                return rec ? { ...student, attendancePercentage: Math.round(rec.attendancePercentage) } : student;
+              })
+            );
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching students:', err);
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchData();
+    // eslint-disable-next-line
+  }, [selectedYear, selectedSection, selectedSubject, selectedSlot, selectedDate, selectedPeriod, isProfessor]);
+
+  // Save Attendance Handler
+  const handleSaveAttendance = async () => {
+    const missing = [];
+    if (isProfessor && !selectedSlot) missing.push('Slot');
+    if (!selectedPeriod) missing.push('Period');
+    if (missing.length > 0) {
+      setMissingPopup(`Please select: ${missing.join(', ')}`);
+      setTimeout(() => setMissingPopup(null), 2500);
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const attendanceData = students
+        .filter((s) => s.present !== null)
+        .map((s) => ({ studentId: Number(s.id), present: s.present }));
+      const response = await fetch(`${apiBase}/attendance/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectId: selectedSubject,
+          date: selectedDate,
+          period: selectedPeriod,
+          attendanceData,
+          markedBy: user?.id,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save attendance');
+
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(null), 2000);
+      await fetchAttendance();
+    } catch (err) {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 2000);
+    }
+  };
 
   if (loading)
     return (
@@ -907,6 +1013,22 @@ const AttendanceManager: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Loading popup */}
+        {fetching && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#8b0000] text-white px-4 py-2 rounded shadow-lg flex items-center z-50 text-sm">
+            <RotateCcw className="h-4 w-4 animate-spin mr-2" />
+            Loading attendance data...
+          </div>
+        )}
+
+        {/* Missing fields popup */}
+        {missingPopup && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded shadow-lg flex items-center z-50 text-sm">
+            <XCircle className="h-4 w-4 mr-2" />
+            {missingPopup}
+          </div>
+        )}
+
         {/* Save */}
         <div className="flex justify-end mt-2">
           <Button
@@ -922,6 +1044,20 @@ const AttendanceManager: React.FC = () => {
             Save Attendance
           </Button>
         </div>
+
+        {/* Save status popup */}
+        {saveStatus === 'success' && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg flex items-center z-50 text-sm">
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Attendance saved successfully!
+          </div>
+        )}
+        {saveStatus === 'error' && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded shadow-lg flex items-center z-50 text-sm">
+            <XCircle className="h-4 w-4 mr-2" />
+            Failed to save attendance!
+          </div>
+        )}
       </div>
     </div>
   );
