@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 const Student3D = () => (
   <mesh>
     <boxGeometry args={[1, 1.5, 1]} />
-    <meshStandardMaterial color="#2563eb" />
+    <meshStandardMaterial color="#b3112eff" />
   </mesh>
 );
 
@@ -44,8 +44,9 @@ const Alumni3D = () => (
 
 // RGUKT 3D logo loader with spinning and color change, no user flipping
 const RGUKTLogo3D = () => {
+  // Use the correct path and type for useRef
   const gltf = useLoader(GLTFLoader, '/rgukt.glb');
-  const logoRef = useRef<THREE.Object3D>();
+  const logoRef = useRef<THREE.Object3D>(null);
 
   // Always spin the logo
   useFrame(() => {

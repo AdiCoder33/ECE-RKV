@@ -172,23 +172,34 @@ const StudentDashboard: React.FC = () => {
     'bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-400 text-white shadow-md border-0'
   ];
 
-  return (
-    <div className="min-h-screen px-2 py-2 sm:px-4 md:px-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
-      {/* Loader */}
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70">
-          <video
-            src={loaderMp4}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-24 h-24 object-contain rounded-lg shadow-lg"
-            aria-label="Loading animation"
-          />
-        </div>
-      )}
+  // Loader (centered, no blur, matches StudentMarks)
+  const EceVideoLoader = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
+      <video
+        src={loaderMp4}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-32 h-32 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="font-semibold text-lg tracking-wide text-[#6366f1]">Loading Dashboard...</div>
+      <div className="text-sm mt-1 text-[#2563eb]">Fetching your dashboard data, please wait</div>
+    </div>
+  );
 
+  // Only render dashboard after loading is false
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 md:px-8" style={{ backgroundColor: '#fbf4ea' }}>
+        <EceVideoLoader />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen px-2 py-2 sm:px-4 md:px-8" style={{ backgroundColor: '#fbf4ea' }}>
       {/* Greeting Card */}
       <div className="flex justify-center mb-4">
         <div
@@ -199,16 +210,22 @@ const StudentDashboard: React.FC = () => {
           `}
         >
           <Avatar className="w-14 h-14 border-4 border-white shadow md:w-20 md:h-20">
-            <AvatarImage src={(user as any)?.profileImage} alt={(user as any)?.name} />
-            <AvatarFallback className="text-lg md:text-2xl">
-              {(user as any)?.name?.split(' ').map((n: string) => n[0]).join('')}
+            <AvatarImage src={user?.profileImage} alt={user?.name} />
+            <AvatarFallback
+              className="text-lg md:text-2xl font-bold"
+              style={{
+                backgroundColor: '#fee2e2', // light red-100
+                color: '#b91c1c' // red-700 for text
+              }}
+            >
+              {user?.name?.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <div className="hidden md:block">
               <div className="flex flex-col">
                 <div className="text-2xl md:text-3xl font-bold">
-                  {getGreeting()}, {(user as any)?.name || 'Student'}!
+                  {getGreeting()}, {user?.name || 'Student'}!
                 </div>
                 <div className="text-base md:text-lg opacity-90 mt-2 italic">
                   "Success is the sum of small efforts, repeated day in and day out."
@@ -217,7 +234,7 @@ const StudentDashboard: React.FC = () => {
             </div>
             <div className="block md:hidden">
               <div className="text-lg font-semibold">{getGreeting()},</div>
-              <div className="text-xl font-bold">{(user as any)?.name || 'Student'}!</div>
+              <div className="text-xl font-bold">{user?.name || 'Student'}!</div>
               <div className="text-sm opacity-80 mt-1">Welcome back 👋</div>
             </div>
           </div>
@@ -278,51 +295,49 @@ const StudentDashboard: React.FC = () => {
       {/* Quick Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Today's Schedule */}
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
-              <Calendar className="h-5 w-5 text-purple-500" /> Today's Schedule
+            <CardTitle className="text-base md:text-lg flex items-center gap-2 text-[#2563eb]">
+              <Calendar className="h-5 w-5 text-[#2563eb]" /> Today's Schedule
             </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
+            <CardDescription className="text-sm text-[#2563eb]">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {todaySchedule.length > 0 ? (
-              todaySchedule.map(slot => (
-                <div
-                  key={slot.id}
-                  className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded"
-                >
-                  <div>
-                    <div className="font-medium">{slot.subject}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <User className="h-3 w-3" /> {slot.faculty}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">{slot.time}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3" /> {slot.room}
-                    </div>
+            {todaySchedule.length > 0 ? todaySchedule.map(slot => (
+              <div
+                key={slot.id}
+                className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded"
+              >
+                <div>
+                  <div className="font-medium text-[#2563eb]">{slot.subject}</div>
+                  <div className="text-xs text-[#2563eb] flex items-center gap-1">
+                    <User className="h-3 w-3" /> {slot.faculty}
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center">No classes today</p>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-[#2563eb]">{slot.time}</div>
+                  <div className="text-xs text-[#2563eb] flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> {slot.room}
+                  </div>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-[#2563eb] text-center">No classes today</p>
             )}
           </CardContent>
         </Card>
 
         {/* My Class */}
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
               <Users className="h-5 w-5 text-indigo-500" />
               My Class
             </CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
-              {(user as any)?.year} Year - Sem {(user as any)?.semester} - Section {(user as any)?.section}
+              {user?.year} Year - Sem {user?.semester} - Section {user?.section}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -348,7 +363,7 @@ const StudentDashboard: React.FC = () => {
         </Card>
 
         {/* My Subjects */}
-        <Card className="rounded-xl shadow border-0 bg-white/90 backdrop-blur">
+        <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-blue-500" />
@@ -365,10 +380,7 @@ const StudentDashboard: React.FC = () => {
               </div>
             ) : studentSubjects.length > 0 ? (
               studentSubjects.slice(0, 3).map((subject, index) => (
-                <div
-                  key={index}
-                  className="p-3 rounded-lg bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 hover:bg-indigo-100/60 transition-colors"
-                >
+                <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 hover:bg-indigo-100/60 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium text-sm md:text-base text-foreground">{subject.name}</h4>
@@ -415,7 +427,7 @@ const StudentDashboard: React.FC = () => {
                   <Tooltip
                     contentStyle={{
                       background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                      border: '1px solid #a5b4fc',
+                      border: '1px solid #6366f1',
                       borderRadius: '8px'
                     }}
                   />
@@ -444,12 +456,12 @@ const StudentDashboard: React.FC = () => {
               {subjectAttendanceData.length > 0 ? (
                 <BarChart data={subjectAttendanceData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
-                  <XAxis dataKey="name" stroke="#a78bfa" />
-                  <YAxis domain={[0, 100]} stroke="#a78bfa" />
+                  <XAxis dataKey="name" stroke="#6366f1" />
+                  <YAxis domain={[0, 100]} stroke="#6366f1" />
                   <Tooltip
                     contentStyle={{
-                      background: 'linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%)',
-                      border: '1px solid #a78bfa',
+                      background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
+                      border: '1px solid #6366f1',
                       borderRadius: '8px'
                     }}
                   />
