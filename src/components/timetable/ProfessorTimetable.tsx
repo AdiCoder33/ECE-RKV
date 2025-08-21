@@ -15,6 +15,12 @@ interface TimeSlot {
   section: string;
 }
 
+// Theme colors mirroring ClassManagement for a cohesive UI
+const THEME = {
+  bgBeige: '#fbf4ea',
+  accent: '#8b0000',
+};
+
 const ProfessorTimetable = () => {
   const { user } = useAuth();
   const [timetable, setTimetable] = useState<TimeSlot[]>([]);
@@ -63,7 +69,10 @@ const ProfessorTimetable = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
+      <div
+        className="space-y-6 px-4 py-4 sm:px-6 md:px-0"
+        style={{ backgroundColor: THEME.bgBeige }}
+      >
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="h-32 bg-muted rounded"></div>
@@ -73,17 +82,31 @@ const ProfessorTimetable = () => {
   }
 
   return (
-    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
+    <div
+      className="space-y-6 px-4 py-4 sm:px-6 md:px-0"
+      style={{ backgroundColor: THEME.bgBeige }}
+    >
       <div>
-        <h1 className="text-3xl font-bold">My Timetable</h1>
+        <h1
+          className="text-3xl font-bold"
+          style={{ color: THEME.accent }}
+        >
+          My Timetable
+        </h1>
         <p className="text-muted-foreground">Your weekly class schedule</p>
       </div>
 
       {/* Weekly Timetable Grid */}
-      <Card>
+      <Card className="bg-white shadow-lg rounded-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+          <CardTitle
+            className="flex items-center gap-2"
+            style={{ color: THEME.accent }}
+          >
+            <Calendar
+              className="h-5 w-5"
+              style={{ color: THEME.accent }}
+            />
             Weekly Schedule
           </CardTitle>
           <CardDescription>Your assigned classes for the week</CardDescription>
@@ -105,7 +128,10 @@ const ProfessorTimetable = () => {
                 {timeSlots.map(time => (
                   <tr key={time} className="border-b">
                     <td className="p-3 font-medium text-sm bg-muted/30">
-                      <Clock className="h-4 w-4 inline mr-2" />
+                      <Clock
+                        className="h-4 w-4 inline mr-2"
+                        style={{ color: THEME.accent }}
+                      />
                       {time}
                     </td>
                     {days.map(day => {
@@ -113,17 +139,17 @@ const ProfessorTimetable = () => {
                       return (
                         <td key={`${day}-${time}`} className="p-2">
                           {slot ? (
-                            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 hover:bg-primary/20 transition-colors cursor-pointer">
-                              <div className="font-medium text-primary mb-1 flex items-center gap-1">
-                                <BookOpen className="h-3 w-3" />
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 hover:bg-red-100 transition-colors cursor-pointer">
+                              <div className="font-medium text-red-800 mb-1 flex items-center gap-1">
+                                <BookOpen className="h-3 w-3 text-red-800" />
                                 {slot.subject}
                               </div>
                               <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                                <MapPin className="h-3 w-3" />
+                                <MapPin className="h-3 w-3 text-red-800" />
                                 {slot.room}
                               </div>
                               <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Users className="h-3 w-3" />
+                                <Users className="h-3 w-3 text-red-800" />
                                 Year {slot.year}, Section {slot.section}
                               </div>
                             </div>
@@ -148,9 +174,14 @@ const ProfessorTimetable = () => {
         {days.map(day => {
           const daySlots = getSlotsByDay(day);
           return (
-            <Card key={day}>
+            <Card key={day} className="bg-white shadow-lg rounded-lg">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{day}</CardTitle>
+                <CardTitle
+                  className="text-lg"
+                  style={{ color: THEME.accent }}
+                >
+                  {day}
+                </CardTitle>
                 <CardDescription>
                   {daySlots.length} {daySlots.length === 1 ? 'class' : 'classes'}
                 </CardDescription>
@@ -158,19 +189,22 @@ const ProfessorTimetable = () => {
               <CardContent className="space-y-2">
                 {daySlots.length > 0 ? (
                   daySlots.map(slot => (
-                    <div key={slot.id} className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                    <div
+                      key={slot.id}
+                      className="p-3 bg-red-50 rounded-lg border border-red-200 text-red-800"
+                    >
                       <div className="flex items-center gap-2 mb-1">
-                        <Clock className="h-4 w-4 text-primary" />
+                        <Clock className="h-4 w-4 text-red-800" />
                         <span className="font-medium text-sm">{slot.time}</span>
                       </div>
-                      <div className="text-sm font-medium text-primary mb-1">{slot.subject}</div>
+                      <div className="text-sm font-medium mb-1">{slot.subject}</div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
+                          <MapPin className="h-3 w-3 text-red-800" />
                           {slot.room}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
+                          <Users className="h-3 w-3 text-red-800" />
                           {slot.year}-{slot.section}
                         </span>
                       </div>
