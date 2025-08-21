@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import NotifyToggle from '@/components/NotifyToggle';
-import { 
-  Settings as SettingsIcon, 
+import {
+  Settings as SettingsIcon,
   Bell,
   Shield,
   Database,
@@ -19,6 +19,8 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+
+const apiBase = import.meta.env.VITE_API_URL || '/api';
 
 const Settings = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +55,7 @@ const Settings = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/auth/change-password', {
+      const res = await fetch(`${apiBase}/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
