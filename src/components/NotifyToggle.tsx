@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 import { enablePush, disablePush, isSubscribed } from '@/push';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,7 +18,10 @@ const NotifyToggle: React.FC = () => {
     setLoading(true);
     try {
       if (checked) {
-        await enablePush([], user?.id);
+        if (!user?.id) {
+          throw new Error('User not authenticated');
+        }
+        await enablePush([], user.id);
         setEnabled(true);
         setError(null);
       } else {
@@ -29,6 +33,7 @@ const NotifyToggle: React.FC = () => {
       console.error(err);
       const message = err instanceof Error ? err.message : 'Failed to update notifications';
       setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
