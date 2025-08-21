@@ -169,4 +169,15 @@ router.post('/reset-password', async (req, res, next) => {
   }
 });
 
+router.post('/change-password', authenticateToken, async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+  const { id } = req.user; // set by authenticateToken
+  const { recordset } = await executeQuery('SELECT password FROM users WHERE id = ?', [id]);
+  const ok = await bcrypt.compare(currentPassword, recordset[0].password);
+  if (!ok) return res.status(400).json({ error: 'Current password incorrect' });
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await executeQuery('UPDATE users SET password = ? WHERE id = ?', [hashed, id]);
+  res.json({ message: 'Password updated' });
+});
+
 module.exports = router;

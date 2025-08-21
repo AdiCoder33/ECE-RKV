@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,9 @@ import {
 
 const Settings = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     announcementAlerts: true,
@@ -40,6 +44,35 @@ const Settings = () => {
 
   const handleSecurityChange = (key: string, value: boolean | string) => {
     setSecurity(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to update password');
+        return;
+      }
+      toast.success('Password updated');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch {
+      toast.error('Failed to update password');
+    }
   };
 
   return (
@@ -186,9 +219,11 @@ const Settings = () => {
                   <label className="text-sm font-medium">Change Password</label>
                   <div className="space-y-3 mt-2">
                     <div className="relative">
-                      <Input 
+                      <Input
                         type={showPassword ? "text" : "password"}
                         placeholder="Current password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
                       />
                       <Button
                         variant="ghost"
@@ -199,8 +234,18 @@ const Settings = () => {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                    <Input type="password" placeholder="New password" />
-                    <Input type="password" placeholder="Confirm new password" />
+                    <Input
+                      type="password"
+                      placeholder="New password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -242,7 +287,7 @@ const Settings = () => {
                   <Shield className="h-4 w-4 mr-2" />
                   Save Security Settings
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={handlePasswordUpdate}>
                   Update Password
                 </Button>
               </div>
