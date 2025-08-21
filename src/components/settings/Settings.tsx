@@ -61,17 +61,28 @@ const Settings = () => {
         },
         body: JSON.stringify({ currentPassword, newPassword })
       });
-      const data = await res.json();
+
+      const text = await res.text();
+      let data: { error?: string } | null = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        // ignore JSON parse errors
+      }
+
+      console.log('Password update response', { status: res.status, data });
+
       if (!res.ok) {
-        toast.error(data.error || 'Failed to update password');
+        toast.error(data?.error || `Failed to update password (status ${res.status})`);
         return;
       }
       toast.success('Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch {
-      toast.error('Failed to update password');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
     }
   };
 
