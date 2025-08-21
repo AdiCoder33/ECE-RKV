@@ -44,13 +44,9 @@ const Alumni3D = () => (
 
 // RGUKT 3D logo loader with spinning and color change, no user flipping
 const RGUKTLogo3D = () => {
-<<<<<<< HEAD
-  const gltf = useLoader(GLTFLoader, '/src/Assets/rgukt-v1.glb');
-  const logoRef = useRef();
-=======
+  // Use the correct path and type for useRef
   const gltf = useLoader(GLTFLoader, '/rgukt.glb');
-  const logoRef = useRef<THREE.Object3D>();
->>>>>>> a36d92791e51bc550ff62e1f42b1cdb56e266fd1
+  const logoRef = useRef<THREE.Object3D>(null);
 
   // Always spin the logo
   useFrame(() => {
