@@ -31,6 +31,11 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const { title, content, targetRole, targetSection, targetYear, priority } = req.body;
 
+    const authorName = req.user.name;
+    const sanitizedTitle = title
+      .replace(/<[^>]+>/g, '')
+      .replace(/https?:\/\/\S+/g, '');
+
     const result = await executeQuery(
       'INSERT INTO announcements (title, content, author_id, target_role, target_section, target_year, priority) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?)',
       [title, content, req.user.id, targetRole, targetSection, targetYear, priority]
@@ -57,18 +62,18 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const usersQuery = `SELECT id FROM users${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''}`;
     const { recordset: recipients } = await executeQuery(usersQuery, params);
 
-    const snippet = content.substring(0, 100);
+    const messageBody = `${authorName}: ${sanitizedTitle}`;
     const notificationPromises = recipients.map((user) =>
       executeQuery(
         'INSERT INTO notifications (title, message, type, user_id, data) VALUES (?, ?, ?, ?, ?)',
-        [title, snippet, 'info', user.id, JSON.stringify({ announcementId: newId })]
+        ['ECE Portal', messageBody, 'info', user.id, JSON.stringify({ announcementId: newId })]
       )
     );
     await Promise.all(notificationPromises);
 
     sendToUsers(
       recipients.map((u) => u.id),
-      { title, body: snippet, data: { announcementId: newId } }
+      { title: 'ECE Portal', body: messageBody, data: { announcementId: newId } }
     ).catch((err) => console.error('Push notification error:', err));
 
     res.status(201).json({ id: newId, message: 'Announcement created successfully' });
