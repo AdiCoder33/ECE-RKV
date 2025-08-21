@@ -53,28 +53,42 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Notification";
   const options: NotificationOptions = {
     body: data.body,
-    data: { url: data.url },
+    data,
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url;
+  const { url, announcementId } = event.notification.data || {};
   event.waitUntil(
     (async () => {
-      if (!url) return;
       const allClients = await self.clients.matchAll({
         type: "window",
         includeUncontrolled: true,
       });
-      for (const client of allClients) {
-        if (client.url === url && "focus" in client) {
-          return (client as WindowClient).focus();
+      let client: WindowClient | null = null;
+
+      if (url) {
+        for (const c of allClients) {
+          if (c.url === url && "focus" in c) {
+            client = await (c as WindowClient).focus();
+            break;
+          }
+        }
+        if (!client && self.clients.openWindow) {
+          client = (await self.clients.openWindow(url)) as WindowClient | null;
+        }
+      } else {
+        if (allClients.length > 0 && "focus" in allClients[0]) {
+          client = await (allClients[0] as WindowClient).focus();
+        } else if (self.clients.openWindow) {
+          client = (await self.clients.openWindow("/")) as WindowClient | null;
         }
       }
-      if (self.clients.openWindow) {
-        await self.clients.openWindow(url);
+
+      if (announcementId && client) {
+        client.postMessage({ announcementId });
       }
     })()
   );
