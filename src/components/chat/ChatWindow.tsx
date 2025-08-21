@@ -11,6 +11,7 @@ import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
 import ChatContext from '@/contexts/ChatContext';
+import { toast } from '@/components/ui/use-toast';
 
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
@@ -60,6 +61,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const chat = useContext(ChatContext);
   const [selectedMsg, setSelectedMsg] = useState<ChatMessage | PrivateMessage | null>(null);
   const [editingMsg, setEditingMsg] = useState<ChatMessage | PrivateMessage | null>(null);
+  const isOwn = selectedMsg
+    ? activeChat.type === 'direct'
+      ? (selectedMsg as PrivateMessage).sender_id === currentUserId
+      : (selectedMsg as ChatMessage).senderId === currentUserId
+    : false;
 
   const groupedItems = useMemo<GroupedItem[]>(() => {
     const items: GroupedItem[] = [];
@@ -93,8 +99,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleDelete = async (m: PrivateMessage | ChatMessage) => {
-    await chat?.deleteMessage(m);
-    setSelectedMsg(null);
+    try {
+      await chat?.deleteMessage(m);
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete message',
+      });
+    } finally {
+      setSelectedMsg(null);
+    }
   };
 
   const handleEdit = (m: PrivateMessage | ChatMessage) => {
@@ -105,7 +120,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleSend = () => {
     if (editingMsg) {
-      chat?.updateMessage(editingMsg, message).catch(() => {});
+      chat
+        ?.updateMessage(editingMsg, message)
+        .catch(() =>
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to update message',
+          })
+        );
       setEditingMsg(null);
       onMessageChange({ target: { value: '' } } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
     } else {
@@ -134,14 +157,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="flex gap-2">
             {selectedMsg ? (
-              <>
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(selectedMsg)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(selectedMsg)}>
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </>
+              isOwn ? (
+                <>
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(selectedMsg)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(selectedMsg)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground self-center">
+                  Not your message
+                </span>
+              )
             ) : (
               <>
                 <Button variant="ghost" size="icon" onClick={onOpenGroupDialog}>

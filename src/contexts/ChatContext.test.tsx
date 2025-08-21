@@ -10,6 +10,7 @@ vi.mock('@/components/chat/EmojiPicker', () => ({ default: () => null }));
 vi.mock('@/components/chat/FileUpload', () => ({ default: () => null }));
 vi.mock('@/components/chat/AttachmentPreview', () => ({ default: () => null }));
 vi.mock('@/components/chat/MessageItem', () => ({ default: () => null }));
+vi.mock('@/components/ui/use-toast', () => ({ toast: vi.fn() }));
 
 import { mergePrivateMessages } from './ChatContext';
 import ChatWindow from '@/components/chat/ChatWindow';
