@@ -4,6 +4,7 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { emitConversationUpdate } = require('../utils/conversations');
 const { resolveProfileImage } = require('../utils/images');
+const { sendToUsers } = require('../services/pushService');
 
 // Get messages between two users
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
@@ -119,6 +120,15 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       io.to(`user:${receiverId}`).emit('private-message', savedMessage);
       io.to(`user:${senderId}`).emit('private-message', savedMessage);
     }
+
+    const notificationBody =
+      savedMessage.content?.trim() ||
+      (savedMessage.attachments.length ? 'Sent an attachment' : '');
+    sendToUsers([receiverId], {
+      title: savedMessage.sender_name,
+      body: notificationBody,
+      data: { chatType: 'direct', userId: senderId }
+    }).catch(console.error);
 
     // Update conversation state for sender (mark as read)
     const convUpdate = `
