@@ -88,6 +88,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'marks', label: 'Marks', icon: BarChart3, path: '/dashboard/marks' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
+          { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
         ];
       case 'professor':
         return [
@@ -98,6 +99,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'timetable', label: 'My Timetable', icon: Clock, path: '/dashboard/timetable' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
+          { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
         ];
       case 'student':
         return [
@@ -110,6 +112,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'contact-alumni', label: 'Contact Alumni', icon: GraduationCap, path: '/dashboard/contact-alumni' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
+          { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
         ];
       case 'alumni':
         return [
