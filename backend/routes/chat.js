@@ -174,6 +174,44 @@ router.put('/groups/:groupId/messages/:messageId',
   }
 );
 
+router.delete('/groups/:groupId/messages/:messageId',
+  authenticateToken, async (req, res, next) => {
+    try {
+      const { groupId, messageId } = req.params;
+      const userId = req.user.id;
+
+      // Verify the user is a member of the group
+      const { recordset: membership } = await executeQuery(
+        'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
+        [groupId, userId]
+      );
+      if (!membership.length) {
+        return res.status(404).json({ message: 'Message not found or unauthorized' });
+      }
+
+      // Mark the message as deleted if the user is the original sender
+      const delQuery = `
+        UPDATE chat_messages
+        SET is_deleted = 1
+        WHERE id = ? AND group_id = ? AND sender_id = ? AND is_deleted = 0;
+      `;
+      const { rowsAffected } = await executeQuery(delQuery, [messageId, groupId, userId]);
+      if (!rowsAffected || rowsAffected[0] === 0) {
+        return res.status(404).json({ message: 'Message not found or unauthorized' });
+      }
+
+      req.app.get('io')?.to(`group-${groupId}`).emit('chat-message-delete', {
+        id: messageId,
+        groupId
+      });
+
+      res.json({ message: 'Message deleted successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // Mark group messages as read
 router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, next) => {
   try {
