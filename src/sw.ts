@@ -50,19 +50,19 @@ registerRoute(
 
 self.addEventListener("push", (event) => {
   const data = event.data?.json() ?? {};
-  const title = data.title || "Notification";
   const options: NotificationOptions = {
-    body: data.body,
+    body: data.body || "",
     icon: "/icons/manifest-icon-192.maskable.png",
     badge: "/icons/manifest-icon-192.maskable.png",
     data,
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification("ECE Portal", options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const { url, announcementId } = event.notification.data || {};
+  const { announcementId } = event.notification.data || {};
+  const targetUrl = announcementId ? `/announcements/${announcementId}` : "/";
   event.waitUntil(
     (async () => {
       const allClients = await self.clients.matchAll({
@@ -71,26 +71,13 @@ self.addEventListener("notificationclick", (event) => {
       });
       let client: WindowClient | null = null;
 
-      if (url) {
-        for (const c of allClients) {
-          if (c.url === url && "focus" in c) {
-            client = await (c as WindowClient).focus();
-            break;
-          }
+      if (allClients.length > 0 && "focus" in allClients[0]) {
+        client = await (allClients[0] as WindowClient).focus();
+        if (announcementId) {
+          client.postMessage({ announcementId });
         }
-        if (!client && self.clients.openWindow) {
-          client = (await self.clients.openWindow(url)) as WindowClient | null;
-        }
-      } else {
-        if (allClients.length > 0 && "focus" in allClients[0]) {
-          client = await (allClients[0] as WindowClient).focus();
-        } else if (self.clients.openWindow) {
-          client = (await self.clients.openWindow("/")) as WindowClient | null;
-        }
-      }
-
-      if (announcementId && client) {
-        client.postMessage({ announcementId });
+      } else if (self.clients.openWindow) {
+        client = (await self.clients.openWindow(targetUrl)) as WindowClient | null;
       }
     })()
   );

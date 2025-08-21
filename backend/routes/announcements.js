@@ -31,10 +31,14 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const { title, content, targetRole, targetSection, targetYear, priority } = req.body;
 
-    const authorName = req.user.name;
-    const sanitizedTitle = title
+    const authorName = (req.user && req.user.name ? req.user.name : 'ECE Portal').trim();
+    const sanitizedTitle = (title || '')
       .replace(/<[^>]+>/g, '')
-      .replace(/https?:\/\/\S+/g, '');
+      .replace(/https?:\/\/\S+/g, '')
+      .trim();
+    const messageBody = sanitizedTitle
+      ? `${authorName}: ${sanitizedTitle}`
+      : authorName;
 
     const result = await executeQuery(
       'INSERT INTO announcements (title, content, author_id, target_role, target_section, target_year, priority) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -62,7 +66,6 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const usersQuery = `SELECT id FROM users${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''}`;
     const { recordset: recipients } = await executeQuery(usersQuery, params);
 
-    const messageBody = `${authorName}: ${sanitizedTitle}`;
     const notificationPromises = recipients.map((user) =>
       executeQuery(
         'INSERT INTO notifications (title, message, type, user_id, data) VALUES (?, ?, ?, ?, ?)',
