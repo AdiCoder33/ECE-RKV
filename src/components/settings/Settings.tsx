@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import NotifyToggle from '@/components/NotifyToggle';
 import { THEME } from '@/theme';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Settings as SettingsIcon,
   Bell,
@@ -40,6 +41,9 @@ const Settings = () => {
     sessionTimeout: '30',
     loginAlerts: true
   });
+
+  const { user } = useAuth();
+  const showSystemTab = user?.role !== 'student' && user?.role !== 'professor';
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications(prev => ({ ...prev, [key]: value }));
@@ -130,12 +134,14 @@ const Settings = () => {
           >
             Data & Privacy
           </TabsTrigger>
-          <TabsTrigger
-            value="system"
-            className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
-          >
-            System
-          </TabsTrigger>
+          {showSystemTab && (
+            <TabsTrigger
+              value="system"
+              className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+            >
+              System
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="general">
@@ -420,66 +426,68 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="system">
-          <Card>
-            <CardHeader
-              className="rounded-t-lg bg-red-700"
-              style={{ backgroundColor: THEME.accent }}
-            >
-              <CardTitle className="text-white">System Settings</CardTitle>
-              <CardDescription className="text-red-100">
-                System administration and maintenance options
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">Database Backup</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Create a backup of the system database
-                  </p>
-                  <Button className="bg-red-700 text-white hover:bg-red-800">
-                    <Database className="h-4 w-4 mr-2" />
-                    Create Backup
-                  </Button>
-                </div>
+        {showSystemTab && (
+          <TabsContent value="system">
+            <Card>
+              <CardHeader
+                className="rounded-t-lg bg-red-700"
+                style={{ backgroundColor: THEME.accent }}
+              >
+                <CardTitle className="text-white">System Settings</CardTitle>
+                <CardDescription className="text-red-100">
+                  System administration and maintenance options
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">Database Backup</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Create a backup of the system database
+                    </p>
+                    <Button className="bg-red-700 text-white hover:bg-red-800">
+                      <Database className="h-4 w-4 mr-2" />
+                      Create Backup
+                    </Button>
+                  </div>
 
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">System Maintenance</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Perform system cleanup and optimization
-                  </p>
-                  <Button className="bg-red-700 text-white hover:bg-red-800">
-                    <SettingsIcon className="h-4 w-4 mr-2" />
-                    Run Maintenance
-                  </Button>
-                </div>
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">System Maintenance</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Perform system cleanup and optimization
+                    </p>
+                    <Button className="bg-red-700 text-white hover:bg-red-800">
+                      <SettingsIcon className="h-4 w-4 mr-2" />
+                      Run Maintenance
+                    </Button>
+                  </div>
 
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">System Information</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Version:</span>
-                      <span>1.2.0</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Last Updated:</span>
-                      <span>January 15, 2024</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Database Size:</span>
-                      <span>245 MB</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Active Users:</span>
-                      <span>1,247</span>
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">System Information</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Version:</span>
+                        <span>1.2.0</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Last Updated:</span>
+                        <span>January 15, 2024</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Database Size:</span>
+                        <span>245 MB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Active Users:</span>
+                        <span>1,247</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
