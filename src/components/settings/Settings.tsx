@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import NotifyToggle from '@/components/NotifyToggle';
+import { THEME } from '@/theme';
 import {
   Settings as SettingsIcon,
   Bell,
@@ -89,26 +90,64 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6 px-4 sm:px-6 md:px-0">
+    <div
+      className="min-h-screen space-y-6 px-4 sm:px-6 md:px-0"
+      style={{ backgroundColor: THEME.bgBeige }}
+    >
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="text-3xl font-bold" style={{ color: THEME.accent }}>
+          Settings
+        </h1>
         <p className="text-muted-foreground">Manage your account preferences and system settings</p>
       </div>
 
       <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="data">Data & Privacy</TabsTrigger>
-          <TabsTrigger value="system">System</TabsTrigger>
+        <TabsList
+          className="grid w-full grid-cols-5 rounded-lg text-white bg-red-700"
+          style={{ backgroundColor: THEME.accent }}
+        >
+          <TabsTrigger
+            value="general"
+            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+          >
+            General
+          </TabsTrigger>
+          <TabsTrigger
+            value="notifications"
+            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+          >
+            Notifications
+          </TabsTrigger>
+          <TabsTrigger
+            value="security"
+            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+          >
+            Security
+          </TabsTrigger>
+          <TabsTrigger
+            value="data"
+            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+          >
+            Data & Privacy
+          </TabsTrigger>
+          <TabsTrigger
+            value="system"
+            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+          >
+            System
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
           <Card>
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>Basic application preferences and display options</CardDescription>
+            <CardHeader
+              className="rounded-t-lg bg-red-700"
+              style={{ backgroundColor: THEME.accent }}
+            >
+              <CardTitle className="text-white">General Settings</CardTitle>
+              <CardDescription className="text-red-100">
+                Basic application preferences and display options
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -149,7 +188,9 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button>
+              <Button
+                className="bg-red-700 text-white hover:bg-red-800"
+              >
                 <Save className="h-4 w-4 mr-2" />
                 Save General Settings
               </Button>
@@ -159,9 +200,16 @@ const Settings = () => {
 
         <TabsContent value="notifications">
           <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Control how and when you receive notifications</CardDescription>
+            <CardHeader
+              className="rounded-t-lg bg-red-700"
+              style={{ backgroundColor: THEME.accent }}
+            >
+              <CardTitle className="text-white">
+                Notification Preferences
+              </CardTitle>
+              <CardDescription className="text-red-100">
+                Control how and when you receive notifications
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -212,7 +260,9 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button>
+              <Button
+                className="bg-red-700 text-white hover:bg-red-800"
+              >
                 <Bell className="h-4 w-4 mr-2" />
                 Save Notification Settings
               </Button>
@@ -222,9 +272,14 @@ const Settings = () => {
 
         <TabsContent value="security">
           <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Manage your account security and access controls</CardDescription>
+            <CardHeader
+              className="rounded-t-lg bg-red-700"
+              style={{ backgroundColor: THEME.accent }}
+            >
+              <CardTitle className="text-white">Security Settings</CardTitle>
+              <CardDescription className="text-red-100">
+                Manage your account security and access controls
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -241,10 +296,14 @@ const Settings = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-700 hover:bg-red-100"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     <Input
@@ -296,11 +355,14 @@ const Settings = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button>
+                <Button className="bg-red-700 text-white hover:bg-red-800">
                   <Shield className="h-4 w-4 mr-2" />
                   Save Security Settings
                 </Button>
-                <Button variant="outline" onClick={handlePasswordUpdate}>
+                <Button
+                  onClick={handlePasswordUpdate}
+                  className="bg-red-700 text-white hover:bg-red-800"
+                >
                   Update Password
                 </Button>
               </div>
@@ -310,9 +372,14 @@ const Settings = () => {
 
         <TabsContent value="data">
           <Card>
-            <CardHeader>
-              <CardTitle>Data & Privacy</CardTitle>
-              <CardDescription>Manage your data and privacy preferences</CardDescription>
+            <CardHeader
+              className="rounded-t-lg bg-red-700"
+              style={{ backgroundColor: THEME.accent }}
+            >
+              <CardTitle className="text-white">Data & Privacy</CardTitle>
+              <CardDescription className="text-red-100">
+                Manage your data and privacy preferences
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -321,7 +388,7 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     Download a copy of your academic records, attendance, and other data
                   </p>
-                  <Button variant="outline">
+                  <Button className="bg-red-700 text-white hover:bg-red-800">
                     <Download className="h-4 w-4 mr-2" />
                     Export Data
                   </Button>
@@ -332,7 +399,7 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     Import your data from previous academic systems
                   </p>
-                  <Button variant="outline">
+                  <Button className="bg-red-700 text-white hover:bg-red-800">
                     <Upload className="h-4 w-4 mr-2" />
                     Import Data
                   </Button>
@@ -343,7 +410,7 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     Permanently delete your account and all associated data
                   </p>
-                  <Button variant="destructive">
+                  <Button className="bg-red-700 text-white hover:bg-red-800">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Account
                   </Button>
@@ -355,9 +422,14 @@ const Settings = () => {
 
         <TabsContent value="system">
           <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-              <CardDescription>System administration and maintenance options</CardDescription>
+            <CardHeader
+              className="rounded-t-lg bg-red-700"
+              style={{ backgroundColor: THEME.accent }}
+            >
+              <CardTitle className="text-white">System Settings</CardTitle>
+              <CardDescription className="text-red-100">
+                System administration and maintenance options
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -366,7 +438,7 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     Create a backup of the system database
                   </p>
-                  <Button variant="outline">
+                  <Button className="bg-red-700 text-white hover:bg-red-800">
                     <Database className="h-4 w-4 mr-2" />
                     Create Backup
                   </Button>
@@ -377,7 +449,7 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     Perform system cleanup and optimization
                   </p>
-                  <Button variant="outline">
+                  <Button className="bg-red-700 text-white hover:bg-red-800">
                     <SettingsIcon className="h-4 w-4 mr-2" />
                     Run Maintenance
                   </Button>
