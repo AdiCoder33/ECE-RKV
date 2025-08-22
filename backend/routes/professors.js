@@ -24,6 +24,19 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     const prof = recordset[0];
+
+    const achResult = await executeQuery(
+      'SELECT id, title, description, date, category FROM professor_achievements WHERE professor_id = ?',
+      [professorId]
+    );
+    const achievements = achResult.recordset.map(row => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      date: row.date,
+      category: row.category
+    }));
+
     res.json({
       id: prof.id,
       name: prof.name,
@@ -33,7 +46,8 @@ router.get('/:id/profile', authenticateToken, async (req, res, next) => {
       profileImage: await resolveProfileImage(prof.profile_image),
       address: prof.address,
       bloodGroup: prof.blood_group,
-      dateOfBirth: prof.date_of_birth
+      dateOfBirth: prof.date_of_birth,
+      achievements
     });
   } catch (error) {
     console.error('Professor profile fetch error:', error);
@@ -123,6 +137,87 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     });
   } catch (error) {
     console.error('Professor profile update error:', error);
+    next(error);
+  }
+});
+
+// List professor achievements
+router.get('/:id/achievements', authenticateToken, async (req, res, next) => {
+  try {
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
+
+    const { recordset } = await executeQuery(
+      'SELECT id, title, description, date, category FROM professor_achievements WHERE professor_id = ?',
+      [professorId]
+    );
+    const achievements = recordset.map(row => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      date: row.date,
+      category: row.category
+    }));
+    res.json(achievements);
+  } catch (error) {
+    console.error('Professor achievements fetch error:', error);
+    next(error);
+  }
+});
+
+// Add a professor achievement
+router.post('/:id/achievements', authenticateToken, async (req, res, next) => {
+  try {
+    const professorId = parseInt(req.params.id, 10);
+    if (Number.isNaN(professorId)) {
+      console.warn('Invalid professor id:', req.params.id);
+      return res.status(400).json({ error: 'Invalid professor id' });
+    }
+
+    if (req.user.role !== 'admin' && req.user.role !== 'hod' && req.user.id !== professorId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const { title, description, date, category } = req.body;
+    const result = await executeQuery(
+      'INSERT INTO professor_achievements (professor_id, title, description, date, category) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?)',
+      [professorId, title, description, date, category]
+    );
+    const insertedId = result.recordset?.[0]?.id;
+    res.status(201).json({ id: insertedId, title, description, date, category });
+  } catch (error) {
+    console.error('Add professor achievement error:', error);
+    next(error);
+  }
+});
+
+// Delete a professor achievement
+router.delete('/:id/achievements/:achievementId', authenticateToken, async (req, res, next) => {
+  try {
+    const professorId = parseInt(req.params.id, 10);
+    const achievementId = parseInt(req.params.achievementId, 10);
+    if (Number.isNaN(professorId) || Number.isNaN(achievementId)) {
+      console.warn('Invalid professor or achievement id:', req.params.id, req.params.achievementId);
+      return res.status(400).json({ error: 'Invalid id' });
+    }
+
+    if (req.user.role !== 'admin' && req.user.role !== 'hod' && req.user.id !== professorId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const result = await executeQuery(
+      'DELETE FROM professor_achievements WHERE id = ? AND professor_id = ?',
+      [achievementId, professorId]
+    );
+    if (!result.rowsAffected || result.rowsAffected[0] === 0) {
+      return res.status(404).json({ error: 'Achievement not found' });
+    }
+    res.json({ message: 'Achievement deleted successfully' });
+  } catch (error) {
+    console.error('Delete professor achievement error:', error);
     next(error);
   }
 });

@@ -245,6 +245,19 @@ CREATE TABLE alumni_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Professor Achievements table
+CREATE TABLE professor_achievements (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    professor_id int NOT NULL,
+    title nvarchar(255) NOT NULL,
+    description nvarchar(max),
+    date date NOT NULL,
+    category nvarchar(100),
+    created_at datetime2 DEFAULT GETDATE(),
+    updated_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Messages table for private messaging
 CREATE TABLE messages (
     id int IDENTITY(1,1) PRIMARY KEY,
