@@ -28,7 +28,10 @@ async function runCheck() {
     const currentTime = now.format('HH:mm');
 
     const { recordset: slots } = await executeQuery(
-      'SELECT subject_id, year, semester, section, time FROM timetable WHERE day = ? AND LEFT(time,5) = ?',
+      `SELECT s.id AS subject_id, t.year, t.semester, t.section
+       FROM timetable t
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       WHERE t.day = ? AND LEFT(t.time,5) = ?`,
       [dayName, currentTime]
     );
 
