@@ -52,7 +52,7 @@ interface Achievement {
   date: string;
   category: string;
   _id?: string;
-  id?: string;
+  id?: string | number;
 }
 
 const Profile = () => {
@@ -363,7 +363,7 @@ const Profile = () => {
     }
   };
 
-  const handleDeleteAchievement = async (id?: string) => {
+  const handleDeleteAchievement = async (id?: string | number) => {
     if (!id || !viewedId) return;
     try {
       setError(null);
@@ -374,7 +374,7 @@ const Profile = () => {
       });
       if (!res.ok) throw new Error('Failed to delete achievement');
       setAchievements((prev) =>
-        prev.filter((a) => a._id !== id && a.id !== id)
+        prev.filter((a) => a._id != id && a.id != id)
       );
     } catch (err) {
       setError((err as Error).message);
@@ -772,7 +772,9 @@ const Profile = () => {
                                         <AlertDialogAction
                                           className="bg-[#b91c1c] text-white hover:bg-[#991b1b]"
                                           onClick={() =>
-                                            handleDeleteAchievement(achievement._id)
+                                            handleDeleteAchievement(
+                                              achievement.id ?? achievement._id
+                                            )
                                           }
                                         >
                                           Delete
