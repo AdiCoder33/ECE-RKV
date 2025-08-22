@@ -796,7 +796,7 @@ const Profile = () => {
                       }
                     }}
                   >
-                    <DialogContent className="bg-[#fff8f3] border-[#b91c1c]">
+                    <DialogContent className="sm:max-w-[500px] mx-auto bg-[#fff8f3] border-[#b91c1c]">
                       <DialogHeader>
                         <DialogTitle className="text-[#b91c1c]">
                           {editingAchievement ? 'Edit Achievement' : 'Add Achievement'}
