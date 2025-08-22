@@ -124,6 +124,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const align = isOwn ? 'items-end justify-end' : 'items-start justify-start';
   const margin = isOwn ? 'ml-auto' : 'mr-auto';
 
+  const isEdited =
+    'updated_at' in message &&
+    message.updated_at &&
+    message.updated_at !== message.created_at;
+
   return (
     <div
       className={`flex flex-col ${align} mb-2 px-2 ${selected ? 'bg-green-100/40' : ''}`}
@@ -144,12 +149,17 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </div>
       </div>
       {/* Message bubble */}
-      <div className={`relative ${margin}`}>
+      <div className={`relative ${margin} text-left`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''}`}
+          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} text-left`}
         >
           {message.content}
         </div>
+        {isEdited && (
+          <div className="pl-2 pt-1 text-[11px] italic text-gray-400 text-left">
+            edited
+          </div>
+        )}
         <span
           className={`absolute -bottom-5 right-2 text-[10px] ${
             isOwn ? 'text-gray-200' : 'text-gray-500'

@@ -147,36 +147,40 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <>
-      <CardHeader className="pb-3 border-b">
+      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-t-2xl shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onBack}>
+            <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <CardTitle className="text-lg">{activeChat.title}</CardTitle>
+            <CardTitle className="text-lg text-white font-bold">{activeChat.title}</CardTitle>
           </div>
           <div className="flex gap-2">
             {selectedMsg ? (
               isOwn ? (
                 <>
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(selectedMsg)}>
-                    <Pencil className="h-4 w-4" />
+                  <Button
+                    className="bg-[#fbeee6] text-[#8B1F2F] hover:bg-[#f5e6e9] rounded shadow px-3 py-1 text-xs font-semibold"
+                    onClick={() => handleEdit(selectedMsg)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(selectedMsg)}>
-                    <Trash className="h-4 w-4" />
+                  <Button
+                    className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded shadow px-3 py-1 text-xs font-semibold"
+                    onClick={() => handleDelete(selectedMsg)}
+                  >
+                    <Trash className="h-4 w-4 mr-1" /> Delete
                   </Button>
                 </>
               ) : (
-                <span className="text-xs text-muted-foreground self-center">
-                  Not your message
-                </span>
+                <span className="text-xs text-white self-center italic">Not your message</span>
               )
             ) : (
               <>
-                <Button variant="ghost" size="icon" onClick={onOpenGroupDialog}>
+                <Button variant="ghost" size="icon" onClick={onOpenGroupDialog} className="text-white">
                   <UserPlus className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden">
+                <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden text-white">
                   <X className="h-4 w-4" />
                 </Button>
               </>
@@ -224,7 +228,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </>
         )}
       </CardContent>
-      <div className="border-t p-4">
+      <div className="border-t bg-[#fbeee6] px-4 py-3 rounded-b-2xl">
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {attachments.map((att, idx) => (
@@ -244,11 +248,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             onChange={onMessageChange}
             onKeyDown={handleKeyDown}
             placeholder={`Message ${activeChat.title}...`}
-            className="flex-1"
+            className="flex-1 rounded-lg border-none bg-white focus:ring-2 focus:ring-[#8B1F2F] text-gray-900"
+            style={{ minHeight: 44 }}
           />
           <EmojiPicker onEmojiSelect={onEmojiSelect} />
           <FileUpload onFileSelect={onFileSelect} disabled={false} />
-          <Button onClick={handleSend} disabled={!message.trim() && attachments.length === 0}>
+          <Button
+            onClick={handleSend}
+            disabled={!message.trim() && attachments.length === 0}
+            className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded-lg shadow px-4 py-2"
+          >
             <MessageSquare className="h-4 w-4" />
           </Button>
         </div>
