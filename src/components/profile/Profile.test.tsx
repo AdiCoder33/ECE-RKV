@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, waitFor, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
@@ -123,5 +124,48 @@ describe('Student profile endpoints', () => {
       expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'http://example.com/avatar.png')
     );
     expect(mockCacheProfileImage).toHaveBeenCalledWith('http://example.com/avatar.png');
+  });
+});
+
+describe('Achievement dialog layout', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.clear();
+    mockUseAuth.mockReturnValue({ user: { id: 1, name: 'Alice', role: 'professor' } });
+    localStorage.setItem('token', 'test-token');
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('applies responsive width and centering classes', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ achievements: [] }),
+    });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    const tab = await screen.findByRole('tab', { name: /Achievements/i });
+    await userEvent.click(tab);
+    const addBtn = await screen.findByRole('button', { name: /Add Achievement/i });
+    await userEvent.click(addBtn);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveClass('mx-auto');
+    expect(dialog).toHaveClass('sm:max-w-[500px]');
+
+    (window as any).innerWidth = 500;
+    window.dispatchEvent(new Event('resize'));
+
+    expect(dialog).toHaveClass('mx-auto');
+    expect(dialog).toHaveClass('sm:max-w-[500px]');
   });
 });
