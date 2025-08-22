@@ -19,12 +19,30 @@ import {
   Building,
   Sparkles,
   Star,
+  Trash,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import loaderMp4 from '@/Assets/loader.mp4';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 import { cacheProfileImage } from '@/lib/profileImageCache';
+
+interface Achievement {
+  title: string;
+  description: string;
+  date: string;
+  category: string;
+  _id?: string;
+  id?: string;
+}
 
 const Profile = () => {
   const { user } = useAuth();
@@ -70,6 +88,15 @@ const Profile = () => {
     }[],
   });
 
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [showAchievementDialog, setShowAchievementDialog] = useState(false);
+  const [newAchievement, setNewAchievement] = useState<Achievement>({
+    title: '',
+    description: '',
+    date: '',
+    category: '',
+  });
+
   const profileImageSrc = useProfileImageSrc(profileImage);
 
   useEffect(() => {
@@ -111,6 +138,7 @@ const Profile = () => {
         }));
         setDepartment(data.department || '');
         setProfileImage(data.profileImage || '');
+        setAchievements(data.achievements ?? []);
 
         if (viewedRole === 'student') {
           setAcademicData({
@@ -267,6 +295,47 @@ const Profile = () => {
     }
   };
 
+  const handleAddAchievement = async () => {
+    if (!viewedId) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/professors/${viewedId}/achievements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newAchievement),
+      });
+      if (!res.ok) throw new Error('Failed to add achievement');
+      const data = await res.json();
+      setAchievements((prev) => [...prev, data]);
+      setShowAchievementDialog(false);
+      setNewAchievement({ title: '', description: '', date: '', category: '' });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleDeleteAchievement = async (id?: string) => {
+    if (!id || !viewedId) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/professors/${viewedId}/achievements/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete achievement');
+      setAchievements((prev) =>
+        prev.filter((a) => a._id !== id && a.id !== id)
+      );
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'admin':
@@ -283,27 +352,6 @@ const Profile = () => {
         return 'bg-gray-600 text-white';
     }
   };
-
-  const achievements = [
-    {
-      title: 'Best Project Award 2023',
-      description: 'IoT-based Smart Home Automation System',
-      date: '2023-05-15',
-      category: 'technical',
-    },
-    {
-      title: 'Inter-college Quiz Competition',
-      description: 'First Prize in Technical Quiz',
-      date: '2023-03-20',
-      category: 'academic',
-    },
-    {
-      title: 'Hackathon Winner',
-      description: 'Smart City Solutions Hackathon',
-      date: '2023-01-10',
-      category: 'technical',
-    },
-  ];
 
   const getInitials = (name: string) => {
     if (!name) return '';
@@ -625,7 +673,7 @@ const Profile = () => {
                     {achievements.length > 0 ? (
                       achievements.map((achievement, index) => (
                         <div
-                          key={index}
+                          key={achievement._id || index}
                           className="border-l-4 border-[#b91c1c] pl-4 py-3 bg-[#fff8f3] rounded-lg shadow-sm border border-[#b91c1c]"
                         >
                           <div className="flex items-start justify-between">
@@ -648,7 +696,18 @@ const Profile = () => {
                                 </Badge>
                               </div>
                             </div>
-                            <Trophy className="h-6 w-6 text-[#b91c1c]" />
+                            <div className="flex items-center gap-2">
+                              <Trophy className="h-6 w-6 text-[#b91c1c]" />
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteAchievement(achievement._id)}
+                                >
+                                  <Trash className="h-4 w-4 text-[#b91c1c]" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))
@@ -664,11 +723,77 @@ const Profile = () => {
                     <Button
                       variant="outline"
                       className="w-full mt-4 border-[#b91c1c] text-[#b91c1c] hover:bg-[#fbeee6]"
+                      onClick={() => setShowAchievementDialog(true)}
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Add Achievement
                     </Button>
                   )}
+                  <Dialog
+                    open={showAchievementDialog}
+                    onOpenChange={setShowAchievementDialog}
+                  >
+                    <DialogContent className="bg-[#fff8f3] border-[#b91c1c]">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#b91c1c]">
+                          Add Achievement
+                        </DialogTitle>
+                        <DialogDescription className="text-[#2563eb]">
+                          Enter details for the new achievement.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Title"
+                          value={newAchievement.title}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({
+                              ...prev,
+                              title: e.target.value,
+                            }))
+                          }
+                        />
+                        <Textarea
+                          placeholder="Description"
+                          value={newAchievement.description}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
+                          }
+                        />
+                        <Input
+                          type="date"
+                          value={newAchievement.date}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({
+                              ...prev,
+                              date: e.target.value,
+                            }))
+                          }
+                        />
+                        <Input
+                          placeholder="Category"
+                          value={newAchievement.category}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({
+                              ...prev,
+                              category: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <DialogFooter className="mt-4">
+                        <Button
+                          onClick={handleAddAchievement}
+                          className="bg-[#b91c1c] text-white hover:bg-[#a31515]"
+                        >
+                          Save
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             </TabsContent>
