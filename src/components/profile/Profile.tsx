@@ -96,6 +96,7 @@ const Profile = () => {
     date: '',
     category: '',
   });
+  const [editingAchievement, setEditingAchievement] = useState<Achievement | null>(null);
 
   const profileImageSrc = useProfileImageSrc(profileImage);
 
@@ -295,23 +296,56 @@ const Profile = () => {
     }
   };
 
-  const handleAddAchievement = async () => {
+  const handleEditAchievement = (achievement: Achievement) => {
+    setEditingAchievement(achievement);
+    setNewAchievement({
+      title: achievement.title,
+      description: achievement.description,
+      date: achievement.date ? achievement.date.split('T')[0] : '',
+      category: achievement.category,
+    });
+    setShowAchievementDialog(true);
+  };
+
+  const handleSaveAchievement = async () => {
     if (!viewedId) return;
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      const res = await fetch(`${apiBase}/professors/${viewedId}/achievements`, {
-        method: 'POST',
+
+      const isEditing = !!editingAchievement;
+      const url = isEditing
+        ? `${apiBase}/professors/${viewedId}/achievements/${
+            editingAchievement?._id || editingAchievement?.id
+          }`
+        : `${apiBase}/professors/${viewedId}/achievements`;
+
+      const res = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newAchievement),
       });
-      if (!res.ok) throw new Error('Failed to add achievement');
+
+      if (!res.ok)
+        throw new Error(
+          isEditing ? 'Failed to update achievement' : 'Failed to add achievement'
+        );
+
       const data = await res.json();
-      setAchievements((prev) => [...prev, data]);
+
+      setAchievements((prev) => {
+        if (!isEditing) return [...prev, data];
+        const id = editingAchievement?._id || editingAchievement?.id;
+        return prev.map((a) =>
+          a._id === id || a.id === id ? data : a
+        );
+      });
+
       setShowAchievementDialog(false);
+      setEditingAchievement(null);
       setNewAchievement({ title: '', description: '', date: '', category: '' });
     } catch (err) {
       setError((err as Error).message);
@@ -699,13 +733,22 @@ const Profile = () => {
                             <div className="flex items-center gap-2">
                               <Trophy className="h-6 w-6 text-[#b91c1c]" />
                               {canEdit && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteAchievement(achievement._id)}
-                                >
-                                  <Trash className="h-4 w-4 text-[#b91c1c]" />
-                                </Button>
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditAchievement(achievement)}
+                                  >
+                                    <Edit className="h-4 w-4 text-[#b91c1c]" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteAchievement(achievement._id)}
+                                  >
+                                    <Trash className="h-4 w-4 text-[#b91c1c]" />
+                                  </Button>
+                                </>
                               )}
                             </div>
                           </div>
@@ -723,7 +766,16 @@ const Profile = () => {
                     <Button
                       variant="outline"
                       className="w-full mt-4 border-[#b91c1c] text-[#b91c1c] hover:bg-[#fbeee6]"
-                      onClick={() => setShowAchievementDialog(true)}
+                      onClick={() => {
+                        setEditingAchievement(null);
+                        setNewAchievement({
+                          title: '',
+                          description: '',
+                          date: '',
+                          category: '',
+                        });
+                        setShowAchievementDialog(true);
+                      }}
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Add Achievement
@@ -731,15 +783,28 @@ const Profile = () => {
                   )}
                   <Dialog
                     open={showAchievementDialog}
-                    onOpenChange={setShowAchievementDialog}
+                    onOpenChange={(open) => {
+                      setShowAchievementDialog(open);
+                      if (!open) {
+                        setEditingAchievement(null);
+                        setNewAchievement({
+                          title: '',
+                          description: '',
+                          date: '',
+                          category: '',
+                        });
+                      }
+                    }}
                   >
                     <DialogContent className="bg-[#fff8f3] border-[#b91c1c]">
                       <DialogHeader>
                         <DialogTitle className="text-[#b91c1c]">
-                          Add Achievement
+                          {editingAchievement ? 'Edit Achievement' : 'Add Achievement'}
                         </DialogTitle>
                         <DialogDescription className="text-[#2563eb]">
-                          Enter details for the new achievement.
+                          {editingAchievement
+                            ? 'Update the achievement details.'
+                            : 'Enter details for the new achievement.'}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -786,7 +851,7 @@ const Profile = () => {
                       </div>
                       <DialogFooter className="mt-4">
                         <Button
-                          onClick={handleAddAchievement}
+                          onClick={handleSaveAchievement}
                           className="bg-[#b91c1c] text-white hover:bg-[#a31515]"
                         >
                           Save
