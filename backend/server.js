@@ -32,6 +32,7 @@ const professorRoutes = require('./routes/professors');
 const publicRoutes = require('./routes/public');
 const deviceRoutes = require('./routes/devices');
 const pushRoutes = require('./routes/push');
+const { startAttendanceAlertScheduler } = require('./services/attendanceAlertScheduler');
 
 // Middleware
 app.use(cors({
@@ -93,6 +94,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 connectToDatabase().then(() => {
+  startAttendanceAlertScheduler();
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

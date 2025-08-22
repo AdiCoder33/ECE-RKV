@@ -349,3 +349,4 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
 });
 
 module.exports = router;
+module.exports.shouldSendAttendanceReminder = shouldSendAttendanceReminder;
