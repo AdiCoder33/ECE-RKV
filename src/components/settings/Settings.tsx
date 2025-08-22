@@ -103,36 +103,36 @@ const Settings = () => {
 
       <Tabs defaultValue="general" className="space-y-4">
         <TabsList
-          className="grid w-full grid-cols-5 rounded-lg text-white bg-red-700"
+          className="flex flex-wrap gap-2 sm:grid sm:grid-cols-5 w-full rounded-lg text-white bg-red-700"
           style={{ backgroundColor: THEME.accent }}
         >
           <TabsTrigger
             value="general"
-            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+            className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
           >
             General
           </TabsTrigger>
           <TabsTrigger
             value="notifications"
-            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+            className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
           >
             Notifications
           </TabsTrigger>
           <TabsTrigger
             value="security"
-            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+            className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
           >
             Security
           </TabsTrigger>
           <TabsTrigger
             value="data"
-            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+            className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
           >
             Data & Privacy
           </TabsTrigger>
           <TabsTrigger
             value="system"
-            className="hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
+            className="flex-1 text-xs sm:text-sm hover:bg-red-800 data-[state=active]:bg-red-800 transition-colors"
           >
             System
           </TabsTrigger>
