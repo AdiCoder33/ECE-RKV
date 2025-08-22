@@ -194,6 +194,53 @@ router.post('/:id/achievements', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Update a professor achievement
+router.put('/:id/achievements/:achievementId', authenticateToken, async (req, res, next) => {
+  try {
+    const professorId = parseInt(req.params.id, 10);
+    const achievementId = parseInt(req.params.achievementId, 10);
+    if (Number.isNaN(professorId) || Number.isNaN(achievementId)) {
+      console.warn('Invalid professor or achievement id:', req.params.id, req.params.achievementId);
+      return res.status(400).json({ error: 'Invalid id' });
+    }
+
+    if (req.user.role !== 'admin' && req.user.role !== 'hod' && req.user.id !== professorId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const { title, description, date, category } = req.body;
+    const result = await executeQuery(
+      'UPDATE professor_achievements SET title = ?, description = ?, date = ?, category = ? WHERE id = ? AND professor_id = ?',
+      [title, description, date, category, achievementId, professorId]
+    );
+
+    if (!result.rowsAffected || result.rowsAffected[0] === 0) {
+      return res.status(404).json({ error: 'Achievement not found' });
+    }
+
+    const { recordset } = await executeQuery(
+      'SELECT id, title, description, date, category FROM professor_achievements WHERE id = ? AND professor_id = ?',
+      [achievementId, professorId]
+    );
+
+    if (!recordset.length) {
+      return res.status(404).json({ error: 'Achievement not found' });
+    }
+
+    const updated = recordset[0];
+    res.json({
+      id: updated.id,
+      title: updated.title,
+      description: updated.description,
+      date: updated.date,
+      category: updated.category
+    });
+  } catch (error) {
+    console.error('Update professor achievement error:', error);
+    next(error);
+  }
+});
+
 // Delete a professor achievement
 router.delete('/:id/achievements/:achievementId', authenticateToken, async (req, res, next) => {
   try {
