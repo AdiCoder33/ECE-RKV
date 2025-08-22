@@ -410,6 +410,40 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get push notification preference
+router.get('/:id/push', authenticateToken, async (req, res, next) => {
+  try {
+    const { recordset } = await executeQuery(
+      'SELECT push_enabled FROM users WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (!recordset.length) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ pushEnabled: recordset[0].push_enabled === 1 });
+  } catch (error) {
+    console.error('Fetch push preference error:', error);
+    next(error);
+  }
+});
+
+// Update push notification preference
+router.put('/:id/push', authenticateToken, async (req, res, next) => {
+  try {
+    const { enabled } = req.body;
+    await executeQuery(
+      'UPDATE users SET push_enabled = ? WHERE id = ?',
+      [enabled ? 1 : 0, req.params.id]
+    );
+    res.json({ message: 'Push preference updated' });
+  } catch (error) {
+    console.error('Update push preference error:', error);
+    next(error);
+  }
+});
+
 // Transfer HOD role
 router.put('/:id/transfer-hod', authenticateToken, async (req, res, next) => {
   try {

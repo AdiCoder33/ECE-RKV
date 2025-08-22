@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { enablePush, disablePush, isSubscribed } from '@/push';
+import { enablePush, disablePush, registerDevice, unregisterDevice } from '@/push';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NotifyToggle: React.FC = () => {
@@ -11,21 +11,43 @@ const NotifyToggle: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    isSubscribed().then(setEnabled).catch(() => setEnabled(false));
-  }, []);
+    if (!user?.id) return;
+    const apiBase = import.meta.env.VITE_API_URL || '/api';
+    fetch(`${apiBase}/users/${user.id}/push`, { credentials: 'include' })
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((data) => setEnabled(!!data.pushEnabled))
+      .catch(() => setEnabled(false));
+  }, [user?.id]);
 
   const handleChange = async (checked: boolean) => {
     setLoading(true);
     try {
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
       if (checked) {
         if (!user?.id) {
           throw new Error('User not authenticated');
         }
+        await registerDevice('web');
         await enablePush([], user.id);
+        await fetch(`${apiBase}/users/${user.id}/push`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ enabled: true }),
+        });
         setEnabled(true);
         setError(null);
       } else {
+        await unregisterDevice();
         await disablePush();
+        if (user?.id) {
+          await fetch(`${apiBase}/users/${user.id}/push`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ enabled: false }),
+          });
+        }
         setEnabled(false);
         setError(null);
       }

@@ -18,6 +18,43 @@ export async function getPublicKey(): Promise<string> {
   return data.publicKey as string;
 }
 
+const DEVICE_TOKEN_KEY = 'push_device_token';
+
+function generateToken(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2);
+}
+
+export async function registerDevice(platform = 'web'): Promise<string> {
+  const token = localStorage.getItem(DEVICE_TOKEN_KEY) || generateToken();
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  await fetch(`${apiBase}/devices/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, platform }),
+    credentials: 'include',
+  });
+  localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  return token;
+}
+
+export async function unregisterDevice(): Promise<void> {
+  const token = localStorage.getItem(DEVICE_TOKEN_KEY);
+  if (!token) return;
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  try {
+    await fetch(`${apiBase}/devices/${token}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+  } catch (err) {
+    console.error('Failed to unregister device', err);
+  }
+  localStorage.removeItem(DEVICE_TOKEN_KEY);
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');

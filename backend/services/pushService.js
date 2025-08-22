@@ -28,7 +28,7 @@ if (
     try {
       const placeholders = userIds.map(() => '?').join(',');
       const { recordset } = await executeQuery(
-        `SELECT token FROM device_tokens WHERE user_id IN (${placeholders})`,
+        `SELECT dt.token FROM device_tokens dt JOIN users u ON dt.user_id = u.id WHERE dt.user_id IN (${placeholders}) AND u.push_enabled = 1`,
         userIds
       );
       const tokens = recordset.map((row) => row.token).filter(Boolean);
@@ -84,7 +84,7 @@ if (
     try {
       const placeholders = userIds.map(() => '?').join(',');
       const { recordset } = await executeQuery(
-        `SELECT endpoint, keys_p256dh, keys_auth FROM push_subscriptions WHERE user_id IN (${placeholders})`,
+        `SELECT ps.endpoint, ps.keys_p256dh, ps.keys_auth FROM push_subscriptions ps JOIN users u ON ps.user_id = u.id WHERE ps.user_id IN (${placeholders}) AND u.push_enabled = 1`,
         userIds
       );
 
