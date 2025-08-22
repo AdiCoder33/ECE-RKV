@@ -184,7 +184,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 flex flex-col">
+      <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin" />

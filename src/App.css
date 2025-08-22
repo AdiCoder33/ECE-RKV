@@ -57,3 +57,10 @@
 .theme-dark .bg-gray-100 { background-color: #23272f !important; }
 .theme-dark .bg-red-700 { background-color: #b91c1c !important; }
 .theme-dark .text-red-700 { color: #f87171 !important; }
+
+
+.chat-bg-whatsapp {
+  background-color: #ece5dd;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='none'/%3E%3Cpath d='M30 0C13.4315 0 0 13.4315 0 30C0 46.5685 13.4315 60 30 60C46.5685 60 60 46.5685 60 30C60 13.4315 46.5685 0 30 0ZM30 56C15.6645 56 4 44.3355 4 30C4 15.6645 15.6645 4 30 4C44.3355 4 56 15.6645 56 30C56 44.3355 44.3355 56 30 56Z' fill='%23dadada' fill-opacity='0.18'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
