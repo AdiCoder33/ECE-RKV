@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,41 +16,69 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+interface Stat {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ComponentType<any>;
+  color: string;
+  bgColor: string;
+}
+
 const AdminDashboard = () => {
-  const stats = [
-    {
-      title: 'Total Students',
-      value: '2,847',
-      change: '+12%',
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      title: 'Active Professors',
-      value: '156',
-      change: '+3%',
-      icon: GraduationCap,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      title: 'Active Classes',
-      value: '20',
-      change: '0%',
-      icon: BookOpen,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      title: 'Courses',
-      value: '324',
-      change: '+8%',
-      icon: FileText,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
-    }
-  ];
+  const [stats, setStats] = useState<Stat[]>([]);
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${apiBase}/analytics/overview`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats([
+            {
+              title: 'Total Students',
+              value: String(data.totalUsers ?? 0),
+              change: '0%',
+              icon: Users,
+              color: 'text-blue-600',
+              bgColor: 'bg-blue-50'
+            },
+            {
+              title: 'Active Professors',
+              value: String(data.totalProfessors ?? 0),
+              change: '0%',
+              icon: GraduationCap,
+              color: 'text-green-600',
+              bgColor: 'bg-green-50'
+            },
+            {
+              title: 'Active Classes',
+              value: String(data.totalClasses ?? 0),
+              change: '0%',
+              icon: BookOpen,
+              color: 'text-purple-600',
+              bgColor: 'bg-purple-50'
+            },
+            {
+              title: 'Courses',
+              value: String(data.totalSubjects ?? 0),
+              change: '0%',
+              icon: FileText,
+              color: 'text-orange-600',
+              bgColor: 'bg-orange-50'
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics overview', error);
+      }
+    };
+    fetchStats();
+  }, [apiBase, token]);
 
   const enrollmentData = [
     { year: '1st Year', students: 800 },

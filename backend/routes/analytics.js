@@ -8,8 +8,10 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
   try {
     const userResult = await executeQuery('SELECT role, COUNT(*) as count FROM users GROUP BY role');
     const userStats = userResult.recordset;
+
     const subjectResult = await executeQuery('SELECT COUNT(*) as total_subjects FROM subjects');
     const subjectStats = subjectResult.recordset;
+
     const attendanceResult = await executeQuery(`
       SELECT
         AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) as avg_attendance
@@ -17,11 +19,23 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       WHERE date >= DATEADD(DAY, -30, GETDATE())
     `);
     const attendanceStats = attendanceResult.recordset;
-    
+
+    const classesResult = await executeQuery('SELECT COUNT(*) AS total_classes FROM classes');
+    const totalClasses = classesResult.recordset[0].total_classes;
+
+    const studentsResult = await executeQuery("SELECT COUNT(*) AS total_users FROM users WHERE role='student'");
+    const totalUsers = studentsResult.recordset[0].total_users;
+
+    const professorsResult = await executeQuery("SELECT COUNT(*) AS total_professors FROM users WHERE role='professor'");
+    const totalProfessors = professorsResult.recordset[0].total_professors;
+
     res.json({
       userStats,
       totalSubjects: subjectStats[0].total_subjects,
-      avgAttendance: Math.round(attendanceStats[0].avg_attendance * 100) / 100
+      avgAttendance: Math.round(attendanceStats[0].avg_attendance * 100) / 100,
+      totalClasses,
+      totalUsers,
+      totalProfessors
     });
   } catch (error) {
     console.error('Analytics overview error:', error);
