@@ -204,10 +204,10 @@ router.put('/:messageId', authenticateToken, async (req, res, next) => {
     const userId = req.user.id;
     const query = `
       UPDATE Messages
-      SET content = ?, edited_at = GETUTCDATE()
+      SET content = ?, edited_at = GETUTCDATE(), is_read = 0, delivered_at = NULL
       OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id,
              INSERTED.content, INSERTED.message_type, INSERTED.attachments,
-             INSERTED.is_read, INSERTED.created_at, INSERTED.edited_at
+             INSERTED.is_read, INSERTED.delivered_at, INSERTED.created_at, INSERTED.edited_at
       WHERE id = ? AND sender_id = ?;
     `;
     const { recordset } = await executeQuery(query, [content, messageId, userId]);

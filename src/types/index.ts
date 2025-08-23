@@ -63,6 +63,7 @@ export interface ChatMessage {
   receiverId?: number;
   sender_profileImage?: string;
   attachments?: Attachment[];
+  edited_at?: string | null;
 }
 
 export interface PrivateMessage {
@@ -78,6 +79,7 @@ export interface PrivateMessage {
   status: 'sending' | 'sent' | 'delivered' | 'read';
   sender_profileImage?: string;
   attachments?: Attachment[];
+  edited_at?: string | null;
 }
 
 export interface Attachment {

@@ -502,8 +502,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           method: 'PUT',
           body: JSON.stringify({ content: sanitized }),
         });
+        const editedAt = new Date().toISOString();
         setPrivateMessages(prev =>
-          prev.map(msg => (msg.id === m.id ? { ...msg, content: sanitized } : msg))
+          prev.map(msg =>
+            msg.id === m.id
+              ? { ...msg, content: sanitized, status: 'sent', edited_at: editedAt }
+              : msg
+          )
         );
       }
     } catch {
@@ -604,9 +609,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     socket.on('private-message-edit', (m: PrivateMessage) => {
+      const status = m.is_read
+        ? 'read'
+        : m.delivered_at
+          ? 'delivered'
+          : 'sent';
+      const msgWithStatus = { ...m, status };
       setPrivateMessages(prev =>
-        prev.map(msg => (msg.id === m.id ? { ...msg, ...m } : msg))
+        prev.map(msg => (msg.id === m.id ? { ...msg, ...msgWithStatus } : msg))
       );
+      socket.emit('message-delivered', { messageId: m.id });
     });
 
     socket.on('message-delivered', (data: { messageId: string }) => {
