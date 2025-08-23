@@ -4,17 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import type { Complaint } from '@/types';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
-
-interface Complaint {
-  id: number;
-  type: string;
-  content: string;
-  is_anonymous: boolean;
-  created_at: string;
-  student_name: string;
-}
 
 const ComplaintList: React.FC = () => {
   const { user } = useAuth();
@@ -33,8 +25,17 @@ const ComplaintList: React.FC = () => {
         if (!response.ok) {
           throw new Error('Failed to fetch complaints');
         }
-        const data: Complaint[] = await response.json();
-        setComplaints(data);
+        const data = await response.json();
+        const complaintsData: Complaint[] = data.map((c: any) => ({
+          id: c.id,
+          studentId: c.student_id,
+          studentName: c.student_name,
+          type: c.type,
+          content: c.content,
+          isAnonymous: c.is_anonymous,
+          createdAt: c.created_at,
+        }));
+        setComplaints(complaintsData);
       } catch (err) {
         console.error('Fetch complaints error', err);
       }
@@ -76,12 +77,12 @@ const ComplaintList: React.FC = () => {
               <TableRow key={c.id}>
                 <TableCell>{c.type}</TableCell>
                 <TableCell>{getSnippet(c.content)}</TableCell>
-                <TableCell>{new Date(c.created_at).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  {c.is_anonymous ? (
+                  {c.isAnonymous ? (
                     revealed[c.id] ? (
                       <>
-                        {c.student_name}{' '}
+                        {c.studentName}{' '}
                         <Button variant="link" size="sm" onClick={() => toggleReveal(c.id)}>
                           Hide
                         </Button>
@@ -95,7 +96,7 @@ const ComplaintList: React.FC = () => {
                       </>
                     )
                   ) : (
-                    c.student_name
+                    c.studentName
                   )}
                 </TableCell>
               </TableRow>
