@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Bubble color logic
   const bubbleClass =
-    "relative inline-block whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] w-fit break-words transition-colors after:content-[''] after:absolute after:-bottom-1 after:w-3 after:h-3 after:bg-inherit after:rotate-45";
+    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -113,24 +113,24 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </div>
       )}
       {/* Message bubble */}
-      <div className={`relative ${margin} text-left`}>
+      <div className={`${margin} text-left`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} ${isOwn ? 'pr-12 after:-right-1 after:rounded-br-sm' : 'pr-8 after:-left-1 after:rounded-bl-sm'}`}
+          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''}`}
         >
-          {message.content}
+          <span className="flex-1">{message.content}</span>
           <span
-            className={`absolute bottom-1 right-2 flex gap-1 text-xs ${
+            className={`ml-2 flex items-end text-xs ${
               isOwn ? 'text-gray-200' : 'text-gray-500'
             }`}
           >
             {timeStr}
             {isOwn && (
               message.status === 'read' ? (
-                <CheckCheck className="w-3 h-3 text-blue-500" />
+                <CheckCheck className="w-3 h-3 ml-1 text-blue-500" />
               ) : message.status === 'delivered' ? (
-                <CheckCheck className="w-3 h-3 text-gray-400" />
+                <CheckCheck className="w-3 h-3 ml-1 text-gray-400" />
               ) : message.status === 'sent' ? (
-                <Check className="w-3 h-3 text-gray-400" />
+                <Check className="w-3 h-3 ml-1 text-gray-400" />
               ) : null
             )}
           </span>
