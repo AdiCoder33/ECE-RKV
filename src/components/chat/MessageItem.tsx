@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Bubble color logic
   const bubbleClass =
-    'relative inline-block whitespace-pre-wrap px-4 py-2 pr-12 rounded-xl shadow-sm max-w-[75%] min-w-[3rem] break-words transition-colors after:content-[""] after:absolute after:-bottom-1 after:w-3 after:h-3 after:bg-inherit after:rotate-45';
+    'relative inline-block whitespace-pre-wrap px-3 py-2 pr-10 rounded-xl shadow-sm max-w-[65%] w-fit min-w-[3rem] break-words break-all transition-colors after:content-[""] after:absolute after:-bottom-1 after:w-3 after:h-3 after:bg-inherit after:rotate-45';
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -101,7 +101,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   return (
     <div
-      className={`flex flex-col ${align} mb-2 px-2 ${selected ? 'bg-green-100/40' : ''}`}
+      className={`flex flex-col ${align} mb-1 px-1 ${selected ? 'bg-green-100/40' : ''}`}
       onContextMenu={handleContext}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
