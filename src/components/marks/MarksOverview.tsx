@@ -130,14 +130,30 @@ const MarksOverview: React.FC = () => {
       style={{ background: THEME.bgCream }}
     >
       <div className="w-full max-w-5xl space-y-6 px-1 sm:px-2 py-2 sm:py-4 md:px-4">
+        {/* Heading */}
+        <div className="w-full flex flex-col items-center mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#8b0000] text-center">
+            Marks Overview
+          </h1>
+          <p className="text-[#a52a2a] text-sm sm:text-base text-center">
+            View student marks by class, exam, and subject
+          </p>
+        </div>
         {/* Filters */}
         <Card className="shadow-lg border-[#b86b2e]">
           <CardHeader>
-            <CardTitle className="text-[#8b0000]">Filters</CardTitle>
+            <CardTitle className="text-[#8b0000] text-lg sm:text-xl">Filters</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
-            <div>
-              <label className="text-sm font-semibold text-[#8b0000] mb-2 block">Year</label>
+          <CardContent
+            className="
+              grid grid-cols-2
+              sm:grid-cols-2
+              md:grid-cols-5
+              gap-3 sm:gap-4
+              "
+          >
+            <div className="col-span-1">
+              <label className="text-xs sm:text-sm font-semibold text-[#8b0000] mb-2 block">Year</label>
               <Select value={year} onValueChange={setYear}>
                 <SelectTrigger className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
@@ -152,8 +168,8 @@ const MarksOverview: React.FC = () => {
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-[#b86b2e] mb-2 block">Semester</label>
+            <div className="col-span-1">
+              <label className="text-xs sm:text-sm font-semibold text-[#b86b2e] mb-2 block">Semester</label>
               <Select value={semester} onValueChange={setSemester}>
                 <SelectTrigger className="border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
@@ -165,8 +181,8 @@ const MarksOverview: React.FC = () => {
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-[#345b7a] mb-2 block">Section</label>
+            <div className="col-span-1">
+              <label className="text-xs sm:text-sm font-semibold text-[#345b7a] mb-2 block">Section</label>
               <Select value={section} onValueChange={setSection}>
                 <SelectTrigger className="border-[#345b7a] bg-[#e8f0fb] text-[#345b7a] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
@@ -181,8 +197,8 @@ const MarksOverview: React.FC = () => {
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-[#a52a2a] mb-2 block">Exam Type</label>
+            <div className="col-span-1">
+              <label className="text-xs sm:text-sm font-semibold text-[#a52a2a] mb-2 block">Exam Type</label>
               <Select value={examType} onValueChange={setExamType}>
                 <SelectTrigger className="border-[#a52a2a] bg-[#fde8e6] text-[#a52a2a] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
@@ -195,8 +211,8 @@ const MarksOverview: React.FC = () => {
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-[#0f766e] mb-2 block">Subject</label>
+            <div className="col-span-2 sm:col-span-2 md:col-span-1">
+              <label className="text-xs sm:text-sm font-semibold text-[#0f766e] mb-2 block">Subject</label>
               <Select value={subject} onValueChange={setSubject} disabled={!subjects.length}>
                 <SelectTrigger className="border-[#0f766e] bg-[#e8fbf5] text-[#0f766e] font-semibold rounded-md">
                   <SelectValue placeholder="Select" />
@@ -229,7 +245,7 @@ const MarksOverview: React.FC = () => {
         {!showLoader && marks.length > 0 && (
           <Card className="shadow-lg border-[#b86b2e]">
             <CardHeader>
-              <CardTitle className="text-[#8b0000]">Student Marks - {examTypeLabel}</CardTitle>
+              <CardTitle className="text-[#8b0000] text-lg sm:text-xl">Student Marks - {examTypeLabel}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
               <Table className="min-w-[400px]">

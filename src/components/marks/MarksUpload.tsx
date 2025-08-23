@@ -295,34 +295,56 @@ const MarksUpload = () => {
           <CardTitle>Upload Marks</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative">
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelUpload}
-              className="pr-24"
-              ref={fileInputRef}
-              disabled={fileLoading}
-            />
-            <Button
-              variant="outline"
-              className="absolute right-2 top-1/2 -translate-y-1/2"
-              style={{ backgroundColor: THEME.accent, color: '#fff' }}
-              onClick={() => {
-                if (!fileLoading && fileInputRef.current) {
-                  fileInputRef.current.click();
-                }
-              }}
-              disabled={fileLoading}
-              type="button"
-            >
-              {fileLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Upload className="h-4 w-4 mr-2" />
-              )}
-              Upload
-            </Button>
+          {/* Responsive upload row */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            {/* File input, upload button, and file name */}
+            <div className="flex flex-col sm:flex-row w-full items-stretch sm:items-center gap-2 flex-1">
+              {/* File name, always visible and wraps on mobile */}
+              <label
+                htmlFor="marks-upload-input"
+                className="block w-full sm:w-[220px] text-xs sm:text-sm text-gray-600 bg-[#f3f3f3] rounded px-2 py-1 cursor-pointer truncate"
+                style={{
+                  minHeight: '38px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {uploadedFile?.name ? uploadedFile.name : 'No file chosen'}
+              </label>
+              {/* Upload button at right on desktop, full width on mobile */}
+              <div className="flex w-full sm:w-auto">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelUpload}
+                  ref={fileInputRef}
+                  disabled={fileLoading}
+                  className="hidden"
+                  id="marks-upload-input"
+                />
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto flex items-center justify-center"
+                  style={{ backgroundColor: THEME.accent, color: '#fff' }}
+                  onClick={() => {
+                    if (!fileLoading && fileInputRef.current) {
+                      fileInputRef.current.click();
+                    }
+                  }}
+                  disabled={fileLoading}
+                  type="button"
+                >
+                  {fileLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  Upload
+                </Button>
+              </div>
+            </div>
           </div>
           {uploadError && (
             <p className="text-red-500 text-sm">{uploadError}</p>
@@ -330,12 +352,13 @@ const MarksUpload = () => {
           {uploadSuccess && (
             <p className="text-green-500 text-sm">{uploadSuccess}</p>
           )}
-          <div className="flex justify-between items-center">
-            <p>{rowCount} rows uploaded</p>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p className="text-sm">{rowCount} rows uploaded</p>
             <Button
               onClick={submitMarks}
               disabled={loading || isParsing || rowCount === 0 || hasBlankMarks}
               style={{ backgroundColor: THEME.accent, color: '#fff' }}
+              className="w-full sm:w-auto"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

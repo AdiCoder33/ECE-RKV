@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Calendar, BookOpen, MapPin, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import loaderMp4 from '@/Assets/loader.mp4'; // <-- Add this import
 
 interface TimeSlot {
   id: string;
@@ -67,23 +68,36 @@ const ProfessorTimetable = () => {
     return timetable.filter(slot => slot.day === day).sort((a, b) => a.time.localeCompare(b.time));
   };
 
+  // Loader component using loader.mp4
+  const EceVideoLoader = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp4}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-32 h-32 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="font-semibold text-lg tracking-wide" style={{ color: THEME.accent }}>
+        Loading Timetable...
+      </div>
+      <div className="text-sm mt-1 text-[#a52a2a]">Fetching your timetable, please wait</div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div
-        className="space-y-6 px-4 py-4 sm:px-6 md:px-0"
-        style={{ backgroundColor: THEME.bgBeige }}
-      >
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-32 bg-muted rounded"></div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
       </div>
     );
   }
 
   return (
     <div
-      className="space-y-6 px-4 py-4 sm:px-6 md:px-0"
+      className="space-y-6 px-2 py-4 sm:px-6 md:px-0"
       style={{ backgroundColor: THEME.bgBeige }}
     >
       <div>
@@ -113,10 +127,15 @@ const ProfessorTimetable = () => {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse min-w-[700px]">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Time</th>
+                  <th
+                    className="text-left p-3 font-medium bg-[#fbf4ea] sticky left-0 z-20 min-w-[110px] w-[110px]"
+                    style={{ background: THEME.bgBeige }}
+                  >
+                    Time
+                  </th>
                   {days.map(day => (
                     <th key={day} className="text-left p-3 font-medium min-w-[150px]">
                       {day}
@@ -127,7 +146,10 @@ const ProfessorTimetable = () => {
               <tbody>
                 {timeSlots.map(time => (
                   <tr key={time} className="border-b">
-                    <td className="p-3 font-medium text-sm bg-muted/30">
+                    <td
+                      className="p-3 font-medium text-sm bg-muted/30 sticky left-0 z-10 min-w-[110px] w-[110px] bg-[#fbf4ea]"
+                      style={{ background: THEME.bgBeige }}
+                    >
                       <Clock
                         className="h-4 w-4 inline mr-2"
                         style={{ color: THEME.accent }}
@@ -137,7 +159,7 @@ const ProfessorTimetable = () => {
                     {days.map(day => {
                       const slot = getSlotForTime(day, time);
                       return (
-                        <td key={`${day}-${time}`} className="p-2">
+                        <td key={`${day}-${time}`} className="p-2 min-w-[150px]">
                           {slot ? (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-3 hover:bg-red-100 transition-colors cursor-pointer">
                               <div className="font-medium text-red-800 mb-1 flex items-center gap-1">
