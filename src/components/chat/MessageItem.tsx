@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Bubble color logic
   const bubbleClass =
-    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[80%] min-w-[5rem] break-words relative after:absolute after:top-0 after:w-0 after:h-0";
+    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words relative after:absolute after:-bottom-1 after:w-0 after:h-0";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -107,7 +107,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   return (
     // Outer wrapper intentionally has no horizontal padding so bubbles touch window edges
     <div
-      className={`flex flex-col ${align} mb-1 ${selected ? 'bg-green-100/40' : ''}`}
+      className={`flex flex-col w-full ${align} mb-1 ${selected ? 'bg-green-100/40' : ''}`}
       onContextMenu={handleContext}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
