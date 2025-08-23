@@ -23,5 +23,6 @@ describe('MessageItem', () => {
     const bubble = screen.getByText(longText).closest('div');
     expect(bubble).toHaveClass('max-w-[70%]');
     expect(bubble).toHaveClass('break-words');
+    expect(bubble).toHaveClass('break-all');
   });
 });
