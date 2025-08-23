@@ -27,6 +27,7 @@ interface Stat {
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState<Stat[]>([]);
+  const [enrollmentData, setEnrollmentData] = useState<{ year: string; students: number }[]>([]);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('token');
 
@@ -80,12 +81,27 @@ const AdminDashboard = () => {
     fetchStats();
   }, [apiBase, token]);
 
-  const enrollmentData = [
-    { year: '1st Year', students: 800 },
-    { year: '2nd Year', students: 750 },
-    { year: '3rd Year', students: 720 },
-    { year: '4th Year', students: 577 }
-  ];
+  useEffect(() => {
+    const fetchEnrollment = async () => {
+      try {
+        const res = await fetch(`${apiBase}/analytics/enrollment`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEnrollmentData(
+            data.map((item: { year: any; students: number }) => ({
+              year: String(item.year),
+              students: item.students
+            }))
+          );
+        }
+      } catch (error) {
+        console.error('Failed to fetch enrollment analytics', error);
+      }
+    };
+    fetchEnrollment();
+  }, [apiBase, token]);
 
   const recentActivities = [
     {

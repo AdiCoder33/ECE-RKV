@@ -43,4 +43,17 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get year-wise student enrollment stats
+router.get('/enrollment', authenticateToken, async (req, res, next) => {
+  try {
+    const result = await executeQuery(
+      "SELECT year, COUNT(*) AS students FROM users WHERE role='student' GROUP BY year ORDER BY year"
+    );
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Enrollment analytics error:', error);
+    next(error);
+  }
+});
+
 module.exports = router;
