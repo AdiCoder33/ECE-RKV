@@ -137,6 +137,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onStartChat,
   onOpenGroupDialog,
   onClose,
+  activeId,
 }) => {
   return (
     <div className="h-full flex flex-col bg-white border-r border-gray-200 rounded-l-2xl">

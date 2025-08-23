@@ -420,6 +420,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onStartChat={handleStartChat}
                 onOpenGroupDialog={() => setIsGroupDialogOpen(true)}
                 onClose={onToggle}
+                activeId={activeChat ? `${activeChat.type}-${activeChat.id}` : undefined}
               />
             ) : (
               <ChatWindow
