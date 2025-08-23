@@ -130,6 +130,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     onMessageChange(e);
   };
 
+  const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const el = e.currentTarget;
+    el.style.height = 'auto';
+    const lineHeight = parseInt(getComputedStyle(el).lineHeight || '20');
+    const maxHeight = lineHeight * 5;
+    el.style.height = Math.min(el.scrollHeight, maxHeight) + 'px';
+  };
+
   return (
     <>
       <CardHeader className="h-16 px-4 flex items-center justify-between border-b bg-[#8B1F2F]">
@@ -211,8 +219,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ))}
           </div>
         )}
-        <div className="flex items-end gap-2">
-          <div className="flex items-center flex-1 bg-[#fdf7f2] rounded-full px-2">
+        <div className="flex items-center">
+          <div className="flex items-center bg-[#fdf7f2] rounded-full px-2 flex-1">
             <EmojiPicker onEmojiSelect={onEmojiSelect} />
             <FileUpload onFileSelect={onFileSelect} disabled={false} />
             <CameraUpload onCapture={(file) => onFileSelect(file, 'image')} />
@@ -222,6 +230,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               value={message}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
+              onInput={handleInput}
               placeholder={`Message ${activeChat.title}...`}
               className="flex-1 bg-transparent resize-none border-none focus:outline-none focus:ring-0 text-gray-900 max-h-[7.5rem] overflow-y-auto"
             />
