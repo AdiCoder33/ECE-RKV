@@ -56,4 +56,18 @@ router.get('/enrollment', authenticateToken, async (req, res, next) => {
   }
 });
 
+
+// Get recent activities
+router.get('/activities', authenticateToken, async (req, res, next) => {
+  try {
+    const { recordset } = await executeQuery(
+      'SELECT id, title AS action, created_at FROM notifications ORDER BY created_at DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY'
+    );
+    res.json(recordset);
+  } catch (error) {
+    console.error('Activities analytics error:', error);
+    next(error);
+  }
+});
+
 module.exports = router;

@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -28,6 +27,7 @@ interface Stat {
 const AdminDashboard = () => {
   const [stats, setStats] = useState<Stat[]>([]);
   const [enrollmentData, setEnrollmentData] = useState<{ year: string; students: number }[]>([]);
+  const [recentActivities, setRecentActivities] = useState<{ id: number; action: string; created_at: string }[]>([]);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('token');
 
@@ -103,36 +103,24 @@ const AdminDashboard = () => {
     fetchEnrollment();
   }, [apiBase, token]);
 
-  const recentActivities = [
-    {
-      id: 1,
-      action: 'New student enrollment',
-      user: 'John Smith',
-      time: '2 minutes ago',
-      type: 'enrollment'
-    },
-    {
-      id: 2,
-      action: 'Professor assignment updated',
-      user: 'Dr. Emily Davis',
-      time: '15 minutes ago',
-      type: 'assignment'
-    },
-    {
-      id: 3,
-      action: 'Course material uploaded',
-      user: 'Prof. Michael Johnson',
-      time: '1 hour ago',
-      type: 'upload'
-    },
-    {
-      id: 4,
-      action: 'Attendance report generated',
-      user: 'System',
-      time: '2 hours ago',
-      type: 'system'
-    }
-  ];
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const res = await fetch(`${apiBase}/analytics/activities`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRecentActivities(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch activities', error);
+      }
+    };
+    fetchActivities();
+  }, [apiBase, token]);
+
+
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-0">
@@ -253,9 +241,8 @@ const AdminDashboard = () => {
                   <div className="w-2 h-2 bg-primary rounded-full" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">by {activity.user}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">{activity.time}</span>
+                  <span className="text-xs text-muted-foreground">{new Date(activity.created_at).toLocaleString()}</span>
                 </div>
               ))}
             </div>
