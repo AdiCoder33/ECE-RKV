@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Bubble color logic
   const bubbleClass =
-    "relative inline-block whitespace-pre-wrap px-3 py-2 rounded-xl shadow-sm max-w-[65%] w-fit min-w-[5rem] break-words transition-colors after:content-[''] after:absolute after:-bottom-1 after:w-3 after:h-3 after:bg-inherit after:rotate-45";
+    "relative inline-block whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] w-fit break-words transition-colors after:content-[''] after:absolute after:-bottom-1 after:w-3 after:h-3 after:bg-inherit after:rotate-45";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -115,7 +115,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       {/* Message bubble */}
       <div className={`relative ${margin} text-left`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} ${isOwn ? 'pr-12 after:-right-1' : 'pr-8 after:-left-1'}`}
+          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} ${isOwn ? 'pr-12 after:-right-1 after:rounded-br-sm' : 'pr-8 after:-left-1 after:rounded-bl-sm'}`}
         >
           {message.content}
           <span
