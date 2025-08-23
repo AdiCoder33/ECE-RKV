@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Bubble color logic
   const bubbleClass =
-    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words relative after:absolute after:top-0 after:w-0 after:h-0";
+    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[80%] min-w-[5rem] break-words relative after:absolute after:top-0 after:w-0 after:h-0";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -125,7 +125,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         >
           <span className="flex-1">{message.content}</span>
           <span
-            className={`ml-2 flex items-end text-xs ${
+            className={`ml-2 flex items-end text-[10px] ${
               isOwn ? 'text-gray-200' : 'text-gray-500'
             }`}
           >
