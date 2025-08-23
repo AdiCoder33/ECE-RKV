@@ -132,7 +132,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <>
-      <CardHeader className="h-16 px-4 flex items-center justify-between border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-t-2xl shadow-md">
+      <CardHeader className="h-16 px-4 flex items-center justify-between border-b bg-[#8B1F2F]">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
             <ArrowLeft className="h-5 w-5" />
@@ -197,7 +197,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </>
         )}
       </CardContent>
-      <div className="border-t bg-[#fbeee6] px-4 py-3 rounded-b-2xl">
+      <div className="border-t bg-[#fbeee6] px-4 py-3">
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {attachments.map((att, idx) => (

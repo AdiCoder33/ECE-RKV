@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MessageSquare } from 'lucide-react';
@@ -405,7 +404,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         onMouseLeave={() => isOpen && onExpandedChange(false)}
       >
         {isOpen && expanded ? (
-          <Card className="h-full flex flex-col rounded-none border-0 shadow-lg">
+          <div className="h-full w-full flex flex-col">
             {!activeChat ? (
               <ConversationList
                 tab={tab}
@@ -444,7 +443,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onOpenGroupDialog={() => setIsGroupDialogOpen(true)}
               />
             )}
-          </Card>
+          </div>
       ) : isOpen ? (
         <div className="flex flex-col items-center py-4 space-y-4">
           <Button variant="ghost" size="icon" onClick={onToggle}>
