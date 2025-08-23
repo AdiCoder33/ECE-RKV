@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import loaderMp4 from '@/Assets/loader.mp4';
+import { THEME } from '@/theme';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -40,23 +41,6 @@ interface ApiRecord {
   present: number | boolean;
   markedByName: string;
 }
-
-// Enhanced ECE Theme colors matching all student pages (red/indigo/blue palette)
-const THEME = {
-  bgBeige: '#fbf4ea',
-  accent: '#b91c1c', // red-700 for headings and highlights
-  accentHover: '#a52a2a',
-  cardBg: '#fff',
-  cardShadow: 'shadow-lg',
-  textMuted: '#64748b',
-  textPrimary: '#1a1a1a',
-  textSecondary: '#2c2c2c',
-  textSilver: '#6b7280',
-  redLight: '#fee2e2', // red-100
-  redBorder: '#fecaca', // red-200
-  blueLight: '#eef2ff', // indigo-50
-  blueBorder: '#c7d2fe', // indigo-200
-};
 
 // ECE-themed loader matching other components
 const Loader = () => (
