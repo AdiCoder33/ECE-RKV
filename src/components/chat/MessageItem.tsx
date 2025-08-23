@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Bubble color logic
   const bubbleClass =
-    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words";
+    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words relative after:absolute after:top-0 after:w-0 after:h-0";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -90,6 +90,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
     if (timer.current) clearTimeout(timer.current);
   };
 
+  // Tail class
+  const tailClass = isOwn
+    ? 'after:right-[-8px] after:border-l-[#8B1F2F] after:border-l-[8px] after:border-y-transparent after:border-y-[6px]'
+    : 'after:left-[-8px] after:border-r-white after:border-r-[8px] after:border-y-transparent after:border-y-[6px]';
+
   // Alignment
   const align = isOwn ? 'items-end justify-end' : 'items-start justify-start';
   const margin = isOwn ? 'ml-auto' : 'mr-auto';
@@ -116,7 +121,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       {/* Message bubble */}
       <div className={`${margin} text-left`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''}`}
+          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${selected ? 'ring-2 ring-green-400' : ''}`}
         >
           <span className="flex-1">{message.content}</span>
           <span
