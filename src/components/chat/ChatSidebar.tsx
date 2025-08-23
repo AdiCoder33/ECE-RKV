@@ -432,6 +432,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 hasMore={hasMore}
                 loadMore={loadMore}
                 message={message}
+                setMessage={setMessage}
                 onMessageChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 onSend={handleSendMessage}
