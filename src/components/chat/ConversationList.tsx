@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Search, UserPlus, X, Pin, Loader2 } from 'lucide-react';
+import { MessageSquare, Search, UserPlus, X, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { formatIST } from '@/utils/date';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+import { cn } from '@/lib/utils';
 
 interface Conversation {
   id: string;
@@ -36,6 +37,7 @@ interface ConversationListProps {
   onStartChat: (user: User) => void;
   onOpenGroupDialog: () => void;
   onClose: () => void;
+  activeId?: string;
 }
 const formatTime = (timestamp: string | null | undefined) =>
   timestamp
@@ -78,17 +80,17 @@ const ConversationRow: React.FC<{
   onSelect: (c: Conversation) => void;
   onPin: (e: React.MouseEvent, c: Conversation) => void;
   onlineUsers: Set<number>;
-}> = ({ conversation, onSelect, onPin, onlineUsers }) => {
+  active?: boolean;
+}> = ({ conversation, onSelect, onPin: _onPin, onlineUsers, active }) => {
   const src = useProfileImageSrc(conversation.avatar || undefined);
   return (
     <div
       key={`${conversation.type}-${conversation.id}`}
-      className="flex items-center gap-2 px-4 py-2 hover:bg-[#f5e6e9] cursor-pointer transition shadow-sm mb-1 rounded-xl"
+      className={cn(
+        'flex items-center gap-3 px-3 py-2 hover:bg-gray-100 cursor-pointer',
+        active && 'bg-gray-200'
+      )}
       onClick={() => onSelect(conversation)}
-      style={{
-        borderLeft: conversation.unreadCount && conversation.unreadCount > 0 ? '4px solid #8B1F2F' : '4px solid transparent',
-        background: conversation.pinned ? 'linear-gradient(90deg, #fbeee6 0%, #f5e6e9 100%)' : undefined,
-      }}
     >
       <div className="relative">
         <Avatar className="h-10 w-10">
@@ -101,25 +103,22 @@ const ConversationRow: React.FC<{
           <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
         )}
       </div>
-      <div className="flex-1 overflow-hidden text-left"> {/* <-- left align */}
+      <div className="flex-1 overflow-hidden text-left">
         <p className="text-sm font-semibold truncate text-[#8B1F2F]">{conversation.title}</p>
         <p className="text-xs text-gray-500 truncate">
           {truncateMessage(conversation.lastMessage || '')}
         </p>
       </div>
-      <div className="flex flex-col items-end gap-1">
+      <div className="flex flex-col items-end gap-1 ml-auto">
         <span className="text-xs text-gray-400">
           {formatTime(conversation.lastActivity || null)}
         </span>
         {conversation.unreadCount && conversation.unreadCount > 0 && (
-          <Badge variant="destructive" className="text-xs bg-[#8B1F2F] text-white">
+          <Badge variant="destructive" className="text-[10px] bg-[#8B1F2F] text-white">
             {conversation.unreadCount}
           </Badge>
         )}
       </div>
-      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onPin(e, conversation); }}>
-        <Pin className={`h-4 w-4 ${conversation.pinned ? 'text-[#8B1F2F]' : 'text-gray-300'}`} />
-      </Button>
     </div>
   );
 };
@@ -140,19 +139,19 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onClose,
 }) => {
   return (
-    <div className="h-full flex flex-col bg-[#fbeee6] border-r border-gray-200 rounded-l-2xl">
-      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-tl-2xl shadow-md">
+    <div className="h-full flex flex-col bg-white border-r border-gray-200 rounded-l-2xl">
+      <CardHeader className="pb-3 border-b bg-white rounded-tl-2xl shadow-md">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow">
+          <CardTitle className="text-lg flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
             Chat
           </CardTitle>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={onOpenGroupDialog} className="hover:bg-[#f5e6e9]">
-              <UserPlus className="h-4 w-4 text-white" />
+            <Button variant="ghost" size="icon" onClick={onOpenGroupDialog} className="hover:bg-gray-100">
+              <UserPlus className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden hover:bg-[#f5e6e9]">
-              <X className="h-4 w-4 text-white" />
+            <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden hover:bg-gray-100">
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -203,6 +202,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             onSelect={onSelectConversation}
             onPin={onPin}
             onlineUsers={onlineUsers}
+            active={activeId === `${c.type}-${c.id}`}
           />
         ))}
       </ScrollArea>
