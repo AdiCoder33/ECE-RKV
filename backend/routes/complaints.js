@@ -11,10 +11,10 @@ router.post('/', authenticateToken, async (req, res, next) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const { type, content, isAnonymous } = req.body;
+    const { title, type, description, isAnonymous } = req.body;
     await executeQuery(
-      'INSERT INTO complaints (student_id, type, content, is_anonymous) VALUES (?, ?, ?, ?)',
-      [req.user.id, type, content, isAnonymous]
+      'INSERT INTO complaints (student_id, type, title, description, is_anonymous) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, type, title, description, isAnonymous]
     );
     res.status(201).json({ message: 'Complaint submitted successfully' });
   } catch (error) {
@@ -31,7 +31,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     }
 
     const result = await executeQuery(`
-      SELECT c.id, c.type, c.content, c.is_anonymous, c.created_at, u.name AS student_name
+      SELECT c.id, c.student_id, c.type, c.title, c.description, c.is_anonymous, c.created_at, u.name AS student_name
       FROM complaints c
       JOIN users u ON c.student_id = u.id
       ORDER BY c.created_at DESC

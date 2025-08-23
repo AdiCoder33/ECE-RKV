@@ -157,7 +157,8 @@ export interface Complaint {
   studentId: number;
   studentName: string;
   type: 'facilities' | 'faculty' | 'general';
-  content: string;
+  title: string;
+  description: string;
   isAnonymous: boolean;
   createdAt: string;
 }
