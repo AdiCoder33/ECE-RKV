@@ -26,15 +26,17 @@ const ComplaintList: React.FC = () => {
           throw new Error('Failed to fetch complaints');
         }
         const data = await response.json();
-        const complaintsData: Complaint[] = data.map((c: any) => ({
-          id: c.id,
-          studentId: c.student_id,
-          studentName: c.student_name,
-          type: c.type,
-          content: c.content,
-          isAnonymous: c.is_anonymous,
-          createdAt: c.created_at,
-        }));
+        const complaintsData: Complaint[] = data.map(
+          (c: Record<string, unknown>) => ({
+            id: c.id as number,
+            studentId: c.student_id as number,
+            studentName: c.student_name as string,
+            type: c.type as Complaint['type'],
+            content: c.content as string,
+            isAnonymous: c.is_anonymous as boolean,
+            createdAt: c.created_at as string,
+          })
+        );
         setComplaints(complaintsData);
       } catch (err) {
         console.error('Fetch complaints error', err);
@@ -46,8 +48,24 @@ const ComplaintList: React.FC = () => {
     }
   }, [user]);
 
-  if (!user || !['admin', 'hod'].includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!['admin', 'hod'].includes(user.role)) {
+    const dashboardRoutes: Record<string, string> = {
+      admin: '/dashboard',
+      hod: '/dashboard',
+      professor: '/dashboard/professor',
+      student: '/dashboard/student',
+      alumni: '/dashboard/alumni',
+    };
+    return (
+      <Navigate
+        to={dashboardRoutes[user.role] ?? '/dashboard'}
+        replace
+      />
+    );
   }
 
   const toggleReveal = (id: number) => {
