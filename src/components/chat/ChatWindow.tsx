@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useContext } from 'react';
+import React, { useMemo, useState, useContext, useRef, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, Loader2, MessageSquare, Phone, Video } from 'lucide-react';
+import { ArrowLeft, Loader2, Phone, Video, Send } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
+import CameraUpload from './CameraUpload';
 import MessageItem from './MessageItem';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
@@ -27,7 +27,7 @@ interface ChatWindowProps {
   onKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
   attachments: { file: File; preview: string }[];
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File, type?: 'image' | 'document') => void;
   onRemoveAttachment: (idx: number) => void;
   onEmojiSelect: (emoji: string) => void;
   onBack: () => void;
@@ -61,6 +61,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const chat = useContext(ChatContext);
   const [selectedMsg, setSelectedMsg] = useState<ChatMessage | PrivateMessage | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      el.style.height = 'auto';
+      const lineHeight = parseInt(getComputedStyle(el).lineHeight || '20');
+      const maxHeight = lineHeight * 5;
+      el.style.height = Math.min(el.scrollHeight, maxHeight) + 'px';
+    }
+  }, [message]);
 
   const groupedItems = useMemo<GroupedItem[]>(() => {
     const items: GroupedItem[] = [];
@@ -113,6 +124,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyPress(e);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onMessageChange(e);
   };
 
   return (
@@ -197,22 +212,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         )}
         <div className="flex items-end gap-2">
-          <Textarea
-            value={message}
-            onChange={onMessageChange}
-            onKeyDown={handleKeyDown}
-            placeholder={`Message ${activeChat.title}...`}
-            className="flex-1 rounded-lg border-none bg-white focus:ring-2 focus:ring-[#8B1F2F] text-gray-900"
-            style={{ minHeight: 44 }}
-          />
-          <EmojiPicker onEmojiSelect={onEmojiSelect} />
-          <FileUpload onFileSelect={onFileSelect} disabled={false} />
+          <div className="flex items-center flex-1 bg-[#fdf7f2] rounded-full px-2">
+            <EmojiPicker onEmojiSelect={onEmojiSelect} />
+            <FileUpload onFileSelect={onFileSelect} disabled={false} />
+            <CameraUpload onCapture={(file) => onFileSelect(file, 'image')} />
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={message}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={`Message ${activeChat.title}...`}
+              className="flex-1 bg-transparent resize-none border-none focus:outline-none focus:ring-0 text-gray-900 max-h-[7.5rem] overflow-y-auto"
+            />
+          </div>
           <Button
             onClick={handleSend}
             disabled={!message.trim() && attachments.length === 0}
-            className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded-lg shadow px-4 py-2"
+            className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded-full h-10 w-10 flex items-center justify-center"
           >
-            <MessageSquare className="h-4 w-4" />
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>
