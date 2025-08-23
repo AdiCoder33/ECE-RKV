@@ -116,7 +116,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       <div className={`relative ${margin} text-left`}>
         <div
           className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} ${
-            isOwn ? 'after:-right-1' : 'after:-left-1'
+            isOwn ? 'after:-right-1 pr-14' : 'after:-left-1'
           } text-left`}
         >
           {message.content}
