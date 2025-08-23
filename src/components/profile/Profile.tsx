@@ -26,6 +26,18 @@ import loaderMp4 from '@/Assets/loader.mp4';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 import { cacheProfileImage } from '@/lib/profileImageCache';
 
+const THEME = {
+  accent: '#8b0000',
+  accent2: '#a52a2a',
+  accent3: '#b86b2e',
+  accent4: '#345b7a',
+  accent5: '#2563eb',
+  accent6: '#fff6e6',
+  accent7: '#fde8e6',
+  accent8: '#e0edff',
+  accent9: '#fff8f3',
+};
+
 const Profile = () => {
   const { user } = useAuth();
   const { userId, studentId } = useParams();
@@ -312,6 +324,21 @@ const Profile = () => {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
+  const [prevFormData, setPrevFormData] = useState(formData);
+  const [prevAcademicData, setPrevAcademicData] = useState(academicData);
+
+  const handleEditClick = () => {
+    setPrevFormData(formData);
+    setPrevAcademicData(academicData);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setFormData(prevFormData);
+    setAcademicData(prevAcademicData);
+    setIsEditing(false);
+  };
+
   if (loading || saving) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 bg-[#fff8f3]">
@@ -336,51 +363,70 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen space-y-6 px-2 py-4 sm:px-4 md:px-6 bg-[#fff8f3]">
+    <div className="min-h-screen space-y-6 px-1 sm:px-2 md:px-4 py-3 sm:py-5 bg-[#fff8f3]">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-[#b91c1c] via-[#2563eb] to-[#fbeee6] bg-clip-text text-transparent">
+        <div className="w-full sm:w-auto text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#8b0000] via-[#a52a2a] to-[#b86b2e] bg-clip-text text-transparent">
             Profile
           </h1>
-          <p className="text-muted-foreground">Manage your personal information and preferences</p>
+          <p className="text-[#a52a2a] text-sm sm:text-base">
+            Manage your personal information and preferences
+          </p>
         </div>
         {canEdit && (
-          <Button
-            onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-            variant={isEditing ? 'default' : 'outline'}
-            className={`font-semibold shadow ${
-              isEditing ? 'bg-[#b91c1c] text-white hover:bg-[#a31515]' : 'border-[#b91c1c] text-[#b91c1c] hover:bg-[#fbeee6]'
-            }`}
-          >
-            {isEditing ? (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </>
-            ) : (
-              <>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
-              </>
+          <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
+            {isEditing && (
+              <Button
+                variant="outline"
+                className="font-semibold shadow border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]"
+                onClick={handleCancelEdit}
+                type="button"
+              >
+                Cancel
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={() => (isEditing ? handleSave() : handleEditClick())}
+              variant={isEditing ? 'default' : 'outline'}
+              className={`font-semibold shadow ${
+                isEditing
+                  ? 'bg-[#8b0000] text-white hover:bg-[#a52a2a]'
+                  : 'border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]'
+              }`}
+              type="button"
+            >
+              {isEditing ? (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
+              ) : (
+                <>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Profile Card */}
         <Card className="lg:col-span-1 bg-[#e0edff] shadow-xl rounded-2xl border border-[#2563eb]">
           <CardHeader className="text-center">
-            <div className="relative mx-auto w-28 h-28 mb-4 drop-shadow-lg">
+            <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28 mb-4 drop-shadow-lg">
               {profileImageSrc ? (
                 <img
                   src={profileImageSrc}
                   alt="Profile"
-                  className="w-28 h-28 rounded-full object-cover border-4 border-[#b91c1c] shadow"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-[#8b0000] shadow"
                 />
               ) : (
-                <div className="w-28 h-28 bg-[#b91c1c] rounded-full flex items-center justify-center shadow border-4 border-[#b91c1c]">
-                  <span className="text-4xl font-bold text-white select-none">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-[#8b0000] rounded-full flex items-center justify-center shadow border-4 border-[#8b0000]">
+                  <span className="text-3xl sm:text-4xl font-bold text-white select-none">
                     {getInitials(formData.name)}
                   </span>
                 </div>
@@ -388,7 +434,7 @@ const Profile = () => {
               {canEdit && (
                 <Button
                   size="sm"
-                  className="absolute -bottom-2 -right-2 rounded-full w-9 h-9 p-0 bg-[#b91c1c] text-white shadow"
+                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 sm:w-9 sm:h-9 p-0 bg-[#8b0000] text-white shadow"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera className="h-5 w-5" />
@@ -402,14 +448,13 @@ const Profile = () => {
                 onChange={handleImageUpload}
               />
             </div>
-            <CardTitle className="text-2xl font-bold text-[#b91c1c]">{formData.name}</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-[#8b0000] break-words">{formData.name}</CardTitle>
             <div className="flex justify-center mt-2">
               <Badge className={getRoleBadgeColor(viewedRole) + ' px-3 py-1 text-xs rounded-full shadow'}>
                 {viewedRole.toUpperCase()}
               </Badge>
             </div>
           </CardHeader>
-
           <CardContent className="space-y-4">
             {viewedRole === 'student' && (
               <>
@@ -417,16 +462,16 @@ const Profile = () => {
                   <School className="h-5 w-5 text-[#2563eb]" />
                   <div>
                     <p className="font-medium">Year & Section</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-[#345b7a]">
                       {academicData.year}-{academicData.section}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <BookOpen className="h-5 w-5 text-[#b91c1c]" />
+                  <BookOpen className="h-5 w-5 text-[#8b0000]" />
                   <div>
                     <p className="font-medium">Roll Number</p>
-                    <p className="text-sm text-muted-foreground">{academicData.rollNumber}</p>
+                    <p className="text-xs sm:text-sm text-[#345b7a]">{academicData.rollNumber}</p>
                   </div>
                 </div>
               </>
@@ -435,14 +480,14 @@ const Profile = () => {
               <Building className="h-5 w-5 text-[#2563eb]" />
               <div>
                 <p className="font-medium">Department</p>
-                <p className="text-sm text-muted-foreground">{department || 'ECE'}</p>
+                <p className="text-xs sm:text-sm text-[#345b7a]">{department || 'ECE'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-[#b91c1c]" />
+              <Mail className="h-5 w-5 text-[#8b0000]" />
               <div>
                 <p className="font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{formData.email}</p>
+                <p className="text-xs sm:text-sm text-[#345b7a] break-all">{formData.email}</p>
               </div>
             </div>
           </CardContent>
@@ -452,48 +497,47 @@ const Profile = () => {
         <div className="lg:col-span-2">
           <Tabs defaultValue="personal" className="space-y-4">
             <TabsList
-              className="flex w-full bg-[#fbeee6] rounded-xl shadow overflow-x-auto no-scrollbar gap-2 sm:gap-0"
+              className="flex w-full bg-[#fde8e6] rounded-xl shadow overflow-x-auto no-scrollbar gap-2"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <TabsTrigger
                 value="personal"
-                className="flex-1 min-w-[120px] data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-lg text-center"
+                className="flex-1 min-w-[120px] data-[state=active]:bg-[#8b0000] data-[state=active]:text-white data-[state=active]:shadow-lg text-center text-xs sm:text-base"
               >
-                <User className="h-4 w-4 mr-1 text-[#b91c1c] inline" />
+                <User className="h-4 w-4 mr-1 text-[#8b0000] inline" />
                 <span className="align-middle">Personal Info</span>
               </TabsTrigger>
-
               {viewedRole === 'student' && (
                 <TabsTrigger
                   value="academic"
-                  className="flex-1 min-w-[120px] data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-lg text-center"
+                  className="flex-1 min-w-[120px] data-[state=active]:bg-[#8b0000] data-[state=active]:text-white data-[state=active]:shadow-lg text-center text-xs sm:text-base"
                 >
-                  <BookOpen className="h-4 w-4 mr-1 text-[#b91c1c] inline" />
+                  <BookOpen className="h-4 w-4 mr-1 text-[#8b0000] inline" />
                   <span className="align-middle">Academic</span>
                 </TabsTrigger>
               )}
-
               <TabsTrigger
                 value="achievements"
-                className="flex-1 min-w-[120px] data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-lg text-center"
+                className="flex-1 min-w-[120px] data-[state=active]:bg-[#8b0000] data-[state=active]:text-white data-[state=active]:shadow-lg text-center text-xs sm:text-base"
               >
-                <Trophy className="h-4 w-4 mr-1 text-[#b91c1c] inline" />
+                <Trophy className="h-4 w-4 mr-1 text-[#8b0000] inline" />
                 <span className="align-middle">Achievements</span>
               </TabsTrigger>
             </TabsList>
 
+            {/* Personal Info Tab */}
             <TabsContent value="personal">
               <Card className="bg-[#fff8f3] rounded-xl shadow border border-[#e5e7eb]">
                 <CardHeader>
-                  <CardTitle className="text-[#b91c1c]">Personal Information</CardTitle>
-                  <CardDescription className="text-[#2563eb]">
+                  <CardTitle className="text-[#8b0000]">Personal Information</CardTitle>
+                  <CardDescription className="text-[#345b7a]">
                     Your personal details and contact information
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium">Full Name</label>
+                      <label className="text-xs sm:text-sm font-medium">Full Name</label>
                       <Input
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
@@ -502,7 +546,7 @@ const Profile = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Email</label>
+                      <label className="text-xs sm:text-sm font-medium">Email</label>
                       <Input
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
@@ -513,7 +557,7 @@ const Profile = () => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium">Phone Number</label>
+                      <label className="text-xs sm:text-sm font-medium">Phone Number</label>
                       <Input
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
@@ -522,7 +566,7 @@ const Profile = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Date of Birth</label>
+                      <label className="text-xs sm:text-sm font-medium">Date of Birth</label>
                       <Input
                         type="date"
                         value={formData.dateOfBirth}
@@ -533,7 +577,7 @@ const Profile = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Address</label>
+                    <label className="text-xs sm:text-sm font-medium">Address</label>
                     <Textarea
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
@@ -543,7 +587,7 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Blood Group</label>
+                    <label className="text-xs sm:text-sm font-medium">Blood Group</label>
                     <Input
                       value={formData.bloodGroup}
                       onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
@@ -555,53 +599,53 @@ const Profile = () => {
               </Card>
             </TabsContent>
 
+            {/* Academic Tab */}
             {viewedRole === 'student' && (
               <TabsContent value="academic">
-                <Card className="bg-[#fbeee6] rounded-xl shadow border border-[#b91c1c]">
+                <Card className="bg-[#fde8e6] rounded-xl shadow border border-[#8b0000]">
                   <CardHeader>
-                    <CardTitle className="text-[#b91c1c]">Academic Information</CardTitle>
-                    <CardDescription className="text-[#2563eb]">
+                    <CardTitle className="text-[#8b0000]">Academic Information</CardTitle>
+                    <CardDescription className="text-[#345b7a]">
                       Your academic progress and performance
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-[#b91c1c]">{academicData.cgpa}</p>
-                        <p className="text-sm text-[#2563eb]">CGPA</p>
+                        <p className="text-2xl font-bold text-[#8b0000]">{academicData.cgpa}</p>
+                        <p className="text-xs sm:text-sm text-[#345b7a]">CGPA</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-[#2563eb]">{academicData.attendance}%</p>
-                        <p className="text-sm text-[#b91c1c]">Attendance</p>
+                        <p className="text-2xl font-bold text-[#345b7a]">{academicData.attendance}%</p>
+                        <p className="text-xs sm:text-sm text-[#8b0000]">Attendance</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-[#b91c1c]">
+                        <p className="text-2xl font-bold text-[#8b0000]">
                           {academicData.subjects.length}
                         </p>
-                        <p className="text-sm text-[#2563eb]">Subjects</p>
+                        <p className="text-xs sm:text-sm text-[#345b7a]">Subjects</p>
                       </div>
                     </div>
-
                     <div>
-                      <h4 className="font-semibold mb-3 text-[#b91c1c]">Current Semester Subjects</h4>
+                      <h4 className="font-semibold mb-3 text-[#8b0000]">Current Semester Subjects</h4>
                       <div className="space-y-3">
                         {academicData.subjects.map((subject, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-3 bg-[#fbeee6] rounded-lg shadow-sm border border-[#2563eb]"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-[#fff6e6] rounded-lg shadow-sm border border-[#8b0000]"
                           >
                             <div>
-                              <p className="font-medium text-[#2563eb]">{subject.name}</p>
-                              <p className="text-sm text-[#b91c1c]">{subject.code}</p>
+                              <p className="font-medium text-[#345b7a]">{subject.name}</p>
+                              <p className="text-xs sm:text-sm text-[#8b0000]">{subject.code}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right mt-2 sm:mt-0">
                               <Badge
                                 variant="outline"
-                                className="border-[#b91c1c] text-[#b91c1c] bg-[#fff8f3]"
+                                className="border-[#8b0000] text-[#8b0000] bg-[#fff8f3]"
                               >
                                 {subject.grade}
                               </Badge>
-                              <p className="text-sm text-[#2563eb] mt-1">{subject.credits} credits</p>
+                              <p className="text-xs sm:text-sm text-[#345b7a] mt-1">{subject.credits} credits</p>
                             </div>
                           </div>
                         ))}
@@ -612,11 +656,12 @@ const Profile = () => {
               </TabsContent>
             )}
 
+            {/* Achievements Tab */}
             <TabsContent value="achievements">
-              <Card className="bg-[#fff8f3] rounded-xl shadow border border-[#b91c1c]">
+              <Card className="bg-[#fff8f3] rounded-xl shadow border border-[#8b0000]">
                 <CardHeader>
-                  <CardTitle className="text-[#b91c1c]">Achievements & Awards</CardTitle>
-                  <CardDescription className="text-[#2563eb]">
+                  <CardTitle className="text-[#8b0000]">Achievements & Awards</CardTitle>
+                  <CardDescription className="text-[#345b7a]">
                     Your accomplishments and recognitions
                   </CardDescription>
                 </CardHeader>
@@ -626,44 +671,43 @@ const Profile = () => {
                       achievements.map((achievement, index) => (
                         <div
                           key={index}
-                          className="border-l-4 border-[#b91c1c] pl-4 py-3 bg-[#fff8f3] rounded-lg shadow-sm border border-[#b91c1c]"
+                          className="border-l-4 border-[#8b0000] pl-4 py-3 bg-[#fff6e6] rounded-lg shadow-sm border border-[#8b0000]"
                         >
-                          <div className="flex items-start justify-between">
+                          <div className="flex flex-col sm:flex-row items-start justify-between">
                             <div>
-                              <h4 className="font-semibold flex items-center gap-2 text-[#b91c1c]">
-                                <Star className="h-4 w-4 text-[#2563eb]" />
+                              <h4 className="font-semibold flex items-center gap-2 text-[#8b0000]">
+                                <Star className="h-4 w-4 text-[#345b7a]" />
                                 {achievement.title}
                               </h4>
-                              <p className="text-[#2563eb]">{achievement.description}</p>
+                              <p className="text-[#345b7a]">{achievement.description}</p>
                               <div className="flex items-center gap-2 mt-2">
-                                <Calendar className="h-4 w-4 text-[#b91c1c]" />
-                                <span className="text-sm text-[#b91c1c]">
+                                <Calendar className="h-4 w-4 text-[#8b0000]" />
+                                <span className="text-xs sm:text-sm text-[#8b0000]">
                                   {new Date(achievement.date).toLocaleDateString()}
                                 </span>
                                 <Badge
                                   variant="outline"
-                                  className="border-[#2563eb] text-[#2563eb] bg-[#fff8f3]"
+                                  className="border-[#345b7a] text-[#345b7a] bg-[#fff8f3]"
                                 >
                                   {achievement.category}
                                 </Badge>
                               </div>
                             </div>
-                            <Trophy className="h-6 w-6 text-[#b91c1c]" />
+                            <Trophy className="h-6 w-6 text-[#8b0000] mt-2 sm:mt-0" />
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center text-[#b91c1c] py-6">
-                        <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#2563eb]" />
+                      <div className="text-center text-[#8b0000] py-6">
+                        <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#345b7a]" />
                         No achievements added yet.
                       </div>
                     )}
                   </div>
-
                   {canEdit && (
                     <Button
                       variant="outline"
-                      className="w-full mt-4 border-[#b91c1c] text-[#b91c1c] hover:bg-[#fbeee6]"
+                      className="w-full mt-4 border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Add Achievement
@@ -689,9 +733,9 @@ const Profile = () => {
             .rounded-xl, .rounded-2xl {
               border-radius: 1rem !important;
             }
-            .px-2, .sm\\:px-4, .md\\:px-6 {
-              padding-left: 0.5rem !important;
-              padding-right: 0.5rem !important;
+            .px-1, .sm\\:px-2, .md\\:px-4 {
+              padding-left: 0.25rem !important;
+              padding-right: 0.25rem !important;
             }
           }
         `}

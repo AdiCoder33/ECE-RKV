@@ -124,6 +124,7 @@ const AttendanceManager: React.FC = () => {
   const [saveStatus, setSaveStatus] = React.useState<'success' | 'error' | null>(null);
   const [fetching, setFetching] = React.useState(false);
   const [missingPopup, setMissingPopup] = React.useState<string | null>(null);
+  const [savingAttendance, setSavingAttendance] = React.useState(false);
 
   const isDesktop = useMediaQuery('(min-width:768px)');
   const itemsPerPage = isDesktop ? 15 : 9;
@@ -563,6 +564,7 @@ const AttendanceManager: React.FC = () => {
       setTimeout(() => setMissingPopup(null), 2500);
       return;
     }
+    setSavingAttendance(true);
     try {
       const token = localStorage.getItem('token');
       const attendanceData = students
@@ -590,6 +592,8 @@ const AttendanceManager: React.FC = () => {
     } catch (err) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(null), 2000);
+    } finally {
+      setSavingAttendance(false);
     }
   };
 
@@ -655,10 +659,11 @@ const AttendanceManager: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
+            {/* Responsive filters: 2 in a row on mobile, 5 in a row on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
               {/* For Professors: Slot select; For others: Year & Section */}
               {isProfessor ? (
-                <div className="space-y-1 md:col-span-2">
+                <div className="space-y-1 col-span-2 md:col-span-2">
                   <Label htmlFor="slot-select" style={{ color: THEME.accent, fontSize: 13 }}>
                     Choose Class Slot
                   </Label>
@@ -748,7 +753,7 @@ const AttendanceManager: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-1 xs:col-span-2 md:col-span-2">
+              <div className="space-y-1 col-span-2 md:col-span-2">
                 <Label htmlFor="period-select" style={{ color: THEME.accent, fontSize: 13 }}>
                   Period
                 </Label>
@@ -777,7 +782,8 @@ const AttendanceManager: React.FC = () => {
         </Card>
 
         {/* Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+          {/* Total Students */}
           <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -796,6 +802,7 @@ const AttendanceManager: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Present */}
           <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -814,6 +821,7 @@ const AttendanceManager: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Absent */}
           <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -832,6 +840,7 @@ const AttendanceManager: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Attendance Rate */}
           <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}>
             <CardContent className="p-3 sm:p-5">
               <div className="flex items-center justify-between">
@@ -861,7 +870,7 @@ const AttendanceManager: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-
+        
         {/* Students */}
         <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-xl hover:shadow-xl transition-all`}>
           <CardHeader className="pb-2 sm:pb-4">
@@ -1033,15 +1042,26 @@ const AttendanceManager: React.FC = () => {
         <div className="flex justify-end mt-2">
           <Button
             size="sm"
-            className="hover:brightness-95 h-9 px-6 text-sm rounded-lg"
+            className="hover:brightness-95 h-9 px-6 text-sm rounded-lg flex items-center justify-center"
             style={{
               backgroundColor: THEME.accent,
               color: '#fff',
+              minWidth: 120,
             }}
             onClick={handleSaveAttendance}
+            disabled={saveStatus === 'success' || saveStatus === 'error' || savingAttendance}
           >
-            <Save className="h-4 w-4 mr-1" />
-            Save Attendance
+            {savingAttendance ? (
+              <>
+                <RotateCcw className="h-4 w-4 animate-spin mr-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-1" />
+                Save Attendance
+              </>
+            )}
           </Button>
         </div>
 

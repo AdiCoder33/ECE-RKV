@@ -15,10 +15,10 @@ const Marks: React.FC = () => {
 
   return (
     <div
-      className="p-0 flex items-center justify-center min-h-screen"
+      className="min-h-screen w-full flex flex-col items-start justify-start"
       style={{ backgroundColor: THEME.bgBeige }}
     >
-      <div className="w-full max-w-5xl">
+      <div className="w-full max-w-5xl mx-auto px-1 sm:px-2 md:px-4 pt-2">
         <div className="w-full mb-4">
           <div className="grid w-full grid-cols-2 rounded-lg overflow-hidden border border-[#b86b2e] bg-white shadow">
             <button
