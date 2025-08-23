@@ -83,12 +83,13 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       DECLARE @Inserted TABLE (
         id INT, sender_id INT, receiver_id INT, content NVARCHAR(MAX),
         message_type NVARCHAR(20), attachments NVARCHAR(MAX),
-        is_read BIT, created_at DATETIME
+        is_read BIT, created_at DATETIME, delivered_at DATETIME
       );
 
       INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at)
       OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id, INSERTED.content,
-             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read, INSERTED.created_at
+             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read,
+             INSERTED.created_at, INSERTED.delivered_at
       INTO @Inserted
       VALUES (?, ?, ?, ?, ?, 0, GETUTCDATE());
 
@@ -161,11 +162,12 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     
     const query = `
       UPDATE Messages 
-      SET is_read = 1 
+      SET is_read = 1
+      OUTPUT INSERTED.id, INSERTED.sender_id
       WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
     `;
-    
-    await executeQuery(query, [contactId, userId]);
+
+    const { recordset } = await executeQuery(query, [contactId, userId]);
 
     const convUpdate = `
       MERGE conversation_users AS target
@@ -177,7 +179,15 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     `;
     await executeQuery(convUpdate, [userId, contactId, userId, contactId]);
 
-    await emitConversationUpdate(req.app.get('io'), userId, 'direct', contactId);
+    const io = req.app.get('io');
+    await emitConversationUpdate(io, userId, 'direct', contactId);
+
+    if (io && recordset.length) {
+      recordset.forEach(({ id, sender_id }) => {
+        io.to(`user:${sender_id}`).emit('message-read', { messageId: id });
+        io.to(`user:${userId}`).emit('message-read', { messageId: id });
+      });
+    }
 
     res.json({ message: 'Messages marked as read' });
     

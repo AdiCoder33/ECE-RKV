@@ -266,6 +266,7 @@ CREATE TABLE messages (
     content nvarchar(max) NOT NULL,
     message_type nvarchar(50) DEFAULT 'text',
     is_read bit DEFAULT 0,
+    delivered_at datetime2,
     created_at datetime2 DEFAULT GETDATE(),
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE NO ACTION

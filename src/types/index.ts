@@ -74,6 +74,7 @@ export interface PrivateMessage {
   sender_name: string;
   message_type: string;
   is_read: number;
+  delivered_at?: string | null;
   status: 'sending' | 'sent' | 'delivered' | 'read';
   sender_profileImage?: string;
   attachments?: Attachment[];

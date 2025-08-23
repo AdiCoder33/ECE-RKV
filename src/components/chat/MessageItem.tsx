@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+import { Check, CheckCheck } from 'lucide-react';
 
 interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
@@ -161,11 +162,20 @@ const MessageItem: React.FC<MessageItemProps> = ({
           </div>
         )}
         <span
-          className={`absolute -bottom-5 right-2 text-[10px] ${
+          className={`absolute -bottom-5 right-2 flex items-center gap-0.5 text-[10px] ${
             isOwn ? 'text-gray-200' : 'text-gray-500'
           }`}
         >
           {timeStr}
+          {isOwn && (
+            message.status === 'read' ? (
+              <CheckCheck className="w-3 h-3 text-blue-500" />
+            ) : message.status === 'delivered' ? (
+              <CheckCheck className="w-3 h-3 text-gray-400" />
+            ) : message.status === 'sent' ? (
+              <Check className="w-3 h-3 text-gray-400" />
+            ) : null
+          )}
         </span>
       </div>
     </div>

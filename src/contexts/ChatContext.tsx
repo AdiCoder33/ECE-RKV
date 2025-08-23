@@ -252,7 +252,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sanitized = (data.messages as (PrivateMessage | null | undefined)[]).filter(
         m => m && m.id
       ) as PrivateMessage[];
-      const withStatus = sanitized.map(m => ({ ...m, status: m.status ?? 'sent' }));
+      const withStatus = sanitized.map(m => ({
+        ...m,
+        status: m.is_read ? 'read' : m.delivered_at ? 'delivered' : 'sent',
+      }));
       setPrivateMessages(prev => {
         const existing = prev.filter(
           m => m.sender_id === userId || m.receiver_id === userId
@@ -440,7 +443,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (message) {
         const finalMessage = {
           ...message,
-          status: 'sent',
+          status: message.is_read
+            ? 'read'
+            : message.delivered_at
+              ? 'delivered'
+              : 'sent',
           content: DOMPurify.sanitize(message.content ?? ''),
         } as PrivateMessage;
         setPrivateMessages(prev => prev.map(m => (m.id === tempId ? finalMessage : m)));
@@ -580,9 +587,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     socket.on('private-message', (message: PrivateMessage) => {
       if (message.sender_id === user?.id) return; // skip echoes
-      const msgWithStatus = { ...message, status: message.status ?? 'sent' };
-      // Append the incoming private message to the shared privateMessages state
+      const status = message.is_read
+        ? 'read'
+        : message.delivered_at
+          ? 'delivered'
+          : 'sent';
+      const msgWithStatus = { ...message, status };
       setPrivateMessages(prev => [...prev, msgWithStatus]);
+      socket.emit('message-delivered', { messageId: message.id });
     });
 
     socket.on('chat-message-edit', (m: ChatMessage) => {
