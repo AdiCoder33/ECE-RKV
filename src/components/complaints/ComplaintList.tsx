@@ -32,7 +32,8 @@ const ComplaintList: React.FC = () => {
             studentId: c.student_id as number,
             studentName: c.student_name as string,
             type: c.type as Complaint['type'],
-            content: c.content as string,
+            title: c.title as string,
+            description: c.description as string,
             isAnonymous: c.is_anonymous as boolean,
             createdAt: c.created_at as string,
           })
@@ -85,7 +86,8 @@ const ComplaintList: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
-              <TableHead>Content</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Reporter</TableHead>
             </TableRow>
@@ -94,7 +96,8 @@ const ComplaintList: React.FC = () => {
             {complaints.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>{c.type}</TableCell>
-                <TableCell>{getSnippet(c.content)}</TableCell>
+                <TableCell>{c.title}</TableCell>
+                <TableCell>{getSnippet(c.description)}</TableCell>
                 <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
                   {c.isAnonymous ? (

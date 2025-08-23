@@ -308,7 +308,8 @@ CREATE TABLE complaints (
     id int IDENTITY(1,1) PRIMARY KEY,
     student_id int NOT NULL,
     type varchar(100) NOT NULL,
-    content text NOT NULL,
+    title varchar(255) NOT NULL,
+    description text NOT NULL,
     is_anonymous bit DEFAULT 0,
     created_at datetime DEFAULT GETDATE(),
     FOREIGN KEY (student_id) REFERENCES users(id)
