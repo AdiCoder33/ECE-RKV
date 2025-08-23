@@ -3,7 +3,7 @@ import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, UserPlus, X, Loader2, MessageSquare, Pencil, Trash } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquare, Phone, Video } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
@@ -11,7 +11,8 @@ import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
 import ChatContext from '@/contexts/ChatContext';
-import { toast } from '@/components/ui/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfileImageSrc } from '@/lib/profileImage';
 
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
@@ -55,17 +56,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onRemoveAttachment,
   onEmojiSelect,
   onBack,
-  onClose,
-  onOpenGroupDialog,
+  onClose: _onClose,
+  onOpenGroupDialog: _onOpenGroupDialog,
 }) => {
   const chat = useContext(ChatContext);
   const [selectedMsg, setSelectedMsg] = useState<ChatMessage | PrivateMessage | null>(null);
-  const [editingMsg, setEditingMsg] = useState<ChatMessage | PrivateMessage | null>(null);
-  const isOwn = selectedMsg
-    ? activeChat.type === 'direct'
-      ? (selectedMsg as PrivateMessage).sender_id === currentUserId
-      : (selectedMsg as ChatMessage).senderId === currentUserId
-    : false;
 
   const groupedItems = useMemo<GroupedItem[]>(() => {
     const items: GroupedItem[] = [];
@@ -94,98 +89,57 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const isTyping =
     activeChat.type === 'direct' && typingUsers.has(Number(activeChat.id));
 
+  const convo = chat?.conversations.find(
+    c => c.id === activeChat.id && c.type === activeChat.type
+  );
+  const avatarSrc = getProfileImageSrc(convo?.avatar);
+  const statusText =
+    activeChat.type === 'direct'
+      ? isTyping
+        ? 'Typing...'
+        : chat?.onlineUsers.has(Number(activeChat.id))
+          ? 'Online'
+          : 'Offline'
+      : 'Group chat';
+
   const handleHold = (m: PrivateMessage | ChatMessage) => {
     setSelectedMsg(m);
   };
 
-  const handleDelete = async (m: PrivateMessage | ChatMessage) => {
-    try {
-      await chat?.deleteMessage(m);
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete message',
-      });
-    } finally {
-      setSelectedMsg(null);
-    }
-  };
-
-  const handleEdit = (m: PrivateMessage | ChatMessage) => {
-    onMessageChange({ target: { value: m.content } } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
-    setEditingMsg(m);
-    setSelectedMsg(null);
-  };
 
   const handleSend = () => {
-    if (editingMsg) {
-      chat
-        ?.updateMessage(editingMsg, message)
-        .catch(() =>
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to update message',
-          })
-        );
-      setEditingMsg(null);
-      onMessageChange({ target: { value: '' } } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
-    } else {
-      onSend();
-    }
+    onSend();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (editingMsg && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      handleSend();
-    } else {
-      onKeyPress(e);
-    }
+    onKeyPress(e);
   };
 
   return (
     <>
-      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-t-2xl shadow-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <CardTitle className="text-lg text-white font-bold">{activeChat.title}</CardTitle>
+      <CardHeader className="h-16 px-4 flex items-center justify-between border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-t-2xl shadow-md">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {activeChat.title.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col leading-none">
+            <CardTitle className="text-sm font-semibold text-white">{activeChat.title}</CardTitle>
+            <span className="text-xs text-white/80">{statusText}</span>
           </div>
-          <div className="flex gap-2">
-            {selectedMsg ? (
-              isOwn ? (
-                <>
-                  <Button
-                    className="bg-[#fbeee6] text-[#8B1F2F] hover:bg-[#f5e6e9] rounded shadow px-3 py-1 text-xs font-semibold"
-                    onClick={() => handleEdit(selectedMsg)}
-                  >
-                    <Pencil className="h-4 w-4 mr-1" /> Edit
-                  </Button>
-                  <Button
-                    className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded shadow px-3 py-1 text-xs font-semibold"
-                    onClick={() => handleDelete(selectedMsg)}
-                  >
-                    <Trash className="h-4 w-4 mr-1" /> Delete
-                  </Button>
-                </>
-              ) : (
-                <span className="text-xs text-white self-center italic">Not your message</span>
-              )
-            ) : (
-              <>
-                <Button variant="ghost" size="icon" onClick={onOpenGroupDialog} className="text-white">
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden text-white">
-                  <X className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" className="text-white">
+            <Phone className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white">
+            <Video className="h-5 w-5" />
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
