@@ -303,8 +303,19 @@ CREATE TABLE push_subscriptions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Complaints table
+CREATE TABLE complaints (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    student_id int NOT NULL,
+    type varchar(100) NOT NULL,
+    content text NOT NULL,
+    is_anonymous bit DEFAULT 0,
+    created_at datetime DEFAULT GETDATE(),
+    FOREIGN KEY (student_id) REFERENCES users(id)
+);
+
 -- Insert sample data
-INSERT INTO users (name, email, password, role, department) VALUES 
+INSERT INTO users (name, email, password, role, department) VALUES
 ('Admin User', 'admin@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'ECE'),
 ('Dr. Smith', 'hod@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'hod', 'ECE'),
 ('Prof. Johnson', 'prof@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'professor', 'ECE'),
