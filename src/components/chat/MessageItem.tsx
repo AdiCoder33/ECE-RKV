@@ -121,11 +121,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
       {/* Message bubble */}
       <div className={`${margin} text-left`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${selected ? 'ring-2 ring-green-400' : ''}`}
+          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${isOwn ? 'pr-12' : ''} ${
+            selected ? 'ring-2 ring-green-400' : ''
+          }`}
         >
           <span className="flex-1">{message.content}</span>
           <span
-            className={`ml-2 flex items-end text-[10px] ${
+            className={`absolute bottom-1 right-2 flex items-end text-[10px] ${
               isOwn ? 'text-gray-200' : 'text-gray-500'
             }`}
           >
