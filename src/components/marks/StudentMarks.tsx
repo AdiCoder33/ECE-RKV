@@ -273,7 +273,7 @@ const StudentMarks = () => {
     <div className="min-h-screen px-2 py-4 sm:px-4 md:px-8" style={{ backgroundColor: THEME.bgBeige }}>
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+        <Card className="rounded-xl shadow bg-white">
           <CardContent className="p-4 sm:p-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: THEME.red }}>
@@ -288,9 +288,9 @@ const StudentMarks = () => {
       </div>
 
       {/* Filters */}
-      <Card className={`rounded-xl shadow bg-white mb-6`} /* removed red border for a cleaner look */>
+      <Card className="rounded-xl shadow bg-white mb-6">
         <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
             <div className="flex-1">
               <label className="text-sm font-bold mb-2 block" style={{ color: THEME.accent2 }}>
                 Subject Filter
@@ -299,9 +299,9 @@ const StudentMarks = () => {
                 <SelectTrigger
                   className="border-2 focus:border-indigo-400 shadow-md bg-indigo-50 text-indigo-900 font-semibold"
                   style={{
-                    borderColor: '#c7d2fe', // light indigo
-                    backgroundColor: '#eef2ff', // very light indigo
-                    color: '#3730a3' // indigo-800 for text
+                    borderColor: '#c7d2fe',
+                    backgroundColor: '#eef2ff',
+                    color: '#3730a3'
                   }}
                 >
                   <SelectValue />
@@ -420,9 +420,9 @@ const StudentMarks = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Subject-wise Performance */}
-        <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+        <Card className="rounded-xl shadow bg-white">
           <CardHeader className="rounded-t-xl bg-indigo-50">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold" style={{ color: THEME.accent }}>
               <BarChart3 className="h-5 w-5" />
@@ -465,7 +465,7 @@ const StudentMarks = () => {
           </CardContent>
         </Card>
         {/* Performance Trend */}
-        <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+        <Card className="rounded-xl shadow bg-white">
           <CardHeader className="rounded-t-xl bg-indigo-50">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold" style={{ color: THEME.accent }}>
               <TrendingUp className="h-5 w-5" />
@@ -506,8 +506,11 @@ const StudentMarks = () => {
         </Card>
       </div>
 
+      {/* Add space between charts and assessments */}
+      <div className="my-8" />
+
       {/* Recent Assessments Table */}
-      <Card className={`rounded-xl shadow ${THEME.redBorder} bg-white`}>
+      <Card className="rounded-xl shadow bg-white">
         <CardHeader className="rounded-t-xl bg-indigo-50">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold" style={{ color: THEME.accent }}>
             <Calendar className="h-5 w-5" />
@@ -518,37 +521,33 @@ const StudentMarks = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 sm:space-y-4">
-            {filteredMarks.length > 0 ? (
-              filteredMarks.map((mark) => (
+          {/* Group by subject and show mids in a row */}
+          <div className="space-y-6">
+            {subjectStats.length > 0 ? (
+              subjectStats.map((subject, idx) => (
                 <div
-                  key={mark.id}
-                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 sm:p-4 border-2 rounded-lg hover:shadow-md transition-all ${THEME.redBorder}`}
-                  style={{ backgroundColor: `${THEME.gradientCard}20` }}
+                  key={subject.subjectId}
+                  className={`border rounded-lg p-4 mb-2 bg-indigo-50${idx !== 0 ? ' mt-6' : ''}`}
                 >
-                  <div className="flex-1 w-full">
-                    <h4 className="font-bold text-base" style={{ color: THEME.textPrimary }}>
-                      {mark.subject}
-                    </h4>
-                    <p className="text-sm font-medium" style={{ color: THEME.textSecondary }}>{mark.examType}</p>
-                    <p className="text-xs font-medium" style={{ color: THEME.textSilver }}>
-                      {new Date(mark.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-center mx-0 sm:mx-4">
-                    <div className="text-xl sm:text-2xl font-bold" style={{ color: THEME.textPrimary }}>
-                      {mark.marks}/{mark.maxMarks}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                    <div className="font-bold text-lg" style={{ color: THEME.textPrimary }}>
+                      {subject.subjectName}
                     </div>
-                    <div className="text-sm font-medium" style={{ color: THEME.textSilver }}>
-                      {((mark.marks / mark.maxMarks) * 100).toFixed(1)}%
+                    <div className="flex gap-4 mt-2 sm:mt-0">
+                      {subject.mids.map((mid) => (
+                        <div key={mid.id} className="flex flex-col items-center px-2">
+                          <div className="font-semibold text-sm" style={{ color: THEME.textSecondary }}>
+                            {mid.type}
+                          </div>
+                          <div className="text-base font-bold" style={{ color: THEME.textPrimary }}>
+                            {mid.marks}/{mid.maxMarks}
+                          </div>
+                          <div className="text-xs" style={{ color: THEME.textSilver }}>
+                            {mid.date ? new Date(mid.date).toLocaleDateString() : ''}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge
-                      className={`${getGradeColor(mark.grade)} text-white font-bold shadow-lg`}
-                    >
-                      {mark.grade}
-                    </Badge>
                   </div>
                 </div>
               ))

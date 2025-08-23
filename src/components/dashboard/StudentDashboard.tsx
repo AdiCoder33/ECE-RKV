@@ -43,19 +43,32 @@ interface TodaySlot {
   room: string;
 }
 
+// Update ClassmateItem to handle missing profile and initials safely
 const ClassmateItem: React.FC<{ classmate: Classmate }> = ({ classmate }) => {
   const imageSrc = useProfileImageSrc(classmate.profileImage);
+  // Get initials safely
+  const initials =
+    classmate.name && typeof classmate.name === 'string'
+      ? classmate.name
+          .split(' ')
+          .map(n => n[0])
+          .join('')
+          .slice(0, 2)
+      : 'NA';
   return (
     <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
       <Avatar className="w-8 h-8">
-        <AvatarImage src={imageSrc ?? '/placeholder.svg'} alt={classmate.name} />
-        <AvatarFallback className="text-xs">
-          {classmate.name.split(' ').map(n => n[0]).join('')}
-        </AvatarFallback>
+        {imageSrc ? (
+          <AvatarImage src={imageSrc} alt={classmate.name || 'Classmate'} />
+        ) : (
+          <AvatarFallback className="text-xs bg-[#fee2e2] text-[#b91c1c]">
+            {initials}
+          </AvatarFallback>
+        )}
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{classmate.name}</p>
-        <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber}</p>
+        <p className="text-sm font-medium text-foreground truncate">{classmate.name || 'Unknown'}</p>
+        <p className="text-xs text-muted-foreground">Roll: {classmate.rollNumber || '--'}</p>
       </div>
     </div>
   );
@@ -75,6 +88,8 @@ const StudentDashboard: React.FC = () => {
   const [attendancePercentage, setAttendancePercentage] = useState(0);
   const [subjectAttendanceData, setSubjectAttendanceData] = useState<{ name: string; attendance: number }[]>([]);
   const [todaySchedule, setTodaySchedule] = useState<TodaySlot[]>([]);
+  const [showAllClassmates, setShowAllClassmates] = useState(false);
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
 
   const totalCredits = useMemo(
     () => studentSubjects.reduce((sum, s) => sum + (s.credits || 0), 0),
@@ -105,11 +120,7 @@ const StudentDashboard: React.FC = () => {
               mid1: typeof s.mid1 === 'number' ? s.mid1 : s.marks?.mid1,
               mid2: typeof s.mid2 === 'number' ? s.mid2 : s.marks?.mid2,
               mid3: typeof s.mid3 === 'number' ? s.mid3 : s.marks?.mid3
-            }))
-            .filter((s: StudentSubject) =>
-              [s.mid1, s.mid2, s.mid3].some(m => typeof m === 'number' && (m as number) > 0)
-            );
-
+            }));
           setStudentSubjects(formatted);
 
           const subjectData = formatted.map((s: StudentSubject) => ({
@@ -294,7 +305,7 @@ const StudentDashboard: React.FC = () => {
 
       {/* Quick Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {/* Today's Schedule */}
+        {/* Today's Schedule - FIRST */}
         <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg flex items-center gap-2 text-[#2563eb]">
@@ -308,19 +319,15 @@ const StudentDashboard: React.FC = () => {
             {todaySchedule.length > 0 ? todaySchedule.map(slot => (
               <div
                 key={slot.id}
-                className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded"
+                className="flex items-center p-2 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded"
               >
-                <div>
-                  <div className="font-medium text-[#2563eb]">{slot.subject}</div>
-                  <div className="text-xs text-[#2563eb] flex items-center gap-1">
-                    <User className="h-3 w-3" /> {slot.faculty}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-[#2563eb]">{slot.time}</div>
-                  <div className="text-xs text-[#2563eb] flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> {slot.room}
-                  </div>
+                {/* Subject left */}
+                <div className="font-medium text-[#2563eb] flex-1">{slot.subject}</div>
+                {/* Time center */}
+                <div className="text-sm font-medium text-[#2563eb] flex-1 text-center">{slot.time}</div>
+                {/* Room right */}
+                <div className="text-xs text-[#2563eb] flex items-center gap-1 flex-1 justify-end">
+                  <MapPin className="h-3 w-3" /> {slot.room}
                 </div>
               </div>
             )) : (
@@ -329,7 +336,7 @@ const StudentDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* My Class */}
+        {/* My Class - SECOND */}
         <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
@@ -341,28 +348,35 @@ const StudentDashboard: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-12 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded animate-pulse" />
-                ))}
-              </div>
-            ) : classmates.length > 0 ? (
-              classmates.slice(0, 4).map(classmate => (
-                <ClassmateItem key={classmate.id} classmate={classmate} />
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No classmates found</p>
-            )}
+            <div
+              className="max-h-64 overflow-y-auto pr-1"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#a5b4fc #e0e7ff'
+              }}
+            >
+              {classmates.length > 0 ? (
+                (showAllClassmates ? classmates : classmates.slice(0, 4)).map(classmate => (
+                  <ClassmateItem key={classmate.id} classmate={classmate} />
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No classmates found</p>
+              )}
+            </div>
             {classmates.length > 4 && (
-              <Button variant="ghost" size="sm" className="w-full text-indigo-600">
-                View All ({classmates.length})
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-indigo-600"
+                onClick={() => setShowAllClassmates(v => !v)}
+              >
+                {showAllClassmates ? 'Show Less' : `View All (${classmates.length})`}
               </Button>
             )}
           </CardContent>
         </Card>
 
-        {/* My Subjects */}
+        {/* My Subjects - THIRD */}
         <Card className="rounded-xl shadow border-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 backdrop-blur">
           <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg text-foreground flex items-center gap-2">
@@ -372,14 +386,8 @@ const StudentDashboard: React.FC = () => {
             <CardDescription className="text-muted-foreground text-sm">Current semester subjects</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-16 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 rounded animate-pulse" />
-                ))}
-              </div>
-            ) : studentSubjects.length > 0 ? (
-              studentSubjects.slice(0, 3).map((subject, index) => (
+            {studentSubjects.length > 0 ? (
+              (showAllSubjects ? studentSubjects : studentSubjects.slice(0, 3)).map((subject, index) => (
                 <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 hover:bg-indigo-100/60 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -396,8 +404,13 @@ const StudentDashboard: React.FC = () => {
               <p className="text-sm text-muted-foreground">No subjects assigned</p>
             )}
             {studentSubjects.length > 3 && (
-              <Button variant="ghost" size="sm" className="w-full text-blue-600">
-                View All ({studentSubjects.length})
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-blue-600"
+                onClick={() => setShowAllSubjects(v => !v)}
+              >
+                {showAllSubjects ? 'Show Less' : `View All (${studentSubjects.length})`}
               </Button>
             )}
           </CardContent>
