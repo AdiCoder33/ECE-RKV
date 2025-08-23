@@ -7,6 +7,7 @@ import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
 import AttachmentPreview from './AttachmentPreview';
+import MessageActions from './MessageActions';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
 import ChatContext from '@/contexts/ChatContext';
@@ -60,6 +61,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const chat = useContext(ChatContext);
   const [selectedMsg, setSelectedMsg] = useState<ChatMessage | PrivateMessage | null>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -114,6 +116,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleHold = (m: PrivateMessage | ChatMessage) => {
     setSelectedMsg(m);
+    setActionsOpen(true);
+  };
+
+  const handleActionClose = () => {
+    setActionsOpen(false);
+    setSelectedMsg(null);
   };
 
 
@@ -234,6 +242,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </Button>
         </div>
       </div>
+      <MessageActions
+        message={selectedMsg}
+        open={actionsOpen}
+        onClose={handleActionClose}
+        onEdit={(text) => {
+          if (selectedMsg) {
+            chat?.updateMessage(selectedMsg, text);
+          }
+          handleActionClose();
+        }}
+        onDelete={() => {
+          if (selectedMsg) {
+            chat?.deleteMessage(selectedMsg);
+          }
+          handleActionClose();
+        }}
+      />
     </>
   );
 };
