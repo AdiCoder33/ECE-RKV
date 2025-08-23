@@ -36,6 +36,7 @@ import Marks from './components/marks/Marks';
 import ChatList from './components/chat/ChatList';
 import ChatConversation from './components/chat/ChatConversation';
 import StudentProfile from './components/profile/StudentProfile';
+import ComplaintsPage from './components/complaints/ComplaintsPage';
 import Intro from './pages/Intro';
 import './App.css';
 
@@ -145,6 +146,7 @@ function App() {
                   <Route path="alumni" element={<AlumniDirectory />} />
                   <Route path="alumni/profile" element={<AlumniProfile />} />
                   <Route path="contact-alumni" element={<ContactAlumni />} />
+                  <Route path="complaints" element={<ComplaintsPage />} />
                   <Route path="resume" element={<ResumeBuilder />} />
                   <Route path="my-marks" element={<StudentMarks />} />
                   <Route path="students/:studentId" element={<StudentProfile />} />

@@ -15,28 +15,44 @@ import {
   BookOpen,
   Trophy,
   School,
-  UserCircle2,
-  Building,
   Sparkles,
   Star,
+  Trash,
+  Building,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import loaderMp4 from '@/Assets/loader.mp4';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 import { cacheProfileImage } from '@/lib/profileImageCache';
 
-const THEME = {
-  accent: '#8b0000',
-  accent2: '#a52a2a',
-  accent3: '#b86b2e',
-  accent4: '#345b7a',
-  accent5: '#2563eb',
-  accent6: '#fff6e6',
-  accent7: '#fde8e6',
-  accent8: '#e0edff',
-  accent9: '#fff8f3',
-};
+interface Achievement {
+  title: string;
+  description: string;
+  date: string;
+  category: string;
+  _id?: string;
+  id?: string | number;
+}
 
 const Profile = () => {
   const { user } = useAuth();
@@ -82,6 +98,16 @@ const Profile = () => {
     }[],
   });
 
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [showAchievementDialog, setShowAchievementDialog] = useState(false);
+  const [newAchievement, setNewAchievement] = useState<Achievement>({
+    title: '',
+    description: '',
+    date: '',
+    category: '',
+  });
+  const [editingAchievement, setEditingAchievement] = useState<Achievement | null>(null);
+
   const profileImageSrc = useProfileImageSrc(profileImage);
 
   useEffect(() => {
@@ -123,6 +149,7 @@ const Profile = () => {
         }));
         setDepartment(data.department || '');
         setProfileImage(data.profileImage || '');
+        setAchievements(data.achievements ?? []);
 
         if (viewedRole === 'student') {
           setAcademicData({
@@ -279,6 +306,74 @@ const Profile = () => {
     }
   };
 
+  const handleEditAchievement = (achievement: Achievement) => {
+    setEditingAchievement(achievement);
+    setNewAchievement({
+      title: achievement.title,
+      description: achievement.description,
+      date: achievement.date ? achievement.date.split('T')[0] : '',
+      category: achievement.category,
+    });
+    setShowAchievementDialog(true);
+  };
+
+  const handleSaveAchievement = async () => {
+    if (!viewedId) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+
+      const isEditingAch = !!editingAchievement;
+      const url = isEditingAch
+        ? `${apiBase}/professors/${viewedId}/achievements/${
+            editingAchievement?._id || editingAchievement?.id
+          }`
+        : `${apiBase}/professors/${viewedId}/achievements`;
+
+      const res = await fetch(url, {
+        method: isEditingAch ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newAchievement),
+      });
+
+      if (!res.ok)
+        throw new Error(isEditingAch ? 'Failed to update achievement' : 'Failed to add achievement');
+
+      const data = await res.json();
+
+      setAchievements((prev) => {
+        if (!isEditingAch) return [...prev, data];
+        const id = editingAchievement?._id || editingAchievement?.id;
+        return prev.map((a) => (a._id === id || a.id === id ? data : a));
+      });
+
+      setShowAchievementDialog(false);
+      setEditingAchievement(null);
+      setNewAchievement({ title: '', description: '', date: '', category: '' });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleDeleteAchievement = async (id?: string | number) => {
+    if (!id || !viewedId) return;
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiBase}/professors/${viewedId}/achievements/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete achievement');
+      setAchievements((prev) => prev.filter((a) => a._id != id && a.id != id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'admin':
@@ -295,27 +390,6 @@ const Profile = () => {
         return 'bg-gray-600 text-white';
     }
   };
-
-  const achievements = [
-    {
-      title: 'Best Project Award 2023',
-      description: 'IoT-based Smart Home Automation System',
-      date: '2023-05-15',
-      category: 'technical',
-    },
-    {
-      title: 'Inter-college Quiz Competition',
-      description: 'First Prize in Technical Quiz',
-      date: '2023-03-20',
-      category: 'academic',
-    },
-    {
-      title: 'Hackathon Winner',
-      description: 'Smart City Solutions Hackathon',
-      date: '2023-01-10',
-      category: 'technical',
-    },
-  ];
 
   const getInitials = (name: string) => {
     if (!name) return '';
@@ -370,9 +444,7 @@ const Profile = () => {
           <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#8b0000] via-[#a52a2a] to-[#b86b2e] bg-clip-text text-transparent">
             Profile
           </h1>
-          <p className="text-[#a52a2a] text-sm sm:text-base">
-            Manage your personal information and preferences
-          </p>
+          <p className="text-[#a52a2a] text-sm sm:text-base">Manage your personal information and preferences</p>
         </div>
         {canEdit && (
           <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
@@ -440,15 +512,11 @@ const Profile = () => {
                   <Camera className="h-5 w-5" />
                 </Button>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             </div>
-            <CardTitle className="text-xl sm:text-2xl font-bold text-[#8b0000] break-words">{formData.name}</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-[#8b0000] break-words">
+              {formData.name}
+            </CardTitle>
             <div className="flex justify-center mt-2">
               <Badge className={getRoleBadgeColor(viewedRole) + ' px-3 py-1 text-xs rounded-full shadow'}>
                 {viewedRole.toUpperCase()}
@@ -496,10 +564,7 @@ const Profile = () => {
         {/* Main Content */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="personal" className="space-y-4">
-            <TabsList
-              className="flex w-full bg-[#fde8e6] rounded-xl shadow overflow-x-auto no-scrollbar gap-2"
-              style={{ WebkitOverflowScrolling: 'touch' }}
-            >
+            <TabsList className="flex w-full bg-[#fde8e6] rounded-xl shadow overflow-x-auto no-scrollbar gap-2">
               <TabsTrigger
                 value="personal"
                 className="flex-1 min-w-[120px] data-[state=active]:bg-[#8b0000] data-[state=active]:text-white data-[state=active]:shadow-lg text-center text-xs sm:text-base"
@@ -620,9 +685,7 @@ const Profile = () => {
                         <p className="text-xs sm:text-sm text-[#8b0000]">Attendance</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-[#8b0000]">
-                          {academicData.subjects.length}
-                        </p>
+                        <p className="text-2xl font-bold text-[#8b0000]">{academicData.subjects.length}</p>
                         <p className="text-xs sm:text-sm text-[#345b7a]">Subjects</p>
                       </div>
                     </div>
@@ -639,10 +702,7 @@ const Profile = () => {
                               <p className="text-xs sm:text-sm text-[#8b0000]">{subject.code}</p>
                             </div>
                             <div className="text-right mt-2 sm:mt-0">
-                              <Badge
-                                variant="outline"
-                                className="border-[#8b0000] text-[#8b0000] bg-[#fff8f3]"
-                              >
+                              <Badge variant="outline" className="border-[#8b0000] text-[#8b0000] bg-[#fff8f3]">
                                 {subject.grade}
                               </Badge>
                               <p className="text-xs sm:text-sm text-[#345b7a] mt-1">{subject.credits} credits</p>
@@ -670,7 +730,7 @@ const Profile = () => {
                     {achievements.length > 0 ? (
                       achievements.map((achievement, index) => (
                         <div
-                          key={index}
+                          key={achievement._id || achievement.id || index}
                           className="border-l-4 border-[#8b0000] pl-4 py-3 bg-[#fff6e6] rounded-lg shadow-sm border border-[#8b0000]"
                         >
                           <div className="flex flex-col sm:flex-row items-start justify-between">
@@ -683,17 +743,53 @@ const Profile = () => {
                               <div className="flex items-center gap-2 mt-2">
                                 <Calendar className="h-4 w-4 text-[#8b0000]" />
                                 <span className="text-xs sm:text-sm text-[#8b0000]">
-                                  {new Date(achievement.date).toLocaleDateString()}
+                                  {achievement.date
+                                    ? new Date(achievement.date).toLocaleDateString()
+                                    : ''}
                                 </span>
-                                <Badge
-                                  variant="outline"
-                                  className="border-[#345b7a] text-[#345b7a] bg-[#fff8f3]"
-                                >
+                                <Badge variant="outline" className="border-[#345b7a] text-[#345b7a] bg-[#fff8f3]">
                                   {achievement.category}
                                 </Badge>
                               </div>
                             </div>
-                            <Trophy className="h-6 w-6 text-[#8b0000] mt-2 sm:mt-0" />
+                            <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                              <Trophy className="h-6 w-6 text-[#8b0000]" />
+                              {canEdit && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditAchievement(achievement)}
+                                  >
+                                    <Edit className="h-4 w-4 text-[#8b0000]" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <Trash className="h-4 w-4 text-[#8b0000]" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete achievement?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          className="bg-[#8b0000] text-white hover:bg-[#a52a2a]"
+                                          onClick={() => handleDeleteAchievement(achievement.id ?? achievement._id)}
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))
@@ -708,11 +804,74 @@ const Profile = () => {
                     <Button
                       variant="outline"
                       className="w-full mt-4 border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]"
+                      onClick={() => {
+                        setEditingAchievement(null);
+                        setNewAchievement({ title: '', description: '', date: '', category: '' });
+                        setShowAchievementDialog(true);
+                      }}
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Add Achievement
                     </Button>
                   )}
+                  <Dialog
+                    open={showAchievementDialog}
+                    onOpenChange={(open) => {
+                      setShowAchievementDialog(open);
+                      if (!open) {
+                        setEditingAchievement(null);
+                        setNewAchievement({ title: '', description: '', date: '', category: '' });
+                      }
+                    }}
+                  >
+                    <DialogContent className="sm:max-w-[500px] mx-auto bg-[#fff8f3] border-[#8b0000]">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#8b0000]">
+                          {editingAchievement ? 'Edit Achievement' : 'Add Achievement'}
+                        </DialogTitle>
+                        <DialogDescription className="text-[#2563eb]">
+                          {editingAchievement
+                            ? 'Update the achievement details.'
+                            : 'Enter details for the new achievement.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Title"
+                          value={newAchievement.title}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({ ...prev, title: e.target.value }))
+                          }
+                        />
+                        <Textarea
+                          placeholder="Description"
+                          value={newAchievement.description}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({ ...prev, description: e.target.value }))
+                          }
+                        />
+                        <Input
+                          type="date"
+                          value={newAchievement.date}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({ ...prev, date: e.target.value }))
+                          }
+                        />
+                        <Input
+                          placeholder="Category"
+                          value={newAchievement.category}
+                          onChange={(e) =>
+                            setNewAchievement((prev) => ({ ...prev, category: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <DialogFooter className="mt-4">
+                        <Button onClick={handleSaveAchievement} className="bg-[#8b0000] text-white hover:bg-[#a52a2a]">
+                          Save
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             </TabsContent>

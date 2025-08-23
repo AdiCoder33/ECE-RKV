@@ -151,3 +151,14 @@ export interface Achievement {
   certificate?: string;
   verified: boolean;
 }
+
+export interface Complaint {
+  id: number;
+  studentId: number;
+  studentName: string;
+  type: 'facilities' | 'faculty' | 'general';
+  title: string;
+  description: string;
+  isAnonymous: boolean;
+  createdAt: string;
+}

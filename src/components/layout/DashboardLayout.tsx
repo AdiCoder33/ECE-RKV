@@ -19,6 +19,7 @@ import {
   Clock,
   Bell,
   Menu,
+  AlertCircle,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -75,6 +76,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'marks', label: 'Marks', icon: BarChart3, path: '/dashboard/marks' },
           { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/dashboard/analytics' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
+          { id: 'complaints', label: 'Complaints', icon: AlertCircle, path: '/dashboard/complaints' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
           { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
         ];
@@ -87,6 +89,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'analytics', label: 'Department Analytics', icon: BarChart3, path: '/dashboard/analytics' },
           { id: 'marks', label: 'Marks', icon: BarChart3, path: '/dashboard/marks' },
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
+          { id: 'complaints', label: 'Complaints', icon: AlertCircle, path: '/dashboard/complaints' },
           { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
           { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
         ];
@@ -113,6 +116,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
           { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
+          { id: 'complaints', label: 'Complaint Box', icon: AlertCircle, path: '/dashboard/complaints' },
         ];
       case 'alumni':
         return [

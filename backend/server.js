@@ -32,6 +32,8 @@ const professorRoutes = require('./routes/professors');
 const publicRoutes = require('./routes/public');
 const deviceRoutes = require('./routes/devices');
 const pushRoutes = require('./routes/push');
+const complaintRoutes = require('./routes/complaints');
+const { startAttendanceAlertScheduler } = require('./services/attendanceAlertScheduler');
 
 // Middleware
 app.use(cors({
@@ -79,6 +81,7 @@ app.use('/api/timetable', require('./routes/timetable'));
 app.use('/api/public', publicRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/complaints', complaintRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -93,6 +96,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 connectToDatabase().then(() => {
+  startAttendanceAlertScheduler();
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

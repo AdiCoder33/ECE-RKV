@@ -1,7 +1,21 @@
 const express = require('express');
 const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { sendToUsers } = require('../services/pushService');
 const router = express.Router();
+
+async function shouldSendAttendanceReminder(userId) {
+  try {
+    const { recordset } = await executeQuery(
+      'SELECT attendance_reminders FROM user_settings WHERE user_id = ?',
+      [userId]
+    );
+    if (!recordset.length) return true;
+    return recordset[0].attendance_reminders !== 0;
+  } catch (err) {
+    return true;
+  }
+}
 
 // Get attendance records
 router.get('/', authenticateToken, async (req, res, next) => {
@@ -293,7 +307,40 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     });
     
     await Promise.all(insertPromises);
-    
+    const studentIds = [...new Set(attendanceData.map(r => r.studentId))];
+    if (studentIds.length) {
+      const placeholders = studentIds.map(() => '?').join(',');
+      const { recordset } = await executeQuery(
+        `SELECT student_id,
+                ROUND(SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS percentage
+           FROM attendance
+          WHERE student_id IN (${placeholders})
+          GROUP BY student_id`,
+        studentIds
+      );
+      const lowAttendance = recordset.filter(r => r.percentage !== null && r.percentage < 75);
+      for (const student of lowAttendance) {
+        if (await shouldSendAttendanceReminder(student.student_id)) {
+          const message = `Your attendance is ${student.percentage}%. Please attend classes regularly.`;
+          await executeQuery(
+            'INSERT INTO notifications (title, message, type, user_id, data) VALUES (?, ?, ?, ?, ?)',
+            [
+              'Attendance Alert',
+              message,
+              'attendance_alert',
+              student.student_id,
+              JSON.stringify({ url: '/dashboard/student-attendance' })
+            ]
+          );
+          sendToUsers([student.student_id], {
+            title: 'Attendance Alert',
+            body: message,
+            data: { url: '/dashboard/student-attendance' }
+          }).catch(err => console.error('Push notification error:', err));
+        }
+      }
+    }
+
     res.json({ message: 'Attendance marked successfully' });
   } catch (error) {
     console.error('Mark attendance error:', error);
@@ -302,3 +349,4 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
 });
 
 module.exports = router;
+module.exports.shouldSendAttendanceReminder = shouldSendAttendanceReminder;

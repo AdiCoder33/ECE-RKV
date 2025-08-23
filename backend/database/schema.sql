@@ -245,6 +245,19 @@ CREATE TABLE alumni_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Professor Achievements table
+CREATE TABLE professor_achievements (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    professor_id int NOT NULL,
+    title nvarchar(255) NOT NULL,
+    description nvarchar(max),
+    date date NOT NULL,
+    category nvarchar(100),
+    created_at datetime2 DEFAULT GETDATE(),
+    updated_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Messages table for private messaging
 CREATE TABLE messages (
     id int IDENTITY(1,1) PRIMARY KEY,
@@ -290,8 +303,20 @@ CREATE TABLE push_subscriptions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Complaints table
+CREATE TABLE complaints (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    student_id int NOT NULL,
+    type varchar(100) NOT NULL,
+    title varchar(255) NOT NULL,
+    description text NOT NULL,
+    is_anonymous bit DEFAULT 0,
+    created_at datetime DEFAULT GETDATE(),
+    FOREIGN KEY (student_id) REFERENCES users(id)
+);
+
 -- Insert sample data
-INSERT INTO users (name, email, password, role, department) VALUES 
+INSERT INTO users (name, email, password, role, department) VALUES
 ('Admin User', 'admin@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'ECE'),
 ('Dr. Smith', 'hod@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'hod', 'ECE'),
 ('Prof. Johnson', 'prof@college.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'professor', 'ECE'),
