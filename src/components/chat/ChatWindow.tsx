@@ -140,7 +140,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <>
-      <CardHeader className="h-16 px-4 flex items-center justify-between border-b bg-[#8B1F2F]">
+      <CardHeader className="h-16 px-4 py-0 flex flex-row items-center justify-between border-b bg-[#8B1F2F] space-y-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
             <ArrowLeft className="h-5 w-5" />
