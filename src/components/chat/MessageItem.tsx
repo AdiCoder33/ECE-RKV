@@ -97,10 +97,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Alignment handled by flex container
 
-  const isEdited =
-    'updated_at' in message &&
-    message.updated_at &&
-    message.updated_at !== message.created_at;
+  const isEdited = 'edited_at' in message && message.edited_at;
 
   return (
     // Outer wrapper intentionally has no horizontal padding so bubbles touch window edges
