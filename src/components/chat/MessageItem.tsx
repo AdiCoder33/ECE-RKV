@@ -101,7 +101,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   return (
     <div
-      className={`flex flex-col ${align} mb-1 px-1 ${selected ? 'bg-green-100/40' : ''}`}
+      className={`flex flex-col ${align} mb-1 ${selected ? 'bg-green-100/40' : ''}`}
       onContextMenu={handleContext}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
