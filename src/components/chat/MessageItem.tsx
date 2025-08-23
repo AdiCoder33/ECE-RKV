@@ -51,7 +51,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   // Base bubble styling. Limit width to 70% of the container to prevent overflow.
   const bubbleClass =
-    "inline-flex items-end whitespace-pre-wrap px-3 py-2 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words break-all relative after:absolute after:-bottom-1 after:w-0 after:h-0";
+    "inline-flex items-end whitespace-pre-wrap px-3 pt-2 pb-5 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words break-all relative after:absolute after:-bottom-1 after:w-0 after:h-0";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
