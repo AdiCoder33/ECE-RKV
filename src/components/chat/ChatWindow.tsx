@@ -2,7 +2,7 @@ import React, { useMemo, useState, useContext, useRef, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, Loader2, Phone, Video, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
@@ -154,14 +154,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <CardTitle className="text-sm font-semibold text-white">{activeChat.title}</CardTitle>
             <span className="text-xs text-white/80">{statusText}</span>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="text-white">
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white">
-            <Video className="h-5 w-5" />
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
