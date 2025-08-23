@@ -2,17 +2,24 @@ import React, { useMemo, useState, useContext, useRef, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Pencil, Trash2 } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
 import AttachmentPreview from './AttachmentPreview';
-import MessageActions from './MessageActions';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { formatIST } from '@/utils/date';
 import ChatContext from '@/contexts/ChatContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getProfileImageSrc } from '@/lib/profileImage';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
@@ -60,8 +67,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onOpenGroupDialog: _onOpenGroupDialog,
 }) => {
   const chat = useContext(ChatContext);
-  const [selectedMsg, setSelectedMsg] = useState<ChatMessage | PrivateMessage | null>(null);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [selectedMsg, setSelectedMsg] =
+    useState<ChatMessage | PrivateMessage | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -115,13 +124,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       : 'Group chat';
 
   const handleHold = (m: PrivateMessage | ChatMessage) => {
-    setSelectedMsg(m);
-    setActionsOpen(true);
+    setSelectedMsg(prev => (prev?.id === m.id ? null : m));
   };
 
-  const handleActionClose = () => {
-    setActionsOpen(false);
-    setSelectedMsg(null);
+  const handleDelete = () => {
+    if (selectedMsg) {
+      chat?.deleteMessage(selectedMsg);
+      setSelectedMsg(null);
+    }
+  };
+
+  const handleEditSave = () => {
+    if (selectedMsg) {
+      chat?.updateMessage(selectedMsg, editText);
+      setSelectedMsg(null);
+    }
+    setEditing(false);
   };
 
 
@@ -149,7 +167,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     <>
       <CardHeader className="h-16 px-4 py-0 flex flex-row items-center justify-between border-b bg-[#8B1F2F] space-y-0">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack} className="text-white">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => (selectedMsg ? setSelectedMsg(null) : onBack())}
+            className="text-white"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Avatar className="h-9 w-9">
@@ -163,6 +186,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <span className="text-xs text-white/80">{statusText}</span>
           </div>
         </div>
+        {selectedMsg && (
+          <div className="flex items-center gap-2">
+            {(
+              'sender_id' in selectedMsg
+                ? selectedMsg.sender_id
+                : selectedMsg.senderId
+            ) === currentUserId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setEditText(selectedMsg.content);
+                  setEditing(true);
+                }}
+                className="text-white"
+              >
+                <Pencil className="h-5 w-5" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              className="text-white"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
         {loading ? (
@@ -242,23 +294,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </Button>
         </div>
       </div>
-      <MessageActions
-        message={selectedMsg}
-        open={actionsOpen}
-        onClose={handleActionClose}
-        onEdit={(text) => {
-          if (selectedMsg) {
-            chat?.updateMessage(selectedMsg, text);
-          }
-          handleActionClose();
-        }}
-        onDelete={() => {
-          if (selectedMsg) {
-            chat?.deleteMessage(selectedMsg);
-          }
-          handleActionClose();
-        }}
-      />
+      <Dialog open={editing} onOpenChange={o => !o && setEditing(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Message</DialogTitle>
+          </DialogHeader>
+          <Textarea value={editText} onChange={e => setEditText(e.target.value)} />
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSave}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
