@@ -95,9 +95,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
     ? 'after:right-[-8px] after:border-l-[#8B1F2F] after:border-l-[8px] after:border-y-transparent after:border-y-[6px]'
     : 'after:left-[-8px] after:border-r-white after:border-r-[8px] after:border-y-transparent after:border-y-[6px]';
 
-  // Alignment
-  const align = isOwn ? 'items-end justify-end' : 'items-start justify-start';
-  const margin = isOwn ? 'ml-auto' : 'mr-auto';
+  // Alignment handled by flex container
 
   const isEdited =
     'updated_at' in message &&
@@ -107,7 +105,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   return (
     // Outer wrapper intentionally has no horizontal padding so bubbles touch window edges
     <div
-      className={`flex flex-col w-full ${align} mb-1 ${selected ? 'bg-green-100/40' : ''}`}
+      className={`flex flex-col w-full mb-1 ${selected ? 'bg-green-100/40' : ''}`}
       onContextMenu={handleContext}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -119,11 +117,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </div>
       )}
       {/* Message bubble */}
-      <div className={`${margin} text-left`}>
+      <div className={`w-full flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${isOwn ? 'pr-12' : ''} ${
-            selected ? 'ring-2 ring-green-400' : ''
-          }`}
+          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${
+            isOwn ? 'pr-12' : ''
+          } ${selected ? 'ring-2 ring-green-400' : ''}`}
         >
           <span className="flex-1">{message.content}</span>
           <span
@@ -143,12 +141,14 @@ const MessageItem: React.FC<MessageItemProps> = ({
             )}
           </span>
         </div>
-        {isEdited && (
+      </div>
+      {isEdited && (
+        <div className={`w-full flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
           <div className="pl-2 pt-1 text-[11px] italic text-gray-400 text-left">
             edited
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
