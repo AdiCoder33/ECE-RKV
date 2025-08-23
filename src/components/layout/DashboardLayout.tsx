@@ -19,6 +19,7 @@ import {
   Clock,
   Bell,
   Menu,
+  AlertCircle,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -113,6 +114,7 @@ const DashboardLayout: React.FC = () => {
           { id: 'announcements', label: 'Announcements', icon: Bell, path: '/dashboard/announcements' },
           { id: 'profile', label: 'My Profile', icon: User, path: '/dashboard/profile' },
           { id: 'settings', label: 'Settings', icon: Settings, path: '/dashboard/settings' },
+          { id: 'complaints', label: 'Complaint Box', icon: AlertCircle, path: '/dashboard/complaints' },
         ];
       case 'alumni':
         return [
