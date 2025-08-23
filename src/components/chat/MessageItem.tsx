@@ -100,6 +100,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
     message.updated_at !== message.created_at;
 
   return (
+    // Outer wrapper intentionally has no horizontal padding so bubbles touch window edges
     <div
       className={`flex flex-col ${align} mb-1 ${selected ? 'bg-green-100/40' : ''}`}
       onContextMenu={handleContext}
