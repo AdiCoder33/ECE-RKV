@@ -93,6 +93,14 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
     }
   }, [open]);
 
+  const handleAddAll = async () => {
+    for (const user of users) {
+      if (!added.has(user.id)) {
+        await handleAdd(user.id);
+      }
+    }
+  };
+
   const handleAdd = async (userId: number) => {
     try {
       const token = localStorage.getItem('token');
@@ -113,9 +121,9 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] p-6 flex flex-col">
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] p-6 flex flex-col bg-[#fbeee6] border-[#a83246]">
         <DialogHeader className="p-0 pb-4">
-          <DialogTitle>Add Members to {group.name}</DialogTitle>
+          <DialogTitle className="text-[#8B1F2F]">Add Members to {group.name}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -123,44 +131,44 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
               placeholder="Search users..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1"
+              className="flex-1 border-[#a83246] focus:ring-[#a83246]"
             />
             <div className="flex gap-2">
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="w-[110px]">
+                <SelectTrigger className="w-[110px] border-[#a83246] focus:ring-[#a83246]">
                   <SelectValue placeholder="Role" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="hod">HOD</SelectItem>
-                  <SelectItem value="professor">Professor</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="alumni">Alumni</SelectItem>
+                <SelectContent className="bg-[#fbeee6] border-[#a83246]">
+                  <SelectItem value="all" className="hover:bg-[#f5e6e9]">All</SelectItem>
+                  <SelectItem value="admin" className="hover:bg-[#f5e6e9]">Admin</SelectItem>
+                  <SelectItem value="hod" className="hover:bg-[#f5e6e9]">HOD</SelectItem>
+                  <SelectItem value="professor" className="hover:bg-[#f5e6e9]">Professor</SelectItem>
+                  <SelectItem value="student" className="hover:bg-[#f5e6e9]">Student</SelectItem>
+                  <SelectItem value="alumni" className="hover:bg-[#f5e6e9]">Alumni</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={year} onValueChange={setYear}>
-                <SelectTrigger className="w-[90px]">
+                <SelectTrigger className="w-[90px] border-[#a83246] focus:ring-[#a83246]">
                   <SelectValue placeholder="Year" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
+                <SelectContent className="bg-[#fbeee6] border-[#a83246]">
+                  <SelectItem value="all" className="hover:bg-[#f5e6e9]">All</SelectItem>
+                  <SelectItem value="1" className="hover:bg-[#f5e6e9]">1</SelectItem>
+                  <SelectItem value="2" className="hover:bg-[#f5e6e9]">2</SelectItem>
+                  <SelectItem value="3" className="hover:bg-[#f5e6e9]">3</SelectItem>
+                  <SelectItem value="4" className="hover:bg-[#f5e6e9]">4</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={section} onValueChange={setSection}>
-                <SelectTrigger className="w-[100px]">
+                <SelectTrigger className="w-[100px] border-[#a83246] focus:ring-[#a83246]">
                   <SelectValue placeholder="Section" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="A">A</SelectItem>
-                  <SelectItem value="B">B</SelectItem>
-                  <SelectItem value="C">C</SelectItem>
-                  <SelectItem value="D">D</SelectItem>
+                <SelectContent className="bg-[#fbeee6] border-[#a83246]">
+                  <SelectItem value="all" className="hover:bg-[#f5e6e9]">All</SelectItem>
+                  <SelectItem value="A" className="hover:bg-[#f5e6e9]">A</SelectItem>
+                  <SelectItem value="B" className="hover:bg-[#f5e6e9]">B</SelectItem>
+                  <SelectItem value="C" className="hover:bg-[#f5e6e9]">C</SelectItem>
+                  <SelectItem value="D" className="hover:bg-[#f5e6e9]">D</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -168,15 +176,16 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
 
           <div className="flex-1 overflow-y-auto space-y-2">
             {users.map(user => (
-              <div key={user.id} className="flex items-center justify-between border p-2 rounded">
+              <div key={user.id} className="flex items-center justify-between border border-[#a83246] p-2 rounded bg-white">
                 <div>
-                  <p className="font-medium leading-none">{user.name}</p>
-                  <p className="text-sm text-muted-foreground">{user.role}</p>
+                  <p className="font-medium leading-none text-[#8B1F2F]">{user.name}</p>
+                  <p className="text-sm text-gray-600">{user.role}</p>
                 </div>
                 <Button
                   size="sm"
                   disabled={added.has(user.id)}
                   onClick={() => handleAdd(user.id)}
+                  className="bg-[#a83246] hover:bg-[#c44558] text-white"
                 >
                   {added.has(user.id) ? 'Added' : (
                     <><UserPlus className="h-4 w-4 mr-1" />Add</>
@@ -185,12 +194,25 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
               </div>
             ))}
             {users.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">No users found</div>
+              <div className="text-center text-gray-600 py-8">No users found</div>
             )}
           </div>
 
-          <div className="pt-4 flex justify-end">
-            <Button variant="outline" onClick={onClose}>Close</Button>
+          <div className="pt-4 flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={handleAddAll} // New function to handle adding all users
+              className="border-[#a83246] text-[#8B1F2F] hover:bg-[#f5e6e9]"
+            >
+              Add All
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              className="border-[#a83246] text-[#8B1F2F] hover:bg-[#f5e6e9]"
+            >
+              Close
+            </Button>
           </div>
         </div>
       </DialogContent>

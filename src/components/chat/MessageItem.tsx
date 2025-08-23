@@ -125,29 +125,32 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const align = isOwn ? 'items-end justify-end' : 'items-start justify-start';
   const margin = isOwn ? 'ml-auto' : 'mr-auto';
 
-  const isEdited =
-    'updated_at' in message &&
-    message.updated_at &&
-    ('created_at' in message 
-      ? message.updated_at !== message.created_at
-      : message.updated_at !== message.timestamp);
+  // Check if message has been edited
+  const isEdited = 
+    ('updated_at' in message && message.updated_at && 
+     ('created_at' in message ? message.updated_at !== message.created_at : 
+      ('timestamp' in message ? message.updated_at !== message.timestamp : false))) ||
+    ('isEdited' in message && message.isEdited);
 
-  // Message status
+  // Message status - handle both direct and group message structures
   const messageStatus = 'status' in message ? message.status : 'sent';
 
-  // Status tick component - white double ticks for delivered, brown for read
+  // Status tick component - WhatsApp-style indicators
   const StatusIndicator = () => {
     if (!isOwn) return null;
     
     switch (messageStatus) {
       case 'sent':
-        return <Check className="h-3 w-3 text-white/80" />;
+        // Single grey tick
+        return <Check className="h-3 w-3 text-gray-400" />;
       case 'delivered':
-        return <CheckCheck className="h-3 w-3 text-white/80" />;
+        // Double grey ticks
+        return <CheckCheck className="h-3 w-3 text-gray-400" />;
       case 'read':
-        return <CheckCheck className="h-3 w-3 text-amber-600" />;
+        // Double blue ticks (WhatsApp style)
+        return <CheckCheck className="h-3 w-3 text-blue-500" />;
       default:
-        return null;
+        return <Check className="h-3 w-3 text-gray-400" />;
     }
   };
 

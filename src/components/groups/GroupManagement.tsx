@@ -53,8 +53,11 @@ const GroupManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<ChatGroup | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const fetchGroups = async () => {
+
+const fetchGroups = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups`, {
@@ -169,11 +172,16 @@ const GroupManagement = () => {
     }
   };
 
-  return (
-    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+const handleChat = (groupId: string) => {
+  // Redirect to the specific chat
+  window.location.href = `/chat/${groupId}`;
+};
+
+return (
+    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0 bg-beige min-h-screen"> {/* Set background color to beige */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Chat Groups</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#8B1F2F] text-left pl-4">Chat Groups</h1>
           <p className="text-muted-foreground">Manage chat groups and communications</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -344,10 +352,7 @@ const GroupManagement = () => {
                 <span>{group.createdAt}</span>
               </div>
               <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                <Button size="sm" variant="outline" className="flex-1">
-                  <MessageCircle className="h-4 w-4 mr-1" />
-                  Chat
-                </Button>
+                {/* Removed Chat Button */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -367,7 +372,11 @@ const GroupManagement = () => {
                   size="sm"
                   variant="outline"
                   className="text-red-600 hover:text-red-700"
-                  onClick={() => handleDeleteGroup(group.id)}
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete the group "${group.name}"?`)) {
+                      handleDeleteGroup(group.id);
+                    }
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -403,6 +412,39 @@ const GroupManagement = () => {
           }}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-[#fbeee6] border-[#a83246]">
+          <DialogHeader>
+            <DialogTitle className="text-[#8B1F2F]">Confirm Delete</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Are you sure you want to delete the group "{groupToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="border-[#a83246] text-[#8B1F2F] hover:bg-[#f5e6e9]"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (groupToDelete) {
+                  handleDeleteGroup(groupToDelete.id);
+                  setIsDeleteModalOpen(false);
+                  setGroupToDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Group
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
