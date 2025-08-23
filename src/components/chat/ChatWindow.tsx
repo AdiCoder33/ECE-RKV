@@ -12,14 +12,8 @@ import { formatIST } from '@/utils/date';
 import ChatContext from '@/contexts/ChatContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getProfileImageSrc } from '@/lib/profileImage';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+
+type Message = ChatMessage | PrivateMessage;
 
 interface ChatWindowProps {
   activeChat: { type: 'direct' | 'group'; id: string; title: string };
@@ -30,9 +24,10 @@ interface ChatWindowProps {
   hasMore: boolean;
   loadMore: () => void;
   message: string;
+  setMessage: (msg: string) => void;
   onMessageChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  onSend: () => void;
+  onSend: () => Promise<void>;
   attachments: { file: File; preview: string }[];
   onFileSelect: (file: File, type?: 'image' | 'document') => void;
   onRemoveAttachment: (idx: number) => void;
@@ -55,6 +50,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   hasMore,
   loadMore,
   message,
+  setMessage,
   onMessageChange,
   onKeyPress,
   onSend,
@@ -69,8 +65,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const chat = useContext(ChatContext);
   const [selectedMsg, setSelectedMsg] =
     useState<ChatMessage | PrivateMessage | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState('');
+  const [editingMsg, setEditingMsg] = useState<Message | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -134,17 +129,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const handleEditSave = () => {
-    if (selectedMsg) {
-      chat?.updateMessage(selectedMsg, editText);
+
+  const handleSend = async () => {
+    if (editingMsg) {
+      await chat?.updateMessage(editingMsg, message);
+      setEditingMsg(null);
       setSelectedMsg(null);
+    } else {
+      await onSend();
     }
-    setEditing(false);
-  };
-
-
-  const handleSend = () => {
-    onSend();
+    setMessage('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -170,7 +164,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => (selectedMsg ? setSelectedMsg(null) : onBack())}
+            onClick={() => {
+              if (editingMsg) {
+                setEditingMsg(null);
+                setSelectedMsg(null);
+                setMessage('');
+              } else if (selectedMsg) {
+                setSelectedMsg(null);
+              } else {
+                onBack();
+              }
+            }}
             className="text-white"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -197,8 +201,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  setEditText(selectedMsg.content);
-                  setEditing(true);
+                  setEditingMsg(selectedMsg);
+                  setMessage(selectedMsg.content);
+                  textareaRef.current?.focus();
                 }}
                 className="text-white"
               >
@@ -257,6 +262,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
       </CardContent>
       <div className="border-t bg-[#fbeee6] px-4 py-3">
+        {editingMsg && (
+          <div className="flex items-center justify-between bg-[#fdf7f2] text-xs px-2 py-1 rounded mb-2">
+            <span>Editing message</span>
+            <button
+              onClick={() => {
+                setEditingMsg(null);
+                setSelectedMsg(null);
+                setMessage('');
+              }}
+              className="text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {attachments.map((att, idx) => (
@@ -294,20 +314,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </Button>
         </div>
       </div>
-      <Dialog open={editing} onOpenChange={o => !o && setEditing(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Message</DialogTitle>
-          </DialogHeader>
-          <Textarea value={editText} onChange={e => setEditText(e.target.value)} />
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setEditing(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditSave}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };
