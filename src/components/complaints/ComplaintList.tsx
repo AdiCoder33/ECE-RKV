@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { THEME } from '@/theme';
 import type { Complaint } from '@/types';
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -26,18 +27,16 @@ const ComplaintList: React.FC = () => {
           throw new Error('Failed to fetch complaints');
         }
         const data = await response.json();
-        const complaintsData: Complaint[] = data.map(
-          (c: Record<string, unknown>) => ({
-            id: c.id as number,
-            studentId: c.student_id as number,
-            studentName: c.student_name as string,
-            type: c.type as Complaint['type'],
-            title: c.title as string,
-            description: c.description as string,
-            isAnonymous: c.is_anonymous as boolean,
-            createdAt: c.created_at as string,
-          })
-        );
+        const complaintsData: Complaint[] = data.map((c: Record<string, unknown>) => ({
+          id: c.id as number,
+          studentId: c.student_id as number,
+          studentName: c.student_name as string,
+          type: c.type as Complaint['type'],
+          title: c.title as string,
+          description: c.description as string,
+          isAnonymous: c.is_anonymous as boolean,
+          createdAt: c.created_at as string,
+        }));
         setComplaints(complaintsData);
       } catch (err) {
         console.error('Fetch complaints error', err);
@@ -78,15 +77,15 @@ const ComplaintList: React.FC = () => {
 
   return (
     <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Complaints</CardTitle>
+      <CardHeader style={{ color: THEME.accent }}>
+        <CardTitle style={{ color: THEME.accent }}>Complaints</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Type</TableHead>
               <TableHead>Title</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Reporter</TableHead>
@@ -95,8 +94,8 @@ const ComplaintList: React.FC = () => {
           <TableBody>
             {complaints.map((c) => (
               <TableRow key={c.id}>
-                <TableCell>{c.type}</TableCell>
                 <TableCell>{c.title}</TableCell>
+                <TableCell>{c.type}</TableCell>
                 <TableCell>{getSnippet(c.description)}</TableCell>
                 <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
