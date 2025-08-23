@@ -5,7 +5,6 @@ import { Virtuoso } from 'react-virtuoso';
 import { ArrowLeft, Loader2, Phone, Video, Send } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
-import CameraUpload from './CameraUpload';
 import MessageItem from './MessageItem';
 import AttachmentPreview from './AttachmentPreview';
 import { ChatMessage, PrivateMessage } from '@/types';
@@ -219,11 +218,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ))}
           </div>
         )}
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <div className="flex items-center bg-[#fdf7f2] rounded-full px-2 flex-1">
             <EmojiPicker onEmojiSelect={onEmojiSelect} />
             <FileUpload onFileSelect={onFileSelect} disabled={false} />
-            <CameraUpload onCapture={(file) => onFileSelect(file, 'image')} />
             <textarea
               ref={textareaRef}
               rows={1}
@@ -238,7 +236,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <Button
             onClick={handleSend}
             disabled={!message.trim() && attachments.length === 0}
-            className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded-full h-10 w-10 flex items-center justify-center"
+            className="bg-[#8B1F2F] text-white hover:bg-[#a83246] rounded-full h-10 w-10 flex items-center justify-center flex-shrink-0"
           >
             <Send className="h-4 w-4" />
           </Button>
