@@ -169,7 +169,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               startReached={() => hasMore && loadMore()}
               followOutput="smooth"
               initialTopMostItemIndex={Math.max(groupedItems.length - 1, 0)}
-              className="flex-1 px-2 py-3 overflow-x-hidden"
+              className="flex-1 px-1 py-3 overflow-x-hidden"
               itemContent={(index, item) => {
                 if (item.type === 'date') {
                   return (
