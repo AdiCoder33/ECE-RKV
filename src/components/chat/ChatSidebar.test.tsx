@@ -36,11 +36,15 @@ vi.mock('./ConversationList', () => ({
     search,
     onSearchChange,
     searchResults,
+    filter,
+    onFilterChange,
   }: {
     onStartChat: (u: unknown) => void;
     search: string;
     onSearchChange: (v: string) => void;
     searchResults: { id: number; name: string }[];
+    filter: 'all' | 'dms' | 'groups';
+    onFilterChange: (f: 'all' | 'dms' | 'groups') => void;
   }) => (
     <div>
       <input
@@ -48,6 +52,7 @@ vi.mock('./ConversationList', () => ({
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
       />
+      <div onClick={() => onFilterChange('all')}>{filter}</div>
       {searchResults.map(u => (
         <div key={u.id} onClick={() => onStartChat(u)}>
           {u.name}
