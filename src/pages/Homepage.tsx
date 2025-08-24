@@ -9,9 +9,44 @@ import heroimage1 from "../Assets/hero2.jpg";
 import heroimage2 from "../Assets/hero3.jpeg";
 import heroimage3 from "../Assets/hero1.jpg";
 // Hero assets
-import hero1 from "../Assets/hero1.jpg";
-import hero2 from "../Assets/hero2.jpg";
+import department_img from "../Assets/welcom_images/department_img.jpg";
+import director_and_co from "../Assets/welcom_images/director_and_co.jpg";
 import hero3 from "../Assets/hero3.jpeg";
+import department2 from "../Assets/department2.jpg";
+
+// Achievement images
+import achievement1 from "../Assets/achivements/avhivement1.jpeg";
+import achievement2 from "../Assets/achivements/achivement2.jpeg";
+import achievement3 from "../Assets/achivements/achivement3.jpeg";
+
+// Announcement illustration
+import announcementIllustration from "../Assets/Announcement-Illustration.png";
+
+// Lab facility images
+import lab1Image from "../Assets/lab_facilities/lab1.jpg";
+import lab2Image from "../Assets/lab_facilities/lab2.jpg";
+import lab3Image from "../Assets/lab_facilities/lab3.jpg";
+
+// Faculty images - imported directly
+import arunKumarReddy from "../Assets/faculty/arun_kumar_reddy.jpg";
+import sudhakarReddy from "../Assets/faculty/sudhakar_reddy.jpg";
+import lakshmiShirisha from "../Assets/faculty/lakshmi_shirisha.jpg";
+import lakshmiPrasanna from "../Assets/faculty/lakshmi_prasanna.jpg";
+import abdulMunaf from "../Assets/faculty/abdul_munaf.jpg";
+import mAnitha from "../Assets/faculty/m_anitha.jpg";
+import madhanMohan from "../Assets/faculty/madhan_mohan.jpg";
+import mohanRaju from "../Assets/faculty/mohan_raju.jpg";
+import naresh from "../Assets/faculty/naresh.jpg";
+import pavanKumar from "../Assets/faculty/pavan_kumar.jpg";
+import safariBhaskarRao from "../Assets/faculty/safari_bhaskar_rao.jpg";
+import shaikRiyazum from "../Assets/faculty/shaik_riyazum.jpg";
+import shivaKrishna from "../Assets/faculty/shiva_krishna.jpg";
+import krishnamHarinathReddy from "../Assets/faculty/krishnam_harinath_reddy.jpg";
+import janardhanReddy from "../Assets/faculty/janardhan_reddy.jpg";
+import venkatesulu from "../Assets/faculty/venkatesulu.jpg";
+//icon imports
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faLocationDot } from '@fortawesome/free-solid-svg-icons'
 
 interface Announcement {
   author: string;
@@ -23,11 +58,11 @@ interface Announcement {
 
 /** Explicitly typed framer-motion variants */
 const floatVariant: Variants = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 40, damping: 12, duration: 1.0 },
+    transition: { type: "spring", stiffness: 80, damping: 20, duration: 0.4 },
   },
 };
 
@@ -105,7 +140,7 @@ const LandingPage: React.FC = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await fetch(`${apiBase}/public/announcements?scope=landing`);
+        const response = await fetch(${apiBase}/public/announcements?scope=landing);
         if (!response.ok) {
           throw new Error('Failed to fetch announcements');
         }
@@ -129,20 +164,20 @@ const LandingPage: React.FC = () => {
   }, [apiBase]);
 
   // --- Hero slider state ---
-  const images = [hero1, hero2, hero3];
+  const images = [department_img, director_and_co, hero3];
   // Captions for each image (one caption per image)
   const captions: { title: string; subtitle: string }[] = [
     {
-      title: "Welcome to ECE Department",
-      subtitle: "Innovating the future through technology, research, and collaboration.",
+      title: "Our Department",
+      subtitle: "Excellence in Electronics and Communication Engineering education and research.",
     },
     {
-      title: "Cutting-edge Labs & Research",
-      subtitle: "Hands-on IoT, VLSI and signal-processing labs empowering our students.",
+      title: "Leadership Team",
+      subtitle: "Dedicated faculty and administration guiding our students to success.",
     },
     {
       title: "Join Our Community",
-      subtitle: "Collaborate, build, and grow — prepare for tomorrow’s challenges.",
+      subtitle: "Collaborate, Build and Grow for tomorrow challenges",
     },
   ];
 
@@ -228,12 +263,22 @@ const LandingPage: React.FC = () => {
   };
 
   const facultyList = [
-    { name: "MR.Y Arun Kumar", title: "HOD of the department" },
-    { name: "Prof. S. Reddy", title: "Professor" },
-    { name: "Dr. P. Sharma", title: "Professor" },
-    { name: "Dr. M. Rao", title: "Associate Professor" },
-    { name: "Ms. T. Devi", title: "Assistant Professor" },
-    { name: "Mr. V. Singh", title: "Lecturer" },
+    { name: "Mr. Y Arun Kumar Reddy", title: "Head of the department", image: arunKumarReddy },
+    { name: "Mr. B. V. Sudhakar Reddy", title: "Assistant Professor", image: sudhakarReddy },
+    { name: "Ms. G. Lakshmi Shireesha", title: "Assistant Professor", image: lakshmiShirisha },
+    { name: "Mr. Janardhan. Reddy", title: "Assistant Professor", image: janardhanReddy },
+    { name: "Mrs. V Lakshmi Prasanna", title: "Assistant Professor", image: lakshmiPrasanna },
+    { name: "Mr. P. Siva Krishna", title: "Assistant Professor", image: shivaKrishna },
+    { name: "Mr. K. Abdul Munaf", title: "Assistant Professor", image: abdulMunaf },
+    { name: "Mrs. M. Anitha", title: "Assistant Professor", image: mAnitha },
+    { name: "Mr. B Madhan Mohan", title: "Assistant Professor", image: madhanMohan },
+    { name: "Mr. N Mohan Raju", title: "Assistant Professor", image: mohanRaju },
+    { name: "Mr. T Naresh", title: "Assistant Professor", image: naresh },
+    { name: "Mr. R. Pavan kumar", title: "Assistant Professor", image: pavanKumar },
+    { name: "Mr. SAFARI BHASKAR RAO", title: "Assistant Professor", image: safariBhaskarRao },
+    { name: "Mrs. SHAIK RIAZUM", title: "Assistant Professor", image: shaikRiyazum },
+    { name: "Mr. K. Harinath Reddy", title: "Assistant Professor", image: krishnamHarinathReddy },
+    { name: "Mr. Venkatesulu", title: "Assistant Professor", image: venkatesulu },
   ];
 
   const FacultySection: React.FC = () => {
@@ -302,12 +347,12 @@ const LandingPage: React.FC = () => {
         variants={floatVariant}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: false, amount: 0.2 }}
+        viewport={{ once: true, amount: 0.1 }}
       >
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-red-700 mb-6">
           Faculty
         </h2>
-        <div className="relative max-w-6xl mx-auto">
+        <div className="relative max-w-7xl mx-auto">
           {/* Left Arrow */}
           <button
             type="button"
@@ -345,11 +390,17 @@ const LandingPage: React.FC = () => {
             {facultyList.map((fac, i) => (
               <div
                 key={i}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 text-center min-w-[160px] sm:min-w-[220px]`} // ADDED: dark mode class
+                className={bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 text-center min-w-[160px] sm:min-w-[220px]} // ADDED: dark mode class
               >
-                <div
-                  className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gray-200 rounded-full mb-4`}
-                />
+                {fac.image ? (
+                  <img src={fac.image} alt={fac.name}
+                    className="w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-full mb-4 object-cover"
+                  />
+                ) : (
+                  <div
+                    className={w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gray-200 rounded-full mb-4}
+                  />
+                )}
                 <h3 className="font-bold text-base sm:text-lg dark:text-white">
                   {fac.name}
                 </h3> {/* ADDED: dark mode class */}
@@ -402,30 +453,19 @@ const LandingPage: React.FC = () => {
       icon: "🏆",
       title: "National-Level Hackathon Winners",
       description: "Our student team 'Innovators' secured the first place in the National Smart India Hackathon.",
-      image: heroimage1  },
+      image: achievement1
+    },
     {
       icon: "🔬",
       title: "Patents Filed by Faculty",
       description: "Two of our faculty members have successfully filed patents for their research on IoT-based energy systems.",
-      image: heroimage2,
+      image: achievement2,
     },
     {
       icon: "🚀",
       title: "Record Placements in 2024",
       description: "The ECE department achieved a record-high placement percentage of 98% in top-tier companies.",
-      image: heroimage3,
-    },
-    {
-      icon: "🏅",
-      title: "GATE Top 100 Ranks",
-      description: "Three of our final-year students secured ranks within the top 100 in the highly competitive GATE examination.",
-      image: "../Assets/hero2.jpeg",
-    },
-    {
-      icon: "💡",
-      title: "International Journal Publications",
-      description: "Students from our department published a total of 15 papers in various IEEE and Springer international journals.",
-      image: "../Assets/hero2.jpeg",
+      image: achievement3,
     },
   ];
 
@@ -467,7 +507,7 @@ const LandingPage: React.FC = () => {
             <img
               src={achievementsData[currentAchievement].image}
               alt={achievementsData[currentAchievement].title}
-              className="w-full h-[180px] sm:h-[260px] md:h-[320px] lg:h-[380px] xl:h-[420px] object-cover rounded-xl shadow-lg mb-4 border-4 border-white dark:border-gray-800"
+              className="w-full h-[180px] sm:h-[260px] md:h-[320px] lg:h-[380px] xl:h-[420px] object-contain rounded-xl shadow-lg mb-4 border-4 border-white dark:border-gray-800"
             />
             <div className="text-5xl mb-2">{achievementsData[currentAchievement].icon}</div>
             <h3 className="text-xl sm:text-2xl font-bold text-red-700 dark:text-yellow-300 mb-1">{achievementsData[currentAchievement].title}</h3>
@@ -482,7 +522,7 @@ const LandingPage: React.FC = () => {
                 idx === currentAchievement ? "bg-red-700" : "bg-gray-400"
               }`}
               onClick={() => setCurrentAchievement(idx)}
-              aria-label={`Show achievement ${idx + 1}`}
+              aria-label={Show achievement ${idx + 1}}
             />
           ))}
         </div>
@@ -495,7 +535,8 @@ const LandingPage: React.FC = () => {
           </svg>
         </div>
       </div>
-    )};
+    );
+  };
   
   // NEW: Message from HOD component to fill the gap
   const MessageFromHOD: React.FC = () => (
@@ -521,7 +562,7 @@ const LandingPage: React.FC = () => {
   return (
     // MODIFIED: Added dark mode class to the main container.
     // This class is a placeholder and should be handled by Tailwind's dark mode setup.
-    // A better approach is to toggle a class on the `<html>` tag as implemented in ThemeToggle component.
+    // A better approach is to toggle a class on the <html> tag as implemented in ThemeToggle component.
     <div className="font-sans bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col m-0 p-0 transition-colors duration-300">
       {/* HEADER */}
       <header className="flex flex-wrap items-center justify-between w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm px-4 sm:px-8 transition-colors">
@@ -586,13 +627,13 @@ const LandingPage: React.FC = () => {
         {/* Sliding images */}
         <div
           className="flex h-full transition-transform duration-700 ease-in-out"
-          style={{ transform: `translateX(-${current * 100}%)` }}
+          style={{ transform: translateX(-${current * 100}%) }}
         >
           {images.map((img, idx) => (
             <img
               key={idx}
               src={img}
-              alt={`ECE hero ${idx + 1}`}
+              alt={ECE hero ${idx + 1}}
               className="w-full h-[350px] sm:h-[600px] object-cover flex-shrink-0"
             />
           ))}
@@ -652,7 +693,7 @@ const LandingPage: React.FC = () => {
             <button
               key={idx}
               type="button"
-              aria-label={`Go to slide ${idx + 1}`}
+              aria-label={Go to slide ${idx + 1}}
               onClick={() => {
                 setCurrent(idx);
                 pauseThenResume(1000); // Only pause/resume when clicking indicators
@@ -677,7 +718,7 @@ const LandingPage: React.FC = () => {
         idx === current ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
       }
       transition={{ duration: 0.6 }}
-      className={`w-full flex flex-col items-center justify-center absolute left-0 right-0 px-4`}
+      className={w-full flex flex-col items-center justify-center absolute left-0 right-0 px-4}
     >
       {/* transparent bluish backdrop for readability but very light */}
       <h2 className="text-3xl sm:text-5xl font-bold text-white drop-shadow-md select-none">
@@ -696,44 +737,50 @@ const LandingPage: React.FC = () => {
       {/* NAVIGATION */}
 
       {/* ANNOUNCEMENTS */}
-      <main className="flex-grow w-full flex flex-col items-start px-2 sm:px-4 py-4 md:px-16">
-  <div className="w-full max-w-6xl">
+      <motion.main 
+        className="flex-grow w-full flex flex-col items-start px-2 sm:px-4 py-4 md:px-16 lg:px-20 xl:px-24"
+        variants={floatVariant} 
+        initial="hidden" 
+        whileInView="visible" 
+        viewport={{ once: true, amount: 0.1 }}
+      >
+          <div className="w-full max-w-7xl">
     {/* Announcements and Quick Links side by side on desktop, stacked on mobile */}
-    <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
+    <div className="flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-start">
       {/* Announcements - Left Side */}
       <div className="flex-1">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-red-700 mb-4 text-left">
+        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-red-700 mb-3 lg:mb-4 xl:mb-6 text-left">
           Latest Announcements
         </h2>
         <div
           ref={announcementsRef}
-          className="space-y-4 sm:space-y-6 max-h-[550px] overflow-y-auto pr-2"
+          className="space-y-2 sm:space-y-3 lg:space-y-4 xl:space-y-5 max-h-[280px] lg:max-h-[320px] xl:max-h-[360px] overflow-y-auto pr-2"
           onMouseEnter={stopAnnouncementsScroll}
           onMouseLeave={startAnnouncementsScroll}
         >
           {announcements.map((notice, index) => (
             <div
               key={index}
-              className="bg-white dark:bg-gray-800 border-l-4 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 transition hover:shadow-xl text-left"
+              className="bg-white dark:bg-gray-800 border-l-4 rounded-lg shadow-md p-2 sm:p-2.5 md:p-3 lg:p-4 xl:p-5 transition hover:shadow-lg text-left"
               style={{ borderLeftColor: '#E8EAF6' }}
             >
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-1">
-                <span className="font-semibold text-red-700 text-sm sm:text-base">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 gap-1">
+                <span className="font-semibold text-red-700 text-xs sm:text-xs lg:text-sm xl:text-base">
                   {notice.author}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400 lg:text-xs xl:text-sm">
                   {notice.time}
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-1">
+              <h3 className="text-xs sm:text-sm lg:text-base xl:text-lg font-bold text-gray-800 dark:text-white mb-1">
                 {notice.title}
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">
+              <p className="text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-xs lg:text-sm xl:text-base">
                 {notice.content}
               </p>
               <a
                 href="#"
-                className="text-sm text-blue-600 hover:underline font-medium"
+                className="text-xs text-blue-600 hover:underline font-medium lg:text-xs xl:text-sm"
               >
                 View More
               </a>
@@ -741,69 +788,17 @@ const LandingPage: React.FC = () => {
           ))}
         </div>
       </div>
-      {/* Quick Links & Events - Right Side, with padding at the top */}
-      <div className="w-full md:w-72 flex-shrink-0 flex flex-col gap-4 justify-start md:justify-center pt-6 md:pt-16">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4">
-          <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
-            ECE Quick Links
-          </h3>
-          <ul className="space-y-2">
-            <li>
-              <a
-                href="#"
-                className="text-blue-600 hover:underline text-sm font-medium"
-              >
-                ECE Lab Manuals
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-blue-600 hover:underline text-sm font-medium"
-              >
-                Project Gallery
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-blue-600 hover:underline text-sm font-medium"
-              >
-                Research Groups
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-blue-600 hover:underline text-sm font-medium"
-              >
-                Alumni Network
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4">
-          <h3 className="text-base sm:text-lg font-bold text-red-700 mb-2 sm:mb-3">
-            Upcoming ECE Events
-          </h3>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <li>VLSI Seminar - 28/08/2025</li>
-            <li>Hackathon Registration - 01/09/2025</li>
-            <li>Lab Group Meeting - 05/09/2025</li>
-          </ul>
-        </div>
-        <div className="bg-gradient-to-r from-red-100 via-blue-100 to-green-100 rounded-xl shadow-lg p-4 flex flex-col items-center justify-center mt-2">
-          <svg className="w-8 h-8 text-red-700 mb-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
-          </svg>
-          <p className="text-center text-sm font-semibold text-gray-700">
-            "Empowering innovation and excellence in every student.<br className='hidden sm:block'/> Dream big, achieve bigger!"
-          </p>
-        </div>
+      {/* Announcement Illustration - Right Side (Hidden on mobile) */}
+      <div className="hidden md:block md:w-80 lg:w-96 xl:w-[28rem] 2xl:w-[28rem] flex-shrink-0 flex flex-col justify-center pt-6 md:pt-16 lg:pt-20 xl:pt-24 h-full">
+        <img 
+          src={announcementIllustration} 
+          alt="Announcement illustration" 
+          className="w-full h-full object-cover"
+        />
       </div>
     </div>
-  </div>
-</main>
+      </div>
+      </motion.main>
       {/* COMBINED ABOUT & ACHIEVEMENTS SECTION */}
       <motion.section 
         className="bg-white dark:bg-gray-800 py-12 px-4 sm:px-8" 
@@ -812,25 +807,82 @@ const LandingPage: React.FC = () => {
         whileInView="visible" 
         viewport={{ once: false, amount: 0.2 }}
       >
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8 items-center">
           {/* About the Department - Left Side */}
-          <div className="text-center md:text-left order-2 md:order-1">
+          <div className="text-center md:text-left order-1">
             <h2 className="text-3xl font-bold text-red-700 mb-4">About the Department</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
               The Department of Electronics and Communication Engineering (ECE) at RGUKT is committed to providing quality education and fostering innovation in areas such as Communication Systems, VLSI, Embedded Systems, and Signal Processing. Our mission is to prepare students for successful careers in industry, academia, and research.
             </p>
-            <div className="bg-red-700 text-white rounded-lg p-4 shadow-md mt-4">
+            <div className="bg-red-500 text-white rounded-lg p-4 shadow-md mt-4">
               <h3 className="font-bold text-lg">Our Vision</h3>
               <p className="text-sm mt-1">To be a center of excellence in ECE, fostering creative and innovative engineers for global challenges.</p>
             </div>
           </div>
           {/* About Image - Right Side */}
-          <div className="order-1 md:order-2">
+          <div className="order-2">
             <img 
-              src={aboutImage} 
-              alt="Students in the ECE lab" 
+              src={department2} 
+              alt="Department of Electronics and Communication Engineering" 
               className="w-full h-auto object-cover rounded-lg shadow-xl" 
             />
+          </div>
+        </div>
+      </motion.section>
+
+      {/* LAB FACILITIES SECTION */}
+      <motion.section 
+        className="bg-gray-50 dark:bg-gray-900 py-16 px-4 sm:px-8" 
+        variants={floatVariant} 
+        initial="hidden" 
+        whileInView="visible" 
+        viewport={{ once: true, amount: 0.1 }}
+      >
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-red-700 mb-12 text-center">Lab Facilities</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            <div className="group">
+              <div className="relative overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105">
+                <img 
+                  src={lab1Image} 
+                  alt="Lab Facility 1" 
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 className="text-lg font-semibold">Advanced Electronics Lab</h3>
+                  <p className="text-sm text-gray-200">State-of-the-art equipment for electronics research</p>
+                </div>
+              </div>
+            </div>
+            <div className="group">
+              <div className="relative overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105">
+                <img 
+                  src={lab2Image} 
+                  alt="Lab Facility 2" 
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 className="text-lg font-semibold">VLSI & Embedded Lab</h3>
+                  <p className="text-sm text-gray-200">Cutting-edge VLSI design and embedded systems</p>
+                </div>
+              </div>
+            </div>
+            <div className="group">
+              <div className="relative overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105">
+                <img 
+                  src={lab3Image} 
+                  alt="Lab Facility 3" 
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <h3 className="text-lg font-semibold">Communication Systems Lab</h3>
+                  <p className="text-sm text-gray-200">Modern communication and networking facilities</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </motion.section>
@@ -843,11 +895,11 @@ const LandingPage: React.FC = () => {
         whileInView="visible" 
         viewport={{ once: false, amount: 0.2 }}
       >
-        <div className="max-w-[1200px] mx-auto flex flex-col items-center"> {/* Increased max width */}
+        <div className="max-w-[1400px] mx-auto flex flex-col items-center"> {/* Increased max width */}
           <h2 className="text-4xl font-extrabold text-red-700 mb-10 text-center">Department Achievements</h2>
           <div className="w-full flex justify-center">
             {/* Make AchievementsCarousel wider */}
-            <div className="w-full max-w-[900px]">
+            <div className="w-full max-w-[1100px]">
               <AchievementsCarousel />
             </div>
           </div>
@@ -858,26 +910,118 @@ const LandingPage: React.FC = () => {
       <FacultySection />
 
       {/* FOOTER */}
-      <footer className="bg-red-700 text-white py-6 md:py-2 mt-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
-          <div>
-            <h3 className="font-bold text-lg">
+      <footer className="bg-red-700 text-white py-8 md:py-12 mt-8">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Quick Links Section */}
+          <div className="mb-8">
+            <h3 className="font-bold text-xl text-white mb-6 text-center">Quick Links</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              <div className="text-center">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <svg className="w-8 h-8 text-white mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  <h4 className="font-semibold text-white mb-2">Contact HOD</h4>
+                  <a href="mailto:hodece@rguktrkv.ac.in" className="text-white/80 hover:text-white text-sm break-all">
+                    hodece@rguktrkv.ac.in
+                  </a>
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <svg className="w-8 h-8 text-white mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <h4 className="font-semibold text-white mb-2">Department</h4>
+                  <a href="#" className="text-white/80 hover:text-white text-sm">ECE Department</a>
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <svg className="w-8 h-8 text-white mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                  <h4 className="font-semibold text-white mb-2">LinkedIn</h4>
+                  <a href="https://www.linkedin.com/company/academic-affairs-club-aac-rgukt-rkvalley/" target="_blank" rel="noopener noreferrer" className="text-white/80 hover:text-white text-sm">Academic Affairs Club</a>
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <svg className="w-8 h-8 text-white mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h4 className="font-semibold text-white mb-2">Student Portal</h4>
+                  <a href="/login" className="text-white/80 hover:text-white text-sm">Student Login</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Copyright Section */}
+          <div className="border-t border-white/20 pt-6">
+            {/* Department Info and Links Row */}
+            <div className="flex flex-col lg:flex-row justify-between items-start mb-6">
+              {/* Left Column - Department Info */}
+              <div className="mb-6 lg:mb-0">
+                <h3 className="font-bold text-lg mb-2">
               Department of Electronics and Communication Engineering
             </h3>
-            <p className="text-sm">
+                <p className="text-sm mb-3">
               Rajiv Gandhi University of Knowledge Technologies - RK Valley
             </p>
-            <p className="text-xs mt-1">
-              © {new Date().getFullYear()} All Rights Reserved.
-            </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <svg className="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-white/80">Address:</span>
+                    <span className="text-white/90">RK Valley, Vempalli, Kadapa, 516330</span>
           </div>
-          <div className="mt-4 sm:mt-0 flex gap-4">
-            <a href="#" className="hover:underline text-sm">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:underline text-sm">
-              Contact Us
-            </a>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <svg className="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                    <span className="text-white/80">Email:</span>
+                    <span className="text-white/90">hodece@rguktrkv.ac.in</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+  {/* FontAwesome Location Icon */}
+  <FontAwesomeIcon icon={faLocationDot} className="text-red-500 w-5 h-5" />
+
+  {/* Google Maps Link */}
+  <a 
+    href="https://maps.google.com/?q=RK+Valley,+Vempalli,+Kadapa,+516330" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="text-white/90 hover:text-white transition-colors"
+  >
+    View on Google Maps
+  </a>
+</div>
+                </div>
+              </div>
+              
+              {/* Right Column - Other Links */}
+              <div className="lg:text-right">
+                <h4 className="font-semibold text-white mb-3">OTHER LINKS</h4>
+                <div className="space-y-2 text-sm">
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Institute ERP</a></div>
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Institute Email</a></div>
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Academic Portal</a></div>
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Student Portal</a></div>
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Faculty Directory</a></div>
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Privacy Policy</a></div>
+                  <div><a href="#" className="text-white/80 hover:text-white transition-colors">Contact Us</a></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Copyright Row */}
+            <div className="text-center text-sm text-white/80">
+              <p>© {new Date().getFullYear()} Department of Electronics and Communication Engineering, RGUKT RK Valley. All rights reserved.</p>
+            </div>
           </div>
         </div>
       </footer>
