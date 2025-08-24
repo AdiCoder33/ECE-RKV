@@ -60,8 +60,9 @@ class MockRequest {
 
 jest.mock('../config/database', () => {
   const connectDB = jest.fn().mockResolvedValue({});
+  const executeQuery = jest.fn().mockResolvedValue({ recordset: [] });
   return {
-    executeQuery: jest.fn(),
+    executeQuery,
     connectDB,
     sql: { Transaction: MockTransaction, Request: MockRequest },
   };
@@ -73,6 +74,7 @@ jest.mock('bcryptjs', () => ({
 }));
 
 const usersRouter = require('./users');
+const analyticsRouter = require('./analytics');
 
 describe('bulk user creation', () => {
   let app;
@@ -80,6 +82,10 @@ describe('bulk user creation', () => {
     app = express();
     app.use(express.json());
     app.use('/users', usersRouter);
+    app.use('/analytics', analyticsRouter);
+    mockBegin.mockClear();
+    mockCommit.mockClear();
+    mockRollback.mockClear();
   });
 
   it('processes valid users even when some entries fail', async () => {
@@ -116,5 +122,31 @@ describe('bulk user creation', () => {
     expect(res.body.results).toHaveLength(2);
     expect(res.body.results[0].action).toBe('inserted');
     expect(res.body.results[1].error).toBe('duplicate email');
+  });
+
+  it('uses separate transactions for each batch of 50 users', async () => {
+    const users = [];
+    for (let i = 0; i < 51; i++) {
+      users.push({
+        name: `User${i}`,
+        email: `user${i}@example.com`,
+        password: 'secret',
+        role: 'student',
+        department: 'ECE',
+        year: 1,
+        semester: 1,
+        section: 'A',
+        rollNumber: String(i),
+        phone: String(i),
+      });
+    }
+
+    const res = await request(app).post('/users/bulk').send({ users }).expect(201);
+    expect(res.body.results).toHaveLength(51);
+    expect(mockBegin).toHaveBeenCalledTimes(2);
+    expect(mockCommit).toHaveBeenCalledTimes(2);
+
+    // analytics requests should still respond
+    await request(app).get('/analytics/enrollment').expect(200);
   });
 });
