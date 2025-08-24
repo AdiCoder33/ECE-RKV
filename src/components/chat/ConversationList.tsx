@@ -1,9 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Search, MoreVertical, Loader2 } from 'lucide-react';
+import { MessageSquare, Search, MoreVertical, Loader2, CheckCheck, Pin } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { formatIST } from '@/utils/date';
@@ -19,6 +18,8 @@ interface Conversation {
   unreadCount?: number;
   type: 'direct' | 'group';
   pinned?: boolean;
+  isOwn?: boolean;
+  read?: boolean;
 }
 
 interface ConversationListProps {
@@ -82,13 +83,13 @@ const ConversationRow: React.FC<{
     <div
       key={`${conversation.type}-${conversation.id}`}
       className={cn(
-        'flex items-center gap-3 px-3 py-2 hover:bg-gray-100 cursor-pointer',
+        'flex items-center gap-3 px-3 py-2 hover:bg-gray-100',
         active && 'bg-gray-200'
       )}
       onClick={() => onSelect(conversation)}
     >
       <div className="relative">
-        <Avatar className="h-10 w-10">
+        <Avatar className="h-12 w-12">
           <AvatarImage src={src ?? '/placeholder.svg'} />
           <AvatarFallback className="bg-[#8B1F2F] text-white font-medium">
             {conversation.title.charAt(0)}
@@ -100,18 +101,31 @@ const ConversationRow: React.FC<{
       </div>
       <div className="flex-1 overflow-hidden text-left">
         <p className="text-sm font-semibold truncate text-[#8B1F2F]">{conversation.title}</p>
-        <p className="text-xs text-gray-500 truncate">
-          {truncateMessage(conversation.lastMessage || '')}
+        <p className="text-xs text-gray-500 flex items-center truncate">
+          {conversation.pinned && (
+            <Pin className="h-4 w-4 text-gray-400 mr-1" />
+          )}
+          {conversation.lastMessage && conversation.isOwn && (
+            <CheckCheck
+              className={cn(
+                'h-4 w-4 mr-1',
+                conversation.read ? 'text-blue-500' : 'text-gray-400'
+              )}
+            />
+          )}
+          <span className="truncate">
+            {truncateMessage(conversation.lastMessage || '')}
+          </span>
         </p>
       </div>
       <div className="flex flex-col items-end gap-1 ml-auto">
         <span className="text-xs text-gray-400">
           {formatTime(conversation.lastActivity || null)}
         </span>
-        {conversation.unreadCount && conversation.unreadCount > 0 && (
-          <Badge variant="destructive" className="text-[10px] bg-[#8B1F2F] text-white">
+        {conversation.unreadCount > 0 && (
+          <span className="bg-[#8B1F2F] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
             {conversation.unreadCount}
-          </Badge>
+          </span>
         )}
       </div>
     </div>
