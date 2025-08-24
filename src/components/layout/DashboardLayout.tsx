@@ -42,7 +42,6 @@ import ChatSidebar from '@/components/chat/ChatSidebar';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
-import navVideo from '@/Assets/nav.mp4'; // Import your nav.mp4
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -186,7 +185,7 @@ const DashboardLayout: React.FC = () => {
         <Sidebar
           onMouseEnter={() => setSidebarOpen(true)}
           onMouseLeave={() => setSidebarOpen(false)}
-          className={`fixed inset-y-0 left-0 z-40 border-r transition-[width] duration-300 overflow-hidden ${sidebarOpen ? 'w-60' : 'w-0 md:w-16'} bg-red-800 dark:bg-red-900`}
+          className={`fixed inset-y-0 left-0 ${isMobile ? 'z-[200]' : 'z-40'} border-r transition-[width] duration-300 overflow-hidden ${sidebarOpen ? 'w-60' : 'w-0 md:w-16'} bg-red-800 dark:bg-red-900`}
           collapsible="none"
         >
           <SidebarHeader className="border-b border-red-700 p-4 flex items-center justify-between">
@@ -271,117 +270,105 @@ const DashboardLayout: React.FC = () => {
       >
         {/* Navbar: Hide on mobile when chat is open */}
         {!(isMobile && chatOpen) && (
-          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30in mobile if touches any side the opened side bar should close">
-            <div className="relative flex h-12 md:h-24 items-center gap-2 md:gap-4 px-2 md:px-4 overflow-hidden ">
-              {/* --- NAV VIDEO BACKGROUND --- */}
-              <video
-                src={navVideo}
-                autoPlay
-                muted
-                playsInline
-                className="
-                  
-                  absolute 
-                  left-1/3 top-1/2
-                  transform -translate-x-1/2 -translate-y-1/2
-                  h-10 w-[30%]
-                  md:h-full md:w-[65%]
-                  object-cover
-                  transition-all
-                  
-                "
-                style={{
-                  pointerEvents: 'none',
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                }}
-              />
-              {/* --- NAV CONTENT (in front of video) --- */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden z-40"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle sidebar</span>
-              </Button>
-              <div className="flex-1 z-10" />
-
-              {/* Chat Toggle */}
-              {isMobile && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    const newOpen = !chatOpen;
-                    setChatOpen(newOpen);
-                    setChatExpanded(newOpen);
-                  }}
-                  className="relative z-10"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  {unreadNotifications > 0 && (
-                    <Badge
-                      variant="destructive"
-                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                    >
-                      {unreadNotifications}
-                    </Badge>
-                  )}
-                </Button>
+          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-[100]">
+            <div className="relative flex h-10 md:h-16 items-center px-2 md:px-4 overflow-hidden">
+              {/* --- Sidebar Icon & Department Name (left, only mobile) --- */}
+              {isMobile ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="z-40 mr-2"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                  >
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle sidebar</span>
+                  </Button>
+                  <h1 className="text-lg font-bold text-[#8b0000] text-left">
+                    ECE DEPARTMENT
+                  </h1>
+                </>
+              ) : (
+                // Desktop: Centered heading as before
+                <h1 className="text-lg md:text-xl font-bold text-[#8b0000] text-center w-full">
+                  ECE DEPARTMENT
+                </h1>
               )}
 
-              {/* Notifications */}
-              <div className="z-10">
-                <NotificationDropdown />
-              </div>
-
-              {/* Profile Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full z-10">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user?.name?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user?.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
-                      </p>
+              {/* --- Nav Actions (right side) --- */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {/* Chat Toggle (mobile only) */}
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const newOpen = !chatOpen;
+                      setChatOpen(newOpen);
+                      setChatExpanded(newOpen);
+                    }}
+                    className="relative z-10"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                    {unreadNotifications > 0 && (
                       <Badge
-                        variant="secondary"
-                        className={`text-white w-fit mt-1 ${getRoleBadgeColor(user?.role || '')}`}
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
                       >
-                        {user?.role?.toUpperCase()}
+                        {unreadNotifications}
                       </Badge>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleNavigation('/dashboard/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  {(user?.role === 'admin' || user?.role === 'hod') && (
-                    <DropdownMenuItem onClick={() => handleNavigation('/dashboard/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
+                    )}
+                  </Button>
+                )}
+                {/* Notifications & Profile (desktop and mobile) */}
+                <div className="z-10">
+                  <NotificationDropdown />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full z-10">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {user?.name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user?.name}</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user?.email}
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className={`text-white w-fit mt-1 ${getRoleBadgeColor(user?.role || '')}`}
+                        >
+                          {user?.role?.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleNavigation('/dashboard/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {(user?.role === 'admin' || user?.role === 'hod') && (
+                      <DropdownMenuItem onClick={() => handleNavigation('/dashboard/settings')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </header>
         )}

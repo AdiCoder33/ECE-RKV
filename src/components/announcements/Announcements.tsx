@@ -123,7 +123,7 @@ const Announcements = () => {
 
   // Delete animation overlay
   const DeleteAnimOverlay = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
       <video
         src={deleteAnimMp4}
         autoPlay

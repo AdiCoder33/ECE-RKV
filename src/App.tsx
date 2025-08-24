@@ -122,15 +122,17 @@ const App: React.FC = () => {
   if (showIntro) {
     return (
       <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
-        <video
-          src={introductionVideo}
-          autoPlay
-          playsInline
-          muted={false}
-          controls={false}
-          className="w-10 h-20 object-cover"
-          onEnded={handleIntroEnd}
-        />
+        <div className="w-full h-full flex items-center justify-center">
+          <video
+            src={introductionVideo}
+            autoPlay
+            playsInline
+            muted={false}
+            controls={false}
+            className="object-contain scale-75 w-full h-full bg-black"
+            onEnded={handleIntroEnd}
+          />
+        </div>
       </div>
     );
   }
