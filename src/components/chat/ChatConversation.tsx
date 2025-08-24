@@ -48,14 +48,13 @@ const ChatConversation: React.FC = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setIsAtBottom(true);
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, directMessages]);
 
   useEffect(() => {
     fetchGroups().catch(() => {});
@@ -99,6 +98,21 @@ const ChatConversation: React.FC = () => {
     }
   }, [privateMessages, id, type, directMessages]);
 
+  useEffect(() => {
+    const relevant =
+      type === 'user'
+        ? directMessages
+        : messages.filter(msg => msg.groupId === id);
+    const last = relevant[relevant.length - 1] as
+      | PrivateMessage
+      | ChatMessage
+      | undefined;
+    const senderId = (last as any)?.sender_id ?? (last as any)?.senderId;
+    if (last && isAtBottom && senderId === user?.id) {
+      scrollToBottom();
+    }
+  }, [directMessages, messages, type, id, isAtBottom, user?.id]);
+
   const handleSendMessage = async () => {
     if ((!message.trim() && attachedFiles.length === 0) || !id) return;
 
@@ -117,6 +131,7 @@ const ChatConversation: React.FC = () => {
       }
       setMessage('');
       setAttachedFiles([]);
+      scrollToBottom();
     } catch (err) {
       console.error('Failed to send message:', err);
     }
@@ -139,6 +154,13 @@ const ChatConversation: React.FC = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const atBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight < 20;
+    setIsAtBottom(atBottom);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -220,7 +242,11 @@ const ChatConversation: React.FC = () => {
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : (
-            <ScrollArea className="h-full px-4 py-4">
+            <ScrollArea
+              ref={scrollAreaRef}
+              className="h-full px-4 py-4"
+              onScroll={handleScroll}
+            >
               <div className="space-y-4">
                 {filteredMessages.map(msg => {
                   if (type === 'user') {
