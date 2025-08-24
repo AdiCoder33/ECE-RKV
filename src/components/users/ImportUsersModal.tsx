@@ -5,25 +5,41 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { User } from '@/types';
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, Download } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 
 interface ImportUsersModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImportUsers: (
     users: (Omit<User, 'id'> & { password: string })[]
-  ) => Promise<{ inserted: number; updated: number; errors: string[] }>;
+  ) => Promise<{
+    inserted: number;
+    updated: number;
+    results: { index: number; action?: 'inserted' | 'updated'; error?: string }[];
+  }>;
 }
 
 const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, onImportUsers }) => {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [rowErrors, setRowErrors] = useState<string[]>([]);
+  const [failedRows, setFailedRows] = useState<{ index: number; error: string }[]>([]);
+  const [parsedData, setParsedData] = useState<(Omit<User, 'id'> & { password: string })[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     setFile(selected || null);
     setRowErrors([]);
+    setFailedRows([]);
+    setParsedData([]);
   };
 
   const handleImport = async () => {
@@ -103,15 +119,24 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       }
 
       setRowErrors([]);
+      setParsedData(parsed);
 
       try {
-        const { inserted, updated, errors } = await onImportUsers(parsed);
+        const { inserted, updated, results } = await onImportUsers(parsed);
         const total = inserted + updated;
         if (total > 0) {
           toast.success(`Inserted ${inserted} and updated ${updated} users`);
+        }
+        const failed = results.filter((r) => r.error) as {
+          index: number;
+          error: string;
+        }[];
+        setFailedRows(failed);
+        if (failed.length) {
+          toast.error(`${failed.length} rows failed to import`);
+        } else {
           onClose();
         }
-        errors.forEach((e) => toast.error(e));
       } catch (err) {
         const message = (err as Error).message || 'Import failed';
         toast.error(message);
@@ -122,6 +147,26 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
     } finally {
       setImporting(false);
     }
+  };
+
+  const downloadFailedCsv = () => {
+    if (!failedRows.length) return;
+    const data = failedRows.map((f) => ({
+      Row: f.index + 2,
+      Error: f.error,
+      ...parsedData[f.index],
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'failed_rows.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -152,6 +197,36 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
               {rowErrors.map((err, idx) => (
                 <p key={idx}>{err}</p>
               ))}
+            </div>
+          )}
+          {failedRows.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-1 text-red-700 font-semibold">
+                <AlertTriangle className="h-4 w-4" /> Failed Rows
+              </div>
+              <Table className="border border-red-300 bg-red-50 text-sm">
+                <TableHeader>
+                  <TableRow className="bg-red-100">
+                    <TableHead>Row</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {failedRows.map((r) => (
+                    <TableRow key={r.index}>
+                      <TableCell>{r.index + 2}</TableCell>
+                      <TableCell>{r.error}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button
+                variant="outline"
+                onClick={downloadFailedCsv}
+                className="border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6] flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" /> Download Failed Rows
+              </Button>
             </div>
           )}
         </div>
