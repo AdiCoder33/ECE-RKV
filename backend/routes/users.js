@@ -309,7 +309,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           }
         }
       } catch (err) {
-        await transaction.rollback(savepoint);
+        await new sql.Request(transaction).query(`ROLLBACK TRANSACTION ${savepoint}`);
         results.push({ index: i, error: err.message });
       }
     }
