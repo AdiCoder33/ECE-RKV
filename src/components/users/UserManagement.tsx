@@ -177,7 +177,11 @@ const UserManagement: React.FC = () => {
   // Bulk import
   const handleImportUsers = async (
     bulkUsers: (Omit<User, 'id'> & { password: string })[]
-  ): Promise<{ inserted: number; updated: number; errors: string[] }> => {
+  ): Promise<{
+    inserted: number;
+    updated: number;
+    results: { index: number; action?: 'inserted' | 'updated'; error?: string }[];
+  }> => {
     setActionLoading(true);
     try {
       const response = await fetch(`${apiBase}/users/bulk`, {
@@ -189,20 +193,21 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify({ users: bulkUsers })
       });
       if (!response.ok) throw new Error('Failed to import users');
-      type BulkResult = { id?: string; action?: 'inserted' | 'updated'; error?: string };
+      type BulkResult = { index: number; id?: string; action?: 'inserted' | 'updated'; error?: string };
       const data: { results: BulkResult[] } = await response.json();
-      let inserted = 0, updated = 0;
+      let inserted = 0,
+        updated = 0;
       data.results.forEach((item) => {
         if (item.action === 'inserted') inserted++;
         else if (item.action === 'updated') updated++;
       });
       await fetchUsers();
       setPopup({ show: true, message: `Imported: ${inserted}, Updated: ${updated}`, type: 'success' });
-      return { inserted, updated, errors: [] };
+      return { inserted, updated, results: data.results };
     } catch (err) {
       const msg = (err as Error).message ?? 'Unknown error';
       setPopup({ show: true, message: 'Failed to import users', type: 'error' });
-      return { inserted: 0, updated: 0, errors: [msg] };
+      return { inserted: 0, updated: 0, results: [] };
     } finally {
       setActionLoading(false);
       setTimeout(() => setPopup({ show: false, message: '', type: 'success' }), 2000);
