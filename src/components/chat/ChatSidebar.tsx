@@ -97,6 +97,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'dms' | 'groups'>('all');
   const [hasMore, setHasMore] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const typingRef = useRef(false);
@@ -414,6 +415,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onStartChat={handleStartChat}
                 onNewChat={() => setIsGroupDialogOpen(true)}
                 activeId={activeChat ? `${activeChat.type}-${activeChat.id}` : undefined}
+                filter={filter}
+                onFilterChange={setFilter}
               />
             ) : (
               <ChatWindow

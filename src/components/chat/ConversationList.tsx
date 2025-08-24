@@ -34,6 +34,8 @@ interface ConversationListProps {
   onStartChat: (user: User) => void;
   onNewChat: () => void;
   activeId?: string;
+  filter: 'all' | 'dms' | 'groups';
+  onFilterChange: (f: 'all' | 'dms' | 'groups') => void;
 }
 const formatTime = (timestamp: string | null | undefined) =>
   timestamp
@@ -144,6 +146,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onStartChat,
   onNewChat,
   activeId,
+  filter,
+  onFilterChange,
 }) => {
   const [showSearch, setShowSearch] = React.useState(false);
 
@@ -153,6 +157,14 @@ const ConversationList: React.FC<ConversationListProps> = ({
       return !prev;
     });
   };
+
+  const visible = conversations.filter(c =>
+    filter === 'all'
+      ? true
+      : filter === 'dms'
+      ? c.type === 'direct'
+      : c.type === 'group'
+  );
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -172,6 +184,41 @@ const ConversationList: React.FC<ConversationListProps> = ({
             <MoreVertical className="h-4 w-4 text-white" />
           </Button>
         </div>
+      </div>
+      <div className="flex justify-center gap-2 px-3 py-2 bg-[#8B1F2F]">
+        <button
+          className={cn(
+            'px-3 py-1 rounded-md text-sm',
+            filter === 'all'
+              ? 'bg-white text-[#8B1F2F]'
+              : 'text-white hover:bg-white/10'
+          )}
+          onClick={() => onFilterChange('all')}
+        >
+          All
+        </button>
+        <button
+          className={cn(
+            'px-3 py-1 rounded-md text-sm',
+            filter === 'dms'
+              ? 'bg-white text-[#8B1F2F]'
+              : 'text-white hover:bg-white/10'
+          )}
+          onClick={() => onFilterChange('dms')}
+        >
+          DMs
+        </button>
+        <button
+          className={cn(
+            'px-3 py-1 rounded-md text-sm',
+            filter === 'groups'
+              ? 'bg-white text-[#8B1F2F]'
+              : 'text-white hover:bg-white/10'
+          )}
+          onClick={() => onFilterChange('groups')}
+        >
+          Groups
+        </button>
       </div>
       {showSearch && (
         <div className="relative px-3 py-2 bg-[#8B1F2F]">
@@ -202,7 +249,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             )}
           </div>
         )}
-        {conversations.map(c => (
+        {visible.map(c => (
           <ConversationRow
             key={`${c.type}-${c.id}`}
             conversation={c}
