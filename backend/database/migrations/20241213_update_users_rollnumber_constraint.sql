@@ -12,6 +12,15 @@ BEGIN
     EXEC('ALTER TABLE users DROP CONSTRAINT ' + QUOTENAME(@constraintName));
 END;
 
+-- Drop legacy unique index if it exists
+IF EXISTS (
+    SELECT name FROM sys.indexes
+    WHERE name = 'Users_RollNumber' AND object_id = OBJECT_ID('users')
+)
+BEGIN
+    DROP INDEX Users_RollNumber ON users;
+END;
+
 IF NOT EXISTS (
     SELECT 1 FROM sys.key_constraints
     WHERE parent_object_id = OBJECT_ID('users') AND [type] = 'UQ' AND name = 'UQ_users_year_section_roll_number'

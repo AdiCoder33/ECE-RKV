@@ -23,7 +23,7 @@ CREATE TABLE users (
     graduation_year int,
     created_at datetime2 DEFAULT GETDATE(),
     updated_at datetime2 DEFAULT GETDATE(),
-    UNIQUE(year, section, roll_number)
+    CONSTRAINT UQ_users_year_section_roll_number UNIQUE (year, section, roll_number)
 );
 
 -- Settings table

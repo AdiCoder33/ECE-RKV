@@ -291,17 +291,13 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         continue;
       }
 
-      if (!rollNumber || !section) {
-        errors.push('rollNumber and section are required');
+      if (!rollNumber || !section || year == null) {
+        errors.push('rollNumber, section and year are required');
         continue;
       }
 
-      const params = [rollNumber, section];
-      let query = 'SELECT id FROM Users WHERE roll_number = ? AND section = ?';
-      if (year != null) {
-        query += ' AND year = ?';
-        params.push(year);
-      }
+      const params = [rollNumber, section, year];
+      let query = 'SELECT id FROM Users WHERE roll_number = ? AND section = ? AND year = ?';
       if (semester != null) {
         query += ' AND semester = ?';
         params.push(semester);
