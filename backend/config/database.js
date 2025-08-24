@@ -15,7 +15,8 @@ const dbConfig = {
     max: 10,
     min: 0,
     idleTimeoutMillis: 30000
-  }
+  },
+  requestTimeout: 60000
 };
 
 let pool;
@@ -37,6 +38,7 @@ const executeQuery = async (query, params = []) => {
   try {
     const poolConnection = await connectDB();
     const request = poolConnection.request();
+    request.requestTimeout = 60000;
     
     // Add parameters with explicit type handling for null or undefined values
     params.forEach((param, index) => {
