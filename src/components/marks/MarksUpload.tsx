@@ -22,14 +22,20 @@ import {
 import * as XLSX from 'xlsx';
 
 interface MarkRow {
-  email: string;
+  rollNumber: string;
+  section: string;
+  year?: string;
+  semester?: string;
   subject: string;
   maxMarks: number;
   marks: number | null;
 }
 
 interface ExcelRow {
-  email: string | number;
+  rollNumber: string | number;
+  section: string | number;
+  year: string | number;
+  semester: string | number;
   subject: string;
   maxMarks: string | number;
   obtainedMarks: string | number;
@@ -93,28 +99,31 @@ const MarksUpload = () => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, {
           defval: '',
-          header: ['email', 'subject', 'maxMarks', 'obtainedMarks'],
+          header: ['rollNumber', 'section', 'year', 'semester', 'subject', 'maxMarks', 'obtainedMarks'],
           range: 1,
         });
 
         const parsed: MarkRow[] = [];
-        const invalidEmails: string[] = [];
+        const invalidRollNumbers: string[] = [];
         const missingMarks: string[] = [];
         json.forEach((row) => {
-          const email = row.email?.toString().trim();
+          const rollNumber = row.rollNumber?.toString().trim();
+          const section = row.section?.toString().trim();
+          const year = row.year?.toString().trim();
+          const semester = row.semester?.toString().trim();
           const subject = row.subject?.toString().trim();
           const maxMarks = Number(row.maxMarks);
           const marksStr = row.obtainedMarks?.toString().trim();
           const marks = marksStr === '' ? null : Number(marksStr);
 
-          if (email && subject) {
+          if (rollNumber && section && subject) {
             if (marks === null) {
-              missingMarks.push(email);
-              parsed.push({ email, subject, maxMarks: Number(maxMarks), marks: null });
+              missingMarks.push(rollNumber);
+              parsed.push({ rollNumber, section, year, semester, subject, maxMarks: Number(maxMarks), marks: null });
             } else if (Number.isNaN(marks) || Number.isNaN(maxMarks)) {
-              invalidEmails.push(email);
+              invalidRollNumbers.push(rollNumber);
             } else {
-              parsed.push({ email, subject, maxMarks: Number(maxMarks), marks });
+              parsed.push({ rollNumber, section, year, semester, subject, maxMarks: Number(maxMarks), marks });
             }
           }
         });
@@ -127,8 +136,8 @@ const MarksUpload = () => {
           toast.success(`Uploaded ${parsed.length} rows`);
         }
         const errors: string[] = [];
-        if (invalidEmails.length > 0) {
-          const msg = `Invalid marks for: ${invalidEmails.join(', ')}`;
+        if (invalidRollNumbers.length > 0) {
+          const msg = `Invalid marks for: ${invalidRollNumbers.join(', ')}`;
           toast.error(msg);
           errors.push(msg);
         }
@@ -139,7 +148,7 @@ const MarksUpload = () => {
         }
         if (
           parsed.length === 0 &&
-          invalidEmails.length === 0 &&
+          invalidRollNumbers.length === 0 &&
           missingMarks.length === 0
         ) {
           const msg = 'No valid rows found';
@@ -184,20 +193,23 @@ const MarksUpload = () => {
         return;
       }
 
-      const students: { email: string }[] = await res.json();
+      const students: { rollNumber: string }[] = await res.json();
 
       const sheetData = students.map((s) => ({
-        email: s.email,
+        rollNumber: s.rollNumber,
+        section: templateSection,
+        year: templateYear,
+        semester: templateSemester,
         subject: templateSubject,
         maxMarks: '',
         obtainedMarks: '',
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(sheetData, {
-        header: ['email', 'subject', 'maxMarks', 'obtainedMarks'],
+        header: ['rollNumber', 'section', 'year', 'semester', 'subject', 'maxMarks', 'obtainedMarks'],
       });
-      if (worksheet['D1']) {
-        worksheet['D1'].v = 'obtainedMarks (required)';
+      if (worksheet['G1']) {
+        worksheet['G1'].v = 'obtainedMarks (required)';
       }
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks');

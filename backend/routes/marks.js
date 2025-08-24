@@ -284,30 +284,33 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
 
     // Resolve student and subject IDs for each record
     for (const record of marksData) {
-      const { rollNumber, email, subject, maxMarks, marks } = record;
+      const { rollNumber, section, year, semester, subject, maxMarks, marks } = record;
 
       if (marks == null || isNaN(Number(marks))) {
-        errors.push(`Invalid marks for ${email}`);
+        errors.push(`Invalid marks for ${rollNumber}`);
         continue;
       }
 
-      let student;
-      if (rollNumber) {
-        student = await executeQuery(
-          'SELECT id FROM Users WHERE roll_number = ?',
-          [rollNumber]
-        );
+      if (!rollNumber || !section) {
+        errors.push('rollNumber and section are required');
+        continue;
       }
 
-      if ((!student || !student.recordset.length) && email) {
-        student = await executeQuery(
-          'SELECT id FROM Users WHERE email = ?',
-          [email]
-        );
+      const params = [rollNumber, section];
+      let query = 'SELECT id FROM Users WHERE roll_number = ? AND section = ?';
+      if (year != null) {
+        query += ' AND year = ?';
+        params.push(year);
+      }
+      if (semester != null) {
+        query += ' AND semester = ?';
+        params.push(semester);
       }
 
-      if (!student || !student.recordset.length) {
-        errors.push(`Student not found: ${rollNumber || email}`);
+      const student = await executeQuery(query, params);
+      const students = student.recordset || [];
+      if (students.length !== 1) {
+        errors.push(`Student lookup error for ${rollNumber}`);
         continue;
       }
 
@@ -321,10 +324,10 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       }
 
       prepared.push({
-        studentId: student.recordset[0].id,
+        studentId: students[0].id,
         subjectId: subj.recordset[0].id,
         maxMarks,
-        marks
+        marks,
       });
     }
 
