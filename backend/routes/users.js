@@ -226,8 +226,11 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           existingReq.requestTimeout = 600000;
           const existing = await existingReq
             .input('email', u.email)
+            .input('rollNumber', rollNumber)
+            .input('section', section)
+            .input('year', year)
             .query(
-              'SELECT id, name, role, department, year, semester, section, roll_number, phone, password FROM users WHERE email = @email'
+              'SELECT id, name, role, department, year, semester, section, roll_number, phone, password FROM users WHERE email = @email OR (roll_number = @rollNumber AND section = @section AND year = @year)'
             );
 
           let userId;
