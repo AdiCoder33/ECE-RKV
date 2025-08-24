@@ -69,6 +69,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (activeChat.type === 'group') {
+      chat?.fetchGroupMembers(activeChat.id);
+    }
+  }, [activeChat.id, activeChat.type, chat]);
+
+  useEffect(() => {
     if (textareaRef.current) {
       const el = textareaRef.current;
       el.style.height = 'auto';
@@ -109,6 +115,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     c => c.id === activeChat.id && c.type === activeChat.type
   );
   const avatarSrc = getProfileImageSrc(convo?.avatar);
+  const memberNames =
+    activeChat.type === 'group'
+      ? chat?.groupMembers[activeChat.id]?.map(u => u.name) ?? []
+      : [];
   const statusText =
     activeChat.type === 'direct'
       ? isTyping
@@ -116,7 +126,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         : chat?.onlineUsers.has(Number(activeChat.id))
           ? 'Online'
           : 'Offline'
-      : 'Group chat';
+      : memberNames.length
+        ? (() => {
+            const names = memberNames.slice(0, 3).join(', ');
+            const remaining = memberNames.length - 3;
+            return remaining > 0 ? `${names} +${remaining}` : names;
+          })()
+        : 'Group chat';
 
   const handleHold = (m: PrivateMessage | ChatMessage) => {
     setSelectedMsg(prev => (prev?.id === m.id ? null : m));

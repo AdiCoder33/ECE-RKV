@@ -31,10 +31,12 @@ interface ChatContextType {
   privateMessages: PrivateMessage[];
   conversations: Conversation[];
   groups: Group[];
+  groupMembers: Record<string, User[]>;
   onlineUsers: Set<number>;
   typingUsers: Set<number>;
   socketRef: React.MutableRefObject<Socket | null>;
   fetchGroups: () => Promise<Group[]>;
+  fetchGroupMembers: (groupId: string) => Promise<User[]>;
   fetchGroupMessages: (
     groupId: string,
     params?: { before?: string; limit?: number },
@@ -102,6 +104,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [privateMessages, setPrivateMessages] = useState<PrivateMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [groupMembers, setGroupMembers] = useState<Record<string, User[]>>({});
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const socketRef = useRef<Socket | null>(null);
@@ -190,6 +193,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setGroups(formatted);
     return formatted;
   }, [fetchWithAuth]);
+
+  const fetchGroupMembers = useCallback(
+    async (groupId: string): Promise<User[]> => {
+      if (groupMembers[groupId]) return groupMembers[groupId];
+      const data = (await fetchWithAuth(`/groups/${groupId}/members`)) as User[];
+      setGroupMembers(prev => ({ ...prev, [groupId]: data }));
+      return data;
+    },
+    [groupMembers, fetchWithAuth]
+  );
 
   const fetchGroupMessages = useCallback(
     async (
@@ -703,10 +716,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           privateMessages,
           conversations,
           groups,
+          groupMembers,
           onlineUsers,
           typingUsers,
           socketRef,
           fetchGroups,
+          fetchGroupMembers,
           fetchGroupMessages,
           fetchMoreGroupMessages,
           sendGroupMessage,
