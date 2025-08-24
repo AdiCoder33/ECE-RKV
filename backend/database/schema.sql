@@ -14,7 +14,7 @@ CREATE TABLE users (
     year int,
     semester int CHECK (semester IN (1,2) OR semester IS NULL),
     section nvarchar(10),
-    roll_number nvarchar(50) UNIQUE,
+    roll_number nvarchar(50),
     phone nvarchar(20),
     profile_image nvarchar(255),
     linkedin_profile nvarchar(255),
@@ -22,7 +22,8 @@ CREATE TABLE users (
     current_position nvarchar(255),
     graduation_year int,
     created_at datetime2 DEFAULT GETDATE(),
-    updated_at datetime2 DEFAULT GETDATE()
+    updated_at datetime2 DEFAULT GETDATE(),
+    UNIQUE(year, section, roll_number)
 );
 
 -- Settings table

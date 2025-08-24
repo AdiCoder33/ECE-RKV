@@ -52,7 +52,7 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       const rows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, { header: 1 });
 
       const headers = rows[0]?.map((h) => String(h).trim());
-      const required = ['Name', 'Email', 'Role', 'Password'];
+      const required = ['Name', 'Email', 'Role', 'Password', 'Year', 'Section'];
       const missing = required.filter((h) => !headers?.includes(h));
       if (missing.length) {
         const message = `Missing required column(s): ${missing.join(', ')}`;
