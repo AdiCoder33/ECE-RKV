@@ -3,6 +3,7 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const { resolveProfileImage } = require('../utils/images');
+const sanitizePhone = require('../utils/phone');
 const router = express.Router();
 
 // Get classmates
@@ -190,7 +191,7 @@ router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
     }
 
     const {
-      phone,
+      phone: rawPhone,
       profileImage,
       name,
       email,
@@ -202,6 +203,7 @@ router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
       semester,
       section,
     } = req.body;
+    const phone = sanitizePhone(rawPhone);
 
     const fields = [];
     const params = [];
