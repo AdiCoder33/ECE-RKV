@@ -49,23 +49,22 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const senderId =
     'sender_id' in message ? message.sender_id : message.senderId;
 
-  // Base bubble styling. Limit width to 70% of the container to prevent overflow.
+  // Base bubble styling. Limit width to 80% of the container to prevent overflow.
   const bubbleClass =
-    "inline-flex items-end whitespace-pre-wrap px-3 pt-2 pb-5 rounded-2xl shadow-sm max-w-[70%] min-w-[5rem] break-words break-all relative after:absolute after:-bottom-1 after:w-0 after:h-0";
+    "inline-flex items-end whitespace-pre-wrap px-3 pt-2 pb-5 rounded-2xl shadow-sm max-w-[80%] min-w-[5rem] break-words break-all relative after:absolute after:-bottom-1 after:w-0 after:h-0";
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
     // Maroon/reddish for sender
     bubbleColor = 'bg-[#8B1F2F] text-white'; // WhatsApp's maroon theme
-  } else if (isGroup) {
-    // Group: assign color per user
-    const userColors = getUserBubbleColor(senderId);
-    bubbleColor = userColors;
-    nameTextColor =
-      userColors.split(' ').find((cls) => cls.startsWith('text-')) || '';
   } else {
-    // Personal chat: light gray
+    // Uniform bubble color for incoming messages
     bubbleColor = 'bg-white text-gray-900 border border-gray-200';
+    if (isGroup) {
+      const userColors = getUserBubbleColor(senderId);
+      nameTextColor =
+        userColors.split(' ').find((cls) => cls.startsWith('text-')) || '';
+    }
   }
 
   // Timestamp
@@ -107,19 +106,22 @@ const MessageItem: React.FC<MessageItemProps> = ({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Group sender name */}
-      {isGroup && !isOwn && (
-        <div className={`mb-1 text-left`}>
-          <span className={`text-xs font-semibold ${nameTextColor}`}>{senderName}</span>
-        </div>
-      )}
       {/* Message bubble */}
       <div className={`w-full flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
         <div
-          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${
+          className={`${bubbleClass} ${
+            isGroup && !isOwn ? 'flex flex-col items-start' : ''
+          } ${bubbleColor} ${tailClass} ${
             isOwn ? 'pr-12' : ''
           } ${selected ? 'ring-2 ring-green-400' : ''}`}
         >
+          {isGroup && !isOwn && (
+            <span
+              className={`text-xs font-semibold ${nameTextColor} mb-1`}
+            >
+              {senderName}
+            </span>
+          )}
           <span className="flex-1">{message.content}</span>
           <span
             className={`absolute bottom-1 right-2 flex items-end text-[10px] ${
