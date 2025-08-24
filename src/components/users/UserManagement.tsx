@@ -342,6 +342,17 @@ const UserManagement: React.FC = () => {
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto">
+            {/* Add User Button */}
+            <Button
+              className="flex items-center gap-2 px-4 py-2 bg-[#8b0000] hover:bg-[#a52a2a] text-white font-semibold rounded-md transition-transform duration-200 transform hover:scale-105 shadow-lg"
+              onClick={() => { setIsModalOpen(true); setEditingUser(null); }}
+              disabled={actionLoading}
+            >
+              <UserPlus className="h-5 w-5" />
+              <span className="hidden sm:inline">Add User</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+
             {/* Import Button */}
             <Button
               className="flex items-center gap-2 px-4 py-2 text-white font-semibold
