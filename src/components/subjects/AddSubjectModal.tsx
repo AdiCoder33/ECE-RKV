@@ -31,11 +31,14 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
     credits: 1,
     type: 'theory'
   });
+  const [loading, setLoading] = useState(false);
+  const [popup, setPopup] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLoading(true);
     await onAddSubject(formData);
+    setLoading(false);
 
     // Reset form
     setFormData({
@@ -46,6 +49,9 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
       credits: 1,
       type: 'theory'
     });
+
+    setPopup(true);
+    setTimeout(() => setPopup(false), 2000);
 
     onClose();
   };
@@ -64,129 +70,157 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] bg-stone-100 dark:bg-gray-950 text-gray-900 dark:text-stone-100 rounded-lg shadow-xl">
-        <DialogHeader className="p-4 border-b border-stone-300 dark:border-gray-800">
-          <DialogTitle className="text-2xl font-bold text-red-800 dark:text-red-400">Add New Subject</DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-400">
-            Create a new subject for the ECE department.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[600px] bg-stone-100 dark:bg-gray-950 text-gray-900 dark:text-stone-100 rounded-lg shadow-xl">
+          <DialogHeader className="p-4 border-b border-stone-300 dark:border-gray-800">
+            <DialogTitle className="text-2xl font-bold text-red-800 dark:text-red-400">Add New Subject</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Create a new subject for the ECE department.
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="font-medium">Subject Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="e.g., Digital Signal Processing"
-                className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-6 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="font-medium">Subject Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="e.g., Digital Signal Processing"
+                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="code" className="font-medium">Subject Code</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => handleInputChange('code', e.target.value)}
+                  placeholder="e.g., ECE301"
+                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  required
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="code" className="font-medium">Subject Code</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => handleInputChange('code', e.target.value)}
-                placeholder="e.g., ECE301"
-                className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
-                required
-              />
-            </div>
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="year" className="font-medium">Year</Label>
+                <Select
+                  value={formData.year.toString()}
+                  onValueChange={(value) => handleInputChange('year', parseInt(value))}
+                >
+                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <SelectValue placeholder="Select a year" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800">
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="year" className="font-medium">Year</Label>
-              <Select
-                value={formData.year.toString()}
-                onValueChange={(value) => handleInputChange('year', parseInt(value))}
+              <div className="space-y-2">
+                <Label htmlFor="semester" className="font-medium">Semester</Label>
+                <Select
+                  value={formData.semester.toString()}
+                  onValueChange={(value) => handleInputChange('semester', parseInt(value) as 1 | 2)}
+                >
+                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <SelectValue placeholder="Select a semester" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800">
+                    <SelectItem value="1">Semester 1</SelectItem>
+                    <SelectItem value="2">Semester 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="credits" className="font-medium">Credits</Label>
+                <Input
+                  id="credits"
+                  type="number"
+                  min={1}
+                  max={6}
+                  value={formData.credits}
+                  onChange={(e) => handleInputChange('credits', parseInt(e.target.value))}
+                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="type" className="font-medium">Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => handleInputChange('type', value)}
+                >
+                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800">
+                    <SelectItem value="theory">Theory</SelectItem>
+                    <SelectItem value="lab">Lab</SelectItem>
+                    <SelectItem value="elective">Elective</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Type Preview:</span>
+              <Badge className={getTypeColor(formData.type)}>
+                {formData.type}
+              </Badge>
+            </div>
+
+            <DialogFooter className="mt-6 bg-stone-200 dark:bg-gray-800 p-4 rounded-b-lg">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
+                disabled={loading}
               >
-                <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <SelectValue placeholder="Select a year" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800">
-                  <SelectItem value="1">1st Year</SelectItem>
-                  <SelectItem value="2">2nd Year</SelectItem>
-                  <SelectItem value="3">3rd Year</SelectItem>
-                  <SelectItem value="4">4th Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="semester" className="font-medium">Semester</Label>
-              <Select
-                value={formData.semester.toString()}
-                onValueChange={(value) => handleInputChange('semester', parseInt(value) as 1 | 2)}
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200 flex items-center gap-2"
+                disabled={loading}
               >
-                <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <SelectValue placeholder="Select a semester" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800">
-                  <SelectItem value="1">Semester 1</SelectItem>
-                  <SelectItem value="2">Semester 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="credits" className="font-medium">Credits</Label>
-              <Input
-                id="credits"
-                type="number"
-                min={1}
-                max={6}
-                value={formData.credits}
-                onChange={(e) => handleInputChange('credits', parseInt(e.target.value))}
-                className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type" className="font-medium">Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => handleInputChange('type', value)}
-              >
-                <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800">
-                  <SelectItem value="theory">Theory</SelectItem>
-                  <SelectItem value="lab">Lab</SelectItem>
-                  <SelectItem value="elective">Elective</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Type Preview:</span>
-            <Badge className={getTypeColor(formData.type)}>
-              {formData.type}
-            </Badge>
-          </div>
-
-          <DialogFooter className="mt-6 bg-stone-200 dark:bg-gray-800 p-4 rounded-b-lg">
-            <Button type="button" variant="outline" onClick={onClose} className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200">
-              Cancel
-            </Button>
-            <Button type="submit" className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200">
-              Add Subject
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    Adding...
+                  </>
+                ) : (
+                  <>Add Subject</>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {/* Popup for success */}
+      {popup && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-green-600 text-white px-6 py-2 rounded shadow-lg text-sm font-semibold">
+          Subject added successfully!
+        </div>
+      )}
+    </>
   );
 };
 

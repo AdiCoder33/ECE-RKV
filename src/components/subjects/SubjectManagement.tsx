@@ -40,6 +40,7 @@ const SubjectManagement = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletePopup, setDeletePopup] = useState(false);
 
   // Loader component using loader.mp4 video
   const EceVideoLoader: React.FC = () => (
@@ -178,6 +179,8 @@ const SubjectManagement = () => {
         title: "Subject Deleted",
         description: "Subject has been removed successfully",
       });
+      setDeletePopup(true);
+      setTimeout(() => setDeletePopup(false), 2000);
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -233,8 +236,15 @@ const SubjectManagement = () => {
   return (
     <div
       className="space-y-6 p-4 sm:p-6 md:p-8 text-gray-900 dark:text-stone-100 min-h-screen"
-      style={{ backgroundColor: THEME.bgBeige }} // Applied the background color here
+      style={{ backgroundColor: THEME.bgBeige }}
     >
+      {/* Success popup for delete */}
+      {deletePopup && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-green-600 text-white px-6 py-2 rounded shadow-lg text-sm font-semibold">
+          Subject deleted successfully!
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-red-800 dark:text-red-400">Subject Management</h1>
@@ -250,7 +260,7 @@ const SubjectManagement = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card className="shadow-lg bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 bg-red-100 rounded-lg dark:bg-red-900">
@@ -362,8 +372,8 @@ const SubjectManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Subjects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Subjects Grid - Responsive */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {filteredSubjects.map((subject) => (
           <Card key={subject.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-900 border-stone-300 dark:border-gray-700">
             <CardHeader className="pb-3">

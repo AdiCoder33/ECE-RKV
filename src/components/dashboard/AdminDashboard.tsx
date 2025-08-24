@@ -1,19 +1,31 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Users, 
-  BookOpen, 
-  GraduationCap, 
+import {
+  Users,
+  BookOpen,
+  GraduationCap,
   TrendingUp,
   UserPlus,
   FileText,
   BarChart3,
   Calendar
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import loaderMp2 from '@/Assets/loader.mp4';
+
+// Theme colors (matching UserManagement)
+const THEME = {
+  bgBeige: '#fbf4ea',
+  accent: '#8b0000',
+  accentHover: '#a52a2a',
+  cardBg: 'bg-white',
+  cardShadow: 'shadow-lg',
+  textMuted: 'text-gray-600'
+};
+
+const PIE_COLORS = ['#2563eb', '#22c55e', '#a21caf', '#f59e42', '#e11d48', '#facc15'];
 
 interface Stat {
   title: string;
@@ -28,12 +40,31 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<Stat[]>([]);
   const [enrollmentData, setEnrollmentData] = useState<{ year: string; students: number }[]>([]);
   const [recentActivities, setRecentActivities] = useState<{ id: number; action: string; created_at: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('token');
+
+  // Loader component (same style as UserManagement)
+  const EceVideoLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center min-h-[300px] py-12">
+      <video
+        src={loaderMp2}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-40 h-40 object-contain mb-4 rounded-lg shadow-lg"
+        aria-label="Loading animation"
+      />
+      <div className="text-[#8b0000] font-semibold text-lg tracking-wide">Loading Dashboard...</div>
+      <div className="text-[#a52a2a] text-sm mt-1">Fetching analytics, please wait</div>
+    </div>
+  );
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setLoading(true);
         const res = await fetch(`${apiBase}/analytics/overview`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -43,7 +74,7 @@ const AdminDashboard = () => {
             {
               title: 'Total Students',
               value: String(data.totalUsers ?? 0),
-              change: '0%',
+              change: '+2%',
               icon: Users,
               color: 'text-blue-600',
               bgColor: 'bg-blue-50'
@@ -51,7 +82,7 @@ const AdminDashboard = () => {
             {
               title: 'Active Professors',
               value: String(data.totalProfessors ?? 0),
-              change: '0%',
+              change: '+1%',
               icon: GraduationCap,
               color: 'text-green-600',
               bgColor: 'bg-green-50'
@@ -67,7 +98,7 @@ const AdminDashboard = () => {
             {
               title: 'Courses',
               value: String(data.totalSubjects ?? 0),
-              change: '0%',
+              change: '+3%',
               icon: FileText,
               color: 'text-orange-600',
               bgColor: 'bg-orange-50'
@@ -76,6 +107,8 @@ const AdminDashboard = () => {
         }
       } catch (error) {
         console.error('Failed to fetch analytics overview', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchStats();
@@ -120,26 +153,37 @@ const AdminDashboard = () => {
     fetchActivities();
   }, [apiBase, token]);
 
-
+  if (loading) {
+    return (
+      <div className="p-0 flex items-center justify-center min-h-screen" style={{ backgroundColor: THEME.bgBeige }}>
+        <EceVideoLoader />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 px-4 sm:px-6 md:px-0">
+    <div
+      className="min-h-screen p-4 sm:p-6"
+      style={{ backgroundColor: THEME.bgBeige, paddingLeft: 12, paddingRight: 12 }}
+    >
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Overview of ECE Department operations and management</p>
+      <div className="mb-2">
+        <h1 className="text-3xl font-bold" style={{ color: THEME.accent }}>Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-2">
+          Overview of <span className="font-semibold text-[#8b0000]">ECE Department</span> operations and management
+        </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Grid - Move to Top */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mt-4 mb-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="border-border">
+          <Card key={index} className={`${THEME.cardBg} ${THEME.cardShadow} border-0 rounded-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
               <div className={`p-2 rounded-md ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -155,12 +199,14 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Top Section: Year-wise Student Distribution & Academic Performance Side by Side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Year-wise Enrollment */}
-        <Card className="border-border">
+        <Card className={`${THEME.cardBg} ${THEME.cardShadow} border-0 rounded-lg`}>
           <CardHeader>
-            <CardTitle className="text-foreground">Year-wise Student Distribution</CardTitle>
+            <CardTitle className="text-lg font-bold text-[#2563eb] flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" /> Year-wise Student Distribution
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
               Current student count across all years in ECE Department
             </CardDescription>
@@ -168,26 +214,29 @@ const AdminDashboard = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={enrollmentData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="year" stroke="#2563eb" fontSize={13} />
+                <YAxis stroke="#2563eb" fontSize={13} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1.5px solid #2563eb',
+                    borderRadius: '8px'
                   }}
                 />
-                <Bar dataKey="students" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Legend />
+                <Bar dataKey="students" fill="#2563eb" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Academic Performance Overview */}
-        <Card className="border-border">
+        {/* Academic Performance */}
+        <Card className={`${THEME.cardBg} ${THEME.cardShadow} border-0 rounded-lg`}>
           <CardHeader>
-            <CardTitle className="text-foreground">Academic Performance</CardTitle>
+            <CardTitle className="text-lg font-bold text-[#22c55e] flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" /> Academic Performance
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
               Overall department performance metrics
             </CardDescription>
@@ -196,28 +245,28 @@ const AdminDashboard = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Average Attendance</span>
-                <span className="font-medium">87%</span>
+                <span className="font-medium text-[#2563eb]">87%</span>
               </div>
-              <Progress value={87} className="h-2" />
+              <Progress value={87} className="h-2 bg-blue-100" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Pass Rate</span>
-                <span className="font-medium">94%</span>
+                <span className="font-medium text-[#22c55e]">94%</span>
               </div>
-              <Progress value={94} className="h-2" />
+              <Progress value={94} className="h-2 bg-green-100" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Placement Rate</span>
-                <span className="font-medium">78%</span>
+                <span className="font-medium text-[#f59e42]">78%</span>
               </div>
-              <Progress value={78} className="h-2" />
+              <Progress value={78} className="h-2 bg-orange-100" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Research Publications</span>
-                <span className="font-medium">156</span>
+                <span className="font-medium text-[#a21caf]">156</span>
               </div>
             </div>
           </CardContent>
@@ -225,11 +274,13 @@ const AdminDashboard = () => {
       </div>
 
       {/* Recent Activities and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         {/* Recent Activities */}
-        <Card className="lg:col-span-2 border-border">
+        <Card className={`${THEME.cardBg} ${THEME.cardShadow} border-0 rounded-lg lg:col-span-2`}>
           <CardHeader>
-            <CardTitle className="text-foreground">Recent Activities</CardTitle>
+            <CardTitle className="text-lg font-bold text-[#8b0000] flex items-center gap-2">
+              <Calendar className="h-5 w-5" /> Recent Activities
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
               Latest system activities and updates
             </CardDescription>
@@ -237,7 +288,7 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
+                <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg bg-indigo-50">
                   <div className="w-2 h-2 bg-primary rounded-full" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">{activity.action}</p>
@@ -250,9 +301,11 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="border-border">
+        <Card className={`${THEME.cardBg} ${THEME.cardShadow} border-0 rounded-lg`}>
           <CardHeader>
-            <CardTitle className="text-foreground">Quick Actions</CardTitle>
+            <CardTitle className="text-lg font-bold text-[#2563eb] flex items-center gap-2">
+              <UserPlus className="h-5 w-5" /> Quick Actions
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
               Common administrative tasks
             </CardDescription>

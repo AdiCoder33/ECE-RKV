@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { User } from '@/types';
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface ImportUsersModalProps {
   isOpen: boolean;
@@ -125,15 +126,29 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-md w-full p-4 rounded-lg bg-[#fbf4ea] border-2 border-[#8b0000]">
         <DialogHeader>
-          <DialogTitle>Import Users</DialogTitle>
-          <DialogDescription>Select an Excel (.xlsx) file to import users.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#8b0000]">
+            <Upload className="h-5 w-5 text-[#8b0000]" />
+            Import Users
+          </DialogTitle>
+          <DialogDescription className="flex items-center gap-2 text-[#a52a2a]">
+            <FileSpreadsheet className="h-4 w-4" />
+            Select an Excel (.xlsx) file to import users.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Input type="file" accept=".xlsx" onChange={handleFileChange} />
+          <Input
+            type="file"
+            accept=".xlsx"
+            onChange={handleFileChange}
+            className="border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+          />
           {rowErrors.length > 0 && (
-            <div className="max-h-40 overflow-y-auto text-sm text-red-600 space-y-1">
+            <div className="max-h-40 overflow-y-auto text-sm text-red-600 space-y-1 bg-red-50 border border-red-300 rounded p-2">
+              <div className="flex items-center gap-2 mb-1 text-red-700 font-semibold">
+                <AlertTriangle className="h-4 w-4" /> Import Errors
+              </div>
               {rowErrors.map((err, idx) => (
                 <p key={idx}>{err}</p>
               ))}
@@ -141,8 +156,34 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={importing}>Cancel</Button>
-          <Button onClick={handleImport} disabled={!file || importing}>Import</Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={importing}
+            className="border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleImport}
+            disabled={!file || importing}
+            className="bg-[#8b0000] hover:bg-[#a52a2a] text-white flex items-center gap-2"
+          >
+            {importing ? (
+              <>
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                Importing...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                Import
+              </>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

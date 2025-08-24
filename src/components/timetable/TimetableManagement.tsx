@@ -625,10 +625,15 @@ const TimetableManagement = () => {
         </CardHeader>
         <CardContent className="p-4">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse min-w-[700px]">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-gray-700">Time</th>
+                  <th
+                    className="sticky left-0 z-10 bg-[#fde8e6] text-left p-3 font-medium text-[#8b0000] min-w-[90px] w-[90px]"
+                    style={{ background: "#fde8e6", color: "#8b0000" }}
+                  >
+                    Time
+                  </th>
                   {days.map(day => (
                     <th key={day} className="text-left p-3 font-medium min-w-[120px] text-gray-700">
                       {day}
@@ -639,7 +644,10 @@ const TimetableManagement = () => {
               <tbody>
                 {timeSlots.map(time => (
                   <tr key={time} className="border-b hover:bg-gray-50">
-                    <td className="p-3 font-medium text-sm bg-gray-50 text-gray-700">
+                    <td
+                      className="sticky left-0 z-10 bg-[#fde8e6] font-medium text-sm text-[#8b0000] min-w-[90px] w-[90px]"
+                      style={{ background: "#fde8e6", color: "#8b0000" }}
+                    >
                       {time}
                     </td>
                     {days.map(day => {

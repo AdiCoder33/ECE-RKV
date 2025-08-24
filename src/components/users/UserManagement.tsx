@@ -25,29 +25,17 @@ import { User } from '@/types';
 import UserModal from './UserModal';
 import ImportUsersModal from './ImportUsersModal';
 import { useToast } from '@/components/ui/use-toast';
-import { motion } from "framer-motion"; // Add this if not already installed: npm install framer-motion
+import { motion } from "framer-motion";
 import loaderMp2 from '@/Assets/loader.mp4';
 
-/**
- * Theme / color notes:
- * - Background: soft off-white
- * - Primary accent (ECE): deep-maroon: #8b0000
- * - Accent hover: #a52a2a
- * - Cards: white with deeper shadow
- *
- * To tweak colors, change THEME constants below.
- */
-
-const apiBase = import.meta.env.VITE_API_URL || '/api';
-
-// Theme colors (single place to adjust)
+// Theme colors
 const THEME = {
-  bgBeige: '#fbf4ea', // original warm beige (kept to match your note)
-  bgSoft: '#fdfaf6', // optional lighter alternative if you swap
-  accent: '#8b0000', // deep-maroon
+  bgBeige: '#fbf4ea',
+  bgSoft: '#fdfaf6',
+  accent: '#8b0000',
   accentHover: '#a52a2a',
   cardBg: 'bg-white',
-  cardShadow: 'shadow-lg', // slightly deeper shadow for a premium feel
+  cardShadow: 'shadow-lg',
   textMuted: 'text-gray-600'
 };
 
@@ -64,9 +52,13 @@ const UserManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [popup, setPopup] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const { toast } = useToast();
 
-  // Fetch users - uses token from localStorage
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+  // Fetch users
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -75,9 +67,7 @@ const UserManagement: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
+      if (!response.ok) throw new Error('Failed to fetch users');
       const data: Array<Record<string, unknown>> = await response.json();
       const mapped: User[] = data.map((u) => {
         const { roll_number, created_at, profile_image, id, ...rest } =
@@ -108,26 +98,25 @@ const UserManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, apiBase]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Map role -> badge classes (professional, muted tones but distinct)
+  // Map role -> badge classes
   const getRoleBadgeColor = (role: string) => {
-    // Return Tailwind utility classes for Badge `className`
     switch (role) {
       case 'admin':
-        return 'bg-[#6b0f0f] text-white'; // dark maroon
+        return 'bg-[#6b0f0f] text-white';
       case 'hod':
-        return 'bg-[#7b3f4a] text-white'; // muted wine
+        return 'bg-[#7b3f4a] text-white';
       case 'professor':
-        return 'bg-[#0f766e] text-white'; // teal-ish
+        return 'bg-[#0f766e] text-white';
       case 'student':
-        return 'bg-[#345b7a] text-white'; // muted blue
+        return 'bg-[#345b7a] text-white';
       case 'alumni':
-        return 'bg-[#b86b2e] text-white'; // warm amber
+        return 'bg-[#b86b2e] text-white';
       default:
         return 'bg-gray-500 text-white';
     }
@@ -157,6 +146,7 @@ const UserManagement: React.FC = () => {
 
   // Add user
   const handleAddUser = async (newUser: Omit<User, 'id'> & { password: string }) => {
+    setActionLoading(true);
     try {
       setModalError(null);
       const response = await fetch(`${apiBase}/users`, {
@@ -173,12 +163,14 @@ const UserManagement: React.FC = () => {
       setIsModalOpen(false);
       setEditingUser(null);
       await fetchUsers();
-      toast({ title: 'Success', description: 'User added successfully' });
+      setPopup({ show: true, message: 'User added successfully!', type: 'success' });
     } catch (err) {
       const msg = (err as Error).message ?? 'Unknown error';
       setModalError(msg);
-      toast({ variant: 'destructive', title: 'Error', description: msg });
-      throw err;
+      setPopup({ show: true, message: 'Failed to add user', type: 'error' });
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setPopup({ show: false, message: '', type: 'success' }), 2000);
     }
   };
 
@@ -186,6 +178,7 @@ const UserManagement: React.FC = () => {
   const handleImportUsers = async (
     bulkUsers: (Omit<User, 'id'> & { password: string })[]
   ): Promise<{ inserted: number; updated: number; errors: string[] }> => {
+    setActionLoading(true);
     try {
       const response = await fetch(`${apiBase}/users/bulk`, {
         method: 'POST',
@@ -198,46 +191,27 @@ const UserManagement: React.FC = () => {
       if (!response.ok) throw new Error('Failed to import users');
       type BulkResult = { id?: string; action?: 'inserted' | 'updated'; error?: string };
       const data: { results: BulkResult[] } = await response.json();
-      const errors: string[] = [];
-      const insertedUsers: User[] = [];
-      const updatedUsers = new Map<string, User>();
-      let inserted = 0;
-      let updated = 0;
-      data.results.forEach((item, idx) => {
-        if (item.id && item.action === 'inserted') {
-          const { password, ...rest } = bulkUsers[idx];
-          insertedUsers.push({ id: String(item.id), ...rest });
-          inserted++;
-        } else if (item.id && item.action === 'updated') {
-          const { password, ...rest } = bulkUsers[idx];
-          updatedUsers.set(String(item.id), { id: String(item.id), ...rest });
-          updated++;
-        } else if (item.error) {
-          errors.push(`Row ${idx + 2}: ${item.error}`);
-        }
+      let inserted = 0, updated = 0;
+      data.results.forEach((item) => {
+        if (item.action === 'inserted') inserted++;
+        else if (item.action === 'updated') updated++;
       });
-      if (inserted || updated) {
-        setUsers(prev => {
-          const replaced = prev.map(u => updatedUsers.get(u.id) ?? u);
-          return [...replaced, ...insertedUsers];
-        });
-      }
       await fetchUsers();
-      toast({ title: 'Import Results', description: `Inserted: ${inserted}, Updated: ${updated}` });
-      if (errors.length) {
-        toast({ variant: 'destructive', title: 'Import Errors', description: errors.join('\n') });
-      }
-      return { inserted, updated, errors };
+      setPopup({ show: true, message: `Imported: ${inserted}, Updated: ${updated}`, type: 'success' });
+      return { inserted, updated, errors: [] };
     } catch (err) {
       const msg = (err as Error).message ?? 'Unknown error';
-      console.error('Import users error:', err);
-      toast({ variant: 'destructive', title: 'Error', description: msg });
+      setPopup({ show: true, message: 'Failed to import users', type: 'error' });
       return { inserted: 0, updated: 0, errors: [msg] };
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setPopup({ show: false, message: '', type: 'success' }), 2000);
     }
   };
 
   // Update user
   const handleUpdateUser = async (updatedUser: User) => {
+    setActionLoading(true);
     try {
       const response = await fetch(`${apiBase}/users/${updatedUser.id}`, {
         method: 'PUT',
@@ -248,59 +222,76 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify(updatedUser)
       });
       if (!response.ok) throw new Error('Failed to update user');
-      const savedUser: User = await response.json();
-      setUsers(prev => prev.map(u => (u.id === savedUser.id ? savedUser : u)));
+      await fetchUsers();
       setIsModalOpen(false);
       setEditingUser(null);
-      await fetchUsers();
-      toast({ title: 'Success', description: 'User updated successfully' });
+      setPopup({ show: true, message: 'User updated successfully!', type: 'success' });
     } catch (err) {
-      const msg = (err as Error).message ?? 'Unknown error';
-      console.error(err);
-      setModalError(msg);
-      toast({ variant: 'destructive', title: 'Error', description: msg });
-      throw err;
+      setPopup({ show: true, message: 'Failed to update user', type: 'error' });
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setPopup({ show: false, message: '', type: 'success' }), 2000);
     }
   };
 
   // Delete user
   const handleDeleteUser = async (id: number) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
+    setActionLoading(true);
     try {
       const response = await fetch(`${apiBase}/users/${String(id)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (!response.ok) throw new Error('Failed to delete user');
-      setUsers(prev => prev.filter(user => user.id !== id));
       await fetchUsers();
-      toast({ title: 'Success', description: 'User deleted successfully' });
+      setPopup({ show: true, message: 'User deleted successfully!', type: 'success' });
     } catch (err) {
-      const msg = (err as Error).message ?? 'Unknown error';
-      console.error(err);
-      toast({ variant: 'destructive', title: 'Error', description: msg });
+      setPopup({ show: true, message: 'Failed to delete user', type: 'error' });
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setPopup({ show: false, message: '', type: 'success' }), 2000);
     }
   };
 
   // Export filtered users to Excel
   const handleExportUsers = () => {
-    const data = filteredUsers.map(user => ({
-      Name: user.name,
-      Email: user.email,
-      Role: user.role,
-      Department: user.department ?? '',
-      Year: user.year ?? '',
-      Semester: user.semester ?? '',
-      Section: user.section ?? '',
-      RollNumber: user.rollNumber ?? '',
-      Phone: user.phone ?? '',
-      Password: ''
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
-    XLSX.writeFile(workbook, 'users.xlsx');
+    setActionLoading(true);
+    try {
+      const data = filteredUsers.map(user => ({
+        Name: user.name,
+        Email: user.email,
+        Role: user.role,
+        Department: user.department ?? '',
+        Year: user.year ?? '',
+        Semester: user.semester ?? '',
+        Section: user.section ?? '',
+        RollNumber: user.rollNumber ?? '',
+        Phone: user.phone ?? '',
+        Password: ''
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+      XLSX.writeFile(workbook, 'users.xlsx');
+      setPopup({ show: true, message: 'Exported successfully!', type: 'success' });
+    } catch (err) {
+      setPopup({ show: true, message: 'Failed to export users', type: 'error' });
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setPopup({ show: false, message: '', type: 'success' }), 2000);
+    }
   };
+
+  // Loader for button
+  const ButtonLoader = () => (
+    <span className="flex items-center justify-center">
+      <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+    </span>
+  );
 
   // ECE-themed loader using loader.mp4 video
   const EceVideoLoader: React.FC = () => (
@@ -334,6 +325,14 @@ const UserManagement: React.FC = () => {
       className="min-h-screen p-6"
       style={{ backgroundColor: THEME.bgBeige }}
     >
+      {/* Popup */}
+      {popup.show && (
+        <div className={`fixed z-50 left-1/2 top-6 transform -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm font-semibold
+          ${popup.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+          {popup.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -343,7 +342,7 @@ const UserManagement: React.FC = () => {
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto">
-            {/* SPECIAL Import Excel button - gradient, hover, scale */}
+            {/* Import Button */}
             <Button
               className="flex items-center gap-2 px-4 py-2 text-white font-semibold
                          bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500
@@ -351,25 +350,30 @@ const UserManagement: React.FC = () => {
                          transition-transform duration-200 transform hover:scale-105
                          shadow-lg rounded-md focus:outline-none focus:ring-2 focus:ring-amber-200"
               onClick={() => setIsImportModalOpen(true)}
+              disabled={actionLoading}
             >
-              <Upload className="h-5 w-5 drop-shadow-sm" />
+              {actionLoading ? <ButtonLoader /> : <Download className="h-5 w-5 drop-shadow-sm" />}
+              {/* Changed icon to Download for Import */}
               <span className="hidden sm:inline">Import Excel</span>
               <span className="sm:hidden">Import</span>
             </Button>
 
+            {/* Export Button */}
             <Button
               className="flex items-center gap-2 px-3 py-2 bg-[#8b0000] hover:bg-[#a52a2a] text-white transition-colors rounded-md"
-              onClick={() => { setEditingUser(null); setIsModalOpen(true); }}
+              onClick={handleExportUsers}
+              disabled={actionLoading}
             >
-              <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add User</span>
-              <span className="sm:hidden">Add</span>
+              {actionLoading ? <ButtonLoader /> : <Upload className="h-4 w-4" />}
+              {/* Changed icon to Upload for Export */}
+              <span className="hidden sm:inline">Export</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Stats - Mobile responsive: 2 in a row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[#fde8e6]">
@@ -419,11 +423,11 @@ const UserManagement: React.FC = () => {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Filters - Mobile: 2 in a row */}
         <Card className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}>
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <div className="flex-1 min-w-0 relative w-full">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-4 items-start sm:items-center">
+              <div className="flex-1 min-w-0 relative w-full col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search users (name, email, roll)..."
@@ -433,51 +437,50 @@ const UserManagement: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#fde8e6] text-[#8b0000] border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] w-full sm:w-auto"
-                >
-                  <option value="all">All Roles</option>
-                  <option value="student">Students</option>
-                  <option value="professor">Professors</option>
-                  <option value="hod">HOD</option>
-                  <option value="alumni">Alumni</option>
-                </select>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#fde8e6] text-[#8b0000] border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] w-full"
+              >
+                <option value="all">All Roles</option>
+                <option value="student">Students</option>
+                <option value="professor">Professors</option>
+                <option value="hod">HOD</option>
+                <option value="alumni">Alumni</option>
+              </select>
 
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#e8f0fb] text-[#345b7a] border-[#345b7a] focus:border-[#8b0000] focus:ring-[#8b0000] w-full sm:w-auto"
-                >
-                  <option value="all">All Years</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#e8f0fb] text-[#345b7a] border-[#345b7a] focus:border-[#8b0000] focus:ring-[#8b0000] w-full"
+              >
+                <option value="all">All Years</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
 
-                <select
-                  value={selectedSemester}
-                  onChange={(e) => setSelectedSemester(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#fff6e6] text-[#b86b2e] border-[#b86b2e] focus:border-[#8b0000] focus:ring-[#8b0000] w-full sm:w-auto"
-                >
-                  <option value="all">All Semesters</option>
-                  <option value="1">Sem 1</option>
-                  <option value="2">Sem 2</option>
-                </select>
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#fff6e6] text-[#b86b2e] border-[#b86b2e] focus:border-[#8b0000] focus:ring-[#8b0000] w-full"
+              >
+                <option value="all">All Semesters</option>
+                <option value="1">Sem 1</option>
+                <option value="2">Sem 2</option>
+              </select>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 px-3 py-2 border-[#8b0000] text-[#8b0000] hover:bg-[#8b0000] hover:text-white transition-colors rounded-md w-full sm:w-auto"
-                  onClick={handleExportUsers}
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 px-3 py-2 border-[#8b0000] text-[#8b0000] hover:bg-[#8b0000] hover:text-white transition-colors rounded-md w-full"
+                onClick={handleExportUsers}
+                disabled={actionLoading}
+              >
+                {actionLoading ? <ButtonLoader /> : <Download className="h-4 w-4" />}
+                <span className="hidden sm:inline">Export</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -580,70 +583,63 @@ const UserManagement: React.FC = () => {
         </Card>
 
         {/* Users Cards - Mobile */}
-        <div className="md:hidden space-y-4">
+        <div className="md:hidden grid grid-cols-2 gap-3">
           {filteredUsers.map((user) => (
-            <Card key={user.id} className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: '#fff5f5' }}
-                    >
-                      <span className="text-sm font-medium text-[#8b0000]">
-                        {user.name?.charAt(0)?.toUpperCase() ?? '?'}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold truncate">{user.name}</h3>
-                      <p className="text-sm text-gray-600 truncate">{user.email}</p>
-                    </div>
+            <Card
+              key={user.id}
+              className={`${THEME.cardBg} ${THEME.cardShadow} rounded-lg`}
+              style={{ minHeight: 0, height: 'auto' }}
+            >
+              <CardContent className="p-3 flex flex-col h-full">
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: '#fff5f5' }}
+                  >
+                    <span className="text-xs font-medium text-[#8b0000]">
+                      {user.name?.charAt(0)?.toUpperCase() ?? '?'}
+                    </span>
                   </div>
-
-                  <Badge className={getRoleBadgeColor(user.role || '')}>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-sm truncate">{user.name}</h3>
+                    <p className="text-xs text-gray-600 truncate">{user.email}</p>
+                  </div>
+                  <Badge className={`${getRoleBadgeColor(user.role || '')} text-[10px] px-2 py-0.5`}>
                     {(user.role || 'N/A').toUpperCase()}
                   </Badge>
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-700">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-700 mb-2">
                   {user.year && user.semester && user.section && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Year / Sem / Section</span>
+                    <>
+                      <span className="text-gray-500">Year/Sem/Sec</span>
                       <span>{user.year}/{user.semester}/{user.section}</span>
-                    </div>
+                    </>
                   )}
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Roll No</span>
-                    <span>{user.rollNumber || '-'}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Phone</span>
-                    <span>{user.phone || '-'}</span>
-                  </div>
+                  <span className="text-gray-500">Roll No</span>
+                  <span>{user.rollNumber || '-'}</span>
+                  <span className="text-gray-500">Phone</span>
+                  <span>{user.phone || '-'}</span>
                 </div>
 
-                <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { /* view */ }}>
-                    <Eye className="h-4 w-4 mr-2" />
+                <div className="flex gap-1 mt-auto">
+                  <Button variant="outline" size="sm" className="flex-1 px-1 py-1 text-xs" onClick={() => { /* view */ }}>
+                    <Eye className="h-4 w-4 mr-1" />
                     View
                   </Button>
-
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 px-1 py-1 text-xs"
                     onClick={() => { setEditingUser(user); setIsModalOpen(true); }}
                   >
-                    <Edit className="h-4 w-4 mr-2" />
+                    <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
-
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 px-1 py-1"
                     onClick={() => handleDeleteUser(user.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -654,7 +650,7 @@ const UserManagement: React.FC = () => {
           ))}
 
           {filteredUsers.length === 0 && (
-            <div className="text-center text-gray-600 py-6">No users to show.</div>
+            <div className="text-center text-gray-600 py-6 col-span-2">No users to show.</div>
           )}
         </div>
 
@@ -666,12 +662,14 @@ const UserManagement: React.FC = () => {
           initialUser={editingUser ?? undefined}
           onSubmit={editingUser ? handleUpdateUser : handleAddUser}
           error={modalError}
+          actionLoading={actionLoading}
         />
 
         <ImportUsersModal
           isOpen={isImportModalOpen}
           onClose={() => setIsImportModalOpen(false)}
           onImportUsers={handleImportUsers}
+          actionLoading={actionLoading}
         />
       </div>
     </div>
