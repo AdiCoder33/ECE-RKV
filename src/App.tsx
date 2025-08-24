@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -38,6 +37,8 @@ import ChatConversation from './components/chat/ChatConversation';
 import StudentProfile from './components/profile/StudentProfile';
 import ComplaintsPage from './components/complaints/ComplaintsPage';
 import Intro from './pages/Intro';
+import introductionVideo from '@/Assets/intro.mp4';
+import { isPWAStandalone } from '@/utils/isPWA';
 import './App.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -91,8 +92,9 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+const App: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showIntro, setShowIntro] = useState(false);
 
   useEffect(() => {
     const handler = (e: BeforeInstallPromptEvent) => {
@@ -102,6 +104,37 @@ function App() {
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    const isStandalone = isPWAStandalone();
+    const alreadyShown = localStorage.getItem('introVideoShown');
+    if (isMobile && isStandalone && !alreadyShown) {
+      setShowIntro(true);
+    }
+  }, []);
+
+  const handleIntroEnd = () => {
+    setShowIntro(false);
+    localStorage.setItem('introVideoShown', '1');
+  };
+
+  if (showIntro) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
+        <video
+          src={introductionVideo}
+          autoPlay
+          playsInline
+          muted={false}
+          controls={false}
+          className="w-full h-full object-cover"
+          onEnded={handleIntroEnd}
+        />
+      </div>
+    );
+  }
+
   return (
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
