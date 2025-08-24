@@ -111,15 +111,21 @@ function App() {
               <ChatProvider>
                 <div className="min-h-screen bg-background">
                 {deferredPrompt && (
-                  <button
-                    onClick={() => {
-                      deferredPrompt.prompt();
-                      deferredPrompt.userChoice.finally(() => setDeferredPrompt(null));
-                    }}
-                  >
-                    Install App
-                  </button>
-                )}
+  <div className="fixed bottom-6 right-6">
+    <button
+      onClick={() => {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(() => setDeferredPrompt(null));
+      }}
+      className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium 
+                 shadow-lg hover:bg-blue-700 active:scale-95 transition 
+                 duration-200 ease-in-out"
+    >
+      📲 Install App
+    </button>
+  </div>
+)}
+
                 <Toaster />
                 <Routes>
                   <Route path="/" element={<Homepage />} />

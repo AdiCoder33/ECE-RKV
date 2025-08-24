@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { ChatMessage, PrivateMessage } from '@/types';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+import { Check, CheckCheck } from 'lucide-react';
 
 interface MessageItemProps {
   message: PrivateMessage | ChatMessage;
@@ -60,15 +61,15 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const senderName =
     'sender_name' in message ? message.sender_name : message.senderName;
   const senderRole =
-    'sender_role' in message ? message.sender_role : message.senderRole;
+    'sender_role' in message ? message.sender_role : ('senderRole' in message ? message.senderRole : undefined);
   const profileImage =
     'sender_profile_image' in message
       ? message.sender_profile_image
-      : message.senderProfileImage;
+      : ('senderProfileImage' in message ? message.senderProfileImage : undefined);
   const senderId =
     'sender_id' in message ? message.sender_id : message.senderId;
 
-  const profileSrc = useProfileImageSrc(profileImage);
+  const profileSrc = useProfileImageSrc(profileImage as string | undefined);
 
   // Bubble color logic
   let bubbleClass =
@@ -85,15 +86,15 @@ const MessageItem: React.FC<MessageItemProps> = ({
     bubbleColor = 'bg-white text-gray-900 border border-gray-200';
   }
 
-  // Avatar fallback
+  // Avatar fallback - smaller size
   const avatar = profileSrc ? (
     <img
       src={profileSrc}
       alt={senderName}
-      className="w-9 h-9 rounded-full object-cover border border-gray-200"
+      className="w-7 h-7 rounded-full object-cover border border-gray-200"
     />
   ) : (
-    <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold text-base select-none">
+    <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold text-sm select-none">
       {senderName?.[0]?.toUpperCase() || '?'}
     </div>
   );
@@ -101,7 +102,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   // Timestamp
   const time =
     'created_at' in message
-      ? new Date(message.created_at)
+      ? new Date(message.created_at as string)
       : new Date(message.timestamp);
   const timeStr = time
     .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -124,49 +125,76 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const align = isOwn ? 'items-end justify-end' : 'items-start justify-start';
   const margin = isOwn ? 'ml-auto' : 'mr-auto';
 
-  const isEdited =
-    'updated_at' in message &&
-    message.updated_at &&
-    message.updated_at !== message.created_at;
+  // Check if message has been edited
+  const isEdited = 
+    ('updated_at' in message && message.updated_at && 
+     ('created_at' in message ? message.updated_at !== message.created_at : 
+      ('timestamp' in message ? message.updated_at !== message.timestamp : false))) ||
+    ('isEdited' in message && message.isEdited);
+
+  // Message status - handle both direct and group message structures
+  const messageStatus = 'status' in message ? message.status : 'sent';
+
+  // Status tick component - WhatsApp-style indicators
+  const StatusIndicator = () => {
+    if (!isOwn) return null;
+    
+    switch (messageStatus) {
+      case 'sent':
+        // Single grey tick
+        return <Check className="h-3 w-3 text-gray-400" />;
+      case 'delivered':
+        // Double grey ticks
+        return <CheckCheck className="h-3 w-3 text-gray-400" />;
+      case 'read':
+        // Double blue ticks (WhatsApp style)
+        return <CheckCheck className="h-3 w-3 text-blue-500" />;
+      default:
+        return <Check className="h-3 w-3 text-gray-400" />;
+    }
+  };
 
   return (
     <div
-      className={`flex flex-col ${align} mb-2 px-2 ${selected ? 'bg-green-100/40' : ''}`}
+      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-3 px-3 ${selected ? 'bg-green-100/40' : ''}`}
       onContextMenu={handleContext}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Avatar and name/role */}
-      <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
-        {avatar}
-        <div className={`flex items-center gap-1`}>
-          <span className="text-xs font-semibold text-gray-700">{senderName}</span>
-          {senderRole && (
-            <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
-              {getShortRole(senderRole)}
-            </span>
-          )}
+      {/* Avatar only for group chats on left side */}
+      {isGroup && !isOwn && (
+        <div className="flex-shrink-0 mr-2 self-end mb-1">
+          {avatar}
         </div>
-      </div>
-      {/* Message bubble */}
-      <div className={`relative ${margin} text-left`}>
+      )}
+      
+      {/* Message bubble with name and time inside */}
+      <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[85%]`}>
+        {/* Sender name for group chats - smaller size */}
+        {isGroup && !isOwn && (
+          <span className="text-[11px] font-medium text-gray-600 mb-1 pl-1">
+            {senderName}
+          </span>
+        )}
+        
         <div
-          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} text-left`}
+          className={`${bubbleClass} ${bubbleColor} ${selected ? 'ring-2 ring-green-400' : ''} text-left pr-4`}
         >
           {message.content}
-        </div>
-        {isEdited && (
-          <div className="pl-2 pt-1 text-[11px] italic text-gray-400 text-left">
-            edited
+          
+          {/* Time and status at bottom right */}
+          <div className="flex items-center justify-end gap-1 mt-1">
+            {isEdited && (
+              <span className="text-[10px] italic text-gray-400 mr-1">
+                edited
+              </span>
+            )}
+            <span className={`text-[10px] ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
+              {timeStr}
+            </span>
+            <StatusIndicator />
           </div>
-        )}
-        <span
-          className={`absolute -bottom-5 right-2 text-[10px] ${
-            isOwn ? 'text-gray-200' : 'text-gray-500'
-          }`}
-        >
-          {timeStr}
-        </span>
+        </div>
       </div>
     </div>
   );

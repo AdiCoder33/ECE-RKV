@@ -45,7 +45,7 @@ const GroupManagement = () => {
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
-    type: 'custom' as const
+    type: 'custom' as ChatGroup['type']
   });
 
   const [groups, setGroups] = useState<ChatGroup[]>([]);
@@ -53,8 +53,11 @@ const GroupManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<ChatGroup | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const fetchGroups = async () => {
+
+const fetchGroups = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups`, {
@@ -169,11 +172,16 @@ const GroupManagement = () => {
     }
   };
 
-  return (
-    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+const handleChat = (groupId: string) => {
+  // Redirect to the specific chat
+  window.location.href = `/chat/${groupId}`;
+};
+
+return (
+    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0 bg-beige min-h-screen"> {/* Set background color to beige */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Chat Groups</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#8B1F2F] text-left pl-4">Chat Groups</h1>
           <p className="text-muted-foreground">Manage chat groups and communications</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -185,58 +193,60 @@ const GroupManagement = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto bg-[#a83246] hover:bg-[#c44558] text-white">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create Group
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] bg-[#fbeee6] border-[#a83246]">
               <DialogHeader>
-                <DialogTitle>Create New Group</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-[#8B1F2F]">Create New Group</DialogTitle>
+                <DialogDescription className="text-gray-600">
                   Create a new chat group for communication
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Group Name</label>
+                  <label className="text-sm font-medium text-[#8B1F2F]">Group Name</label>
                   <Input
                     value={newGroup.name}
                     onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
                     placeholder="Enter group name"
+                    className="border-[#a83246] focus:ring-[#a83246]"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Description</label>
+                  <label className="text-sm font-medium text-[#8B1F2F]">Description</label>
                   <Textarea
                     value={newGroup.description}
                     onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
                     placeholder="Group description"
                     rows={3}
+                    className="border-[#a83246] focus:ring-[#a83246]"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Type</label>
+                  <label className="text-sm font-medium text-[#8B1F2F]">Type</label>
                   <Select value={newGroup.type} onValueChange={(value) => setNewGroup({ ...newGroup, type: value as ChatGroup['type'] })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-[#a83246] focus:ring-[#a83246]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="section">Section</SelectItem>
-                      <SelectItem value="subject">Subject</SelectItem>
-                      <SelectItem value="year">Year</SelectItem>
-                      <SelectItem value="department">Department</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
+                    <SelectContent className="bg-[#fbeee6] border-[#a83246]">
+                      <SelectItem value="section" className="hover:bg-[#f5e6e9]">Section</SelectItem>
+                      <SelectItem value="subject" className="hover:bg-[#f5e6e9]">Subject</SelectItem>
+                      <SelectItem value="year" className="hover:bg-[#f5e6e9]">Year</SelectItem>
+                      <SelectItem value="department" className="hover:bg-[#f5e6e9]">Department</SelectItem>
+                      <SelectItem value="custom" className="hover:bg-[#f5e6e9]">Custom</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsCreateModalOpen(false)} className="border-[#a83246] text-[#8B1F2F] hover:bg-[#f5e6e9]">
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateGroup}>
+                  <Button onClick={handleCreateGroup} className="bg-[#a83246] hover:bg-[#c44558] text-white">
                     Create Group
                   </Button>
                 </div>
@@ -248,49 +258,51 @@ const GroupManagement = () => {
 
       <Dialog open={isEditModalOpen} onOpenChange={(open) => { setIsEditModalOpen(open); if (!open) setEditingGroup(null); }}>
         {editingGroup && (
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] bg-[#fbeee6] border-[#a83246]">
             <DialogHeader>
-              <DialogTitle>Edit Group</DialogTitle>
-              <DialogDescription>Update group details</DialogDescription>
+              <DialogTitle className="text-[#8B1F2F]">Edit Group</DialogTitle>
+              <DialogDescription className="text-gray-600">Update group details</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Group Name</label>
+                <label className="text-sm font-medium text-[#8B1F2F]">Group Name</label>
                 <Input
                   value={editingGroup.name}
                   onChange={(e) => setEditingGroup(prev => prev ? { ...prev, name: e.target.value } : prev)}
                   placeholder="Enter group name"
+                  className="border-[#a83246] focus:ring-[#a83246]"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Description</label>
+                <label className="text-sm font-medium text-[#8B1F2F]">Description</label>
                 <Textarea
                   value={editingGroup.description}
                   onChange={(e) => setEditingGroup(prev => prev ? { ...prev, description: e.target.value } : prev)}
                   placeholder="Group description"
                   rows={3}
+                  className="border-[#a83246] focus:ring-[#a83246]"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Type</label>
+                <label className="text-sm font-medium text-[#8B1F2F]">Type</label>
                 <Select value={editingGroup.type} onValueChange={(value) => setEditingGroup(prev => prev ? { ...prev, type: value as ChatGroup['type'] } : prev)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-[#a83246] focus:ring-[#a83246]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="section">Section</SelectItem>
-                    <SelectItem value="subject">Subject</SelectItem>
-                    <SelectItem value="year">Year</SelectItem>
-                    <SelectItem value="department">Department</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                  <SelectContent className="bg-[#fbeee6] border-[#a83246]">
+                    <SelectItem value="section" className="hover:bg-[#f5e6e9]">Section</SelectItem>
+                    <SelectItem value="subject" className="hover:bg-[#f5e6e9]">Subject</SelectItem>
+                    <SelectItem value="year" className="hover:bg-[#f5e6e9]">Year</SelectItem>
+                    <SelectItem value="department" className="hover:bg-[#f5e6e9]">Department</SelectItem>
+                    <SelectItem value="custom" className="hover:bg-[#f5e6e9]">Custom</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)} className="border-[#a83246] text-[#8B1F2F] hover:bg-[#f5e6e9]">
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateGroup}>
+                <Button onClick={handleUpdateGroup} className="bg-[#a83246] hover:bg-[#c44558] text-white">
                   Save Changes
                 </Button>
               </div>
@@ -340,10 +352,7 @@ const GroupManagement = () => {
                 <span>{group.createdAt}</span>
               </div>
               <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                <Button size="sm" variant="outline" className="flex-1">
-                  <MessageCircle className="h-4 w-4 mr-1" />
-                  Chat
-                </Button>
+                {/* Removed Chat Button */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -363,7 +372,11 @@ const GroupManagement = () => {
                   size="sm"
                   variant="outline"
                   className="text-red-600 hover:text-red-700"
-                  onClick={() => handleDeleteGroup(group.id)}
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete the group "${group.name}"?`)) {
+                      handleDeleteGroup(group.id);
+                    }
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -399,6 +412,39 @@ const GroupManagement = () => {
           }}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-[#fbeee6] border-[#a83246]">
+          <DialogHeader>
+            <DialogTitle className="text-[#8B1F2F]">Confirm Delete</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Are you sure you want to delete the group "{groupToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="border-[#a83246] text-[#8B1F2F] hover:bg-[#f5e6e9]"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (groupToDelete) {
+                  handleDeleteGroup(groupToDelete.id);
+                  setIsDeleteModalOpen(false);
+                  setGroupToDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Group
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -147,7 +147,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <>
-      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-t-2xl shadow-md">
+      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#a83246] via-[#c44558] to-[#a83246] rounded-t-2xl shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={onBack} className="text-white">

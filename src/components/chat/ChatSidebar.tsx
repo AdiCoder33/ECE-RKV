@@ -393,7 +393,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={handleGroupCreate}>Go to Groups</Button>
+          <Button 
+            onClick={handleGroupCreate}
+            className="bg-[#a83246] hover:bg-[#c44558] text-white"
+          >
+            Go to Groups
+          </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

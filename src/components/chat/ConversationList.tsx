@@ -141,7 +141,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
 }) => {
   return (
     <div className="h-full flex flex-col bg-[#fbeee6] border-r border-gray-200 rounded-l-2xl">
-      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#8B1F2F] via-[#a83246] to-[#8B1F2F] rounded-tl-2xl shadow-md">
+      <CardHeader className="pb-3 border-b bg-gradient-to-r from-[#a83246] via-[#c44558] to-[#a83246] rounded-tl-2xl shadow-md">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow">
             <MessageSquare className="h-5 w-5" />
