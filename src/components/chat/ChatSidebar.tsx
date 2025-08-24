@@ -94,7 +94,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<{ file: File; preview: string }[]>([]);
-  const [tab, setTab] = useState<'all' | 'direct' | 'group'>('all');
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -330,9 +329,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   }, [activeChat, hasMore, fetchMoreConversation, fetchMoreGroupMessages]);
 
-  const sortedConversations = conversations
-    .filter(c => tab === 'all' || c.type === tab)
-    .filter(c => c.title.toLowerCase().includes(search.toLowerCase()));
+  const sortedConversations = conversations.filter(c =>
+    c.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   const filteredSearchResults = searchResults.filter(
     u => u.id !== user?.id && !conversations.some(c => c.id === u.id)
@@ -404,8 +403,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div className="h-full w-full flex flex-col">
             {!activeChat ? (
               <ConversationList
-                tab={tab}
-                onTabChange={setTab}
                 search={search}
                 onSearchChange={setSearch}
                 searchResults={filteredSearchResults}
@@ -415,8 +412,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onPin={handlePin}
                 onlineUsers={onlineUsers}
                 onStartChat={handleStartChat}
-                onOpenGroupDialog={() => setIsGroupDialogOpen(true)}
-                onClose={onToggle}
+                onNewChat={() => setIsGroupDialogOpen(true)}
                 activeId={activeChat ? `${activeChat.type}-${activeChat.id}` : undefined}
               />
             ) : (

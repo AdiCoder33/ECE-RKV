@@ -1,11 +1,9 @@
 import React from 'react';
-import { CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Search, UserPlus, X, Loader2 } from 'lucide-react';
+import { MessageSquare, Search, MoreVertical, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { formatIST } from '@/utils/date';
@@ -24,8 +22,6 @@ interface Conversation {
 }
 
 interface ConversationListProps {
-  tab: 'all' | 'direct' | 'group';
-  onTabChange: (tab: 'all' | 'direct' | 'group') => void;
   search: string;
   onSearchChange: (value: string) => void;
   searchResults: User[];
@@ -35,8 +31,7 @@ interface ConversationListProps {
   onPin: (e: React.MouseEvent, c: Conversation) => void;
   onlineUsers: Set<number>;
   onStartChat: (user: User) => void;
-  onOpenGroupDialog: () => void;
-  onClose: () => void;
+  onNewChat: () => void;
   activeId?: string;
 }
 const formatTime = (timestamp: string | null | undefined) =>
@@ -124,8 +119,6 @@ const ConversationRow: React.FC<{
 };
 
 const ConversationList: React.FC<ConversationListProps> = ({
-  tab,
-  onTabChange,
   search,
   onSearchChange,
   searchResults,
@@ -135,41 +128,40 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onPin,
   onlineUsers,
   onStartChat,
-  onOpenGroupDialog,
-  onClose,
+  onNewChat,
   activeId,
 }) => {
+  const [showSearch, setShowSearch] = React.useState(false);
+
+  const toggleSearch = () => {
+    setShowSearch(prev => {
+      if (prev) onSearchChange('');
+      return !prev;
+    });
+  };
+
   return (
     <div className="h-full flex flex-col bg-white border-r border-gray-200 rounded-l-2xl">
-      <CardHeader className="pb-3 border-b bg-white rounded-tl-2xl shadow-md">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Chat
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={onOpenGroupDialog} className="hover:bg-gray-100">
-              <UserPlus className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="sm:hidden hover:bg-gray-100">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="flex items-center justify-between h-14 px-3 bg-[#8B1F2F]">
+        <div className="text-lg flex items-center gap-2 text-white">
+          <MessageSquare className="h-5 w-5" />
+          Chat
         </div>
-        <Tabs
-          value={tab}
-          onValueChange={(
-            v: 'all' | 'direct' | 'group',
-          ) => onTabChange(v)}
-        >
-          <TabsList className="grid grid-cols-3 mb-2 bg-[#fbeee6] rounded-lg mt-2 shadow">
-            <TabsTrigger value="all" className="text-[#8B1F2F] font-semibold data-[state=active]:bg-[#8B1F2F] data-[state=active]:text-white transition">All</TabsTrigger>
-            <TabsTrigger value="direct" className="text-[#8B1F2F] font-semibold data-[state=active]:bg-[#8B1F2F] data-[state=active]:text-white transition">DMs</TabsTrigger>
-            <TabsTrigger value="group" className="text-[#8B1F2F] font-semibold data-[state=active]:bg-[#8B1F2F] data-[state=active]:text-white transition">Groups</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="relative mt-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#8B1F2F]" />
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={toggleSearch}>
+            <Search className="h-4 w-4 text-white" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onNewChat}>
+            <MessageSquare className="h-4 w-4 text-white" />
+          </Button>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-4 w-4 text-white" />
+          </Button>
+        </div>
+      </div>
+      {showSearch && (
+        <div className="relative px-3 py-2 bg-[#8B1F2F]">
+          <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#8B1F2F]" />
           <Input
             placeholder="Search..."
             className="pl-10 h-9 bg-[#fbeee6] border-none focus:ring-2 focus:ring-[#8B1F2F] rounded-lg text-[#8B1F2F] font-medium"
@@ -177,7 +169,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-      </CardHeader>
+      )}
       <ScrollArea className="flex-1 py-2 pr-1">
         {search && (
           <div>
