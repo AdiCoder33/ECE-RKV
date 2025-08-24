@@ -58,6 +58,19 @@ const UserManagement: React.FC = () => {
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
 
+  const triggerAnalytics = useCallback(async () => {
+    try {
+      const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
+      await Promise.all([
+        fetch(`${apiBase}/analytics/overview`, { headers }),
+        fetch(`${apiBase}/analytics/enrollment`, { headers }),
+        fetch(`${apiBase}/analytics/activities`, { headers })
+      ]);
+    } catch (err) {
+      console.error('Failed to trigger analytics', err);
+    }
+  }, [apiBase]);
+
   // Fetch users
   const fetchUsers = useCallback(async () => {
     try {
@@ -197,6 +210,7 @@ const UserManagement: React.FC = () => {
         else if (item.action === 'updated') updated++;
       });
       await fetchUsers();
+      await triggerAnalytics();
       setPopup({ show: true, message: `Imported: ${inserted}, Updated: ${updated}`, type: 'success' });
       return { inserted, updated, errors: [] };
     } catch (err) {
