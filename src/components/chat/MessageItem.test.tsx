@@ -21,8 +21,29 @@ describe('MessageItem', () => {
 
     render(<MessageItem message={message} currentUserId={1} />);
     const bubble = screen.getByText(longText).closest('div');
-    expect(bubble).toHaveClass('max-w-[70%]');
+    expect(bubble).toHaveClass('max-w-[80%]');
     expect(bubble).toHaveClass('break-words');
     expect(bubble).toHaveClass('break-all');
+  });
+
+  it('shows sender name inside bubble for group messages', () => {
+    const message: ChatMessage = {
+      id: '2',
+      senderId: 2,
+      senderName: 'Other',
+      senderRole: 'student',
+      content: 'Hello',
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+    };
+
+    render(<MessageItem message={message} currentUserId={1} isGroup />);
+    const bubble = screen.getByText('Hello').closest('div');
+    expect(bubble).toHaveClass('flex');
+    expect(bubble).toHaveClass('flex-col');
+    expect(bubble).toHaveClass('items-start');
+    const name = screen.getByText('Other');
+    expect(bubble).toContainElement(name);
+    expect(name).toHaveClass('text-purple-900');
   });
 });
