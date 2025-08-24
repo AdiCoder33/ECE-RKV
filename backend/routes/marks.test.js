@@ -42,8 +42,16 @@ describe('marks bulk entry', () => {
       type: 'internal',
       date: '2024-01-01',
       marksData: [
-        { rollNumber: 'R1', subject: 'Math', maxMarks: 100, marks: 95 }
-      ]
+        {
+          rollNumber: 'R1',
+          section: 'A',
+          year: 1,
+          semester: 1,
+          subject: 'Math',
+          maxMarks: 100,
+          marks: 95,
+        },
+      ],
     };
 
     await request(app).post('/marks/bulk').send(payload).expect(200);
@@ -75,8 +83,14 @@ describe('marks bulk entry', () => {
       type: 'internal',
       date: '2024-01-01',
       marksData: [
-        { email: 'test@example.com', subject: 'Math', maxMarks: 100, marks: 'NaN' }
-      ]
+        {
+          rollNumber: 'R1',
+          section: 'A',
+          subject: 'Math',
+          maxMarks: 100,
+          marks: 'NaN',
+        },
+      ],
     };
 
     await request(app).post('/marks/bulk').send(payload).expect(400);
