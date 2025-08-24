@@ -135,6 +135,9 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         }[];
         setFailedRows(failed);
         if (failed.length) {
+          console.error('Bulk user import errors:', failed);
+        }
+        if (failed.length) {
           toast.error(`${failed.length} rows failed to import`);
         } else {
           onClose();
