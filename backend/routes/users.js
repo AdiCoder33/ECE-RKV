@@ -206,9 +206,13 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         continue;
       }
       const savepoint = `sp${i}`;
-      await new sql.Request(transaction).query(`SAVE TRANSACTION ${savepoint}`);
+      const saveReq = new sql.Request(transaction);
+      saveReq.requestTimeout = 600000;
+      await saveReq.query(`SAVE TRANSACTION ${savepoint}`);
       try {
-        const existing = await new sql.Request(transaction)
+        const existingReq = new sql.Request(transaction);
+        existingReq.requestTimeout = 600000;
+        const existing = await existingReq
           .input('email', u.email)
           .query(
             'SELECT id, name, role, department, year, semester, section, roll_number, phone, password FROM users WHERE email = @email'
@@ -217,7 +221,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         let userId;
         if (existing.recordset.length) {
           const ex = existing.recordset[0];
-          const req = new sql.Request(transaction).input('email', u.email);
+          const req = new sql.Request(transaction);
+          req.requestTimeout = 600000;
+          req.input('email', u.email);
           const updates = [];
           if (ex.name !== u.name) {
             updates.push('name = @name');
@@ -272,35 +278,40 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           userId = ex.id;
         } else {
           const hashedPassword = await bcrypt.hash(u.password, 10);
-            const request = new sql.Request(transaction);
-            const result = await request
-              .input('name', u.name)
-              .input('email', u.email)
-              .input('password', hashedPassword)
-              .input('role', u.role)
-              .input('department', u.department === undefined ? null : u.department)
-              .input('year', u.year === undefined ? null : u.year)
-              .input('semester', u.semester === undefined ? null : u.semester)
-              .input('section', u.section)
-              .input('rollNumber', u.rollNumber)
-              .input('phone', u.phone)
-              .query(
+          const request = new sql.Request(transaction);
+          request.requestTimeout = 600000;
+          const result = await request
+            .input('name', u.name)
+            .input('email', u.email)
+            .input('password', hashedPassword)
+            .input('role', u.role)
+            .input('department', u.department === undefined ? null : u.department)
+            .input('year', u.year === undefined ? null : u.year)
+            .input('semester', u.semester === undefined ? null : u.semester)
+            .input('section', u.section)
+            .input('rollNumber', u.rollNumber)
+            .input('phone', u.phone)
+            .query(
               'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @semester, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
-              );
+            );
           const insertedId = result.recordset[0].id;
           results.push({ index: i, id: insertedId, action: 'inserted' });
           userId = insertedId;
         }
 
         if (u.role === 'student') {
-          const classRes = await new sql.Request(transaction)
+          const classReq = new sql.Request(transaction);
+          classReq.requestTimeout = 600000;
+          const classRes = await classReq
             .input('year', u.year)
             .input('semester', u.semester)
             .input('section', u.section)
             .query('SELECT id FROM classes WHERE year = @year AND semester = @semester AND section = @section');
           if (classRes.recordset.length) {
             const classId = classRes.recordset[0].id;
-            await new sql.Request(transaction)
+            const linkReq = new sql.Request(transaction);
+            linkReq.requestTimeout = 600000;
+            await linkReq
               .input('classId', classId)
               .input('studentId', userId)
               .query(
@@ -309,7 +320,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           }
         }
       } catch (err) {
-        await new sql.Request(transaction).query(`ROLLBACK TRANSACTION ${savepoint}`);
+        const rollbackReq = new sql.Request(transaction);
+        rollbackReq.requestTimeout = 600000;
+        await rollbackReq.query(`ROLLBACK TRANSACTION ${savepoint}`);
         results.push({ index: i, error: err.message });
       }
     }
