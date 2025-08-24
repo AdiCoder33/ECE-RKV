@@ -52,7 +52,7 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       const rows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, { header: 1 });
 
       const headers = rows[0]?.map((h) => String(h).trim());
-      const required = ['Name', 'Email', 'Role', 'Password', 'Year', 'Section'];
+      const required = ['Name', 'Email', 'Role', 'Password'];
       const missing = required.filter((h) => !headers?.includes(h));
       if (missing.length) {
         const message = `Missing required column(s): ${missing.join(', ')}`;
@@ -89,17 +89,19 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
       const validationErrors: string[] = [];
       parsed.forEach((u, idx) => {
         const errs: string[] = [];
-        if (!Number.isInteger(u.year) || (u.year as number) <= 0) {
-          errs.push('Year must be a positive integer');
+        if (u.role === 'student') {
+          if (!Number.isInteger(u.year) || (u.year as number) <= 0) {
+            errs.push('Year must be a positive integer');
+          }
+          if (!u.section.trim()) {
+            errs.push('Section is required');
+          }
+          if (!u.rollNumber.trim()) {
+            errs.push('Roll number is required');
+          }
         }
         if (u.semester !== undefined && u.semester !== 1 && u.semester !== 2) {
           errs.push('Semester must be 1 or 2');
-        }
-        if (!u.section.trim()) {
-          errs.push('Section is required');
-        }
-        if (!u.rollNumber.trim()) {
-          errs.push('Roll number is required');
         }
         if (!u.phone.trim()) {
           errs.push('Phone is required');
