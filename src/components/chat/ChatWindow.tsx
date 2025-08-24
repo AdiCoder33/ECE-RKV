@@ -12,6 +12,7 @@ import { formatIST } from '@/utils/date';
 import ChatContext from '@/contexts/ChatContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getProfileImageSrc } from '@/lib/profileImage';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type Message = ChatMessage | PrivateMessage;
 
@@ -67,6 +68,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     useState<ChatMessage | PrivateMessage | null>(null);
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (activeChat.type === 'group') {
@@ -237,14 +239,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <Trash2 className="h-5 w-5" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={_onClose}
-            className="text-white"
-          >
-            <X className="h-5 w-5 text-white" />
-          </Button>
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={_onClose}
+              className="text-white"
+            >
+              <X className="h-5 w-5 text-white" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
