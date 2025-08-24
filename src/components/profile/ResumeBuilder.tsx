@@ -265,7 +265,7 @@ const ResumeBuilder = () => {
   if (!isEditing) {
     return (
       <div className="min-h-screen px-2 py-6 sm:px-6 md:px-12" style={{ background: `linear-gradient(135deg, ${THEME.bgBeige} 0%, #eef2ff 100%)` }}>
-        <div className="flex justify-between items-center print:hidden mb-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 print:hidden mb-4">
           <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: THEME.accent }}>
             <img
               src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f393.png"
@@ -275,10 +275,10 @@ const ResumeBuilder = () => {
             />
             Resume Preview
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
-              className="border border-[#2563eb] text-[#2563eb] hover:bg-[#eef2ff]"
+              className="border border-[#2563eb] text-[#2563eb] hover:bg-[#eef2ff] w-full sm:w-auto"
               onClick={() => setIsEditing(true)}
             >
               <Code className="h-4 w-4 mr-2" />
@@ -286,7 +286,7 @@ const ResumeBuilder = () => {
             </Button>
             <Button
               onClick={downloadResume}
-              className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] font-semibold shadow"
+              className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] font-semibold shadow w-full sm:w-auto"
             >
               <Download className="h-4 w-4 mr-2" />
               Download PDF

@@ -20,6 +20,7 @@ interface UserModalProps {
   initialUser?: User;
   onSubmit: (user: Omit<User, 'id'> & { id?: string; password?: string }) => Promise<void>;
   error?: string | null;
+  actionLoading?: boolean;
 }
 
 const initialForm: Omit<User, 'id'> & { password: string } = {
@@ -34,7 +35,15 @@ const initialForm: Omit<User, 'id'> & { password: string } = {
   password: 'password',
 };
 
-const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: UserModalProps) => {
+const UserModal: React.FC<UserModalProps> = ({
+  isOpen,
+  onClose,
+  mode,
+  initialUser,
+  onSubmit,
+  error,
+  actionLoading
+}) => {
   const [formData, setFormData] = useState(initialForm);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -101,163 +110,166 @@ const UserModal = ({ isOpen, onClose, mode, initialUser, onSubmit, error }: User
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-md w-full p-4 rounded-lg bg-[#fbf4ea] border-2 border-[#8b0000]">
         <DialogHeader>
-          <DialogTitle>
-            <span className="bg-gradient-to-r from-[#8b0000] via-[#a52a2a] to-[#b86b2e] bg-clip-text text-transparent">
-              {mode === 'edit' ? 'Edit User' : 'Add New User'}
-            </span>
+          <DialogTitle className="text-lg font-bold text-[#8b0000]">
+            {mode === 'edit' ? 'Edit User' : 'Add User'}
           </DialogTitle>
-          <DialogDescription className="text-[#a52a2a] font-medium">
-            {mode === 'edit'
-              ? 'Update user details for the ECE department.'
-              : 'Create a new user account for the ECE department.'}
-          </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-[#8b0000] font-semibold">Full Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Enter full name"
-                required
-                className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#8b0000] font-semibold">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Enter email address"
-                required
-                className="border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="role" className="text-[#8b0000] font-semibold">Role</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => handleInputChange('role', value)}
-              >
-                <SelectTrigger className="w-full border-[#8b0000] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="professor">Professor</SelectItem>
-                  <SelectItem value="hod">HOD</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="alumni">Alumni</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-[#345b7a] font-semibold">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="Enter phone number"
-                className="border-[#345b7a] bg-[#e8f0fb] text-[#345b7a] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-[#b86b2e] font-semibold">Password</Label>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-3"
+        >
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-[#8b0000] mb-1">Full Name</label>
             <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
-              placeholder="Default is 'password'"
-              className="border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]"
+              type="text"
+              value={formData.name}
+              onChange={e => handleInputChange('name', e.target.value)}
+              required
+              placeholder="Enter full name"
+              className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
             />
           </div>
-
-          {formData.role === 'student' && (
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-2">
-              <div className="space-y-2">
-                <Label htmlFor="year" className="text-[#345b7a] font-semibold">Year</Label>
-                <Select
-                  value={formData.year?.toString()}
-                  onValueChange={(value) => handleInputChange('year', value ? parseInt(value) : value)}
-                >
-                  <SelectTrigger className="w-full border-[#345b7a] bg-[#e8f0fb] text-[#345b7a] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]">
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1st Year</SelectItem>
-                    <SelectItem value="2">2nd Year</SelectItem>
-                    <SelectItem value="3">3rd Year</SelectItem>
-                    <SelectItem value="4">4th Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="semester" className="text-[#b86b2e] font-semibold">Semester</Label>
-                <Select
-                  value={formData.semester?.toString()}
-                  onValueChange={(value) => handleInputChange('semester', value ? (parseInt(value) as 1 | 2) : value)}
-                >
-                  <SelectTrigger className="w-full border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]">
-                    <SelectValue placeholder="Select semester" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="section" className="text-[#b86b2e] font-semibold">Section</Label>
-                <Input
-                  id="section"
-                  value={formData.section}
-                  onChange={(e) => handleInputChange('section', e.target.value)}
-                  placeholder="A, B, C..."
-                  className="border-[#b86b2e] bg-[#fff6e6] text-[#b86b2e] font-semibold rounded-md focus:border-[#8b0000] focus:ring-[#8b0000]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rollNumber" className="text-[#8b0000] font-semibold">Roll Number</Label>
-                <Input
-                  id="rollNumber"
-                  value={formData.rollNumber}
-                  onChange={(e) => handleInputChange('rollNumber', e.target.value)}
-                  placeholder="e.g., 20ECE001"
-                  className="border-[#6b0f0f] bg-[#fde8e6] text-[#8b0000] font-semibold rounded-md focus:border-[#a52a2a] focus:ring-[#a52a2a]"
-                />
-              </div>
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-[#8b0000] mb-1">Email</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={e => handleInputChange('email', e.target.value)}
+              required
+              placeholder="Enter email"
+              className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+            />
+          </div>
+          {/* Password */}
+          {mode === 'add' && (
+            <div>
+              <label className="block text-sm font-medium text-[#8b0000] mb-1">Password</label>
+              <Input
+                type="password"
+                value={formData.password}
+                onChange={e => handleInputChange('password', e.target.value)}
+                required
+                placeholder="Enter password"
+                className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+              />
             </div>
           )}
-
-          {(error || validationError) && (
-            <p className="text-red-500 text-sm">{validationError ?? error}</p>
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} className="border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]">
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-[#8b0000] mb-1">Phone</label>
+            <Input
+              type="tel"
+              value={formData.phone}
+              onChange={e => handleInputChange('phone', e.target.value)}
+              placeholder="Enter phone number"
+              className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+            />
+          </div>
+          {/* Roll Number and Section side by side */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-[#8b0000] mb-1">Roll Number</label>
+              <Input
+                type="text"
+                value={formData.rollNumber}
+                onChange={e => handleInputChange('rollNumber', e.target.value)}
+                placeholder="Enter roll number"
+                className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-[#8b0000] mb-1">Section</label>
+              <Input
+                type="text"
+                value={formData.section}
+                onChange={e => handleInputChange('section', e.target.value)}
+                placeholder="Section"
+                className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+              />
+            </div>
+          </div>
+          {/* Role, Year, Semester side by side */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-[#8b0000] mb-1">Role</label>
+              <select
+                value={formData.role}
+                onChange={e => handleInputChange('role', e.target.value)}
+                required
+                className="w-full px-3 py-2 border rounded-md text-sm border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fde8e6] text-[#8b0000]"
+              >
+                <option value="">Select role</option>
+                <option value="student">Student</option>
+                <option value="professor">Professor</option>
+                <option value="hod">HOD</option>
+                <option value="alumni">Alumni</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex-1 flex gap-2">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-[#8b0000] mb-1">Year</label>
+                <select
+                  value={formData.year?.toString()}
+                  onChange={e => handleInputChange('year', e.target.value ? parseInt(e.target.value) : e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#e8f0fb] text-[#345b7a]"
+                >
+                  <option value="">Year</option>
+                  <option value="1">1st</option>
+                  <option value="2">2nd</option>
+                  <option value="3">3rd</option>
+                  <option value="4">4th</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-[#8b0000] mb-1">Semester</label>
+                <select
+                  value={formData.semester?.toString()}
+                  onChange={e => handleInputChange('semester', e.target.value ? (parseInt(e.target.value) as 1 | 2) : e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fff6e6] text-[#b86b2e]"
+                >
+                  <option value="">Sem</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          {/* Error */}
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          {/* Buttons */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="px-4 border-[#8b0000] text-[#8b0000] hover:bg-[#fde8e6]"
+              disabled={actionLoading}
+            >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="bg-gradient-to-r from-[#8b0000] via-[#a52a2a] to-[#b86b2e] text-white font-bold hover:from-[#a52a2a] hover:via-[#b86b2e] hover:to-[#8b0000] rounded-md"
+              className="bg-[#8b0000] hover:bg-[#a52a2a] text-white px-4"
+              disabled={actionLoading}
             >
-              {mode === 'edit' ? 'Save Changes' : 'Add User'}
+              {actionLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                  Saving...
+                </span>
+              ) : (
+                mode === 'edit' ? 'Update User' : 'Add User'
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

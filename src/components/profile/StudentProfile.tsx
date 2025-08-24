@@ -196,33 +196,36 @@ const StudentProfile = () => {
           </div>
         </div>
 
-        {/* Responsive Tabs with smooth sliding animation */}
+        {/* Responsive Tabs with horizontal scroll on mobile */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex w-full bg-[#fff6e6] rounded-lg shadow mb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-[#b86b2e]/60 scrollbar-track-[#fde8e6]/40">
-            <TabsTrigger value="overview" className={tabTriggerClasses}>
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="academics" className={tabTriggerClasses}>
-              Academic Records
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className={tabTriggerClasses}>
-              Attendance
-            </TabsTrigger>
-            <TabsTrigger value="contact" className={tabTriggerClasses}>
-              Contact Info
-            </TabsTrigger>
-            {(user?.role === 'student' || user?.role === 'admin' || user?.role === 'professor' || user?.role === 'hod') && (
-              <TabsTrigger value="resume" className={tabTriggerClasses}>
-                Resume
+          <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-[#b86b2e]/60 scrollbar-track-[#fde8e6]/40">
+            <TabsList className="flex w-max min-w-full bg-[#fff6e6] rounded-lg shadow mb-2">
+              <TabsTrigger value="overview" className={tabTriggerClasses}>
+                Overview
               </TabsTrigger>
-            )}
-          </TabsList>
+              <TabsTrigger value="academics" className={tabTriggerClasses}>
+                Academic Records
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className={tabTriggerClasses}>
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger value="contact" className={tabTriggerClasses}>
+                Contact Info
+              </TabsTrigger>
+              {(user?.role === 'student' || user?.role === 'admin' || user?.role === 'professor' || user?.role === 'hod') && (
+                <TabsTrigger value="resume" className={tabTriggerClasses}>
+                  Resume
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           {/* Animated tab content for smooth sliding */}
           <div className="relative min-h-[400px]">
             <TabsContent
               value="overview"
               className="absolute inset-0 w-full transition-all duration-300 data-[state=active]:opacity-100 data-[state=active]:translate-x-0 data-[state=inactive]:opacity-0 data-[state=inactive]:-translate-x-8 z-10"
+              style={{ display: "block" }} // Ensures visibility on mobile
             >
               {/* Current Performance */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
