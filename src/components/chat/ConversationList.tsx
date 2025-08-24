@@ -118,7 +118,7 @@ const ConversationRow: React.FC<{
           </span>
         </p>
       </div>
-      <div className="flex flex-col items-end gap-1 ml-auto">
+      <div className="flex flex-col items-end gap-1">
         <span className="text-xs text-gray-400">
           {formatTime(conversation.lastActivity || null)}
         </span>
@@ -155,7 +155,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-gray-200 rounded-l-2xl">
+    <div className="h-full flex flex-col bg-white">
       <div className="flex items-center justify-between h-14 px-3 bg-[#8B1F2F]">
         <div className="text-lg flex items-center gap-2 text-white">
           <MessageSquare className="h-5 w-5" />
@@ -184,7 +184,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
           />
         </div>
       )}
-      <ScrollArea className="flex-1 py-2 pr-1">
+      <ScrollArea className="flex-1 py-2">
         {search && (
           <div>
             {searchLoading ? (
