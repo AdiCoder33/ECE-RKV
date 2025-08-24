@@ -43,7 +43,7 @@ const ConversationButton: React.FC<{
   return (
     <button onClick={onClick} className="relative">
       <Avatar className="h-8 w-8">
-        <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
+        {avatarSrc && <AvatarImage src={avatarSrc} alt={convo.title} />}
         <AvatarFallback className="bg-primary text-primary-foreground">
           {convo.title.charAt(0)}
         </AvatarFallback>

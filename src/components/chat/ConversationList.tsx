@@ -55,7 +55,7 @@ const SearchResultItem: React.FC<{ user: User; onClick: () => void }> = ({ user,
       style={{ borderRadius: 12 }}
     >
       <Avatar className="h-10 w-10">
-        <AvatarImage src={src ?? '/placeholder.svg'} alt={user.name} />
+        {src && <AvatarImage src={src} alt={user.name} />}
         <AvatarFallback className="bg-[#8B1F2F] text-white font-medium">
           {user.name.charAt(0)}
         </AvatarFallback>
@@ -92,7 +92,7 @@ const ConversationRow: React.FC<{
     >
       <div className="relative">
         <Avatar className="h-12 w-12">
-          <AvatarImage src={src ?? '/placeholder.svg'} />
+          {src && <AvatarImage src={src} alt={conversation.title} />}
           <AvatarFallback className="bg-[#8B1F2F] text-white font-medium">
             {conversation.title.charAt(0)}
           </AvatarFallback>
