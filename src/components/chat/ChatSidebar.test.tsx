@@ -108,7 +108,7 @@ describe('ChatSidebar search start chat', () => {
     );
   });
 
-  it('emits join-room on successful start chat', async () => {
+  it('does not emit join-room on successful start chat', async () => {
     mockUseChat.conversations = [];
     render(
       <ChatSidebar
@@ -122,7 +122,7 @@ describe('ChatSidebar search start chat', () => {
     fireEvent.click(screen.getAllByText('start')[0]);
 
     await waitFor(() =>
-      expect(mockUseChat.socketRef.current.emit).toHaveBeenCalledWith(
+      expect(mockUseChat.socketRef.current.emit).not.toHaveBeenCalledWith(
         'join-room',
         'user:2'
       )

@@ -184,11 +184,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   useEffect(() => {
     const socket = socketRef.current;
-    if (!socket || !activeChat) return;
-    const room =
-      activeChat.type === 'group'
-        ? `group-${activeChat.id}`
-        : `user:${activeChat.id}`;
+    if (!socket || !activeChat || activeChat.type !== 'group') return;
+    const room = `group-${activeChat.id}`;
     socket.emit('join-room', room);
     return () => {
       socket.emit('leave-room', room);
