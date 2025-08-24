@@ -128,7 +128,7 @@ const App: React.FC = () => {
           playsInline
           muted={false}
           controls={false}
-          className="w-full h-full object-cover"
+          className="w-10 h-20 object-cover"
           onEnded={handleIntroEnd}
         />
       </div>
