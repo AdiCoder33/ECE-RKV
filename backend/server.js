@@ -7,6 +7,10 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 const server = http.createServer(app);
+// Allow long-running requests such as large Excel imports
+server.setTimeout(15 * 60 * 1000); // 15 minutes
+// TODO: Offload heavy processing (e.g., Excel parsing) to a background job queue
+// so the API can respond immediately while work continues asynchronously.
 const PORT = process.env.PORT || 5000;
 const { setupSocket } = require('./socket');
 const io = setupSocket(server);
