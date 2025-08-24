@@ -2,7 +2,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Search, MoreVertical, Loader2, CheckCheck, Pin } from 'lucide-react';
+import { MessageSquare, Search, X, Loader2, CheckCheck, Pin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { formatIST } from '@/utils/date';
@@ -150,6 +152,20 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onFilterChange,
 }) => {
   const [showSearch, setShowSearch] = React.useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleClose = () => {
+    const dashboardRoutes: Record<string, string> = {
+      admin: '/dashboard',
+      hod: '/dashboard',
+      professor: '/dashboard/professor',
+      student: '/dashboard/student',
+      alumni: '/dashboard/alumni'
+    };
+    const role = user?.role || '';
+    navigate(dashboardRoutes[role] || '/dashboard');
+  };
 
   const toggleSearch = () => {
     setShowSearch(prev => {
@@ -180,8 +196,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
           <Button variant="ghost" size="icon" onClick={onNewChat}>
             <MessageSquare className="h-4 w-4 text-white" />
           </Button>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="h-4 w-4 text-white" />
+          <Button variant="ghost" size="icon" onClick={handleClose}>
+            <X className="h-4 w-4 text-white" />
           </Button>
         </div>
       </div>
