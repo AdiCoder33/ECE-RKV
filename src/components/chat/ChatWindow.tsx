@@ -2,7 +2,7 @@ import React, { useMemo, useState, useContext, useRef, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, Loader2, Send, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Pencil, Trash2, X } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
@@ -206,9 +206,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <span className="text-xs text-white/80">{statusText}</span>
           </div>
         </div>
-        {selectedMsg && (
-          <div className="flex items-center gap-2">
-            {(
+        <div className="flex items-center gap-2">
+          {selectedMsg && (
+            (
               'sender_id' in selectedMsg
                 ? selectedMsg.sender_id
                 : selectedMsg.senderId
@@ -225,7 +225,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               >
                 <Pencil className="h-5 w-5" />
               </Button>
-            )}
+            )
+          )}
+          {selectedMsg && (
             <Button
               variant="ghost"
               size="icon"
@@ -234,8 +236,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             >
               <Trash2 className="h-5 w-5" />
             </Button>
-          </div>
-        )}
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={_onClose}
+            className="text-white"
+          >
+            <X className="h-5 w-5 text-white" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
         {loading ? (
