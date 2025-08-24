@@ -184,23 +184,28 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       for (let j = 0; j < batch.length; j++) {
         const i = start + j;
         const u = batch[j];
+        const year = Number(u.year);
+        const sem = Number(u.semester);
+        const section = typeof u.section === 'string' ? u.section.trim() : u.section;
+        const rollNumber = typeof u.rollNumber === 'string' ? u.rollNumber.trim() : u.rollNumber;
+        const phone = typeof u.phone === 'string' ? u.phone.trim() : u.phone;
         const errs = [];
-        if (!Number.isInteger(u.year) || u.year <= 0) {
+        if (!Number.isInteger(year) || year <= 0) {
           errs.push('year must be a positive integer');
         }
-        if (!Number.isInteger(u.semester) || u.semester <= 0) {
+        if (!Number.isInteger(sem) || sem <= 0) {
           errs.push('semester must be a positive integer');
         }
-        if (u.role === 'student' && u.semester !== undefined && u.semester !== 1 && u.semester !== 2) {
+        if (u.role === 'student' && Number.isInteger(sem) && sem !== 1 && sem !== 2) {
           errs.push('semester must be 1 or 2');
         }
-        if (!u.section || !u.section.trim()) {
+        if (!section) {
           errs.push('section is required');
         }
-        if (!u.rollNumber || !u.rollNumber.trim()) {
+        if (!rollNumber) {
           errs.push('rollNumber is required');
         }
-        if (!u.phone || !u.phone.trim()) {
+        if (!phone) {
           errs.push('phone is required');
         }
         if (!allowedRoles.includes(u.role)) {
@@ -243,27 +248,27 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
               updates.push('department = @department');
               req.input('department', dept);
             }
-            const yr = u.year === undefined ? null : u.year;
+            const yr = Number.isNaN(year) ? null : year;
             if (ex.year !== yr) {
               updates.push('year = @year');
               req.input('year', yr);
             }
-            const sem = u.semester === undefined ? null : u.semester;
-            if (ex.semester !== sem) {
+            const sm = Number.isNaN(sem) ? null : sem;
+            if (ex.semester !== sm) {
               updates.push('semester = @semester');
-              req.input('semester', sem);
+              req.input('semester', sm);
             }
-            const sec = u.section === undefined ? null : u.section;
+            const sec = section === undefined ? null : section;
             if (ex.section !== sec) {
               updates.push('section = @section');
               req.input('section', sec);
             }
-            const roll = u.rollNumber === undefined ? null : u.rollNumber;
+            const roll = rollNumber === undefined ? null : rollNumber;
             if (ex.roll_number !== roll) {
               updates.push('roll_number = @rollNumber');
               req.input('rollNumber', roll);
             }
-            const ph = u.phone === undefined ? null : u.phone;
+            const ph = phone === undefined ? null : phone;
             if (ex.phone !== ph) {
               updates.push('phone = @phone');
               req.input('phone', ph);
@@ -291,11 +296,11 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
               .input('password', hashedPassword)
               .input('role', u.role)
               .input('department', u.department === undefined ? null : u.department)
-              .input('year', u.year === undefined ? null : u.year)
-              .input('semester', u.semester === undefined ? null : u.semester)
-              .input('section', u.section)
-              .input('rollNumber', u.rollNumber)
-              .input('phone', u.phone)
+              .input('year', Number.isNaN(year) ? null : year)
+              .input('semester', Number.isNaN(sem) ? null : sem)
+              .input('section', section)
+              .input('rollNumber', rollNumber)
+              .input('phone', phone)
               .query(
                 'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @semester, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
               );
@@ -308,9 +313,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
             const classReq = new sql.Request(transaction);
             classReq.requestTimeout = 600000;
             const classRes = await classReq
-              .input('year', u.year)
-              .input('semester', u.semester)
-              .input('section', u.section)
+              .input('year', year)
+              .input('semester', sem)
+              .input('section', section)
               .query('SELECT id FROM classes WHERE year = @year AND semester = @semester AND section = @section');
             if (classRes.recordset.length) {
               const classId = classRes.recordset[0].id;
