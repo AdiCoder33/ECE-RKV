@@ -196,7 +196,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Avatar className="h-9 w-9">
-            <AvatarImage src={avatarSrc ?? '/placeholder.svg'} />
+            {avatarSrc && <AvatarImage src={avatarSrc} alt={activeChat.title} />}
             <AvatarFallback className="bg-primary text-primary-foreground">
               {activeChat.title.charAt(0)}
             </AvatarFallback>

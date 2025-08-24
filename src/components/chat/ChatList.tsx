@@ -24,7 +24,7 @@ const UserSearchResult: React.FC<{
       onClick={onSelect}
     >
       <Avatar className="h-8 w-8 mr-3">
-        <AvatarImage src={avatarSrc ?? '/placeholder.svg'} alt={result.name} />
+        {avatarSrc && <AvatarImage src={avatarSrc} alt={result.name} />}
         <AvatarFallback>{result.name.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex-1 text-left">
