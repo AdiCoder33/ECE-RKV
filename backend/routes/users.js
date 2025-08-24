@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { executeQuery, connectDB, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { resolveProfileImage } = require('../utils/images');
+const sanitizePhone = require('../utils/phone');
 const router = express.Router();
 
 // Get all users or search users
@@ -97,7 +98,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create user
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { name, email, password, role, department, year, semester, section, rollNumber, phone } = req.body;
+    const { name, email, password, role, department, year, semester, section, rollNumber } = req.body;
+    const phone = sanitizePhone(req.body.phone);
     const sem = semester === undefined ? undefined : Number(semester);
 
     if (role === 'student' && ![1, 2].includes(sem)) {
@@ -188,7 +190,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         const sem = Number(u.semester);
         const section = typeof u.section === 'string' ? u.section.trim() : u.section;
         const rollNumber = typeof u.rollNumber === 'string' ? u.rollNumber.trim() : u.rollNumber;
-        const phone = typeof u.phone === 'string' ? u.phone.trim() : u.phone;
+        const phone = sanitizePhone(u.phone);
         const errs = [];
         if (!Number.isInteger(year) || year <= 0) {
           errs.push('year must be a positive integer');

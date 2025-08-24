@@ -3,6 +3,7 @@ const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { fetchTimetable } = require('./timetable');
 const { resolveProfileImage } = require('../utils/images');
+const sanitizePhone = require('../utils/phone');
 const router = express.Router();
 
 // Get professor profile
@@ -69,7 +70,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     const {
-      phone,
+      phone: rawPhone,
       profileImage,
       name,
       email,
@@ -77,6 +78,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       bloodGroup,
       dateOfBirth
     } = req.body;
+    const phone = sanitizePhone(rawPhone);
     const fields = [];
     const params = [];
     if (phone !== undefined) {
