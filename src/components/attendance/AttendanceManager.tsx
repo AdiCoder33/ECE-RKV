@@ -505,6 +505,7 @@ const AttendanceManager: React.FC = () => {
           attendancePercentage: s.attendancePercentage,
           present: null,
         }));
+        mapped.sort((a, b) => a.rollNumber - b.rollNumber);
         setStudents(mapped);
 
         // Sync period attendance immediately
@@ -702,6 +703,7 @@ const AttendanceManager: React.FC = () => {
           attendancePercentage: s.attendancePercentage,
           present: null,
         }));
+        mapped.sort((a, b) => a.rollNumber - b.rollNumber);
         setStudents(mapped);
 
         // Sync period attendance immediately
