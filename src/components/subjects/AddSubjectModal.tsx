@@ -72,49 +72,59 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px] bg-stone-100 dark:bg-gray-950 text-gray-900 dark:text-stone-100 rounded-lg shadow-xl">
-          <DialogHeader className="p-4 border-b border-stone-300 dark:border-gray-800">
-            <DialogTitle className="text-2xl font-bold text-red-800 dark:text-red-400">Add New Subject</DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-400">
+        <DialogContent
+          className="
+            sm:max-w-[400px] max-w-[95vw] w-full
+            bg-stone-100 dark:bg-gray-950 text-gray-900 dark:text-stone-100 rounded-lg shadow-xl
+            p-1 sm:p-3
+            !max-h-[70vh] overflow-y-auto
+          "
+          style={{
+            minHeight: 'unset',
+            maxHeight: '70vh',
+          }}
+        >
+          <DialogHeader className="p-1 sm:p-3 border-b border-stone-300 dark:border-gray-800">
+            <DialogTitle className="text-base sm:text-xl font-bold text-red-800 dark:text-red-400">Add New Subject</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               Create a new subject for the ECE department.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6 p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="font-medium">Subject Name</Label>
+          <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-4 p-1 sm:p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="name" className="font-medium text-xs">Subject Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="e.g., Digital Signal Processing"
-                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-7 sm:h-9 text-xs"
                   required
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="code" className="font-medium">Subject Code</Label>
+              <div className="space-y-1">
+                <Label htmlFor="code" className="font-medium text-xs">Subject Code</Label>
                 <Input
                   id="code"
                   value={formData.code}
                   onChange={(e) => handleInputChange('code', e.target.value)}
                   placeholder="e.g., ECE301"
-                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-7 sm:h-9 text-xs"
                   required
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="year" className="font-medium">Year</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="year" className="font-medium text-xs">Year</Label>
                 <Select
                   value={formData.year.toString()}
                   onValueChange={(value) => handleInputChange('year', parseInt(value))}
                 >
-                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-7 sm:h-9 text-xs">
                     <SelectValue placeholder="Select a year" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800">
@@ -125,14 +135,13 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="semester" className="font-medium">Semester</Label>
+              <div className="space-y-1">
+                <Label htmlFor="semester" className="font-medium text-xs">Semester</Label>
                 <Select
                   value={formData.semester.toString()}
                   onValueChange={(value) => handleInputChange('semester', parseInt(value) as 1 | 2)}
                 >
-                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-7 sm:h-9 text-xs">
                     <SelectValue placeholder="Select a semester" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800">
@@ -143,9 +152,9 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="credits" className="font-medium">Credits</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="credits" className="font-medium text-xs">Credits</Label>
                 <Input
                   id="credits"
                   type="number"
@@ -153,18 +162,17 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
                   max={6}
                   value={formData.credits}
                   onChange={(e) => handleInputChange('credits', parseInt(e.target.value))}
-                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  className="border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-7 sm:h-9 text-xs"
                   required
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="type" className="font-medium">Type</Label>
+              <div className="space-y-1">
+                <Label htmlFor="type" className="font-medium text-xs">Type</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => handleInputChange('type', value)}
                 >
-                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <SelectTrigger className="w-full border-stone-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-7 sm:h-9 text-xs">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800">
@@ -177,25 +185,25 @@ const AddSubjectModal = ({ isOpen, onClose, onAddSubject }: AddSubjectModalProps
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Type Preview:</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Type Preview:</span>
               <Badge className={getTypeColor(formData.type)}>
                 {formData.type}
               </Badge>
             </div>
 
-            <DialogFooter className="mt-6 bg-stone-200 dark:bg-gray-800 p-4 rounded-b-lg">
+            <DialogFooter className="mt-1 sm:mt-3 bg-stone-200 dark:bg-gray-800 p-1 sm:p-3 rounded-b-lg">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200"
+                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors duration-200 h-7 sm:h-9 text-xs"
                 disabled={loading}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200 flex items-center gap-2"
+                className="bg-red-700 text-white hover:bg-red-800 transition-colors duration-200 flex items-center gap-2 h-7 sm:h-9 text-xs"
                 disabled={loading}
               >
                 {loading ? (

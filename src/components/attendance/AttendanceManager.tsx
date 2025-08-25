@@ -98,7 +98,7 @@ const TIME_TO_PERIOD: Record<string, string> = {
 };
 
 const AttendanceManager: React.FC = () => {
-  const { user } = useAuth();
+  const {   user } = useAuth();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const initialSubject = searchParams.get('subjectId') || '';

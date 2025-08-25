@@ -12,7 +12,8 @@ import {
   Save,
   X,
   ChevronsUpDown,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -166,6 +167,7 @@ const TimetableManagement = () => {
   const [timetable, setTimetable] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addingSlot, setAddingSlot] = useState(false); // Loader for Add Slot
 
   // Loader component using loader.mp4 video
   const EceVideoLoader: React.FC = () => (
@@ -350,6 +352,7 @@ const TimetableManagement = () => {
       return;
     }
 
+    setAddingSlot(true); // Start loader
     try {
       const facultyId = parseInt(newSlot.facultyId, 10);
       const response = await fetch(`${apiBase}/timetable`, {
@@ -376,6 +379,7 @@ const TimetableManagement = () => {
           description: data.error || data.message || 'Failed to add timetable slot',
           variant: 'destructive'
         });
+        setAddingSlot(false);
         return;
       }
 
@@ -393,6 +397,8 @@ const TimetableManagement = () => {
         description: "Failed to add timetable slot",
         variant: "destructive"
       });
+    } finally {
+      setAddingSlot(false); // Stop loader
     }
   };
 
@@ -521,18 +527,18 @@ const TimetableManagement = () => {
                   Add Slot
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px] bg-white text-gray-900 rounded-lg shadow-xl">
-                <DialogHeader className="p-4 border-b border-gray-200">
-                  <DialogTitle className="text-2xl font-bold">Add Time Slot</DialogTitle>
-                  <DialogDescription className="text-gray-600">
+              <DialogContent className="max-w-xs w-full bg-white text-gray-900 rounded-lg shadow-xl p-2">
+                <DialogHeader className="p-2 border-b border-gray-200">
+                  <DialogTitle className="text-lg font-bold">Add Time Slot</DialogTitle>
+                  <DialogDescription className="text-gray-600 text-xs">
                     Add a new class to the timetable
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 p-4">
+                <div className="space-y-2 p-2">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Day</label>
+                    <label className="text-xs font-medium text-gray-700">Day</label>
                     <Select value={newSlot.day} onValueChange={(value) => setNewSlot({ ...newSlot, day: value })}>
-                      <SelectTrigger className="border-gray-300 focus:border-red-700 focus:ring-red-700">
+                      <SelectTrigger className="h-8 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700">
                         <SelectValue placeholder="Select day" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -543,9 +549,9 @@ const TimetableManagement = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Time</label>
+                    <label className="text-xs font-medium text-gray-700">Time</label>
                     <Select value={newSlot.time} onValueChange={(value) => setNewSlot({ ...newSlot, time: value })}>
-                      <SelectTrigger className="border-gray-300 focus:border-red-700 focus:ring-red-700">
+                      <SelectTrigger className="h-8 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700">
                         <SelectValue placeholder="Select time" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -556,9 +562,9 @@ const TimetableManagement = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Subject</label>
+                    <label className="text-xs font-medium text-gray-700">Subject</label>
                     <Select value={newSlot.subject} onValueChange={(value) => setNewSlot({ ...newSlot, subject: value })}>
-                      <SelectTrigger className="border-gray-300 focus:border-red-700 focus:ring-red-700">
+                      <SelectTrigger className="h-8 text-xs border-gray-300 focus:border-red-700 focus:ring-red-700">
                         <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -569,7 +575,7 @@ const TimetableManagement = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Faculty</label>
+                    <label className="text-xs font-medium text-gray-700">Faculty</label>
                     <ProfessorCombobox
                       value={newSlot.facultyId}
                       onChange={(value) => setNewSlot({ ...newSlot, facultyId: value })}
@@ -578,7 +584,7 @@ const TimetableManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Room</label>
+                    <label className="text-xs font-medium text-gray-700">Room</label>
                     <Input
                       value={newSlot.room}
                       onChange={(e) => setNewSlot({ ...newSlot, room: e.target.value })}
@@ -587,12 +593,19 @@ const TimetableManagement = () => {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 p-4 border-t border-gray-200">
-                  <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
+                <div className="flex justify-end gap-2 p-2 border-t border-gray-200">
+                  <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="h-8 px-3 text-xs border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600">
                     Cancel
                   </Button>
-                  <Button onClick={handleAddSlot} className="bg-red-700 text-white hover:bg-red-800">
-                    Add Slot
+                  <Button onClick={handleAddSlot} className="h-8 px-4 text-xs bg-red-700 text-white hover:bg-red-800 min-w-[90px]" disabled={addingSlot}>
+                    {addingSlot ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>Add Slot</>
+                    )}
                   </Button>
                 </div>
               </DialogContent>
@@ -638,9 +651,11 @@ const TimetableManagement = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
+
                     {sections.map(sec => (
                       <SelectItem key={sec} value={sec}>Section {sec}</SelectItem>
                     ))}
+
                   </SelectContent>
                 </Select>
               </div>
