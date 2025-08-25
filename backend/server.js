@@ -37,6 +37,7 @@ const publicRoutes = require('./routes/public');
 const deviceRoutes = require('./routes/devices');
 const pushRoutes = require('./routes/push');
 const complaintRoutes = require('./routes/complaints');
+const extraClassRoutes = require('./routes/extraClasses');
 const { startAttendanceAlertScheduler } = require('./services/attendanceAlertScheduler');
 
 // Middleware
@@ -85,6 +86,7 @@ app.use('/api/timetable', require('./routes/timetable'));
 app.use('/api/public', publicRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/extra-classes', extraClassRoutes);
 app.use('/api/complaints', complaintRoutes);
 
 // Health check route
