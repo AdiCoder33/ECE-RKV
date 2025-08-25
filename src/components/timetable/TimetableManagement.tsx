@@ -297,8 +297,13 @@ const TimetableManagement = () => {
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const timeSlots = [
-    '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
-    '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'
+    '08:30-09:30',
+    '09:30-10:30',
+    '10:40-11:40',
+    '11:40-12:40',
+    '13:30-14:30',
+    '14:30-15:30',
+    '15:40-16:40'
   ];
 
   const filteredTimetable = timetable.filter(slot =>
