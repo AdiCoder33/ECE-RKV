@@ -140,7 +140,7 @@ const LandingPage: React.FC = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await fetch(${apiBase}/public/announcements?scope=landing);
+        const response = await fetch(`${apiBase}/public/announcements?scope=landing`);
         if (!response.ok) {
           throw new Error('Failed to fetch announcements');
         }
@@ -390,7 +390,7 @@ const LandingPage: React.FC = () => {
             {facultyList.map((fac, i) => (
               <div
                 key={i}
-                className={bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 text-center min-w-[160px] sm:min-w-[220px]} // ADDED: dark mode class
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 text-center min-w-[160px] sm:min-w-[220px]`} // ADDED: dark mode class
               >
                 {fac.image ? (
                   <img src={fac.image} alt={fac.name}
@@ -398,7 +398,7 @@ const LandingPage: React.FC = () => {
                   />
                 ) : (
                   <div
-                    className={w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gray-200 rounded-full mb-4}
+                    className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gray-200 rounded-full mb-4`}
                   />
                 )}
                 <h3 className="font-bold text-base sm:text-lg dark:text-white">
@@ -522,7 +522,7 @@ const LandingPage: React.FC = () => {
                 idx === currentAchievement ? "bg-red-700" : "bg-gray-400"
               }`}
               onClick={() => setCurrentAchievement(idx)}
-              aria-label={Show achievement ${idx + 1}}
+              aria-label={`Show achievement ${idx + 1}`}
             />
           ))}
         </div>
@@ -627,13 +627,13 @@ const LandingPage: React.FC = () => {
         {/* Sliding images */}
         <div
           className="flex h-full transition-transform duration-700 ease-in-out"
-          style={{ transform: translateX(-${current * 100}%) }}
+          style={{ transform: `translateX(-${current * 100}%)` }}
         >
           {images.map((img, idx) => (
             <img
               key={idx}
               src={img}
-              alt={ECE hero ${idx + 1}}
+              alt={`ECE hero ${idx + 1}`}
               className="w-full h-[350px] sm:h-[600px] object-cover flex-shrink-0"
             />
           ))}
@@ -693,7 +693,7 @@ const LandingPage: React.FC = () => {
             <button
               key={idx}
               type="button"
-              aria-label={Go to slide ${idx + 1}}
+              aria-label={`Go to slide ${idx + 1}`}
               onClick={() => {
                 setCurrent(idx);
                 pauseThenResume(1000); // Only pause/resume when clicking indicators
@@ -718,7 +718,7 @@ const LandingPage: React.FC = () => {
         idx === current ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
       }
       transition={{ duration: 0.6 }}
-      className={w-full flex flex-col items-center justify-center absolute left-0 right-0 px-4}
+      className={`w-full flex flex-col items-center justify-center absolute left-0 right-0 px-4`}
     >
       {/* transparent bluish backdrop for readability but very light */}
       <h2 className="text-3xl sm:text-5xl font-bold text-white drop-shadow-md select-none">
