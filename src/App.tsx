@@ -122,29 +122,29 @@ const App: React.FC = () => {
   if (showIntro) {
     return (
       <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
-        <div className="w-full h-full flex items-center justify-center">
-          <video
-            src={introductionVideo}
-            autoPlay
-            playsInline
-            muted={false}
-            controls={false}
-            className="object-contain scale-75 w-full h-full bg-black"
-            onEnded={handleIntroEnd}
-          />
-        </div>
+        <video
+          src={introductionVideo}
+          autoPlay
+          playsInline
+          muted
+          controls={false}
+          allow="autoplay"
+          className="w-full h-full object-contain bg-black"
+          onEnded={handleIntroEnd}
+          onError={handleIntroEnd}
+        />
       </div>
     );
   }
 
   return (
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <Router>
-            <StandaloneRedirector />
-            <AuthProvider>
-              <ChatProvider>
-                <div className="min-h-screen bg-background">
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <Router>
+          <StandaloneRedirector />
+          <AuthProvider>
+            <ChatProvider>
+              <div className="min-h-screen bg-background">
                 {deferredPrompt && (
                   <button
                     onClick={() => {
@@ -161,42 +161,42 @@ const App: React.FC = () => {
                   <Route path="/login" element={<LoginForm />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/intro" element={<Intro />} />
-                  <Route path="/dashboard" element={<DashboardLayout />}> 
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="student" element={<StudentDashboard />} />
-                  <Route path="professor" element={<ProfessorDashboard />} />
-                  <Route path="alumni" element={<AlumniDashboard />} />
-                  <Route path="users" element={<UserManagement />} />
-                  <Route path="groups" element={<GroupManagement />} />
-                  <Route path="timetable" element={<TimetableRouter />} />
-                  <Route path="classes" element={<ClassManagement />} />
-                  <Route path="classes/:classId/students" element={<ClassStudents />} />
-                  <Route path="subjects" element={<SubjectManagement />} />
-                  <Route path="my-subjects" element={<StudentSubjects />} />
-                  <Route path="attendance" element={<AttendanceManager />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="announcements" element={<Announcements />} />
-                  <Route path="profile" element={<Profile />} />
-                  <Route path="student-attendance" element={<StudentAttendance />} />
-                  <Route path="alumni" element={<AlumniDirectory />} />
-                  <Route path="alumni/profile" element={<AlumniProfile />} />
-                  <Route path="contact-alumni" element={<ContactAlumni />} />
-                  <Route path="complaints" element={<ComplaintsPage />} />
-                  <Route path="resume" element={<ResumeBuilder />} />
-                  <Route path="my-marks" element={<StudentMarks />} />
-                  <Route path="students/:studentId" element={<StudentProfile />} />
-                  <Route path="marks" element={<Marks />} />
-                  <Route path="chat" element={<ChatList />} />
-                  <Route path="chat/:type/:id" element={<ChatConversation />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
+                  <Route path="/dashboard" element={<DashboardLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="student" element={<StudentDashboard />} />
+                    <Route path="professor" element={<ProfessorDashboard />} />
+                    <Route path="alumni" element={<AlumniDashboard />} />
+                    <Route path="users" element={<UserManagement />} />
+                    <Route path="groups" element={<GroupManagement />} />
+                    <Route path="timetable" element={<TimetableRouter />} />
+                    <Route path="classes" element={<ClassManagement />} />
+                    <Route path="classes/:classId/students" element={<ClassStudents />} />
+                    <Route path="subjects" element={<SubjectManagement />} />
+                    <Route path="my-subjects" element={<StudentSubjects />} />
+                    <Route path="attendance" element={<AttendanceManager />} />
+                    <Route path="analytics" element={<Analytics />} />
+                    <Route path="announcements" element={<Announcements />} />
+                    <Route path="profile" element={<Profile />} />
+                    <Route path="student-attendance" element={<StudentAttendance />} />
+                    <Route path="alumni" element={<AlumniDirectory />} />
+                    <Route path="alumni/profile" element={<AlumniProfile />} />
+                    <Route path="contact-alumni" element={<ContactAlumni />} />
+                    <Route path="complaints" element={<ComplaintsPage />} />
+                    <Route path="resume" element={<ResumeBuilder />} />
+                    <Route path="my-marks" element={<StudentMarks />} />
+                    <Route path="students/:studentId" element={<StudentProfile />} />
+                    <Route path="marks" element={<Marks />} />
+                    <Route path="chat" element={<ChatList />} />
+                    <Route path="chat/:type/:id" element={<ChatConversation />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
                 </Routes>
               </div>
-              </ChatProvider>
-            </AuthProvider>
-          </Router>
-        </ThemeProvider>
-      </QueryClientProvider>
+            </ChatProvider>
+          </AuthProvider>
+        </Router>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
