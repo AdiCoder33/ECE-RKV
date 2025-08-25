@@ -80,6 +80,7 @@ interface ExtraClass {
   start_time: string;
   end_time: string;
   subject_name: string;
+  semester?: string;
 }
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -146,6 +147,8 @@ const AttendanceManager: React.FC = () => {
   const [extraSubject, setExtraSubject] = React.useState('');
   const [extraYear, setExtraYear] = React.useState(initialYear);
   const [extraSection, setExtraSection] = React.useState(initialSection);
+  const extraSemesters = ['1', '2'];
+  const [extraSemester, setExtraSemester] = React.useState(currentSemester);
   const [extraDate, setExtraDate] = React.useState(new Date().toISOString().split('T')[0]);
   const [extraStart, setExtraStart] = React.useState('');
   const [extraEnd, setExtraEnd] = React.useState('');
@@ -280,7 +283,7 @@ const AttendanceManager: React.FC = () => {
       try {
         const token = localStorage.getItem('token');
         const res = await fetch(
-          `${apiBase}/subjects?year=${extraYear}&semester=${currentSemester}`,
+          `${apiBase}/subjects?year=${extraYear}&semester=${extraSemester}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.ok) {
@@ -292,7 +295,7 @@ const AttendanceManager: React.FC = () => {
       }
     };
     fetchExtraSubjects();
-  }, [extraYear, showExtraModal, currentSemester]);
+  }, [extraYear, extraSemester, showExtraModal]);
 
   // Convert subject name from URL to ID once subjects arrive
   React.useEffect(() => {
@@ -394,7 +397,7 @@ const AttendanceManager: React.FC = () => {
         label: `Extra – ${time} – ${ec.subject_name}`,
         subjectId: String(ec.subject_id),
         year: cls ? String(cls.year) : selectedYear,
-        semester: currentSemester,
+        semester: ec.semester ? String(ec.semester) : currentSemester,
         section: cls ? cls.section : selectedSection,
         extraClassId: String(ec.id),
         isExtra: true,
@@ -767,6 +770,7 @@ const AttendanceManager: React.FC = () => {
           date: extraDate,
           startTime: extraStart,
           endTime: extraEnd,
+          semester: extraSemester,
         }),
       });
       if (!response.ok) throw new Error('Failed to schedule extra class');
@@ -775,6 +779,7 @@ const AttendanceManager: React.FC = () => {
       setExtraSubject('');
       setExtraStart('');
       setExtraEnd('');
+      setExtraSemester(currentSemester);
       fetchExtraClasses();
     } catch (err) {
       toast({ description: 'Failed to schedule extra class' });
@@ -863,6 +868,7 @@ const AttendanceManager: React.FC = () => {
                       setExtraYear(selectedYear);
                       setExtraSection(selectedSection);
                       setExtraDate(selectedDate);
+                      setExtraSemester(currentSemester);
                       setExtraSubject('');
                       setExtraStart('');
                       setExtraEnd('');
@@ -1330,7 +1336,13 @@ const AttendanceManager: React.FC = () => {
           </div>
         )}
 
-        <Dialog open={showExtraModal} onOpenChange={setShowExtraModal}>
+        <Dialog
+          open={showExtraModal}
+          onOpenChange={(open) => {
+            setShowExtraModal(open);
+            if (!open) setExtraSemester(currentSemester);
+          }}
+        >
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Schedule Extra Class</DialogTitle>
@@ -1352,7 +1364,7 @@ const AttendanceManager: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1">
                   <Label htmlFor="extra-year">Year</Label>
                   <select
@@ -1366,6 +1378,21 @@ const AttendanceManager: React.FC = () => {
                     {extraYears.map((year) => (
                       <option key={year} value={year}>
                         {year}st Year
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="extra-semester">Semester</Label>
+                  <select
+                    id="extra-semester"
+                    value={extraSemester}
+                    onChange={(e) => setExtraSemester(e.target.value)}
+                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                  >
+                    {extraSemesters.map((sem) => (
+                      <option key={sem} value={sem}>
+                        {sem}
                       </option>
                     ))}
                   </select>
