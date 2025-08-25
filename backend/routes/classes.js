@@ -244,7 +244,7 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
       ) att ON u.id = att.student_id
       LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
       WHERE sc.class_id = ? AND u.role = 'student'
-      ORDER BY u.roll_number
+      ORDER BY TRY_CAST(u.roll_number AS INT)
     `;
     
     const result = await executeQuery(query, [classId]);

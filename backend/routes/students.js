@@ -28,7 +28,7 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
       LEFT JOIN attendance a ON u.id = a.student_id
       WHERE u.role = ? AND u.year = ? AND u.semester = ? AND u.section = ?
       GROUP BY u.id, u.name, u.email, u.roll_number, u.phone, u.profile_image
-      ORDER BY u.roll_number
+      ORDER BY TRY_CAST(u.roll_number AS INT)
     `, ['student', year, semester, section]);
 
     const classmates = result.recordset || [];
@@ -148,7 +148,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       c.semester,
       c.section,
       ar.cgpa
-      ORDER BY u.year, u.semester, u.section, u.roll_number`;
+      ORDER BY u.year, u.semester, u.section, TRY_CAST(u.roll_number AS INT)`;
 
     const result = await executeQuery(query, params);
     const students = result.recordset || [];
