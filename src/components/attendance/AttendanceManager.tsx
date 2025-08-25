@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Carousel,
   CarouselContent,
   CarouselItem,
@@ -61,6 +68,18 @@ interface PeriodOption {
   year: string;
   semester: string;
   section: string;
+  extraClassId?: string;
+  isExtra?: boolean;
+}
+
+interface ExtraClass {
+  id: string;
+  subject_id: string;
+  class_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  subject_name: string;
 }
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -120,6 +139,17 @@ const AttendanceManager: React.FC = () => {
   const [slotOptions, setSlotOptions] = React.useState<PeriodOption[]>([]);
   const [periodOptions, setPeriodOptions] = React.useState<PeriodOption[]>([]);
   const [selectedSlot, setSelectedSlot] = React.useState(''); // for professors
+  const [extraClasses, setExtraClasses] = React.useState<ExtraClass[]>([]);
+  const [allClasses, setAllClasses] = React.useState<{ id: string; year: number; section: string }[]>([]);
+  const [selectedExtraClassId, setSelectedExtraClassId] = React.useState<string | null>(null);
+  const [showExtraModal, setShowExtraModal] = React.useState(false);
+  const [extraSubject, setExtraSubject] = React.useState('');
+  const [extraYear, setExtraYear] = React.useState(initialYear);
+  const [extraSection, setExtraSection] = React.useState(initialSection);
+  const [extraDate, setExtraDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [extraStart, setExtraStart] = React.useState('');
+  const [extraEnd, setExtraEnd] = React.useState('');
+  const [extraSubjects, setExtraSubjects] = React.useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [saveStatus, setSaveStatus] = React.useState<'success' | 'error' | null>(null);
@@ -150,6 +180,25 @@ const AttendanceManager: React.FC = () => {
   };
   const currentSemester = getCurrentSemester();
 
+  // Fetch all classes for mapping
+  React.useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data: { id: string; year: number; section: string }[] = await res.json();
+          setAllClasses(data);
+        }
+      } catch (err) {
+        console.error('Error fetching classes:', err);
+      }
+    };
+    fetchClasses();
+  }, []);
+
   // Subjects
   React.useEffect(() => {
     const fetchSubjects = async () => {
@@ -168,6 +217,27 @@ const AttendanceManager: React.FC = () => {
     };
     fetchSubjects();
   }, [selectedYear, currentSemester]);
+
+  // Subjects for extra class modal
+  React.useEffect(() => {
+    if (!showExtraModal) return;
+    const fetchExtraSubjects = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(
+          `${apiBase}/subjects?year=${extraYear}&semester=${currentSemester}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.ok) {
+          const data: { id: string; name: string }[] = await res.json();
+          setExtraSubjects(data);
+        }
+      } catch (err) {
+        console.error('Error fetching subjects:', err);
+      }
+    };
+    fetchExtraSubjects();
+  }, [extraYear, showExtraModal, currentSemester]);
 
   // Convert subject name from URL to ID once subjects arrive
   React.useEffect(() => {
@@ -218,11 +288,33 @@ const AttendanceManager: React.FC = () => {
     fetchProfessorTimetable();
   }, [isProfessor, user?.id, selectedDate]);
 
+  // Extra classes for professors
+  const fetchExtraClasses = React.useCallback(async () => {
+    if (!isProfessor || typeof user?.id !== 'number') return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(
+        `${apiBase}/extra-classes?professorId=${user.id}&date=${selectedDate}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data: ExtraClass[] = await res.json();
+        setExtraClasses(data);
+      }
+    } catch (err) {
+      console.error('Error fetching extra classes:', err);
+    }
+  }, [isProfessor, user?.id, selectedDate]);
+
+  React.useEffect(() => {
+    fetchExtraClasses();
+  }, [fetchExtraClasses]);
+
   // Build period options from timetable for selected date
   React.useEffect(() => {
     const day = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
     const daySlots = timetable.filter((slot) => slot.day === day);
-    const options: PeriodOption[] = daySlots
+    const regularOptions: PeriodOption[] = daySlots
       .map((slot) => {
         const periodNumber = TIME_TO_PERIOD[slot.time];
         const subjectId =
@@ -239,9 +331,36 @@ const AttendanceManager: React.FC = () => {
       })
       .filter((opt): opt is PeriodOption => opt !== null);
 
+    const extraOptions: PeriodOption[] = extraClasses.map((ec) => {
+      const cls = allClasses.find((c) => String(c.id) === String(ec.class_id));
+      const time = `${ec.start_time.slice(0, 5)}-${ec.end_time.slice(0, 5)}`;
+      return {
+        value: `extra-${ec.id}`,
+        label: `Extra – ${time} – ${ec.subject_name}`,
+        subjectId: String(ec.subject_id),
+        year: cls ? String(cls.year) : selectedYear,
+        semester: currentSemester,
+        section: cls ? cls.section : selectedSection,
+        extraClassId: String(ec.id),
+        isExtra: true,
+      };
+    });
+
+    const options = [...regularOptions, ...extraOptions];
+
     setSlotOptions(options);
     if (!isProfessor) setPeriodOptions(options);
-  }, [timetable, selectedDate, subjects, selectedYear, selectedSection, currentSemester, isProfessor]);
+  }, [
+    timetable,
+    extraClasses,
+    allClasses,
+    selectedDate,
+    subjects,
+    selectedYear,
+    selectedSection,
+    currentSemester,
+    isProfessor,
+  ]);
 
   // Reset for professors when date changes
   React.useEffect(() => {
@@ -266,10 +385,15 @@ const AttendanceManager: React.FC = () => {
         studentId: string | number;
         present: boolean | number;
         period: string | number;
+        extraClassId?: string | number | null;
       };
 
       const data: AttendanceRecord[] = await response.json();
-      const periodRecords = data.filter((r) => r.period?.toString() === selectedPeriod);
+      const periodRecords = data.filter(
+        (r) =>
+          r.period?.toString() === selectedPeriod &&
+          (!selectedExtraClassId || String(r.extraClassId) === selectedExtraClassId)
+      );
 
       setStudents((prev) =>
         prev.map((student) => {
@@ -280,7 +404,7 @@ const AttendanceManager: React.FC = () => {
     } catch (err) {
       console.error('Error fetching attendance:', err);
     }
-  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject]);
+  }, [selectedDate, selectedPeriod, selectedYear, selectedSection, selectedSubject, selectedExtraClassId]);
 
   // Fetch classes, students, then sync attendance + summary
   React.useEffect(() => {
@@ -553,7 +677,54 @@ const AttendanceManager: React.FC = () => {
 
     fetchData();
     // eslint-disable-next-line
-  }, [selectedYear, selectedSection, selectedSubject, selectedSlot, selectedDate, selectedPeriod, isProfessor]);
+  }, [selectedYear, selectedSection, selectedSubject, selectedSlot, selectedDate, selectedPeriod, isProfessor, selectedExtraClassId]);
+
+  // Schedule extra class
+  const handleScheduleExtraClass = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let classId = allClasses.find(
+        (c) => c.year.toString() === extraYear && c.section === extraSection
+      )?.id;
+      if (!classId) {
+        const res = await fetch(`${apiBase}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data: { id: string; year: number; section: string }[] = await res.json();
+          const cls = data.find((c) => c.year.toString() === extraYear && c.section === extraSection);
+          classId = cls?.id;
+        }
+      }
+      if (!classId) {
+        toast({ description: 'Class not found' });
+        return;
+      }
+      const response = await fetch(`${apiBase}/extra-classes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectId: extraSubject,
+          classId,
+          date: extraDate,
+          startTime: extraStart,
+          endTime: extraEnd,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to schedule extra class');
+      toast({ description: 'Extra class scheduled' });
+      setShowExtraModal(false);
+      setExtraSubject('');
+      setExtraStart('');
+      setExtraEnd('');
+      fetchExtraClasses();
+    } catch (err) {
+      toast({ description: 'Failed to schedule extra class' });
+    }
+  };
 
   // Save Attendance Handler
   const handleSaveAttendance = async () => {
@@ -583,6 +754,9 @@ const AttendanceManager: React.FC = () => {
           period: selectedPeriod,
           attendanceData,
           markedBy: user?.id,
+          ...(selectedExtraClassId
+            ? { extraClassId: Number(selectedExtraClassId), isExtra: true }
+            : {}),
         }),
       });
       if (!response.ok) throw new Error('Failed to save attendance');
@@ -625,6 +799,24 @@ const AttendanceManager: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center gap-1 sm:gap-3">
+                {isProfessor && (
+                  <Button
+                    variant="outline"
+                    className="border rounded-md px-2 py-1 text-sm sm:text-base border-gray-300 hover:bg-gray-50"
+                    style={{ color: THEME.accent }}
+                    onClick={() => {
+                      setExtraYear(selectedYear);
+                      setExtraSection(selectedSection);
+                      setExtraDate(selectedDate);
+                      setExtraSubject('');
+                      setExtraStart('');
+                      setExtraEnd('');
+                      setShowExtraModal(true);
+                    }}
+                  >
+                    Schedule Extra Class
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="border rounded-md px-2 py-1 text-sm sm:text-base border-gray-300 hover:bg-gray-50"
@@ -680,10 +872,12 @@ const AttendanceManager: React.FC = () => {
                         setSelectedSection(option.section);
                         setSelectedSubject(option.subjectId);
                         setSelectedPeriod(option.value);
+                        setSelectedExtraClassId(option.extraClassId || null);
                         setPeriodOptions([option]);
                       } else {
                         setSelectedSubject('');
                         setSelectedPeriod('');
+                        setSelectedExtraClassId(null);
                         setPeriodOptions([]);
                       }
                     }}
@@ -766,6 +960,7 @@ const AttendanceManager: React.FC = () => {
                     setSelectedPeriod(value);
                     const option = periodOptions.find((o) => o.value === value);
                     setSelectedSubject(option?.subjectId || '');
+                    setSelectedExtraClassId(option?.extraClassId || null);
                   }}
                   className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white focus:border-[#8b0000] focus:ring-1 focus:ring-[#8b0000]"
                   style={{ color: THEME.accent }}
@@ -1079,6 +1274,99 @@ const AttendanceManager: React.FC = () => {
             Failed to save attendance!
           </div>
         )}
+
+        <Dialog open={showExtraModal} onOpenChange={setShowExtraModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Schedule Extra Class</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1">
+                <Label htmlFor="extra-subject">Subject</Label>
+                <select
+                  id="extra-subject"
+                  value={extraSubject}
+                  onChange={(e) => setExtraSubject(e.target.value)}
+                  className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                >
+                  <option value="">Select Subject</option>
+                  {extraSubjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="extra-year">Year</Label>
+                  <select
+                    id="extra-year"
+                    value={extraYear}
+                    onChange={(e) => setExtraYear(e.target.value)}
+                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                  >
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}st Year
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="extra-section">Section</Label>
+                  <select
+                    id="extra-section"
+                    value={extraSection}
+                    onChange={(e) => setExtraSection(e.target.value)}
+                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                  >
+                    {sections.map((section) => (
+                      <option key={section} value={section}>
+                        {section}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="extra-date">Date</Label>
+                <Input
+                  id="extra-date"
+                  type="date"
+                  value={extraDate}
+                  onChange={(e) => setExtraDate(e.target.value)}
+                  className="w-full text-sm border-gray-300"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="extra-start">Start Time</Label>
+                  <Input
+                    id="extra-start"
+                    type="time"
+                    value={extraStart}
+                    onChange={(e) => setExtraStart(e.target.value)}
+                    className="w-full text-sm border-gray-300"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="extra-end">End Time</Label>
+                  <Input
+                    id="extra-end"
+                    type="time"
+                    value={extraEnd}
+                    onChange={(e) => setExtraEnd(e.target.value)}
+                    className="w-full text-sm border-gray-300"
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleScheduleExtraClass}>Schedule</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
