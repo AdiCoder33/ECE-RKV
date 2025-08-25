@@ -77,7 +77,40 @@ CREATE TABLE student_classes (
     UNIQUE(class_id, student_id)
 );
 
+-- Extra Classes table
+-- For existing deployments, run:
+--   CREATE TABLE extra_classes (
+--       id int IDENTITY(1,1) PRIMARY KEY,
+--       subject_id int NOT NULL,
+--       class_id int NOT NULL,
+--       date date NOT NULL,
+--       start_time time NOT NULL,
+--       end_time time NOT NULL,
+--       created_by int NOT NULL,
+--       created_at datetime2 DEFAULT GETDATE(),
+--       FOREIGN KEY (subject_id) REFERENCES subjects(id),
+--       FOREIGN KEY (class_id) REFERENCES classes(id),
+--       FOREIGN KEY (created_by) REFERENCES users(id)
+--   );
+CREATE TABLE extra_classes (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    subject_id int NOT NULL,
+    class_id int NOT NULL,
+    date date NOT NULL,
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    created_by int NOT NULL,
+    created_at datetime2 DEFAULT GETDATE(),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
 -- Attendance table
+-- For existing deployments, run:
+--   ALTER TABLE attendance ADD extra_class_id int NULL;
+--   ALTER TABLE attendance ADD CONSTRAINT FK_attendance_extra_class
+--       FOREIGN KEY (extra_class_id) REFERENCES extra_classes(id);
 CREATE TABLE attendance (
     id int IDENTITY(1,1) PRIMARY KEY,
     student_id int NOT NULL,
@@ -85,9 +118,11 @@ CREATE TABLE attendance (
     date date NOT NULL,
     period int NOT NULL,
     status nvarchar(20) NOT NULL CHECK (status IN ('present', 'absent', 'late')),
+    extra_class_id int,
     created_at datetime2 DEFAULT GETDATE(),
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (extra_class_id) REFERENCES extra_classes(id),
     UNIQUE(student_id, subject_id, date, period)
 );
 
@@ -189,6 +224,8 @@ CREATE INDEX idx_users_department ON users(department);
 CREATE INDEX idx_users_year_section ON users(year, section);
 CREATE INDEX idx_users_year_sem_section ON users(year, semester, section);
 CREATE INDEX idx_attendance_student_date ON attendance(student_id, date);
+CREATE INDEX idx_extra_classes_class_date ON extra_classes(class_id, date);
+CREATE INDEX idx_attendance_extra_class ON attendance(extra_class_id);
 CREATE INDEX idx_marks_student_subject ON marks(student_id, subject_id);
 CREATE INDEX idx_chat_messages_group ON chat_messages(group_id);
 CREATE INDEX idx_timetable_year_semester_section ON timetable(year, semester, section);
