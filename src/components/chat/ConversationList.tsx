@@ -38,14 +38,15 @@ interface ConversationListProps {
   activeId?: string;
   filter: 'all' | 'dms' | 'groups';
   onFilterChange: (f: 'all' | 'dms' | 'groups') => void;
+  onClose?: () => void; // <-- add this
 }
 const formatTime = (timestamp: string | null | undefined) =>
   timestamp
     ? formatIST(timestamp, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
     : '';
 
 const SearchResultItem: React.FC<{ user: User; onClick: () => void }> = ({ user, onClick }) => {
@@ -150,12 +151,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
   activeId,
   filter,
   onFilterChange,
+  onClose,
 }) => {
   const [showSearch, setShowSearch] = React.useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const handleClose = () => {
+    if (onClose) {
+      onClose(); // Close the sidebar (mobile)
+      return;
+    }
+    // fallback: navigate away
     const dashboardRoutes: Record<string, string> = {
       admin: '/dashboard',
       hod: '/dashboard',
@@ -178,8 +185,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
     filter === 'all'
       ? true
       : filter === 'dms'
-      ? c.type === 'direct'
-      : c.type === 'group'
+        ? c.type === 'direct'
+        : c.type === 'group'
   );
 
   return (
