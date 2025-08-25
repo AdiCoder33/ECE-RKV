@@ -101,7 +101,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
       period: row.period,
       markedBy: row.marked_by,
       markedByName: row.marked_by_name,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      extraClassId: row.extra_class_id
     })));
   } catch (error) {
     console.error('Attendance fetch error:', error);
@@ -115,7 +116,7 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     const { subjectId, classId, startDate, endDate } = req.query;
     
     let query = `
-      SELECT 
+      SELECT
         u.id as student_id,
         u.name as student_name,
         u.roll_number,
@@ -124,6 +125,7 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
         ROUND((SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) / COUNT(a.id)) * 100, 2) as attendance_percentage
       FROM users u
       LEFT JOIN attendance a ON u.id = a.student_id
+      LEFT JOIN extra_classes ec ON a.extra_class_id = ec.id
     `;
     
     const params = [];
@@ -190,7 +192,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
         a.present,
         a.period,
         a.marked_by,
-        mb.name as marked_by_name
+        mb.name as marked_by_name,
+        a.extra_class_id
       FROM attendance a
       JOIN users u ON a.student_id = u.id
       JOIN subjects s ON a.subject_id = s.id
@@ -207,7 +210,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       present: row.present,
       period: row.period,
       markedBy: row.marked_by,
-      markedByName: row.marked_by_name
+      markedByName: row.marked_by_name,
+      extraClassId: row.extra_class_id
     }));
 
     // Subject-wise statistics
@@ -224,6 +228,7 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       FROM attendance a
       JOIN subjects s ON a.subject_id = s.id
       JOIN users u ON a.student_id = u.id
+      LEFT JOIN extra_classes ec ON a.extra_class_id = ec.id
       WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
       GROUP BY a.subject_id, s.name
       ORDER BY s.name
@@ -248,6 +253,7 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       FROM attendance a
       JOIN subjects s ON a.subject_id = s.id
       JOIN users u ON a.student_id = u.id
+      LEFT JOIN extra_classes ec ON a.extra_class_id = ec.id
       WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
       GROUP BY YEAR(a.date), MONTH(a.date)
       ORDER BY YEAR(a.date), MONTH(a.date)
@@ -270,6 +276,7 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       FROM attendance a
       JOIN subjects s ON a.subject_id = s.id
       JOIN users u ON a.student_id = u.id
+      LEFT JOIN extra_classes ec ON a.extra_class_id = ec.id
       WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
     `;
     const overallResult = await executeQuery(overallQuery, params);
@@ -290,19 +297,30 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
 // Bulk mark attendance
 router.post('/bulk', authenticateToken, async (req, res, next) => {
   try {
-    const { subjectId, date, period, attendanceData, markedBy } = req.body;
-    
-    // Delete existing attendance for the same subject, date, and period
-    await executeQuery(
-      'DELETE FROM attendance WHERE subject_id = ? AND date = ? AND period = ?',
-      [subjectId, date, period]
-    );
-    
+    const { subjectId, date, period, attendanceData, markedBy, extraClassId, isExtra } = req.body;
+
+    // Timetable validation is performed only for regular classes. Extra classes
+    // bypass this check so that attendance can be marked without a timetable entry.
+    if (!extraClassId && !isExtra) {
+      // Placeholder for timetable validation if required in the future.
+    }
+
+    // Delete existing attendance for the same subject, date, period and extra class
+    let deleteQuery = 'DELETE FROM attendance WHERE subject_id = ? AND date = ? AND period = ?';
+    const deleteParams = [subjectId, date, period];
+    if (extraClassId) {
+      deleteQuery += ' AND extra_class_id = ?';
+      deleteParams.push(extraClassId);
+    } else {
+      deleteQuery += ' AND extra_class_id IS NULL';
+    }
+    await executeQuery(deleteQuery, deleteParams);
+
     // Insert new attendance records
     const insertPromises = attendanceData.map(record => {
       return executeQuery(
-        'INSERT INTO attendance (student_id, subject_id, date, present, period, marked_by) VALUES (?, ?, ?, ?, ?, ?)',
-        [record.studentId, subjectId, date, record.present, period, markedBy]
+        'INSERT INTO attendance (student_id, subject_id, date, present, period, marked_by, extra_class_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [record.studentId, subjectId, date, record.present, period, markedBy, extraClassId || null]
       );
     });
     
