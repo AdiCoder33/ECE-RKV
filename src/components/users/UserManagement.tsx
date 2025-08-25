@@ -27,6 +27,7 @@ import ImportUsersModal from './ImportUsersModal';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from "framer-motion";
 import loaderMp2 from '@/Assets/loader.mp4';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Theme colors
 const THEME = {
@@ -45,6 +46,7 @@ const UserManagement: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedSemester, setSelectedSemester] = useState<string>('all');
+  const [selectedSection, setSelectedSection] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -54,6 +56,7 @@ const UserManagement: React.FC = () => {
   const [modalError, setModalError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [popup, setPopup] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const [viewUser, setViewUser] = useState<User | null>(null); // Add this state
   const { toast } = useToast();
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -133,7 +136,8 @@ const UserManagement: React.FC = () => {
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
     const matchesYear = selectedYear === 'all' || user.year?.toString() === selectedYear;
     const matchesSemester = selectedSemester === 'all' || user.semester?.toString() === selectedSemester;
-    return matchesSearch && matchesRole && matchesYear && matchesSemester;
+    const matchesSection = selectedSection === 'all' || user.section?.toString() === selectedSection;
+    return matchesSearch && matchesRole && matchesYear && matchesSemester && matchesSection;
   });
 
   // Basic stats
@@ -487,16 +491,20 @@ const UserManagement: React.FC = () => {
                 <option value="2">Sem 2</option>
               </select>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 px-3 py-2 border-[#8b0000] text-[#8b0000] hover:bg-[#8b0000] hover:text-white transition-colors rounded-md w-full"
-                onClick={handleExportUsers}
-                disabled={actionLoading}
+              {/* Section Filter */}
+              <select
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm font-semibold bg-[#f3e8ff] text-[#6b21a8] border-[#6b21a8] focus:border-[#8b0000] focus:ring-[#8b0000] w-full"
               >
-                {actionLoading ? <ButtonLoader /> : <Download className="h-4 w-4" />}
-                <span className="hidden sm:inline">Export</span>
-              </Button>
+                <option value="all">All Sections</option>
+                <option value="A">Section A</option>
+                <option value="B">Section B</option>
+                <option value="C">Section C</option>
+                <option value="D">Section D</option>
+                <option value="E">Section E</option>
+                <option value="F">Section F</option>
+              </select>
             </div>
           </CardContent>
         </Card>
@@ -562,10 +570,7 @@ const UserManagement: React.FC = () => {
 
                       <td className="p-3">
                         <div className="flex gap-2 items-center">
-                          <Button variant="ghost" size="sm" className="p-2 hover:bg-gray-100 rounded" onClick={() => { /* view handler */ }}>
-                            <Eye className="h-4 w-4 text-gray-600" />
-                          </Button>
-
+                          {/* View button removed for desktop */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -574,7 +579,6 @@ const UserManagement: React.FC = () => {
                           >
                             <Edit className="h-4 w-4 text-gray-600" />
                           </Button>
-
                           <Button
                             variant="ghost"
                             size="sm"
@@ -639,7 +643,13 @@ const UserManagement: React.FC = () => {
                 </div>
 
                 <div className="flex gap-1 mt-auto">
-                  <Button variant="outline" size="sm" className="flex-1 px-1 py-1 text-xs" onClick={() => { /* view */ }}>
+                  {/* View button for mobile only */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 px-1 py-1 text-xs"
+                    onClick={() => setViewUser(user)}
+                  >
                     <Eye className="h-4 w-4 mr-1" />
                     View
                   </Button>
@@ -669,6 +679,46 @@ const UserManagement: React.FC = () => {
             <div className="text-center text-gray-600 py-6 col-span-2">No users to show.</div>
           )}
         </div>
+
+        {/* User View Modal for Mobile */}
+        <Dialog open={!!viewUser} onOpenChange={() => setViewUser(null)}>
+          <DialogContent className="max-w-xs w-full p-4 rounded-lg bg-white border-2 border-[#8b0000] shadow-xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-[#8b0000]">
+                User Details
+              </DialogTitle>
+            </DialogHeader>
+            {viewUser && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#fde8e6] flex items-center justify-center text-xl font-bold text-[#8b0000]">
+                    {viewUser.name?.charAt(0)?.toUpperCase() ?? '?'}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">{viewUser.name}</div>
+                    <div className="text-xs text-gray-600">{viewUser.email}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-700">
+                  <span className="text-gray-500">Role</span>
+                  <span>{viewUser.role}</span>
+                  <span className="text-gray-500">Year</span>
+                  <span>{viewUser.year || '-'}</span>
+                  <span className="text-gray-500">Semester</span>
+                  <span>{viewUser.semester || '-'}</span>
+                  <span className="text-gray-500">Section</span>
+                  <span>{viewUser.section || '-'}</span>
+                  <span className="text-gray-500">Roll No</span>
+                  <span>{viewUser.rollNumber || '-'}</span>
+                  <span className="text-gray-500">Phone</span>
+                  <span>{viewUser.phone || '-'}</span>
+                  <span className="text-gray-500">Department</span>
+                  <span>{viewUser.department || '-'}</span>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Modals */}
         <UserModal
