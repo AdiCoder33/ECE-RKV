@@ -86,7 +86,7 @@ const ATTENDANCE_COLORS = {
   lightWarning: '#fffbeb', // Light amber background
 };
 
-// Map from "start-end" time to period number
+// Map from "start-end" time to period number (supports seven periods)
 const TIME_TO_PERIOD: Record<string, string> = {
   '08:30-09:30': '1',
   '09:30-10:30': '2',
