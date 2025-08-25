@@ -106,8 +106,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchGroups().catch(() => {});
-    fetchConversations().catch(() => {});
+    fetchGroups().catch(() => { });
+    fetchConversations().catch(() => { });
   }, [fetchGroups, fetchConversations]);
 
   useEffect(() => {
@@ -171,9 +171,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     loadMessages();
 
     if (type === 'direct') {
-      markAsRead('direct', id).catch(() => {});
+      markAsRead('direct', id).catch(() => { });
     } else {
-      markAsRead('group', id).catch(() => {});
+      markAsRead('group', id).catch(() => { });
     }
 
     return () => {
@@ -219,7 +219,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       if (activeChat.type === 'direct') {
         await sendDirectMessage(Number(activeChat.id), text, files);
         if (!conversations.some(c => c.id === activeChat.id)) {
-          fetchConversations().catch(() => {});
+          fetchConversations().catch(() => { });
         }
       } else {
         await sendGroupMessage(activeChat.id, text, files);
@@ -322,11 +322,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (activeChat.type === 'direct') {
       fetchMoreConversation(Number(activeChat.id))
         .then(res => setHasMore(res.hasMore))
-        .catch(() => {});
+        .catch(() => { });
     } else {
       fetchMoreGroupMessages(activeChat.id)
         .then(res => setHasMore(res.hasMore))
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [activeChat, hasMore, fetchMoreConversation, fetchMoreGroupMessages]);
 
@@ -351,7 +351,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       c: typeof conversations[number]
     ) => {
       e.stopPropagation();
-      pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => {});
+      pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => { });
     },
     [pinConversation]
   );
@@ -394,9 +394,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </DialogContent>
       </Dialog>
       <div
-        className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${
-          isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
-        }`}
+        className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
+          }`}
         onMouseEnter={() => isOpen && onExpandedChange(true)}
         onMouseLeave={() => isOpen && onExpandedChange(false)}
       >
@@ -417,6 +416,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 activeId={activeChat ? `${activeChat.type}-${activeChat.id}` : undefined}
                 filter={filter}
                 onFilterChange={setFilter}
+                onClose={onToggle} // <-- add this line
               />
             ) : (
               <ChatWindow
@@ -442,23 +442,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               />
             )}
           </div>
-      ) : isOpen ? (
-        <div className="flex flex-col items-center py-4 space-y-4">
-          <Button variant="ghost" size="icon" onClick={onToggle}>
-            <MessageSquare className="h-5 w-5" />
-          </Button>
-          {conversations.slice(0, 10).map(c => (
-            <ConversationButton
-              key={`${c.type}-${c.id}`}
-              convo={c}
-              onClick={() => {
-                setActiveChat({ type: c.type, id: String(c.id), title: c.title });
-                onExpandedChange(true);
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
+        ) : isOpen ? (
+          <div className="flex flex-col items-center py-4 space-y-4">
+            <Button variant="ghost" size="icon" onClick={onToggle}>
+              <MessageSquare className="h-5 w-5" />
+            </Button>
+            {conversations.slice(0, 10).map(c => (
+              <ConversationButton
+                key={`${c.type}-${c.id}`}
+                convo={c}
+                onClick={() => {
+                  setActiveChat({ type: c.type, id: String(c.id), title: c.title });
+                  onExpandedChange(true);
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
     </>
   );
