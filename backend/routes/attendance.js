@@ -83,7 +83,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       params.push(classId);
     }
     
-    query += ' ORDER BY a.date DESC, a.period, u.roll_number';
+    query += ' ORDER BY a.date DESC, a.period, TRY_CAST(u.roll_number AS INT)';
     
     const result = await executeQuery(query, params);
     const rows = result.recordset;
@@ -150,7 +150,7 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     
     query += ' WHERE ' + whereConditions.join(' AND ');
     // Ensure all selected non-aggregated fields are included in the GROUP BY clause
-    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY u.roll_number';
+    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY TRY_CAST(u.roll_number AS INT)';
     
     const result = await executeQuery(query, params);
     const rows = result.recordset;
