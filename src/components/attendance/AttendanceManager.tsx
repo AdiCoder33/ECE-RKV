@@ -127,7 +127,23 @@ const AttendanceManager: React.FC = () => {
   const initialTime = searchParams.get('time') || '';
   const initialPeriod = TIME_TO_PERIOD[initialTime] || '';
   const { toast } = useToast();
+  // Access control
+  const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
+  const isProfessor = user?.role === 'professor';
 
+  // Helper functions
+  const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
+  const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
+  const getCurrentSemester = () => {
+    const month = new Date().getMonth() + 1;
+    return month >= 6 && month <= 11 ? '1' : '2';
+  };
+  const currentSemester = getCurrentSemester();
+  const years = getAllowedYears();
+  const sections = getAllowedSections();
+  const extraSemesters = ['1', '2'];
+
+  // State hooks
   const [selectedYear, setSelectedYear] = React.useState(initialYear);
   const [selectedSection, setSelectedSection] = React.useState(initialSection);
   const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
@@ -147,7 +163,6 @@ const AttendanceManager: React.FC = () => {
   const [extraSubject, setExtraSubject] = React.useState('');
   const [extraYear, setExtraYear] = React.useState(initialYear);
   const [extraSection, setExtraSection] = React.useState(initialSection);
-  const extraSemesters = ['1', '2'];
   const [extraSemester, setExtraSemester] = React.useState(currentSemester);
   const [extraDate, setExtraDate] = React.useState(new Date().toISOString().split('T')[0]);
   const [extraStart, setExtraStart] = React.useState('');
@@ -166,25 +181,8 @@ const AttendanceManager: React.FC = () => {
   const isDesktop = useMediaQuery('(min-width:768px)');
   const itemsPerPage = isDesktop ? 15 : 9;
 
-  // Access control
-  const hasFullAccess = user?.role === 'admin' || user?.role === 'hod';
-  const isProfessor = user?.role === 'professor';
-
   const [students, setStudents] = React.useState<AttendanceStudent[]>([]);
   const [classId, setClassId] = React.useState<string | null>(null);
-
-  // Filter years and sections
-  const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
-  const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
-
-  const years = getAllowedYears();
-  const sections = getAllowedSections();
-
-  const getCurrentSemester = () => {
-    const month = new Date().getMonth() + 1;
-    return month >= 6 && month <= 11 ? '1' : '2';
-  };
-  const currentSemester = getCurrentSemester();
 
   // Fetch all classes for mapping
   React.useEffect(() => {
