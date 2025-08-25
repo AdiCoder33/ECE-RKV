@@ -167,12 +167,13 @@ const AttendanceManager: React.FC = () => {
   const [students, setStudents] = React.useState<AttendanceStudent[]>([]);
   const [classId, setClassId] = React.useState<string | null>(null);
 
-  // Filter years and sections
-  const getAllowedYears = () => (hasFullAccess ? ['1', '2', '3', '4'] : ['3', '4']);
-  const getAllowedSections = () => (hasFullAccess ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B']);
-
-  const years = getAllowedYears();
-  const sections = getAllowedSections();
+  // Years and sections fetched from backend
+  const [extraYears, setExtraYears] = React.useState<string[]>([]);
+  const [extraSections, setExtraSections] = React.useState<string[]>([]);
+  const [yearsLoading, setYearsLoading] = React.useState(false);
+  const [sectionsLoading, setSectionsLoading] = React.useState(false);
+  const [yearError, setYearError] = React.useState<string | null>(null);
+  const [sectionError, setSectionError] = React.useState<string | null>(null);
 
   const getCurrentSemester = () => {
     const month = new Date().getMonth() + 1;
@@ -180,24 +181,70 @@ const AttendanceManager: React.FC = () => {
   };
   const currentSemester = getCurrentSemester();
 
-  // Fetch all classes for mapping
+  // Fetch all classes and derive available years
   React.useEffect(() => {
     const fetchClasses = async () => {
+      setYearsLoading(true);
+      setYearError(null);
       try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${apiBase}/classes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data: { id: string; year: number; section: string }[] = await res.json();
-          setAllClasses(data);
-        }
+        if (!res.ok) throw new Error('Failed to fetch classes');
+        const data: { id: string; year: number; section: string }[] = await res.json();
+        setAllClasses(data);
+        const uniqueYears = Array.from(new Set(data.map((c) => String(c.year))));
+        setExtraYears(
+          hasFullAccess
+            ? uniqueYears
+            : uniqueYears.filter((y) => ['3', '4'].includes(y))
+        );
       } catch (err) {
         console.error('Error fetching classes:', err);
+        setYearError('Failed to load years');
+      } finally {
+        setYearsLoading(false);
       }
     };
     fetchClasses();
-  }, []);
+  }, [hasFullAccess]);
+
+  // Fetch sections whenever extraYear changes
+  React.useEffect(() => {
+    if (!extraYear) return;
+    const fetchSections = async () => {
+      setSectionsLoading(true);
+      setSectionError(null);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(
+          `${apiBase}/classes/sections?year=${extraYear}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) throw new Error('Failed to fetch sections');
+        let data: string[] = await res.json();
+        if (!hasFullAccess) {
+          data = data.filter((s) => ['A', 'B'].includes(s));
+        }
+        setExtraSections(data);
+      } catch (err) {
+        console.error('Error fetching sections:', err);
+        setSectionError('Failed to load sections');
+      } finally {
+        setSectionsLoading(false);
+      }
+    };
+    fetchSections();
+  }, [extraYear, hasFullAccess]);
+
+  // keep extraYear in sync with selectedYear when modal is closed
+  React.useEffect(() => {
+    if (!showExtraModal) {
+      setExtraYear(selectedYear);
+      setExtraSection(selectedSection);
+    }
+  }, [showExtraModal, selectedYear, selectedSection]);
 
   // Subjects
   React.useEffect(() => {
@@ -902,15 +949,20 @@ const AttendanceManager: React.FC = () => {
                       id="year-select"
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white focus:border-[#8b0000] focus:ring-1 focus:ring-[#8b0000]"
+                      disabled={yearsLoading || !!yearError || extraYears.length === 0}
+                      className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white focus:border-[#8b0000] focus:ring-1 focus:ring-[#8b0000] disabled:opacity-50"
                       style={{ color: THEME.accent }}
                     >
-                      {years.map((year) => (
+                      <option value="">Select Year</option>
+                      {extraYears.map((year) => (
                         <option key={year} value={year}>
                           {year}st Year
                         </option>
                       ))}
                     </select>
+                    {yearError && (
+                      <p className="text-sm text-red-500">{yearError}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -921,15 +973,20 @@ const AttendanceManager: React.FC = () => {
                       id="section-select"
                       value={selectedSection}
                       onChange={(e) => setSelectedSection(e.target.value)}
-                      className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white focus:border-[#8b0000] focus:ring-1 focus:ring-[#8b0000]"
+                      disabled={sectionsLoading || !!sectionError || extraSections.length === 0}
+                      className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white focus:border-[#8b0000] focus:ring-1 focus:ring-[#8b0000] disabled:opacity-50"
                       style={{ color: THEME.accent }}
                     >
-                      {sections.map((section) => (
+                      <option value="">Select Section</option>
+                      {extraSections.map((section) => (
                         <option key={section} value={section}>
                           Section {section}
                         </option>
                       ))}
                     </select>
+                    {sectionError && (
+                      <p className="text-sm text-red-500">{sectionError}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -1304,14 +1361,19 @@ const AttendanceManager: React.FC = () => {
                     id="extra-year"
                     value={extraYear}
                     onChange={(e) => setExtraYear(e.target.value)}
-                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                    disabled={yearsLoading || !!yearError || extraYears.length === 0}
+                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white disabled:opacity-50"
                   >
-                    {years.map((year) => (
+                    <option value="">Select Year</option>
+                    {extraYears.map((year) => (
                       <option key={year} value={year}>
                         {year}st Year
                       </option>
                     ))}
                   </select>
+                  {yearError && (
+                    <p className="text-sm text-red-500">{yearError}</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="extra-section">Section</Label>
@@ -1319,14 +1381,19 @@ const AttendanceManager: React.FC = () => {
                     id="extra-section"
                     value={extraSection}
                     onChange={(e) => setExtraSection(e.target.value)}
-                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                    disabled={sectionsLoading || !!sectionError || extraSections.length === 0}
+                    className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white disabled:opacity-50"
                   >
-                    {sections.map((section) => (
+                    <option value="">Select Section</option>
+                    {extraSections.map((section) => (
                       <option key={section} value={section}>
                         {section}
                       </option>
                     ))}
                   </select>
+                  {sectionError && (
+                    <p className="text-sm text-red-500">{sectionError}</p>
+                  )}
                 </div>
               </div>
               <div className="space-y-1">
