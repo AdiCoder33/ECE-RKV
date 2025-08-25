@@ -150,6 +150,9 @@ const AttendanceManager: React.FC = () => {
   const [extraStart, setExtraStart] = React.useState('');
   const [extraEnd, setExtraEnd] = React.useState('');
   const [extraSubjects, setExtraSubjects] = React.useState<{ id: string; name: string }[]>([]);
+  const [extraYears, setExtraYears] = React.useState<string[]>([]);
+  const [extraSections, setExtraSections] = React.useState<string[]>([]);
+  const [extraOptionsError, setExtraOptionsError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [saveStatus, setSaveStatus] = React.useState<'success' | 'error' | null>(null);
@@ -217,6 +220,58 @@ const AttendanceManager: React.FC = () => {
     };
     fetchSubjects();
   }, [selectedYear, currentSemester]);
+
+  // Extra class year and section options
+  React.useEffect(() => {
+    if (!showExtraModal) return;
+    const fetchExtraYears = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data: { year: number }[] = await res.json();
+          const yrs = Array.from(new Set(data.map((c) => c.year.toString())));
+          setExtraYears(yrs);
+          if (!yrs.includes(extraYear)) {
+            setExtraYear(yrs[0] || '');
+          }
+        } else {
+          setExtraOptionsError('Failed to load years');
+        }
+      } catch (err) {
+        console.error('Error fetching years:', err);
+        setExtraOptionsError('Failed to load years');
+      }
+    };
+    fetchExtraYears();
+  }, [showExtraModal]);
+
+  React.useEffect(() => {
+    if (!showExtraModal || !extraYear) return;
+    const fetchExtraSections = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiBase}/classes/sections?year=${extraYear}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data: string[] = await res.json();
+          setExtraSections(data);
+          if (!data.includes(extraSection)) {
+            setExtraSection(data[0] || '');
+          }
+        } else {
+          setExtraOptionsError('Failed to load sections');
+        }
+      } catch (err) {
+        console.error('Error fetching sections:', err);
+        setExtraOptionsError('Failed to load sections');
+      }
+    };
+    fetchExtraSections();
+  }, [extraYear, showExtraModal]);
 
   // Subjects for extra class modal
   React.useEffect(() => {
@@ -1305,8 +1360,10 @@ const AttendanceManager: React.FC = () => {
                     value={extraYear}
                     onChange={(e) => setExtraYear(e.target.value)}
                     className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                    disabled={extraYears.length === 0}
                   >
-                    {years.map((year) => (
+                    <option value="">{extraYears.length === 0 ? 'Loading...' : 'Select Year'}</option>
+                    {extraYears.map((year) => (
                       <option key={year} value={year}>
                         {year}st Year
                       </option>
@@ -1320,8 +1377,10 @@ const AttendanceManager: React.FC = () => {
                     value={extraSection}
                     onChange={(e) => setExtraSection(e.target.value)}
                     className="w-full p-2 rounded-md text-sm border border-gray-300 bg-white"
+                    disabled={extraSections.length === 0}
                   >
-                    {sections.map((section) => (
+                    <option value="">{extraSections.length === 0 ? 'Select year first' : 'Select Section'}</option>
+                    {extraSections.map((section) => (
                       <option key={section} value={section}>
                         {section}
                       </option>
@@ -1329,6 +1388,9 @@ const AttendanceManager: React.FC = () => {
                   </select>
                 </div>
               </div>
+              {extraOptionsError && (
+                <p className="text-sm text-red-600">{extraOptionsError}</p>
+              )}
               <div className="space-y-1">
                 <Label htmlFor="extra-date">Date</Label>
                 <Input
