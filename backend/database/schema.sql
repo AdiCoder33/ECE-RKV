@@ -108,6 +108,9 @@ CREATE TABLE extra_classes (
 
 -- Attendance table
 -- For existing deployments, run:
+--   ALTER TABLE attendance ADD present bit NOT NULL DEFAULT 0;
+--   UPDATE attendance SET present = CASE WHEN status = 'present' THEN 1 ELSE 0 END;
+--   ALTER TABLE attendance DROP COLUMN status;
 --   ALTER TABLE attendance ADD extra_class_id int NULL;
 --   ALTER TABLE attendance ADD CONSTRAINT FK_attendance_extra_class
 --       FOREIGN KEY (extra_class_id) REFERENCES extra_classes(id);
@@ -117,7 +120,7 @@ CREATE TABLE attendance (
     subject_id int NOT NULL,
     date date NOT NULL,
     period int NOT NULL,
-    status nvarchar(20) NOT NULL CHECK (status IN ('present', 'absent', 'late')),
+    present bit NOT NULL,
     extra_class_id int,
     created_at datetime2 DEFAULT GETDATE(),
     FOREIGN KEY (student_id) REFERENCES users(id),
