@@ -77,7 +77,7 @@ const ProfessorDashboard = () => {
     {
       id: 1,
       day: 'Monday',
-      time: '09:00-10:00',
+      time: '08:30-09:30',
       subject: 'Data Structures',
       room: 'CS-101',
       year: 3,
@@ -87,7 +87,7 @@ const ProfessorDashboard = () => {
     {
       id: 2,
       day: 'Monday',
-      time: '11:00-12:00',
+      time: '10:40-11:40',
       subject: 'Database Systems',
       room: 'CS-102',
       year: 3,
@@ -97,7 +97,7 @@ const ProfessorDashboard = () => {
     {
       id: 3,
       day: 'Monday',
-      time: '14:00-15:00',
+      time: '13:30-14:30',
       subject: 'Operating Systems',
       room: 'CS-103',
       year: 4,

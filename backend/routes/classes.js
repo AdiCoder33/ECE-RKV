@@ -79,6 +79,33 @@ router.get('/promotion-summary', authenticateToken, async (req, res, next) => {
   }
 });
 
+// Get distinct sections for a given year (and optional semester)
+router.get('/sections', authenticateToken, async (req, res, next) => {
+  try {
+    const { year, semester } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: 'Year is required' });
+    }
+
+    let query = 'SELECT DISTINCT section FROM classes WHERE year = ?';
+    const params = [year];
+
+    if (semester) {
+      query += ' AND semester = ?';
+      params.push(Number(semester));
+    }
+
+    const result = await executeQuery(query, params);
+    const sections = (result.recordset || []).map(row => row.section);
+
+    res.json(sections);
+  } catch (error) {
+    console.error('Sections fetch error:', error);
+    next(error);
+  }
+});
+
 // Create new class
 router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
