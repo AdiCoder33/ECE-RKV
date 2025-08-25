@@ -56,7 +56,7 @@ interface TimetableSlot {
 
 interface PeriodOption {
   value: string; // period number
-  label: string; // "09:00-10:00 – Subject"
+  label: string; // "08:30-09:30 – Subject"
   subjectId: string;
   year: string;
   semester: string;
@@ -88,12 +88,13 @@ const ATTENDANCE_COLORS = {
 
 // Map from "start-end" time to period number
 const TIME_TO_PERIOD: Record<string, string> = {
-  '09:00-10:00': '1',
-  '10:00-11:00': '2',
-  '11:00-12:00': '3',
-  '14:00-15:00': '4',
-  '15:00-16:00': '5',
-  '16:00-17:00': '6',
+  '08:30-09:30': '1',
+  '09:30-10:30': '2',
+  '10:40-11:40': '3',
+  '11:40-12:40': '4',
+  '13:30-14:30': '5',
+  '14:30-15:30': '6',
+  '15:40-16:40': '7',
 };
 
 const AttendanceManager: React.FC = () => {
