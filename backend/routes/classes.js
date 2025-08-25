@@ -231,6 +231,7 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
   try {
     const { classId } = req.params;
     
+    // Retrieve students ordered by numeric roll numbers
     const query = `
       SELECT u.*, sc.enrollment_date,
              ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
