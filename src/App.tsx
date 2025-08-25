@@ -147,7 +147,7 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-background">
                 {deferredPrompt && (
                   <button
-                    className="fixed top-0 left-0 right-0 z-50 flex justify-center bg-blue-600 text-red-500 py-2"
+                    className="fixed top-0 left-0 right-0  flex justify-center bg-blue-600 text-red-500 py-0"
                     onClick={() => {
                       deferredPrompt.prompt();
                       deferredPrompt.userChoice.finally(() => setDeferredPrompt(null));
