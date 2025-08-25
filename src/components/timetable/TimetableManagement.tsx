@@ -147,6 +147,7 @@ const TimetableManagement = () => {
   const [selectedYear, setSelectedYear] = useState('3');
   const [selectedSemester, setSelectedSemester] = useState('1');
   const [selectedSection, setSelectedSection] = useState('A');
+  const [sections, setSections] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<Option[]>([]);
@@ -183,7 +184,7 @@ const TimetableManagement = () => {
     </div>
   );
 
-  // Fetch timetable, subjects, professors with minimum loader time
+  // Fetch timetable, subjects, professors, and sections with minimum loader time
   useEffect(() => {
     const fetchAll = async () => {
       const start = Date.now();
@@ -191,7 +192,8 @@ const TimetableManagement = () => {
         await Promise.all([
           fetchTimetable(),
           fetchSubjects(),
-          fetchProfessors()
+          fetchProfessors(),
+          fetchSections()
         ]);
       } catch (err) {
         setError('Failed to load timetable data');
@@ -291,6 +293,32 @@ const TimetableManagement = () => {
         variant: "destructive",
         title: "Error",
         description: "Failed to load professors data",
+      });
+    }
+  };
+
+  const fetchSections = async () => {
+    try {
+      const response = await fetch(
+        `${apiBase}/classes/sections?year=${selectedYear}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      if (response.ok) {
+        const data: string[] = await response.json();
+        setSections(data);
+        if (data.length > 0 && !data.includes(selectedSection)) {
+          setSelectedSection(data[0]);
+        }
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load sections data",
       });
     }
   };
@@ -610,9 +638,9 @@ const TimetableManagement = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
-                    <SelectItem value="A">Section A</SelectItem>
-                    <SelectItem value="B">Section B</SelectItem>
-                    <SelectItem value="C">Section C</SelectItem>
+                    {sections.map(sec => (
+                      <SelectItem key={sec} value={sec}>Section {sec}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
