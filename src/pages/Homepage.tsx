@@ -45,8 +45,6 @@ import krishnamHarinathReddy from "../Assets/faculty/krishnam_harinath_reddy.jpg
 import janardhanReddy from "../Assets/faculty/janardhan_reddy.jpg";
 import venkatesulu from "../Assets/faculty/venkatesulu.jpg";
 //icon imports
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLocationDot } from '@fortawesome/free-solid-svg-icons'
 
 interface Announcement {
   author: string;
