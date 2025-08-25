@@ -176,7 +176,9 @@ const DashboardLayout: React.FC = () => {
     }
   };
 
-  const chatMargin = chatOpen ? (chatExpanded ? 'mr-80' : 'mr-16') : '';
+  const chatPadding = chatOpen
+    ? (chatExpanded ? 'pr-80' : 'pr-16')   // 20rem or 4rem space for chat on desktop
+    : 'pr-0';
 
   return (
     <SidebarProvider>
@@ -264,14 +266,17 @@ const DashboardLayout: React.FC = () => {
       )}
 
       <div
-        className={`min-h-screen flex flex-col w-full transition-all duration-300 ${sidebarOpen ? 'md:ml-60' : 'md:ml-16'} ml-0 ${chatMargin}`}
+        className={`min-h-screen flex flex-col w-full transition-all duration-300 
+          ${sidebarOpen ? 'md:ml-60' : 'md:ml-16'} ml-0 
+          ${chatPadding}  // use padding so content + sticky header shrink
+          `}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         {/* Navbar: Hide on mobile when chat is open */}
         {!(isMobile && chatOpen) && (
-          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-[100]">
-            <div className="relative flex h-10 md:h-16 items-center px-2 md:px-4 overflow-hidden">
+          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-[90] transition-all duration-300">
+            <div className="relative flex h-10 md:h-16 items-center px-2 md:px-4">
               {/* --- Sidebar Icon & Department Name (left, only mobile) --- */}
               {isMobile ? (
                 <>
@@ -373,7 +378,7 @@ const DashboardLayout: React.FC = () => {
           </header>
         )}
 
-        <main className={`flex-1 p-0 transition-all duration-300`}>
+        <main className="flex-1 p-0 transition-all duration-300">
           <Outlet />
         </main>
       </div>

@@ -43,7 +43,7 @@ const THEME = {
 const UserManagement: React.FC = () => {
   // State
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('student');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedSemester, setSelectedSemester] = useState<string>('all');
   const [selectedSection, setSelectedSection] = useState<string>('all');
@@ -331,7 +331,7 @@ const UserManagement: React.FC = () => {
   // ---------- Render ----------
   return (
     <div
-      className="min-h-screen p-6"
+      className="min-h-screen p-6 transition-all duration-300"
       style={{ backgroundColor: THEME.bgBeige }}
     >
       {/* Popup */}
@@ -343,14 +343,15 @@ const UserManagement: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 style={{ color: THEME.accent }} className="text-3xl font-bold">User Management</h1>
             <p className="mt-1 text-sm text-gray-700">Manage users for the ECE Department</p>
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
+          {/* Move buttons left: remove w-full, add 'justify-end' and 'md:ml-auto' for desktop */}
+          <div className="flex gap-2 sm:w-auto justify-end md:ml-auto">
             {/* Add User Button */}
             <Button
               className="flex items-center gap-2 px-4 py-2 bg-[#8b0000] hover:bg-[#a52a2a] text-white font-semibold rounded-md transition-transform duration-200 transform hover:scale-105 shadow-lg"
@@ -373,7 +374,6 @@ const UserManagement: React.FC = () => {
               disabled={actionLoading}
             >
               {actionLoading ? <ButtonLoader /> : <Download className="h-5 w-5 drop-shadow-sm" />}
-              {/* Changed icon to Download for Import */}
               <span className="hidden sm:inline">Import Excel</span>
               <span className="sm:hidden">Import</span>
             </Button>
@@ -385,7 +385,6 @@ const UserManagement: React.FC = () => {
               disabled={actionLoading}
             >
               {actionLoading ? <ButtonLoader /> : <Upload className="h-4 w-4" />}
-              {/* Changed icon to Upload for Export */}
               <span className="hidden sm:inline">Export</span>
               <span className="sm:hidden">Export</span>
             </Button>
