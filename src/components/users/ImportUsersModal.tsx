@@ -71,6 +71,7 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         email: String(row[indexMap['Email']] ?? ''),
         role: String(row[indexMap['Role']] ?? ''),
         department: String(row[indexMap['Department']] ?? ''),
+        designation: String(row[indexMap['Designation']] ?? ''),
         year:
           row[indexMap['Year']] !== undefined && row[indexMap['Year']] !== ''
             ? Number(row[indexMap['Year']])
@@ -108,6 +109,9 @@ const ImportUsersModal: React.FC<ImportUsersModalProps> = ({ isOpen, onClose, on
         }
         if (!allowedRoles.includes(u.role as User['role'])) {
           errs.push('Invalid role');
+        }
+        if (['professor', 'hod'].includes(u.role) && !u.designation.trim()) {
+          errs.push('Designation is required');
         }
         if (errs.length) {
           validationErrors.push(`Row ${idx + 2}: ${errs.join(', ')}`);
