@@ -42,7 +42,7 @@ class MockRequest {
   async query(q) {
     if (q.startsWith('SAVE TRANSACTION')) return {};
     if (q.startsWith('ROLLBACK TRANSACTION')) return {};
-    if (q.startsWith('SELECT id FROM users WHERE email')) {
+    if (q.startsWith('SELECT id, name')) {
       return { recordset: [] };
     }
     if (q.startsWith('INSERT INTO users')) {
@@ -104,24 +104,30 @@ describe('bulk user creation', () => {
           phone: '123',
         },
         {
-          name: 'Bad',
-          email: 'fail@example.com',
+          name: 'Prof Good',
+          email: 'prof@example.com',
           password: 'secret',
-          role: 'student',
+          role: 'professor',
           department: 'ECE',
-          year: 1,
-          semester: 1,
-          section: 'A',
-          rollNumber: '2',
-          phone: '456',
+          phone: '789',
+          designation: 'Lecturer',
+        },
+        {
+          name: 'Prof Bad',
+          email: 'nodeg@example.com',
+          password: 'secret',
+          role: 'professor',
+          department: 'ECE',
+          phone: '012',
         },
       ],
     };
 
     const res = await request(app).post('/users/bulk').send(payload).expect(201);
-    expect(res.body.results).toHaveLength(2);
+    expect(res.body.results).toHaveLength(3);
     expect(res.body.results[0].action).toBe('inserted');
-    expect(res.body.results[1].error).toBe('duplicate email');
+    expect(res.body.results[1].action).toBe('inserted');
+    expect(res.body.results[2].error).toBe('designation is required');
   });
 
   it('uses separate transactions for each batch of 50 users', async () => {

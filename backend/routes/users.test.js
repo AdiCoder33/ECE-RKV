@@ -22,6 +22,7 @@ jest.mock('../config/database', () => ({
         section: null,
         roll_number: null,
         phone: null,
+        designation: null,
         created_at: null,
       },
     ],
@@ -75,6 +76,7 @@ describe('users routes handle values correctly', () => {
         '',
         '0',
         '',
+        null,
       ]
     );
   });
@@ -103,6 +105,7 @@ describe('users routes handle values correctly', () => {
         2,
         '',
         '0',
+        null,
         '1',
       ]
     );
@@ -119,6 +122,48 @@ describe('users routes handle values correctly', () => {
 
     await request(app).post('/users').send(payload).expect(400);
     expect(executeQuery).not.toHaveBeenCalled();
+  });
+
+  it('rejects professor creation without designation', async () => {
+    const payload = {
+      name: 'Prof',
+      email: 'prof@example.com',
+      password: 'secret',
+      role: 'professor',
+      phone: '123',
+    };
+
+    await request(app).post('/users').send(payload).expect(400);
+    expect(executeQuery).not.toHaveBeenCalled();
+  });
+
+  it('allows professor creation with designation and no student fields', async () => {
+    const payload = {
+      name: 'Prof',
+      email: 'prof@example.com',
+      password: 'secret',
+      role: 'professor',
+      designation: 'Lecturer',
+      phone: '123',
+    };
+
+    await request(app).post('/users').send(payload).expect(201);
+    expect(executeQuery).toHaveBeenCalledWith(
+      expect.any(String),
+      [
+        payload.name,
+        payload.email,
+        'hashed',
+        payload.role,
+        null,
+        null,
+        null,
+        null,
+        null,
+        '123',
+        payload.designation,
+      ]
+    );
   });
 
   it('rejects student update with invalid semester', async () => {
