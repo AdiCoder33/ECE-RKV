@@ -22,7 +22,7 @@ jest.mock('../config/database', () => ({
         section: null,
         roll_number: null,
         phone: null,
-        designation: null,
+        designation: 'Professor',
         created_at: null,
       },
     ],
@@ -190,6 +190,19 @@ describe('users routes handle values correctly', () => {
       'DELETE FROM users WHERE id = ?',
       ['1']
     );
+  });
+
+  it('includes designation in user listing', async () => {
+    const res = await request(app).get('/users').expect(200);
+    expect(res.body[0]).toHaveProperty('designation');
+  });
+
+  it('includes designation in search results', async () => {
+    const res = await request(app)
+      .get('/users')
+      .query({ search: 'Jane' })
+      .expect(200);
+    expect(res.body[0]).toHaveProperty('designation');
   });
 
   it('filters users by year and section in search', async () => {

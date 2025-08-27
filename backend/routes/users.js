@@ -14,7 +14,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     // If search query is provided, return basic user info matching the search
     if (search) {
       let query =
-        'SELECT id, name, role, profile_image AS profileImage FROM users';
+        'SELECT id, name, role, designation, profile_image AS profileImage FROM users';
       const params = [];
       const conditions = ['id <> ?'];
       params.push(req.user.id);
@@ -45,10 +45,11 @@ router.get('/', authenticateToken, async (req, res, next) => {
       const result = await executeQuery(query, params);
       const records = result.recordset || [];
       const formatted = await Promise.all(
-        records.map(async ({ id, name, role, profileImage }) => ({
+        records.map(async ({ id, name, role, designation, profileImage }) => ({
           id,
           name,
           role,
+          designation,
           profileImage: await resolveProfileImage(profileImage),
         }))
       );
@@ -57,7 +58,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
 
     // Default behaviour: return full user records
     let query =
-      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, profile_image, created_at FROM users';
+      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, designation, profile_image, created_at FROM users';
     const params = [];
     const conditions = [];
     if (role) {
