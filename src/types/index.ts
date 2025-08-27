@@ -11,6 +11,7 @@ export interface User {
   rollNumber?: string;
   profileImage?: string;
   phone?: string;
+  designation?: string;
   createdAt?: string;
   dateOfBirth?: string;
   address?: string;

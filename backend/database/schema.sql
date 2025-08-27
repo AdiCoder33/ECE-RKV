@@ -1,7 +1,9 @@
 -- MSSQL Database Schema for College Management System
 
 -- Users table
--- For existing deployments, run: ALTER TABLE users ADD semester INT NULL;
+-- For existing deployments, run:
+--   ALTER TABLE users ADD semester INT NULL;
+--   ALTER TABLE users ADD designation NVARCHAR(100);
 CREATE TABLE users (
     id int IDENTITY(1,1) PRIMARY KEY,
     name nvarchar(255) NOT NULL,
@@ -20,6 +22,7 @@ CREATE TABLE users (
     linkedin_profile nvarchar(255),
     current_company nvarchar(255),
     current_position nvarchar(255),
+    designation nvarchar(100),
     graduation_year int,
     created_at datetime2 DEFAULT GETDATE(),
     updated_at datetime2 DEFAULT GETDATE(),
