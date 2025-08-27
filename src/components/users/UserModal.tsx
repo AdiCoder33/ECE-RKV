@@ -32,6 +32,7 @@ const initialForm: Omit<User, 'id'> & { password: string } = {
   section: 'A',
   rollNumber: '',
   phone: '',
+  designation: '',
   password: 'password',
 };
 
@@ -58,6 +59,7 @@ const UserModal: React.FC<UserModalProps> = ({
           section: initialUser.section ?? initialForm.section,
           rollNumber: initialUser.rollNumber ?? initialForm.rollNumber,
           phone: initialUser.phone ?? initialForm.phone,
+          designation: initialUser.designation ?? initialForm.designation,
           password: '', // Don't prefill password on edit
         });
       } else {
@@ -86,6 +88,9 @@ const UserModal: React.FC<UserModalProps> = ({
         section: formData.role === 'student' ? formData.section : undefined,
         rollNumber: formData.role === 'student' ? formData.rollNumber : undefined,
         phone: formData.phone,
+        designation: ['professor', 'hod'].includes(formData.role)
+          ? formData.designation
+          : undefined,
       };
 
       if (mode === 'add') {
@@ -169,6 +174,19 @@ const UserModal: React.FC<UserModalProps> = ({
               className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
             />
           </div>
+          {/* Designation - shown for professors and HODs */}
+          {['professor', 'hod'].includes(formData.role) && (
+            <div>
+              <label className="block text-sm font-medium text-[#8b0000] mb-1">Designation</label>
+              <Input
+                type="text"
+                value={formData.designation}
+                onChange={e => handleInputChange('designation', e.target.value)}
+                placeholder="Enter designation"
+                className="w-full border-[#8b0000] focus:border-[#a52a2a] focus:ring-[#a52a2a] bg-[#fffaf6]"
+              />
+            </div>
+          )}
           {/* Roll Number and Section side by side */}
           <div className="flex gap-2">
             <div className="flex-1">

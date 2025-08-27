@@ -272,6 +272,7 @@ const UserManagement: React.FC = () => {
         Email: user.email,
         Role: user.role,
         Department: user.department ?? '',
+        Designation: user.designation ?? '',
         Year: user.year ?? '',
         Semester: user.semester ?? '',
         Section: user.section ?? '',
@@ -521,6 +522,7 @@ const UserManagement: React.FC = () => {
                     <th className="text-left p-3 text-sm text-gray-700">Name</th>
                     <th className="text-left p-3 text-sm text-gray-700">Email</th>
                     <th className="text-left p-3 text-sm text-gray-700">Role</th>
+                    <th className="text-left p-3 text-sm text-gray-700">Designation</th>
                     <th className="text-left p-3 text-sm text-gray-700">Year / Sem / Section</th>
                     <th className="text-left p-3 text-sm text-gray-700">Roll</th>
                     <th className="text-left p-3 text-sm text-gray-700">Phone</th>
@@ -558,6 +560,12 @@ const UserManagement: React.FC = () => {
                       </td>
 
                       <td className="p-3 text-sm text-gray-700">
+                        {['professor', 'hod'].includes(user.role || '')
+                          ? user.designation || '-'
+                          : '-'}
+                      </td>
+
+                      <td className="p-3 text-sm text-gray-700">
                         {user.year && user.semester && user.section
                           ? `${user.year}/${user.semester}/${user.section}`
                           : '-'}
@@ -592,7 +600,7 @@ const UserManagement: React.FC = () => {
                   ))}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-gray-500">No users found.</td>
+                      <td colSpan={8} className="p-6 text-center text-gray-500">No users found.</td>
                     </tr>
                   )}
                 </tbody>
@@ -633,6 +641,12 @@ const UserManagement: React.FC = () => {
                     <>
                       <span className="text-gray-500">Year/Sem/Sec</span>
                       <span>{user.year}/{user.semester}/{user.section}</span>
+                    </>
+                  )}
+                  {['professor', 'hod'].includes(user.role || '') && (
+                    <>
+                      <span className="text-gray-500">Designation</span>
+                      <span>{user.designation || '-'}</span>
                     </>
                   )}
                   <span className="text-gray-500">Roll No</span>
@@ -701,6 +715,12 @@ const UserManagement: React.FC = () => {
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-700">
                   <span className="text-gray-500">Role</span>
                   <span>{viewUser.role}</span>
+                  {['professor', 'hod'].includes(viewUser.role) && (
+                    <>
+                      <span className="text-gray-500">Designation</span>
+                      <span>{viewUser.designation || '-'}</span>
+                    </>
+                  )}
                   <span className="text-gray-500">Year</span>
                   <span>{viewUser.year || '-'}</span>
                   <span className="text-gray-500">Semester</span>
