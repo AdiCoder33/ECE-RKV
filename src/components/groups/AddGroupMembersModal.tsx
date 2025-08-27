@@ -41,7 +41,7 @@ const AddGroupMembersModal: React.FC<AddGroupMembersModalProps> = ({ group, open
     if (year !== 'all') params.append('year', year);
     if (section !== 'all') params.append('section', section);
     if (search) params.append('search', search);
-    params.append('limit', '50');
+    params.append('limit', '100');
 
     const fetchUsers = async () => {
       try {
