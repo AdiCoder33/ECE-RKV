@@ -98,18 +98,43 @@ router.get('/', authenticateToken, async (req, res, next) => {
 // Create user
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { name, email, password, role, department, year, semester, section, rollNumber } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      department,
+      year,
+      semester,
+      section,
+      rollNumber,
+      designation,
+    } = req.body;
     const phone = sanitizePhone(req.body.phone);
     const sem = semester === undefined ? undefined : Number(semester);
 
-    if (role === 'student' && ![1, 2].includes(sem)) {
-      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    if (role === 'student') {
+      if (
+        year === undefined ||
+        sem === undefined ||
+        section === undefined ||
+        rollNumber === undefined
+      ) {
+        return res
+          .status(400)
+          .json({ error: 'year, semester, section, and rollNumber are required for students' });
+      }
+      if (![1, 2].includes(sem)) {
+        return res.status(400).json({ error: 'Semester must be 1 or 2' });
+      }
+    } else if (['professor', 'hod'].includes(role) && !designation) {
+      return res.status(400).json({ error: 'Designation is required' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const result = await executeQuery(
-      'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone) OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone, designation) OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.designation, INSERTED.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name,
         email,
@@ -121,6 +146,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
         section === undefined ? null : section,
         rollNumber === undefined ? null : rollNumber,
         phone === undefined ? null : phone,
+        designation === undefined ? null : designation,
       ]
     );
 
@@ -152,6 +178,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       section: created.section,
       rollNumber: created.roll_number,
       phone: created.phone,
+      designation: created.designation,
       createdAt: created.created_at,
     });
   } catch (error) {
@@ -191,27 +218,33 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         const section = typeof u.section === 'string' ? u.section.trim() : u.section;
         const rollNumber = typeof u.rollNumber === 'string' ? u.rollNumber.trim() : u.rollNumber;
         const phone = sanitizePhone(u.phone);
+        const designation =
+          typeof u.designation === 'string' ? u.designation.trim() : u.designation;
         const errs = [];
-        if (!Number.isInteger(year) || year <= 0) {
-          errs.push('year must be a positive integer');
-        }
-        if (!Number.isInteger(sem) || sem <= 0) {
-          errs.push('semester must be a positive integer');
-        }
-        if (u.role === 'student' && Number.isInteger(sem) && sem !== 1 && sem !== 2) {
-          errs.push('semester must be 1 or 2');
-        }
-        if (!section) {
-          errs.push('section is required');
-        }
-        if (!rollNumber) {
-          errs.push('rollNumber is required');
+        if (!allowedRoles.includes(u.role)) {
+          errs.push('invalid role');
         }
         if (!phone) {
           errs.push('phone is required');
         }
-        if (!allowedRoles.includes(u.role)) {
-          errs.push('invalid role');
+        if (u.role === 'student') {
+          if (!Number.isInteger(year) || year <= 0) {
+            errs.push('year must be a positive integer');
+          }
+          if (!Number.isInteger(sem) || sem <= 0) {
+            errs.push('semester must be a positive integer');
+          }
+          if (Number.isInteger(sem) && sem !== 1 && sem !== 2) {
+            errs.push('semester must be 1 or 2');
+          }
+          if (!section) {
+            errs.push('section is required');
+          }
+          if (!rollNumber) {
+            errs.push('rollNumber is required');
+          }
+        } else if (['professor', 'hod'].includes(u.role) && !designation) {
+          errs.push('designation is required');
         }
         if (errs.length) {
           results.push({ index: i, error: errs.join(', ') });
@@ -230,7 +263,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
             .input('section', section)
             .input('year', year)
             .query(
-              'SELECT id, name, role, department, year, semester, section, roll_number, phone, password FROM users WHERE email = @email OR (roll_number = @rollNumber AND section = @section AND year = @year)'
+              'SELECT id, name, role, department, year, semester, section, roll_number, phone, password, designation FROM users WHERE email = @email OR (roll_number = @rollNumber AND section = @section AND year = @year)'
             );
 
           let userId;
@@ -278,6 +311,11 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
               updates.push('phone = @phone');
               req.input('phone', ph);
             }
+            const des = designation === undefined ? null : designation;
+            if (ex.designation !== des) {
+              updates.push('designation = @designation');
+              req.input('designation', des);
+            }
             if (u.password) {
               const same = await bcrypt.compare(u.password, ex.password);
               if (!same) {
@@ -306,8 +344,9 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
               .input('section', section)
               .input('rollNumber', rollNumber)
               .input('phone', phone)
+              .input('designation', designation === undefined ? null : designation)
               .query(
-                'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone) VALUES (@name, @email, @password, @role, @department, @year, @semester, @section, @rollNumber, @phone); SELECT SCOPE_IDENTITY() AS id;'
+                'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone, designation) VALUES (@name, @email, @password, @role, @department, @year, @semester, @section, @rollNumber, @phone, @designation); SELECT SCOPE_IDENTITY() AS id;'
               );
             const insertedId = result.recordset[0].id;
             results.push({ index: i, id: insertedId, action: 'inserted' });
@@ -361,10 +400,34 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
 router.put('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, email, role, department, year, semester, section, rollNumber } = req.body;
+    const {
+      name,
+      email,
+      role,
+      department,
+      year,
+      semester,
+      section,
+      rollNumber,
+      designation,
+    } = req.body;
     const sem = semester === undefined ? undefined : Number(semester);
-    if (role === 'student' && ![1, 2].includes(sem)) {
-      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    if (role === 'student') {
+      if (
+        year === undefined ||
+        sem === undefined ||
+        section === undefined ||
+        rollNumber === undefined
+      ) {
+        return res
+          .status(400)
+          .json({ error: 'year, semester, section, and rollNumber are required for students' });
+      }
+      if (![1, 2].includes(sem)) {
+        return res.status(400).json({ error: 'Semester must be 1 or 2' });
+      }
+    } else if (['professor', 'hod'].includes(role) && !designation) {
+      return res.status(400).json({ error: 'Designation is required' });
     }
     const prevRes = await executeQuery(
       'SELECT role, year, semester, section FROM users WHERE id = ?',
@@ -373,7 +436,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     const prev = prevRes.recordset[0];
 
     const result = await executeQuery(
-      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, semester = ?, section = ?, roll_number = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.created_at WHERE id = ?',
+      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, semester = ?, section = ?, roll_number = ?, designation = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.designation, INSERTED.created_at WHERE id = ?',
       [
         name,
         email,
@@ -383,6 +446,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
         sem === undefined ? null : sem,
         section === undefined ? null : section,
         rollNumber === undefined ? null : rollNumber,
+        designation === undefined ? null : designation,
         id,
       ]
     );
@@ -422,6 +486,7 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       section: updated.section,
       rollNumber: updated.roll_number,
       phone: updated.phone,
+      designation: updated.designation,
       createdAt: updated.created_at,
     });
   } catch (error) {
