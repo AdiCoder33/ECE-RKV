@@ -321,7 +321,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       JOIN subjects s ON s.name = t.subject OR s.id = t.subject
        WHERE CAST(t.faculty AS VARCHAR) = ?`,
       [facultyIdStr]
     );
@@ -348,13 +348,13 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
          FROM (
            SELECT s.id AS subject_id, COUNT(DISTINCT u.id) AS cnt
            FROM timetable t
-           JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+           JOIN subjects s ON s.name = t.subject OR s.id = t.subject
            JOIN users u ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
            WHERE CAST(t.faculty AS VARCHAR) = ?
              AND u.role = 'student'
              AND s.id IN (${placeholders})
-           GROUP BY s.id
-         ) x`,
+          GROUP BY s.id
+        ) x`,
         [facultyIdStr, ...subjectIds]
       );
       const expectedMarks = expectedResult.recordset[0]?.expected || 0;
@@ -417,7 +417,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
       const subjectsResult = await executeQuery(
         `SELECT DISTINCT s.id
          FROM timetable t
-         JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+         JOIN subjects s ON s.name = t.subject OR s.id = t.subject
          WHERE CAST(t.faculty AS VARCHAR) = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
         [facultyIdStr, year, semester, section]
       );
@@ -488,7 +488,7 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       JOIN subjects s ON s.name = t.subject OR s.id = t.subject
        WHERE CAST(t.faculty AS VARCHAR) = ?`,
       [facultyIdStr]
     );
@@ -538,7 +538,7 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       JOIN subjects s ON s.name = t.subject OR s.id = t.subject
        WHERE CAST(t.faculty AS VARCHAR) = ?`,
       [facultyIdStr]
     );
