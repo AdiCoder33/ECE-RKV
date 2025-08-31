@@ -65,7 +65,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       WHERE gm.user_id=@userId;
     `;
 
-    const [{ recordset: direct }, { recordset: groups }] = await Promise.all([
+    const [[direct], [groups]] = await Promise.all([
       executeQuery(directQuery, [userId]),
       executeQuery(groupQuery, [userId])
     ]);

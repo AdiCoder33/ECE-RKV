@@ -1,5 +1,5 @@
 const express = require('express');
-const { executeQuery, connectDB, sql } = require('../config/database');
+const { executeQuery } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -21,18 +21,14 @@ router.get('/', authenticateToken, async (req, res, next) => {
     `;
 
     if (year && semester) {
-      const pool = await connectDB();
-      const request = pool
-        .request()
-        .input('year', sql.Int, Number(year))
-        .input('semester', sql.Int, Number(semester));
-      const result = await request.query(
-        query + ' WHERE s.year = @year AND s.semester = @semester ORDER BY s.year, s.semester, s.name'
+      const [rows] = await executeQuery(
+        query + ' WHERE s.year = ? AND s.semester = ? ORDER BY s.year, s.semester, s.name',
+        [Number(year), Number(semester)]
       );
-      res.json(result.recordset);
+      res.json(rows);
     } else {
-      const result = await executeQuery(query + ' ORDER BY s.year, s.semester, s.name');
-      res.json(result.recordset);
+      const [rows] = await executeQuery(query + ' ORDER BY s.year, s.semester, s.name');
+      res.json(rows);
     }
   } catch (error) {
     console.error('Subjects fetch error:', error);
@@ -71,12 +67,12 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
-    const result = await executeQuery(
+    const [result] = await executeQuery(
       'UPDATE subjects SET name = ?, code = ?, year = ?, semester = ?, credits = ?, type = ? WHERE id = ?',
       [name, code, year, semester, credits, type, id]
     );
-    
-    if (result.rowsAffected[0] === 0) {
+
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Subject not found' });
     }
     
@@ -92,9 +88,9 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
     
-    const result = await executeQuery('DELETE FROM subjects WHERE id = ?', [id]);
-    
-    if (result.rowsAffected[0] === 0) {
+    const [result] = await executeQuery('DELETE FROM subjects WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Subject not found' });
     }
     

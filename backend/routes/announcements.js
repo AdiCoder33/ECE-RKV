@@ -7,14 +7,13 @@ const router = express.Router();
 // Get announcements
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT a.*, u.name as author_name
       FROM announcements a
       LEFT JOIN users u ON a.author_id = u.id
       WHERE a.is_active = 1
       ORDER BY a.created_at DESC
     `);
-    const rows = result.recordset;
     res.json(rows);
   } catch (error) {
     console.error('Announcements fetch error:', error);
@@ -64,7 +63,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
     }
 
     const usersQuery = `SELECT id FROM users${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''}`;
-    const { recordset: recipients } = await executeQuery(usersQuery, params);
+    const [recipients] = await executeQuery(usersQuery, params);
 
     const notificationPromises = recipients.map((user) =>
       executeQuery(

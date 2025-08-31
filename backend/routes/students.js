@@ -15,7 +15,7 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'Year, semester, and section are required' });
     }
 
-    const result = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT
         u.id,
         u.name,
@@ -31,7 +31,7 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
       ORDER BY TRY_CAST(u.roll_number AS INT)
     `, ['student', year, semester, section]);
 
-    const classmates = result.recordset || [];
+    const classmates = rows || [];
     const formatted = await Promise.all(
       classmates.map(async student => ({
         id: student.id.toString(),
@@ -63,11 +63,11 @@ router.get('/', authenticateToken, async (req, res, next) => {
     let filterSemester = semester;
 
     if (subjectId && (!filterYear || !filterSemester)) {
-      const subjectRes = await executeQuery(
+      const [subjectRows] = await executeQuery(
         'SELECT year, semester FROM subjects WHERE id = ?',
         [subjectId]
       );
-      const subj = subjectRes.recordset[0];
+      const subj = subjectRows[0];
       if (subj) {
         if (!filterYear) filterYear = subj.year;
         if (!filterSemester) filterSemester = subj.semester;
@@ -150,8 +150,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
       ar.cgpa
       ORDER BY u.year, u.semester, u.section, TRY_CAST(u.roll_number AS INT)`;
 
-    const result = await executeQuery(query, params);
-    const students = result.recordset || [];
+    const [rows] = await executeQuery(query, params);
+    const students = rows || [];
 
     const formatted = await Promise.all(
       students.map(async student => ({
@@ -258,12 +258,12 @@ router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
       `UPDATE users SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ? AND role = 'student'`,
       params
     );
-    const { recordset } = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT id,name,email,phone,profile_image,date_of_birth,address,blood_group,roll_number,year,semester,section
        FROM users WHERE id = ? AND role = 'student'`,
       [studentId]
     );
-    const s = recordset[0];
+    const s = rows[0];
     res.json({
       id: s.id.toString(),
       name: s.name,
@@ -290,12 +290,12 @@ router.get('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
     if (req.user.role !== 'admin' && req.user.id !== studentId) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    const { recordset } = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT id,name,email,phone,profile_image,date_of_birth,address,blood_group,roll_number,year,semester,section
        FROM users WHERE id = ? AND role = 'student'`,
       [studentId]
     );
-    const s = recordset[0];
+    const s = rows[0];
     if (!s) {
       return res.status(404).json({ error: 'Student not found' });
     }
@@ -324,7 +324,7 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
   try {
     const { studentId } = req.params;
     
-    const result = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT
         s.id,
         s.name,
@@ -344,7 +344,7 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
       GROUP BY s.id, s.name, s.code, s.credits, s.type
     `, [studentId]);
     
-    const subjects = result.recordset || [];
+    const subjects = rows || [];
     const formattedSubjects = subjects.map(subject => {
       const mid1 = subject.mid1 ?? 0;
       const mid2 = subject.mid2 ?? 0;
@@ -384,7 +384,7 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
     const { id } = req.params;
 
     // Basic student info with current CGPA and overall attendance
-    const studentResult = await executeQuery(`
+    const [studentRows] = await executeQuery(`
       SELECT u.*,
              ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
              ar.cgpa
@@ -398,13 +398,13 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
       WHERE u.id = ? AND u.role = 'student'
     `, [id]);
 
-    const student = studentResult.recordset[0];
+    const student = studentRows[0];
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
     }
 
     // Current subjects with marks and attendance
-    const subjectsRes = await executeQuery(`
+    const [subjectsResRows] = await executeQuery(`
       SELECT
         s.id,
         s.name,
@@ -422,7 +422,7 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
       GROUP BY s.id, s.name, s.code, s.credits, s.type
     `, [id]);
 
-    const currentSubjects = (subjectsRes.recordset || []).map(subject => ({
+    const currentSubjects = (subjectsResRows || []).map(subject => ({
       id: subject.id.toString(),
       name: subject.name,
       code: subject.code,
@@ -433,21 +433,21 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
     }));
 
     // Semester-wise GPA records
-    const semestersRes = await executeQuery(`
+    const [semestersRows] = await executeQuery(`
       SELECT year, semester, sgpa, cgpa
       FROM academic_records
       WHERE student_id = ?
       ORDER BY year, semester
     `, [id]);
 
-    const semesterRecords = (semestersRes.recordset || []).map(r => ({
+    const semesterRecords = (semestersRows || []).map(r => ({
       semester: `Year ${r.year} - Sem ${r.semester}`,
       sgpa: r.sgpa,
       cgpa: r.cgpa
     }));
 
     // Attendance history (monthly) and overall percentage
-    const attendanceHistoryRes = await executeQuery(`
+    const [attendanceHistoryRows] = await executeQuery(`
       SELECT
         FORMAT(MIN(a.date), 'MMM') as month,
         ROUND(
@@ -462,12 +462,12 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
       ORDER BY YEAR(a.date), MONTH(a.date)
     `, [id]);
 
-    const attendanceHistory = (attendanceHistoryRes.recordset || []).map(row => ({
+    const attendanceHistory = (attendanceHistoryRows || []).map(row => ({
       month: row.month,
       attendance: row.percentage
     }));
 
-    const overallAttendanceRes = await executeQuery(`
+    const [overallAttendanceRows] = await executeQuery(`
       SELECT
         ROUND(
           (CAST(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(COUNT(*), 0)) * 100,
@@ -479,7 +479,7 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
       WHERE a.student_id = ? AND s.year = u.year AND s.semester = u.semester
     `, [id]);
 
-    const attendance = overallAttendanceRes.recordset[0]?.percentage || 0;
+    const attendance = overallAttendanceRows[0]?.percentage || 0;
 
     res.json({
       id: student.id.toString(),
@@ -516,7 +516,12 @@ router.get('/alumni', authenticateToken, async (req, res, next) => {
       ['alumni']
     );
 
-    res.json(result.recordset || []);
+    const [rows] = await executeQuery(
+      'SELECT id, name, email, department, graduation_year, phone, linkedin_profile, current_company, current_position FROM users WHERE role = ? ORDER BY graduation_year DESC',
+      ['alumni']
+    );
+
+    res.json(rows || []);
   } catch (error) {
     console.error('Alumni fetch error:', error);
     next(error);
@@ -542,8 +547,8 @@ router.get('/:id(\\d+)', authenticateToken, async (req, res, next) => {
       WHERE u.id = ? AND u.role = 'student'
     `;
 
-    const result = await executeQuery(query, [id]);
-    const student = result.recordset[0];
+    const [rows] = await executeQuery(query, [id]);
+    const student = rows[0];
 
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });

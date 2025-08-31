@@ -30,13 +30,13 @@ router.get('/', authenticateToken, async (req, res, next) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const result = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT c.id, c.student_id, c.type, c.title, c.description, c.is_anonymous, c.created_at, u.name AS student_name
       FROM complaints c
       JOIN users u ON c.student_id = u.id
       ORDER BY c.created_at DESC
     `);
-    res.json(result.recordset);
+    res.json(rows);
   } catch (error) {
     console.error('Fetch complaints error:', error);
     next(error);

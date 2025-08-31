@@ -73,17 +73,17 @@ router.post('/', async (req, res, next) => {
     }
 
     const where = clauses.length ? ` WHERE ${clauses.join(' OR ')}` : '';
-    const { recordset } = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT endpoint, keys_p256dh, keys_auth FROM push_subscriptions${where}`,
       params
     );
 
-    if (!recordset.length) {
+    if (!rows.length) {
       return res.status(404).json({ error: 'No subscriptions found' });
     }
 
     const payloadStr = JSON.stringify(payload);
-    for (const row of recordset) {
+    for (const row of rows) {
       const subscription = {
         endpoint: row.endpoint,
         keys: { p256dh: row.keys_p256dh, auth: row.keys_auth },

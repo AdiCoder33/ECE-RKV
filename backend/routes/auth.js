@@ -22,8 +22,8 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const result = await executeQuery('SELECT * FROM users WHERE email = ?', [email]);
-    const user = result.recordset && result.recordset[0];
+    const [rows] = await executeQuery('SELECT * FROM users WHERE email = ?', [email]);
+    const user = rows && rows[0];
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -76,8 +76,8 @@ router.post('/request-reset', async (req, res, next) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const result = await executeQuery('SELECT id FROM users WHERE email = ?', [email]);
-    const user = result.recordset && result.recordset[0];
+    const [rows] = await executeQuery('SELECT id FROM users WHERE email = ?', [email]);
+    const user = rows && rows[0];
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -103,11 +103,11 @@ router.post('/verify-otp', async (req, res, next) => {
       return res.status(400).json({ error: 'Email and OTP are required' });
     }
 
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       'SELECT reset_otp FROM users WHERE email = ? AND reset_expires > SYSUTCDATETIME()',
       [email]
     );
-    const user = result.recordset && result.recordset[0];
+    const user = rows && rows[0];
     if (!user || !user.reset_otp) {
       return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
@@ -130,11 +130,11 @@ router.post('/reset-password', async (req, res, next) => {
       return res.status(400).json({ error: 'Email, OTP and newPassword are required' });
     }
 
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       'SELECT id, reset_otp, reset_expires FROM users WHERE email = ?',
       [email]
     );
-    const user = result.recordset && result.recordset[0];
+    const user = rows && rows[0];
     if (!user || !user.reset_otp || !user.reset_expires) {
       return res.status(400).json({ error: 'Invalid request' });
     }
@@ -179,8 +179,8 @@ router.post('/change-password', authenticateToken, async (req, res, next) => {
     }
 
     const { id } = req.user; // set by authenticateToken
-    const result = await executeQuery('SELECT password FROM users WHERE id = ?', [id]);
-    const user = result.recordset && result.recordset[0];
+    const [rows] = await executeQuery('SELECT password FROM users WHERE id = ?', [id]);
+    const user = rows && rows[0];
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }

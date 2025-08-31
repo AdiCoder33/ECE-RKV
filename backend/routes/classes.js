@@ -30,8 +30,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
       ORDER BY c.year, c.semester, c.section
     `;
     
-    const result = await executeQuery(query);
-    const classes = result.recordset || [];
+    const [rows] = await executeQuery(query);
+    const classes = rows || [];
     
     res.json(classes.map(cls => ({
       id: cls.id.toString(),
@@ -63,8 +63,8 @@ router.get('/promotion-summary', authenticateToken, async (req, res, next) => {
       ORDER BY year
     `;
 
-    const result = await executeQuery(query);
-    const summary = result.recordset || [];
+    const [rows] = await executeQuery(query);
+    const summary = rows || [];
 
     res.json(
       summary.map(row => ({
@@ -96,8 +96,8 @@ router.get('/sections', authenticateToken, async (req, res, next) => {
       params.push(Number(semester));
     }
 
-    const result = await executeQuery(query, params);
-    const sections = (result.recordset || []).map(row => row.section);
+    const [rows] = await executeQuery(query, params);
+    const sections = (rows || []).map(row => row.section);
 
     res.json(sections);
   } catch (error) {
@@ -201,13 +201,13 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
       WHERE c.id = ?
     `;
 
-    const result = await executeQuery(query, [classId]);
+    const [rows] = await executeQuery(query, [classId]);
 
-    if (result.recordset.length === 0) {
+    if (!rows.length) {
       return res.status(404).json({ error: 'Class not found' });
     }
 
-    const cls = result.recordset[0];
+    const cls = rows[0];
 
     res.json({
       id: cls.id.toString(),
@@ -248,8 +248,8 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
       ORDER BY TRY_CAST(u.roll_number AS INT)
     `;
     
-    const result = await executeQuery(query, [classId]);
-    const students = result.recordset || [];
+    const [rows] = await executeQuery(query, [classId]);
+    const students = rows || [];
 
     const formatted = await Promise.all(
       students.map(async student => ({
@@ -311,12 +311,12 @@ router.delete('/:classId', authenticateToken, requireRole(['admin', 'hod']), asy
     const { classId } = req.params;
     
     // Check if class exists and has no students
-    const studentsResult = await executeQuery(
+    const [studentsResult] = await executeQuery(
       'SELECT COUNT(*) as count FROM student_classes WHERE class_id = ?',
       [classId]
     );
 
-    if (studentsResult.recordset[0].count > 0) {
+    if (studentsResult[0].count > 0) {
       return res.status(400).json({ error: 'Cannot delete class with enrolled students' });
     }
 
