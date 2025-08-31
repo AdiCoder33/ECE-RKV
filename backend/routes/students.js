@@ -255,7 +255,7 @@ router.put('/:id(\\d+)/profile', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'No fields to update' });
     params.push(studentId);
     await executeQuery(
-      `UPDATE users SET ${fields.join(', ')}, updated_at = GETDATE() WHERE id = ? AND role = 'student'`,
+      `UPDATE users SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ? AND role = 'student'`,
       params
     );
     const { recordset } = await executeQuery(

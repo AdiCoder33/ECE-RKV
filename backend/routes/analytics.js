@@ -16,7 +16,7 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       SELECT
         AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) as avg_attendance
       FROM attendance
-      WHERE date >= DATEADD(DAY, -30, GETDATE())
+      WHERE date >= DATE_ADD(DAY, -30, NOW())
     `);
     const attendanceStats = attendanceResult.recordset;
 
@@ -61,7 +61,7 @@ router.get('/enrollment', authenticateToken, async (req, res, next) => {
 router.get('/activities', authenticateToken, async (req, res, next) => {
   try {
     const { recordset } = await executeQuery(
-      'SELECT id, title AS action, created_at FROM notifications ORDER BY created_at DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY'
+      'SELECT id, title AS action, created_at FROM notifications ORDER BY created_at DESC LIMIT 10'
     );
     res.json(recordset);
   } catch (error) {

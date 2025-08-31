@@ -38,12 +38,11 @@ router.get('/', authenticateToken, async (req, res, next) => {
       query += ` WHERE ${conditions.join(' AND ')} ORDER BY name ASC`;
 
       if (limit) {
-        query += ' OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY';
+        query += ' LIMIT ?';
         params.push(Number(limit));
       }
 
-      const result = await executeQuery(query, params);
-      const records = result.recordset || [];
+      const [records] = await executeQuery(query, params);
       const formatted = await Promise.all(
         records.map(async ({ id, name, role, designation, profileImage }) => ({
           id,
@@ -78,11 +77,10 @@ router.get('/', authenticateToken, async (req, res, next) => {
     }
     query += ' ORDER BY created_at DESC';
     if (limit) {
-      query += ' OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY';
+      query += ' LIMIT ?';
       params.push(Number(limit));
     }
-    const result = await executeQuery(query, params);
-    const records = result.recordset || [];
+    const [records] = await executeQuery(query, params);
     const formatted = await Promise.all(
       records.map(async ({ profile_image, ...rest }) => ({
         ...rest,
@@ -134,8 +132,8 @@ router.post('/', authenticateToken, async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await executeQuery(
-      'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone, designation) OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.designation, INSERTED.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    const [insertResult] = await executeQuery(
+      'INSERT INTO users (name, email, password, role, department, year, semester, section, roll_number, phone, designation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         name,
         email,
@@ -151,19 +149,23 @@ router.post('/', authenticateToken, async (req, res, next) => {
       ]
     );
 
-    const created = result.recordset[0];
+    const [createdRows] = await executeQuery(
+      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, designation, created_at FROM users WHERE id = ?',
+      [insertResult.insertId]
+    );
+    const created = createdRows[0];
 
     // Link student to class if applicable
     if (role === 'student' && year !== undefined && sem !== undefined && section !== undefined) {
-      const classRes = await executeQuery(
+      const [classRes] = await executeQuery(
         'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
         [year, sem, section]
       );
-      if (classRes.recordset.length > 0) {
-        const classId = classRes.recordset[0].id;
+      if (classRes.length > 0) {
+        const classId = classRes[0].id;
         await executeQuery(
-          'IF NOT EXISTS (SELECT 1 FROM student_classes WHERE class_id = ? AND student_id = ?) INSERT INTO student_classes (class_id, student_id) VALUES (?, ?)',
-          [classId, created.id, classId, created.id]
+          'INSERT IGNORE INTO student_classes (class_id, student_id) VALUES (?, ?)',
+          [classId, created.id]
         );
       }
     }
@@ -418,14 +420,14 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     } else if (['professor', 'hod'].includes(role) && !designation) {
       return res.status(400).json({ error: 'Designation is required' });
     }
-    const prevRes = await executeQuery(
+    const [prevRes] = await executeQuery(
       'SELECT role, year, semester, section FROM users WHERE id = ?',
       [id]
     );
-    const prev = prevRes.recordset[0];
+    const prev = prevRes[0];
 
-    const result = await executeQuery(
-      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, semester = ?, section = ?, roll_number = ?, designation = ? OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.role, INSERTED.department, INSERTED.year, INSERTED.semester, INSERTED.section, INSERTED.roll_number, INSERTED.phone, INSERTED.designation, INSERTED.created_at WHERE id = ?',
+    await executeQuery(
+      'UPDATE users SET name = ?, email = ?, role = ?, department = ?, year = ?, semester = ?, section = ?, roll_number = ?, designation = ? WHERE id = ?',
       [
         name,
         email,
@@ -440,18 +442,22 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       ]
     );
 
-    const updated = result.recordset[0];
+    const [updatedRows] = await executeQuery(
+      'SELECT id, name, email, role, department, year, semester, section, roll_number, phone, designation, created_at FROM users WHERE id = ?',
+      [id]
+    );
+    const updated = updatedRows[0];
 
     if (updated.role === 'student' && updated.year !== null && updated.semester !== null && updated.section !== null) {
-      const classRes = await executeQuery(
+      const [classRes] = await executeQuery(
         'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
         [updated.year, updated.semester, updated.section]
       );
-      if (classRes.recordset.length > 0) {
-        const classId = classRes.recordset[0].id;
+      if (classRes.length > 0) {
+        const classId = classRes[0].id;
         await executeQuery(
-          'IF EXISTS (SELECT 1 FROM student_classes WHERE student_id = ?) UPDATE student_classes SET class_id = ? WHERE student_id = ? ELSE INSERT INTO student_classes (class_id, student_id) VALUES (?, ?)',
-          [id, classId, id, classId, id]
+          'INSERT INTO student_classes (class_id, student_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE class_id = VALUES(class_id)',
+          [classId, id]
         );
       }
     }
@@ -504,12 +510,12 @@ router.put('/:id/transfer-hod', authenticateToken, async (req, res, next) => {
     const { currentHodId } = req.body;
     
     // Check if user exists and can be HOD
-    const userResult = await executeQuery(
-      'SELECT * FROM users WHERE id = ? AND role IN (?, ?)', 
+    const [userResult] = await executeQuery(
+      'SELECT * FROM users WHERE id = ? AND role IN (?, ?)',
       [id, 'professor', 'hod']
     );
-    
-    if (!userResult.recordset || userResult.recordset.length === 0) {
+
+    if (!userResult || userResult.length === 0) {
       return res.status(404).json({ error: 'User not found or cannot be assigned as HOD' });
     }
     

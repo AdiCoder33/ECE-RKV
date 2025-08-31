@@ -28,13 +28,13 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
       JOIN users u ON cm.sender_id = u.id
       WHERE cm.group_id = ? AND cm.is_deleted = 0 ${before ? 'AND cm.timestamp < ?' : ''}
       ORDER BY cm.timestamp DESC
-      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
+      LIMIT ?
     `;
 
-    const { recordset } = await executeQuery(query, params);
+    const [rows] = await executeQuery(query, params);
 
-    const hasMore = recordset.length === fetchLimit;
-    const sliced = hasMore ? recordset.slice(0, fetchLimit - 1) : recordset;
+    const hasMore = rows.length === fetchLimit;
+    const sliced = hasMore ? rows.slice(0, fetchLimit - 1) : rows;
 
     const formatted = sliced
       .map(msg => ({
@@ -73,7 +73,7 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     }
 
     // Verify membership in the group
-    const { recordset: membership } = await executeQuery(
+    const [membership] = await executeQuery(
       'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
       [groupId, userId]
     );
@@ -81,43 +81,26 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     if (membership.length === 0) {
       return res.status(403).json({ error: 'User is not a member of this group' });
     }
+    const [insertResult] = await executeQuery(
+      'INSERT INTO chat_messages (group_id, sender_id, content, attachments, timestamp) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
+      [groupId, userId, content.trim(), JSON.stringify(attachments)]
+    );
 
-    const insertQuery = `
-      DECLARE @Inserted TABLE (
-        id INT, group_id INT, sender_id INT,
-        content NVARCHAR(MAX), timestamp DATETIME, attachments NVARCHAR(MAX)
-      );
+    const [rows] = await executeQuery(
+      'SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments, u.name AS sender_name, u.role AS sender_role, u.profile_image AS sender_profileImage FROM chat_messages cm JOIN users u ON u.id = cm.sender_id WHERE cm.id = ?',
+      [insertResult.insertId]
+    );
 
-      INSERT INTO chat_messages (group_id, sender_id, content, attachments, timestamp)
-      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
-             INSERTED.content, INSERTED.timestamp, INSERTED.attachments
-      INTO @Inserted
-      VALUES (?, ?, ?, ?, GETUTCDATE());
-
-      SELECT i.*, u.name AS sender_name, u.role AS sender_role,
-             u.profile_image AS sender_profileImage
-      FROM @Inserted i
-      JOIN users u ON u.id = i.sender_id;
-    `;
-    const { recordset } = await executeQuery(insertQuery, [
-      groupId,
-      userId,
-      content.trim(),
-      JSON.stringify(attachments)
-    ]);
-
-    if (!recordset || recordset.length === 0) {
+    if (!rows || rows.length === 0) {
       return res.status(500).json({ error: 'Failed to create message' });
     }
 
     const formatted = {
-      ...recordset[0],
-      id: recordset[0].id.toString(),
-      senderId: Number(recordset[0].sender_id),
-      groupId: recordset[0].group_id.toString(),
-      attachments: recordset[0].attachments
-        ? JSON.parse(recordset[0].attachments)
-        : []
+      ...rows[0],
+      id: rows[0].id.toString(),
+      senderId: Number(rows[0].sender_id),
+      groupId: rows[0].group_id.toString(),
+      attachments: rows[0].attachments ? JSON.parse(rows[0].attachments) : []
     };
 
     const io = req.app.get('io');
@@ -125,7 +108,7 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       io.to(`group-${groupId}`).emit('chat-message', formatted);
     }
 
-    const { recordset: members } = await executeQuery(
+    const [members] = await executeQuery(
       `SELECT gm.user_id, g.name AS group_name
          FROM chat_group_members gm
          JOIN chat_groups g ON gm.group_id = g.id
@@ -173,16 +156,16 @@ router.put('/groups/:groupId/messages/:messageId',
       const { content } = req.body;
       const userId = req.user.id;
       // Ensure sender owns the message and belongs to the group
-      const query = `
-        UPDATE chat_messages
-        SET content = ?, edited_at = GETUTCDATE()
-        OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
-               INSERTED.content, INSERTED.timestamp, INSERTED.attachments
-        WHERE id = ? AND group_id = ? AND sender_id = ?;
-      `;
-      const { recordset } = await executeQuery(query, [content, messageId, groupId, userId]);
-      if (!recordset.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
-      const updated = { ...recordset[0], attachments: JSON.parse(recordset[0].attachments || '[]') };
+      await executeQuery(
+        'UPDATE chat_messages SET content = ?, edited_at = UTC_TIMESTAMP() WHERE id = ? AND group_id = ? AND sender_id = ?',
+        [content, messageId, groupId, userId]
+      );
+      const [rows] = await executeQuery(
+        'SELECT id, group_id, sender_id, content, timestamp, attachments FROM chat_messages WHERE id = ?',
+        [messageId]
+      );
+      if (!rows.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
+      const updated = { ...rows[0], attachments: JSON.parse(rows[0].attachments || '[]') };
       req.app.get('io')?.to(`group-${groupId}`).emit('chat-message-edit', updated);
       res.json(updated);
     } catch (err) {
@@ -198,7 +181,7 @@ router.delete('/groups/:groupId/messages/:messageId',
       const userId = req.user.id;
 
       // Verify the user is a member of the group
-      const { recordset: membership } = await executeQuery(
+      const [membership] = await executeQuery(
         'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
         [groupId, userId]
       );
@@ -212,8 +195,8 @@ router.delete('/groups/:groupId/messages/:messageId',
         SET is_deleted = 1
         WHERE id = ? AND group_id = ? AND sender_id = ? AND is_deleted = 0;
       `;
-      const { rowsAffected } = await executeQuery(delQuery, [messageId, groupId, userId]);
-      if (!rowsAffected || rowsAffected[0] === 0) {
+      const [delResult] = await executeQuery(delQuery, [messageId, groupId, userId]);
+      if (!delResult.affectedRows) {
         return res.status(404).json({ message: 'Message not found or unauthorized' });
       }
 

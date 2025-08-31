@@ -120,7 +120,7 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
         SET company = ?, position = ?, graduation_year = ?, field_of_study = ?,
             location = ?, bio = ?, linkedin = ?, github = ?, website = ?,
             achievements = ?, skills = ?, work_experience = ?, education = ?,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE user_id = ?
       `;
       
@@ -140,7 +140,7 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
         (user_id, company, position, graduation_year, field_of_study, location,
          bio, linkedin, github, website, achievements, skills, work_experience,
          education, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
       
       await executeQuery(insertQuery, [

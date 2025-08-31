@@ -20,20 +20,19 @@ router.post('/', authenticateToken, requireRole(['professor', 'hod']), async (re
       return res.status(400).json({ error: 'subjectId, classId, date, startTime and endTime are required' });
     }
 
-    const result = await executeQuery(
-      'INSERT INTO extra_classes (subject_id, class_id, date, start_time, end_time, created_by) OUTPUT INSERTED.* VALUES (?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO extra_classes (subject_id, class_id, date, start_time, end_time, created_by) VALUES (?, ?, ?, ?, ?, ?)',
       [subjectId, classId, date, startTime, endTime, req.user.id]
     );
 
-    const row = result.recordset[0];
     res.status(201).json({
-      id: row.id,
-      subjectId: row.subject_id,
-      classId: row.class_id,
-      date: row.date,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      createdBy: row.created_by,
+      id: result.insertId,
+      subjectId,
+      classId,
+      date,
+      startTime,
+      endTime,
+      createdBy: req.user.id,
     });
   } catch (error) {
     console.error('Create extra class error:', error);

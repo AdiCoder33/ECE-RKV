@@ -40,12 +40,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
       ? `${authorName}: ${sanitizedTitle}`
       : authorName;
 
-    const result = await executeQuery(
-      'INSERT INTO announcements (title, content, author_id, target_role, target_section, target_year, priority) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO announcements (title, content, author_id, target_role, target_section, target_year, priority) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [title, content, req.user.id, targetRole, targetSection, targetYear, priority]
     );
 
-    const newId = result.recordset[0].id;
+    const newId = result.insertId;
 
     // Determine recipients based on targeting parameters
     const conditions = [];

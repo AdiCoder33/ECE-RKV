@@ -121,21 +121,21 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
     }
 
     // Check if class already exists
-    const existingResult = await executeQuery(
-      'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
-      [year, sem, section]
-    );
+      const [existingResult] = await executeQuery(
+        'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
+        [year, sem, section]
+      );
 
-    if (existingResult.recordset.length > 0) {
-      return res.status(400).json({ error: 'Class already exists' });
-    }
+      if (existingResult.length > 0) {
+        return res.status(400).json({ error: 'Class already exists' });
+      }
 
-    const insertResult = await executeQuery(
-      'INSERT INTO classes (year, semester, section, hod_id) OUTPUT INSERTED.id VALUES (?, ?, ?, ?)',
-      [year, sem, section, hodId || null]
-    );
+      const [insertResult] = await executeQuery(
+        'INSERT INTO classes (year, semester, section, hod_id) VALUES (?, ?, ?, ?)',
+        [year, sem, section, hodId || null]
+      );
 
-    const newId = insertResult.recordset[0].id;
+      const newId = insertResult.insertId;
 
     // Link existing students of the same year, semester, and section to this class
     await executeQuery(
@@ -143,38 +143,38 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
       [newId, year, sem, section]
     );
 
-    // Fetch the created class
-    const createdResult = await executeQuery(
-      `
-      SELECT c.id, c.year, c.semester, c.section, c.hod_id,
-             h.name AS hod_name,
-             ISNULL(s.total_strength, 0) AS total_strength
-      FROM classes c
-      LEFT JOIN users h ON c.hod_id = h.id
-      LEFT JOIN (
-        SELECT year, semester, section, COUNT(*) AS total_strength
-        FROM users
-        WHERE role = 'student'
-        GROUP BY year, semester, section
-      ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
-      WHERE c.id = ?
-    `,
-      [newId]
-    );
+      // Fetch the created class
+      const [createdResult] = await executeQuery(
+        `
+        SELECT c.id, c.year, c.semester, c.section, c.hod_id,
+               h.name AS hod_name,
+               ISNULL(s.total_strength, 0) AS total_strength
+        FROM classes c
+        LEFT JOIN users h ON c.hod_id = h.id
+        LEFT JOIN (
+          SELECT year, semester, section, COUNT(*) AS total_strength
+          FROM users
+          WHERE role = 'student'
+          GROUP BY year, semester, section
+        ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
+        WHERE c.id = ?
+      `,
+        [newId]
+      );
 
-    const newClass = createdResult.recordset[0];
+      const newClass = createdResult[0];
 
-    res.status(201).json({
-      id: newClass.id.toString(),
-      year: newClass.year,
-      semester: newClass.semester,
-      section: newClass.section,
-      hodId: newClass.hod_id?.toString(),
-      hodName: newClass.hod_name,
-      totalStrength: newClass.total_strength,
-      subjects: [],
-      students: []
-    });
+      res.status(201).json({
+        id: newClass.id.toString(),
+        year: newClass.year,
+        semester: newClass.semester,
+        section: newClass.section,
+        hodId: newClass.hod_id?.toString(),
+        hodName: newClass.hod_name,
+        totalStrength: newClass.total_strength,
+        subjects: [],
+        students: []
+      });
   } catch (error) {
     console.error('Create class error:', error);
     next(error);
@@ -494,19 +494,19 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
 
           for (let semester = 1; semester <= 2; semester++) {
             // Check if class already exists
-            const existingResult = await executeQuery(
+            const [existingResult] = await executeQuery(
               'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
               [year, semester, section]
             );
 
-            if (existingResult.recordset.length === 0) {
-              const insertResult = await executeQuery(
-                'INSERT INTO classes (year, semester, section) OUTPUT INSERTED.id VALUES (?, ?, ?)',
+            if (existingResult.length === 0) {
+              const [insertResult] = await executeQuery(
+                'INSERT INTO classes (year, semester, section) VALUES (?, ?, ?)',
                 [year, semester, section]
               );
 
               classes.push({
-                id: insertResult.recordset[0].id,
+                id: insertResult.insertId,
                 year,
                 semester,
                 section,

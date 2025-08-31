@@ -115,7 +115,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     }
 
     params.push(professorId);
-    const updateQuery = `UPDATE users SET ${fields.join(', ')}, updated_at = GETDATE() WHERE id = ? AND role = 'professor'`;
+    const updateQuery = `UPDATE users SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ? AND role = 'professor'`;
     const result = await executeQuery(updateQuery, params);
     if (!result.rowsAffected || result.rowsAffected[0] === 0) {
       return res.status(404).json({ error: 'Professor not found' });
@@ -184,12 +184,11 @@ router.post('/:id/achievements', authenticateToken, async (req, res, next) => {
     }
 
     const { title, description, date, category } = req.body;
-    const result = await executeQuery(
-      'INSERT INTO professor_achievements (professor_id, title, description, date, category) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO professor_achievements (professor_id, title, description, date, category) VALUES (?, ?, ?, ?, ?)',
       [professorId, title, description, date, category]
     );
-    const insertedId = result.recordset?.[0]?.id;
-    res.status(201).json({ id: insertedId, title, description, date, category });
+    res.status(201).json({ id: result.insertId, title, description, date, category });
   } catch (error) {
     console.error('Add professor achievement error:', error);
     next(error);
@@ -300,7 +299,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
 
     // Fetch distinct classes and subjects taught by the professor
     const classResult = await executeQuery(
-      'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?',
+      'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE CAST(faculty AS VARCHAR) = ?',
       [facultyIdStr]
     );
     const classes = classResult.recordset || [];
@@ -313,7 +312,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
        JOIN (
          SELECT DISTINCT year, semester, section
          FROM timetable
-         WHERE CAST(faculty AS NVARCHAR) = ?
+         WHERE CAST(faculty AS VARCHAR) = ?
        ) t ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
        WHERE u.role = 'student'`,
       [facultyIdStr]
@@ -322,8 +321,8 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-       WHERE CAST(t.faculty AS NVARCHAR) = ?`,
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       WHERE CAST(t.faculty AS VARCHAR) = ?`,
       [facultyIdStr]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);
@@ -349,9 +348,9 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
          FROM (
            SELECT s.id AS subject_id, COUNT(DISTINCT u.id) AS cnt
            FROM timetable t
-           JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+           JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
            JOIN users u ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
-           WHERE CAST(t.faculty AS NVARCHAR) = ?
+           WHERE CAST(t.faculty AS VARCHAR) = ?
              AND u.role = 'student'
              AND s.id IN (${placeholders})
            GROUP BY s.id
@@ -395,7 +394,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
 
     // Find distinct classes (year/semester/section) taught by the professor
     const classesResult = await executeQuery(
-      'SELECT DISTINCT year, semester, section FROM timetable WHERE CAST(faculty AS NVARCHAR) = ?',
+      'SELECT DISTINCT year, semester, section FROM timetable WHERE CAST(faculty AS VARCHAR) = ?',
       [facultyIdStr]
     );
 
@@ -418,8 +417,8 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
       const subjectsResult = await executeQuery(
         `SELECT DISTINCT s.id
          FROM timetable t
-         JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-         WHERE CAST(t.faculty AS NVARCHAR) = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
+         JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+         WHERE CAST(t.faculty AS VARCHAR) = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
         [facultyIdStr, year, semester, section]
       );
 
@@ -489,8 +488,8 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-       WHERE CAST(t.faculty AS NVARCHAR) = ?`,
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       WHERE CAST(t.faculty AS VARCHAR) = ?`,
       [facultyIdStr]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);
@@ -503,12 +502,12 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
 
     const attendanceQuery = `
       SELECT 
-        DATEADD(WEEK, DATEDIFF(WEEK, 0, date), 0) AS week_start,
+        DATE_ADD(WEEK, DATEDIFF(WEEK, 0, date), 0) AS week_start,
         AVG(CASE WHEN present = 1 THEN 1.0 ELSE 0 END) * 100 AS attendance
       FROM attendance
       WHERE subject_id IN (${placeholders})
-        AND date >= DATEADD(WEEK, ?, CAST(GETDATE() AS DATE))
-      GROUP BY DATEADD(WEEK, DATEDIFF(WEEK, 0, date), 0)
+        AND date >= DATE_ADD(WEEK, ?, CAST(NOW() AS DATE))
+      GROUP BY DATE_ADD(WEEK, DATEDIFF(WEEK, 0, date), 0)
       ORDER BY week_start`;
 
     const result = await executeQuery(attendanceQuery, params);
@@ -539,8 +538,8 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
     const subjectsResult = await executeQuery(
       `SELECT DISTINCT s.id
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
-       WHERE CAST(t.faculty AS NVARCHAR) = ?`,
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       WHERE CAST(t.faculty AS VARCHAR) = ?`,
       [facultyIdStr]
     );
     const subjectIds = subjectsResult.recordset.map(r => r.id);

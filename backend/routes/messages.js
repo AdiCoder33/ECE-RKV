@@ -28,10 +28,10 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
          OR (m.sender_id = ? AND m.receiver_id = ?)
          ${before ? 'AND m.created_at < ?' : ''}
       ORDER BY m.created_at DESC
-      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
+      LIMIT ?
     `;
 
-    const result = await executeQuery(query, params);
+    const [rows] = await executeQuery(query, params);
 
     // Mark messages as read
     const markReadQuery = `
@@ -42,10 +42,10 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
 
     await executeQuery(markReadQuery, [contactId, userId]);
 
-    const hasMore = result.recordset.length === fetchLimit;
+    const hasMore = rows.length === fetchLimit;
     const sliced = hasMore
-      ? result.recordset.slice(0, fetchLimit - 1)
-      : result.recordset;
+      ? rows.slice(0, fetchLimit - 1)
+      : rows;
 
     const formatted = await Promise.all(
       sliced
@@ -79,41 +79,23 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Receiver ID and content are required' });
     }
     
-    const insertQuery = `
-      DECLARE @Inserted TABLE (
-        id INT, sender_id INT, receiver_id INT, content NVARCHAR(MAX),
-        message_type NVARCHAR(20), attachments NVARCHAR(MAX),
-        is_read BIT, created_at DATETIME, delivered_at DATETIME
-      );
+    const [insertResult] = await executeQuery(
+      'INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, UTC_TIMESTAMP())',
+      [senderId, receiverId, content, messageType, JSON.stringify(attachments)]
+    );
 
-      INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at)
-      OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id, INSERTED.content,
-             INSERTED.message_type, INSERTED.attachments, INSERTED.is_read,
-             INSERTED.created_at, INSERTED.delivered_at
-      INTO @Inserted
-      VALUES (?, ?, ?, ?, ?, 0, GETUTCDATE());
+    const [rows] = await executeQuery(
+      'SELECT m.*, u.name AS sender_name, u.profile_image AS sender_profileImage FROM Messages m JOIN Users u ON u.id = m.sender_id WHERE m.id = ?',
+      [insertResult.insertId]
+    );
 
-      SELECT i.*, u.name AS sender_name, u.profile_image AS sender_profileImage
-      FROM @Inserted i
-      JOIN Users u ON u.id = i.sender_id;
-    `;
-    const { recordset } = await executeQuery(insertQuery, [
-      senderId,
-      receiverId,
-      content,
-      messageType,
-      JSON.stringify(attachments),
-    ]);
-
-    if (!recordset[0]) {
+    if (!rows[0]) {
       return res.status(500).json({ message: 'Failed to save message' });
     }
 
     const savedMessage = {
-      ...recordset[0],
-      attachments: recordset[0].attachments
-        ? JSON.parse(recordset[0].attachments)
-        : [],
+      ...rows[0],
+      attachments: rows[0].attachments ? JSON.parse(rows[0].attachments) : [],
     };
     savedMessage.sender_profileImage = await resolveProfileImage(savedMessage.sender_profileImage);
     const io = req.app.get('io');
@@ -160,14 +142,15 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     const userId = req.user.id;
     const { contactId } = req.params;
     
-    const query = `
-      UPDATE Messages 
-      SET is_read = 1
-      OUTPUT INSERTED.id, INSERTED.sender_id
-      WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
-    `;
+    const [updated] = await executeQuery(
+      'SELECT id, sender_id FROM Messages WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
+      [contactId, userId]
+    );
 
-    const { recordset } = await executeQuery(query, [contactId, userId]);
+    await executeQuery(
+      'UPDATE Messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
+      [contactId, userId]
+    );
 
     const convUpdate = `
       MERGE conversation_users AS target
@@ -182,8 +165,8 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     const io = req.app.get('io');
     await emitConversationUpdate(io, userId, 'direct', contactId);
 
-    if (io && recordset.length) {
-      recordset.forEach(({ id, sender_id }) => {
+    if (io && updated.length) {
+      updated.forEach(({ id, sender_id }) => {
         io.to(`user:${sender_id}`).emit('message-read', { messageId: id });
         io.to(`user:${userId}`).emit('message-read', { messageId: id });
       });
@@ -202,22 +185,19 @@ router.put('/:messageId', authenticateToken, async (req, res, next) => {
     const { messageId } = req.params;
     const { content } = req.body;
     const userId = req.user.id;
-    const query = `
-      UPDATE Messages
-      SET content = ?, edited_at = GETUTCDATE(), is_read = 0, delivered_at = NULL
-      OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id,
-             INSERTED.content, INSERTED.message_type, INSERTED.attachments,
-             INSERTED.is_read, INSERTED.delivered_at, INSERTED.created_at, INSERTED.edited_at
-      WHERE id = ? AND sender_id = ?;
-    `;
-    const { recordset } = await executeQuery(query, [content, messageId, userId]);
-    if (!recordset.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
+    const updateResult = await executeQuery(
+      'UPDATE Messages SET content = ?, edited_at = UTC_TIMESTAMP(), is_read = 0, delivered_at = NULL WHERE id = ? AND sender_id = ?',
+      [content, messageId, userId]
+    );
+    const [updatedRows] = await executeQuery(
+      'SELECT id, sender_id, receiver_id, content, message_type, attachments, is_read, delivered_at, created_at, edited_at FROM Messages WHERE id = ?',
+      [messageId]
+    );
+    if (!updatedRows.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
 
     const updatedMessage = {
-      ...recordset[0],
-      attachments: recordset[0].attachments
-        ? JSON.parse(recordset[0].attachments)
-        : [],
+      ...updatedRows[0],
+      attachments: updatedRows[0].attachments ? JSON.parse(updatedRows[0].attachments) : [],
     };
 
     const io = req.app.get('io');

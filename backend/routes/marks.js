@@ -337,7 +337,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     for (const p of prepared) {
       await executeQuery(
         `INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [p.studentId, p.subjectId, type, p.marks, p.maxMarks, date, enteredBy]
       );
     }
