@@ -14,7 +14,7 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       SELECT
         AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) as avg_attendance
       FROM attendance
-      WHERE date >= DATE_ADD(DAY, -30, NOW())
+      WHERE date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `);
     
     const [classesRows] = await executeQuery('SELECT COUNT(*) AS total_classes FROM classes');
