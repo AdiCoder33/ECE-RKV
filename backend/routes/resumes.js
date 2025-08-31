@@ -13,13 +13,13 @@ router.get('/:studentId', authenticateToken, async (req, res, next) => {
       WHERE student_id = ?
     `;
     
-    const result = await executeQuery(resumeQuery, [studentId]);
-    
-    if (result.recordset.length === 0) {
+    const [rows] = await executeQuery(resumeQuery, [studentId]);
+
+    if (!rows.length) {
       return res.status(404).json({ message: 'Resume not found' });
     }
-    
-    const resume = result.recordset[0];
+
+    const resume = rows[0];
     res.json({
       personalInfo: JSON.parse(resume.personal_info),
       education: JSON.parse(resume.education),
@@ -44,9 +44,9 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const existingResumeQuery = `
       SELECT id FROM Resumes WHERE student_id = ?
     `;
-    const existingResult = await executeQuery(existingResumeQuery, [studentId]);
-    
-    if (existingResult.recordset.length > 0) {
+    const [existingRows] = await executeQuery(existingResumeQuery, [studentId]);
+
+    if (existingRows.length > 0) {
       // Update existing resume
       const updateQuery = `
         UPDATE Resumes 

@@ -44,8 +44,8 @@ router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
 
     query += ' ORDER BY im.date DESC';
 
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const [rows] = await executeQuery(query, params);
+    res.json(rows);
   } catch (error) {
     console.error('Get student marks error:', error);
     next(error);
@@ -84,8 +84,8 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
 
     query += ' ORDER BY im.date DESC';
 
-    const result = await executeQuery(query, params);
-    const rawRecords = result.recordset || [];
+    const [rows] = await executeQuery(query, params);
+    const rawRecords = rows || [];
 
     const groupedMids = {};
 
@@ -227,8 +227,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
 
     query += ' ORDER BY TRY_CAST(u.roll_number AS INT)';
 
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const [rows] = await executeQuery(query, params);
+    res.json(rows);
   } catch (error) {
     console.error('Get marks error:', error);
     next(error);
@@ -254,8 +254,8 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       ORDER BY TRY_CAST(u.roll_number AS INT)
     `;
     const params = [subjectId, type, year, semester, section];
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const [rows] = await executeQuery(query, params);
+    res.json(rows);
   } catch (error) {
     console.error('Marks overview error:', error);
     next(error);
@@ -303,25 +303,25 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         params.push(semester);
       }
 
-      const student = await executeQuery(query, params);
-      const students = student.recordset || [];
+      const [studentRows] = await executeQuery(query, params);
+      const students = studentRows || [];
       if (students.length !== 1) {
         errors.push(`Student lookup error for ${rollNumber}`);
         continue;
       }
 
-      const subj = await executeQuery(
+      const [subjRows] = await executeQuery(
         'SELECT id FROM Subjects WHERE name = ? OR code = ?',
         [subject, subject]
       );
-      if (!subj.recordset.length) {
+      if (!subjRows.length) {
         errors.push(`Subject not found: ${subject}`);
         continue;
       }
 
       prepared.push({
         studentId: students[0].id,
-        subjectId: subj.recordset[0].id,
+        subjectId: subjRows[0].id,
         maxMarks,
         marks,
       });

@@ -28,8 +28,8 @@ async function getConversationSummary(userId, type, id) {
       LEFT JOIN messages m ON m.id=conv.last_message_id
       LEFT JOIN conversation_users cu ON cu.user_id=@userId AND cu.conversation_type='direct' AND cu.conversation_id=@contactId;
     `;
-    const { recordset } = await executeQuery(query, [userId, id]);
-    const row = recordset[0];
+    const [rows] = await executeQuery(query, [userId, id]);
+    const row = rows[0];
     return row
       ? {
           type: row.type,
@@ -70,8 +70,8 @@ async function getConversationSummary(userId, type, id) {
       LEFT JOIN chat_messages cm ON cm.id=conv.last_message_id
       LEFT JOIN conversation_users cu ON cu.user_id=@userId AND cu.conversation_type='group' AND cu.conversation_id=@groupId;
     `;
-    const { recordset } = await executeQuery(query, [userId, id]);
-    const row = recordset[0];
+    const [rows] = await executeQuery(query, [userId, id]);
+    const row = rows[0];
     return row
       ? {
           type: row.type,

@@ -42,8 +42,8 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   }
 
   query += ' ORDER BY t.day, t.time';
-  const result = await executeQuery(query, params);
-  return result.recordset;
+  const [rows] = await executeQuery(query, params);
+  return rows;
 }
 
 // Get timetable
@@ -67,11 +67,11 @@ router.post('/', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid faculty id' });
     }
 
-    const clash = await executeQuery(
+    const [clash] = await executeQuery(
       'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ?',
       [day, time, String(professorId)]
     );
-    if (clash.recordset[0].cnt > 0) {
+    if (clash[0].cnt > 0) {
       return res
         .status(409)
         .json({ message: 'Faculty already assigned to another slot at this time' });
@@ -99,11 +99,11 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid faculty id' });
     }
 
-    const clash = await executeQuery(
+    const [clash] = await executeQuery(
       'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ? AND id <> ?',
       [day, time, String(professorId), id]
     );
-    if (clash.recordset[0].cnt > 0) {
+    if (clash[0].cnt > 0) {
       return res
         .status(409)
         .json({ message: 'Faculty already assigned to another slot at this time' });

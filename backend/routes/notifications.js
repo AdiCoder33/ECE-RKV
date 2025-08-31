@@ -8,7 +8,7 @@ const router = express.Router();
 // Get notifications for the current user
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { recordset } = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT
         id,
         title,
@@ -22,7 +22,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       ORDER BY created_at DESC
     `, [req.user.id]);
 
-    const notifications = recordset.map(notification => {
+    const notifications = rows.map(notification => {
       let parsedData = null;
       if (notification.data) {
         try {

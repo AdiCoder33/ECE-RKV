@@ -17,9 +17,9 @@ router.get('/', async (req, res, next) => {
       ORDER BY u.name
     `;
     
-    const result = await executeQuery(query);
-    
-    const alumni = result.recordset.map(row => ({
+    const [rows] = await executeQuery(query);
+
+    const alumni = rows.map(row => ({
       id: row.id,
       name: row.name,
       email: row.email,
@@ -62,13 +62,13 @@ router.get('/:id', async (req, res, next) => {
       WHERE u.id = ? AND u.role = 'alumni'
     `;
     
-    const result = await executeQuery(query, [id]);
-    
-    if (result.recordset.length === 0) {
+    const [rows] = await executeQuery(query, [id]);
+
+    if (!rows.length) {
       return res.status(404).json({ message: 'Alumni not found' });
     }
-    
-    const row = result.recordset[0];
+
+    const row = rows[0];
     const alumni = {
       id: row.id,
       name: row.name,
@@ -111,9 +111,9 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
     const existingProfileQuery = `
       SELECT id FROM AlumniProfiles WHERE user_id = ?
     `;
-    const existingResult = await executeQuery(existingProfileQuery, [userId]);
-    
-    if (existingResult.recordset.length > 0) {
+    const [existingRows] = await executeQuery(existingProfileQuery, [userId]);
+
+    if (existingRows.length > 0) {
       // Update existing profile
       const updateQuery = `
         UPDATE AlumniProfiles 

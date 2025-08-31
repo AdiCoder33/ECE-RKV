@@ -49,7 +49,7 @@ router.get('/', authenticateToken, requireRole(['professor', 'hod']), async (req
       return res.status(400).json({ error: 'professorId and date are required' });
     }
 
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT ec.*, s.name AS subject_name
        FROM extra_classes ec
        LEFT JOIN subjects s ON ec.subject_id = s.id
@@ -58,7 +58,7 @@ router.get('/', authenticateToken, requireRole(['professor', 'hod']), async (req
       [professorId, date]
     );
 
-    res.json(result.recordset || []);
+    res.json(rows || []);
   } catch (error) {
     console.error('Fetch extra classes error:', error);
     next(error);

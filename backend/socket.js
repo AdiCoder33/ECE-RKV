@@ -78,8 +78,8 @@ function setupSocket(server) {
           OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id
           WHERE id = ? AND receiver_id = ?;
         `;
-        const { recordset } = await executeQuery(query, [messageId, userId]);
-        recordset.forEach(r => {
+        const [rows] = await executeQuery(query, [messageId, userId]);
+        rows.forEach(r => {
           io.to(`user:${r.sender_id}`).emit('message-delivered', { messageId: r.id });
           io.to(`user:${r.receiver_id}`).emit('message-delivered', { messageId: r.id });
         });
@@ -93,8 +93,8 @@ function setupSocket(server) {
         const query = `
           SELECT sender_id, receiver_id FROM Messages WHERE id = ? AND (sender_id = ? OR receiver_id = ?);
         `;
-        const { recordset } = await executeQuery(query, [messageId, userId, userId]);
-        recordset.forEach(r => {
+        const [rows] = await executeQuery(query, [messageId, userId, userId]);
+        rows.forEach(r => {
           io.to(`user:${r.sender_id}`).emit('message-read', { messageId });
           io.to(`user:${r.receiver_id}`).emit('message-read', { messageId });
         });
