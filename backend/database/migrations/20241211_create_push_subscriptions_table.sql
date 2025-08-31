@@ -1,11 +1,10 @@
 DROP TABLE IF EXISTS push_subscriptions;
 CREATE TABLE push_subscriptions (
-  endpoint NVARCHAR(500) PRIMARY KEY,
-  keys_p256dh NVARCHAR(255) NOT NULL,
-  keys_auth NVARCHAR(255) NOT NULL,
-  topics NVARCHAR(MAX),
+  endpoint VARCHAR(500) PRIMARY KEY,
+  keys_p256dh VARCHAR(255) NOT NULL,
+  keys_auth VARCHAR(255) NOT NULL,
+  topics TEXT,
   user_id INT NULL,
-  created_at DATETIME2 DEFAULT GETDATE(),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_push_subscriptions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-GO
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
