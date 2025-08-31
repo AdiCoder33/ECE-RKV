@@ -8,28 +8,10 @@ jest.mock('../middleware/auth', () => ({
   },
 }));
 
+const mockExecuteQuery = jest.fn();
 jest.mock('../config/database', () => ({
-  executeQuery: jest.fn().mockResolvedValue({
-    recordset: [
-      {
-        id: 1,
-        name: '',
-        email: '',
-        role: '',
-        department: null,
-        year: null,
-        semester: null,
-        section: null,
-        roll_number: null,
-        phone: null,
-        designation: 'Professor',
-        created_at: null,
-      },
-    ],
-    rowsAffected: [1],
-  }),
+  executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 jest.mock('bcryptjs', () => ({
@@ -45,7 +27,45 @@ describe('users routes handle values correctly', () => {
     app = express();
     app.use(express.json());
     app.use('/users', usersRouter);
-    executeQuery.mockClear();
+    executeQuery.mockReset();
+    executeQuery.mockImplementation((query) => {
+      query = query.trim();
+      if (query.startsWith('INSERT INTO users')) {
+        return Promise.resolve([{ insertId: 1 }]);
+      }
+      if (query.startsWith('SELECT id FROM classes')) {
+        return Promise.resolve([[]]);
+      }
+      if (query.startsWith('INSERT IGNORE INTO student_classes')) {
+        return Promise.resolve([{ affectedRows: 1 }]);
+      }
+      if (query.startsWith('DELETE FROM student_classes') || query.startsWith('DELETE FROM users')) {
+        return Promise.resolve([{ affectedRows: 1 }]);
+      }
+      if (query.startsWith('UPDATE users')) {
+        return Promise.resolve([{ affectedRows: 1 }]);
+      }
+      // Default select response
+      return Promise.resolve([
+        [
+          {
+            id: 1,
+            name: '',
+            email: '',
+            role: '',
+            department: null,
+            year: null,
+            semester: null,
+            section: null,
+            roll_number: null,
+            phone: null,
+            designation: 'Professor',
+            profile_image: null,
+            created_at: null,
+          },
+        ],
+      ]);
+    });
   });
 
   it('creates user with valid semester and falsy values intact', async () => {

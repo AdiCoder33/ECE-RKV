@@ -39,7 +39,7 @@ const mockGetConnection = jest.fn().mockResolvedValue(mockConnection);
 
 jest.mock('../config/database', () => {
   const connectDB = jest.fn().mockResolvedValue({ getConnection: mockGetConnection });
-  const executeQuery = jest.fn().mockResolvedValue({ recordset: [] });
+  const executeQuery = jest.fn().mockResolvedValue([[]]);
   return {
     executeQuery,
     connectDB,

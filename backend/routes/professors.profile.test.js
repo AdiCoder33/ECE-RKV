@@ -14,7 +14,6 @@ const mockExecuteQuery = jest.fn();
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 const professorsRouter = require('./professors');
@@ -48,10 +47,10 @@ describe('PUT /professors/:id/profile', () => {
           updated.blood_group,
           updated.date_of_birth,
         ] = params;
-        return { rowsAffected: [1] };
+        return Promise.resolve([{ affectedRows: 1 }]);
       }
-      return {
-        recordset: [
+      return Promise.resolve([
+        [
           {
             id: 1,
             name: updated.name,
@@ -64,8 +63,7 @@ describe('PUT /professors/:id/profile', () => {
             date_of_birth: updated.date_of_birth,
           },
         ],
-        rowsAffected: [1],
-      };
+      ]);
     });
   });
 
