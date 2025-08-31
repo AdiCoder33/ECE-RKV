@@ -49,17 +49,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
-    const result = await executeQuery(
-      'INSERT INTO subjects (name, code, year, semester, credits, type) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO subjects (name, code, year, semester, credits, type) VALUES (?, ?, ?, ?, ?, ?)',
       [name, code, year, semester, credits, type]
     );
 
-    const insertedId = result.recordset?.[0]?.id;
-    if (insertedId != null) {
-      res.status(201).json({ id: insertedId, message: 'Subject created successfully' });
-    } else {
-      res.status(201).json({ message: 'Subject created successfully' });
-    }
+    res.status(201).json({ id: result.insertId, message: 'Subject created successfully' });
   } catch (error) {
     console.error('Create subject error:', error);
     next(error);

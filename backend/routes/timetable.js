@@ -12,7 +12,7 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
             s.id AS subject_id
        FROM timetable t
        LEFT JOIN users u ON u.id = TRY_CAST(t.faculty AS INT)
-       LEFT JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       LEFT JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
       WHERE 1=1`;
   const params = [];
 
@@ -77,13 +77,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
         .json({ message: 'Faculty already assigned to another slot at this time' });
     }
 
-    const result = await executeQuery(
-      'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) OUTPUT INSERTED.id AS id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [day, time, subject, String(professorId), room, year, semester, section]
     );
 
-    const newId = result.recordset?.[0]?.id;
-    res.status(201).json({ id: newId, message: 'Timetable slot created successfully' });
+    res.status(201).json({ id: result.insertId, message: 'Timetable slot created successfully' });
   } catch (error) {
     console.error('Create timetable slot error:', error);
     next(error);

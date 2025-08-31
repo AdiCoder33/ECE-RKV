@@ -50,7 +50,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       // Update existing resume
       const updateQuery = `
         UPDATE Resumes 
-        SET personal_info = ?, education = ?, experience = ?, projects = ?, skills = ?, updated_at = GETDATE()
+        SET personal_info = ?, education = ?, experience = ?, projects = ?, skills = ?, updated_at = NOW()
         WHERE student_id = ?
       `;
       
@@ -68,7 +68,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       // Create new resume
       const insertQuery = `
         INSERT INTO Resumes (student_id, personal_info, education, experience, projects, skills, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
       
       await executeQuery(insertQuery, [

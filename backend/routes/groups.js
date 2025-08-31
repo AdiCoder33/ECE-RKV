@@ -36,12 +36,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const { name, description, type } = req.body;
     const createdBy = req.user.id;
     
-    const result = await executeQuery(
-      'INSERT INTO chat_groups (name, description, type, created_by) OUTPUT inserted.id VALUES (?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO chat_groups (name, description, type, created_by) VALUES (?, ?, ?, ?)',
       [name, description, type, createdBy]
     );
 
-    res.status(201).json({ id: result.recordset[0].id, message: 'Group created successfully' });
+    res.status(201).json({ id: result.insertId, message: 'Group created successfully' });
   } catch (error) {
     console.error('Create group error:', error);
     next(error);

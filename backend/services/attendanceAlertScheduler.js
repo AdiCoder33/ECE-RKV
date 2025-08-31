@@ -30,7 +30,7 @@ async function runCheck() {
     const { recordset: slots } = await executeQuery(
       `SELECT s.id AS subject_id, t.year, t.semester, t.section
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
        WHERE t.day = ? AND LEFT(t.time,5) = ?`,
       [dayName, currentTime]
     );
