@@ -28,16 +28,16 @@ function mockHandleQuery(state, q) {
         count++;
       }
     });
-    return { recordset: [], rowsAffected: [count] };
+    return [{ affectedRows: count }];
   } else if (q.startsWith('DELETE FROM student_classes') && q.includes('class_id IN (SELECT id FROM classes WHERE year = 5)')) {
     const year5Ids = state.classes.filter(c => c.year === 5).map(c => c.id);
     const before = state.studentClasses.length;
     state.studentClasses = state.studentClasses.filter(sc => !year5Ids.includes(sc.class_id));
-    return { recordset: [], rowsAffected: [before - state.studentClasses.length] };
+    return [{ affectedRows: before - state.studentClasses.length }];
   } else if (q.startsWith('DELETE FROM classes WHERE year = 5')) {
     const before = state.classes.length;
     state.classes = state.classes.filter(c => c.year !== 5);
-    return { recordset: [], rowsAffected: [before - state.classes.length] };
+    return [{ affectedRows: before - state.classes.length }];
   } else if (q.startsWith('UPDATE classes') && q.includes('WHERE semester = 2 AND year < 4')) {
     let count = 0;
     state.classes.forEach(c => {
@@ -47,19 +47,19 @@ function mockHandleQuery(state, q) {
         count++;
       }
     });
-    return { recordset: [], rowsAffected: [count] };
+    return [{ affectedRows: count }];
   } else if (q.startsWith("SELECT id FROM users WHERE role = 'student' AND year = 4 AND semester = 2")) {
     const recs = state.users
       .filter(u => u.role === 'student' && u.year === 4 && u.semester === 2)
       .map(u => ({ id: u.id }));
-    return { recordset: recs, rowsAffected: [recs.length] };
+    return [recs];
   } else if (
     q.startsWith('INSERT INTO classes (year, semester, section, hod_id)') &&
     q.includes("VALUES (5, 1, 'GRADUATED', NULL)")
   ) {
     const id = state.nextClassId++;
     state.classes.push({ id, year: 5, semester: 1, section: 'GRADUATED', hod_id: null });
-    return { recordset: [{ id }], rowsAffected: [1] };
+    return [{ insertId: id, affectedRows: 1 }];
   } else if (q.startsWith('UPDATE users') && q.includes("section = 'GRADUATED'")) {
     let count = 0;
     state.users.forEach(u => {
@@ -71,14 +71,14 @@ function mockHandleQuery(state, q) {
         count++;
       }
     });
-    return { recordset: [], rowsAffected: [count] };
+    return [{ affectedRows: count }];
   } else if (q.startsWith('DELETE sc') && q.includes('FROM student_classes')) {
     const before = state.studentClasses.length;
     state.studentClasses = state.studentClasses.filter(sc => {
       const u = state.users.find(us => us.id === sc.student_id);
       return !(u && u.role === 'student' && u.year === 5 && u.semester === 1 && u.section === 'GRADUATED');
     });
-    return { recordset: [], rowsAffected: [before - state.studentClasses.length] };
+    return [{ affectedRows: before - state.studentClasses.length }];
   } else if (q.startsWith('INSERT INTO student_classes') && q.includes('SELECT')) {
     const match = q.match(/SELECT\s+(\d+)\s+AS class_id/);
     const classId = match ? parseInt(match[1], 10) : null;
@@ -86,11 +86,11 @@ function mockHandleQuery(state, q) {
       u => u.role === 'student' && u.year === 5 && u.semester === 1 && u.section === 'GRADUATED'
     );
     students.forEach(u => state.studentClasses.push({ class_id: classId, student_id: u.id }));
-    return { recordset: [], rowsAffected: [students.length] };
+    return [{ affectedRows: students.length }];
   } else if (q.startsWith('DELETE FROM classes WHERE year = 4 AND semester = 2')) {
     const before = state.classes.length;
     state.classes = state.classes.filter(c => !(c.year === 4 && c.semester === 2));
-    return { recordset: [], rowsAffected: [before - state.classes.length] };
+    return [{ affectedRows: before - state.classes.length }];
   } else if (q.startsWith('UPDATE users') && q.includes('SET year = year + 1')) {
     let count = 0;
     state.users.forEach(u => {
@@ -100,7 +100,7 @@ function mockHandleQuery(state, q) {
         count++;
       }
     });
-    return { recordset: [], rowsAffected: [count] };
+    return [{ affectedRows: count }];
   } else if (
     q.startsWith('INSERT INTO classes (year, semester, section, hod_id)') &&
     q.includes('SELECT 1, 1, s.section, NULL')
@@ -120,28 +120,32 @@ function mockHandleQuery(state, q) {
         count++;
       }
     });
-    return { recordset: [], rowsAffected: [count] };
+    return [{ affectedRows: count }];
   }
-  return { recordset: [], rowsAffected: [0] };
+  return [{ affectedRows: 0 }];
 }
+
+const mockBegin = jest.fn().mockResolvedValue();
+const mockCommit = jest.fn().mockResolvedValue();
+const mockRollback = jest.fn().mockResolvedValue();
+const mockRelease = jest.fn().mockResolvedValue();
+
+const mockQuery = jest.fn(q => mockHandleQuery(mockDbState, q));
+
+const mockConnection = {
+  beginTransaction: mockBegin,
+  commit: mockCommit,
+  rollback: mockRollback,
+  query: mockQuery,
+  release: mockRelease,
+};
+
+const mockGetConnection = jest.fn().mockResolvedValue(mockConnection);
 
 jest.mock('../config/database', () => {
   return {
-    connectDB: jest.fn().mockResolvedValue({}),
+    connectDB: jest.fn().mockResolvedValue({ getConnection: mockGetConnection }),
     executeQuery: jest.fn(),
-    sql: {
-      Transaction: class {
-        async begin() {}
-        async commit() {}
-        async rollback() {}
-      },
-      Request: class {
-        constructor() {}
-        async query(q) {
-          return mockHandleQuery(mockDbState, q);
-        }
-      },
-    },
   };
 });
 
@@ -167,6 +171,12 @@ describe('class promotion', () => {
     app = express();
     app.use(express.json());
     app.use('/classes', classesRouter);
+    mockBegin.mockClear();
+    mockCommit.mockClear();
+    mockRollback.mockClear();
+    mockRelease.mockClear();
+    mockQuery.mockClear();
+    mockGetConnection.mockClear();
   });
 
   it('promotes students and graduates final years', async () => {

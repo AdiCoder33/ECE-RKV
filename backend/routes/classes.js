@@ -1,5 +1,5 @@
 const express = require('express');
-const { executeQuery, connectDB, sql } = require('../config/database');
+const { executeQuery, connectDB } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
@@ -338,12 +338,12 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
     }
 
     const pool = await connectDB();
-    const transaction = new sql.Transaction(pool);
-    await transaction.begin();
-
+    const connection = await pool.getConnection();
     try {
+      await connection.beginTransaction();
+
       // Convert any existing fifth-year students to alumni before promotion
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         UPDATE users
         SET role = 'alumni',
             year = NULL,
@@ -353,40 +353,40 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
       `);
 
       // Clean up any remaining links and classes from previous fifth years
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         DELETE FROM student_classes
         WHERE class_id IN (SELECT id FROM classes WHERE year = 5);
       `);
 
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         DELETE FROM classes WHERE year = 5;
       `);
 
       if (semester === 1) {
         // Move all semester 1 classes and students to semester 2
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           UPDATE classes
           SET semester = 2
           WHERE semester = 1;
         `);
 
-        const promotedResult = await new sql.Request(transaction).query(`
+        const [promotedResult] = await connection.query(`
           UPDATE users
           SET semester = 2
           WHERE role = 'student' AND semester = 1;
         `);
 
-        await transaction.commit();
+        await connection.commit();
 
         return res.json({
           message: 'Students moved to semester 2',
-          promoted: promotedResult.rowsAffected[0],
+          promoted: promotedResult.affectedRows,
           graduated: 0
         });
       }
 
       // Update non-final-year semester 2 classes to next year semester 1
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         UPDATE classes
         SET year = year + 1,
             semester = 1
@@ -394,39 +394,39 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
       `);
 
       // Handle final year students
-      let graduatedResult = { rowsAffected: [0] };
-      const finalYearStudents = await new sql.Request(transaction).query(`
+      let graduatedResult = { affectedRows: 0 };
+      const [finalYearStudents] = await connection.query(`
         SELECT id FROM users WHERE role = 'student' AND year = 4 AND semester = 2;
       `);
 
-      if (finalYearStudents.recordset.length > 0) {
+      if (finalYearStudents.length > 0) {
         // Create a single class to hold all graduating students
-        const graduatedClassResult = await new sql.Request(transaction).query(`
+        const [graduatedClassResult] = await connection.query(`
           INSERT INTO classes (year, semester, section, hod_id)
-          OUTPUT INSERTED.id
           VALUES (5, 1, 'GRADUATED', NULL);
         `);
-        const graduatedClassId = graduatedClassResult.recordset[0].id;
+        const graduatedClassId = graduatedClassResult.insertId;
 
         // Move final year students into the graduated class
-        graduatedResult = await new sql.Request(transaction).query(`
+        const [gradRes] = await connection.query(`
           UPDATE users
           SET year = 5,
               semester = 1,
               section = 'GRADUATED',
-              graduation_year = YEAR(GETDATE())
+              graduation_year = YEAR(CURDATE())
           WHERE role = 'student' AND year = 4 AND semester = 2;
         `);
+        graduatedResult = gradRes;
 
         // Rebuild student_classes for graduated students
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           DELETE sc
           FROM student_classes sc
           JOIN users u ON sc.student_id = u.id
           WHERE u.role = 'student' AND u.year = 5 AND u.semester = 1 AND u.section = 'GRADUATED';
         `);
 
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           INSERT INTO student_classes (class_id, student_id)
           SELECT ${graduatedClassId} AS class_id, u.id
           FROM users u
@@ -434,13 +434,13 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
         `);
 
         // Remove old fourth-year semester 2 classes
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           DELETE FROM classes WHERE year = 4 AND semester = 2;
         `);
       }
 
       // Promote remaining students to next year, semester 1
-      const promotedResult = await new sql.Request(transaction).query(`
+      const [promotedResult] = await connection.query(`
         UPDATE users
         SET year = year + 1,
             semester = 1
@@ -448,7 +448,7 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
       `);
 
       // Create new first year classes for next intake if not present
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         INSERT INTO classes (year, semester, section, hod_id)
         SELECT 1, 1, s.section, NULL
         FROM (SELECT DISTINCT section FROM classes WHERE section <> 'GRADUATED' AND year <= 4) s
@@ -458,21 +458,23 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
         );
       `);
 
-      await transaction.commit();
+      await connection.commit();
 
       res.json({
         message: 'Students promoted successfully',
-        promoted: promotedResult.rowsAffected[0],
-        graduated: graduatedResult.rowsAffected[0]
+        promoted: promotedResult.affectedRows,
+        graduated: graduatedResult.affectedRows
       });
     } catch (error) {
       try {
-        await transaction.rollback();
+        await connection.rollback();
       } catch (rollbackError) {
         console.error('Rollback failed:', rollbackError);
       }
       console.error('Promotion transaction error:', error);
       throw error;
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Promote students error:', error);
