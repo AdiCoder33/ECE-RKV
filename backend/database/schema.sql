@@ -1,4 +1,4 @@
--- MSSQL Database Schema for College Management System
+-- Database Schema for College Management System
 
 -- Users table
 -- For existing deployments, run:
