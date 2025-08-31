@@ -12,7 +12,7 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
             s.id AS subject_id
        FROM timetable t
        LEFT JOIN users u ON u.id = TRY_CAST(t.faculty AS INT)
-       LEFT JOIN subjects s ON s.name = t.subject OR CAST(s.id AS VARCHAR) = t.subject
+       LEFT JOIN subjects s ON s.name = t.subject OR s.id = t.subject
       WHERE 1=1`;
   const params = [];
 
