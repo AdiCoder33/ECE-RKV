@@ -6,7 +6,6 @@ const mockExecuteQuery = jest.fn();
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {}
 }));
 
 jest.mock('../utils/otp', () => ({
@@ -30,7 +29,7 @@ describe('OTP expiry minutes', () => {
 
   beforeEach(() => {
     mockExecuteQuery.mockReset();
-    mockExecuteQuery.mockResolvedValue({ recordset: [{ id: 1 }] });
+    mockExecuteQuery.mockResolvedValue([[{ id: 1 }]]);
     process.env.JWT_SECRET = 'secret';
   });
 

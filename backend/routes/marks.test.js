@@ -12,7 +12,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 jest.mock('../config/database', () => ({
   executeQuery: jest.fn(),
-  sql: {},
+  connectDB: jest.fn(),
 }));
 
 const { executeQuery } = require('../config/database');
@@ -34,9 +34,9 @@ describe('marks bulk entry', () => {
 
   it('uses numeric entered_by from req.user.id', async () => {
     executeQuery
-      .mockResolvedValueOnce({ recordset: [{ id: 1 }] }) // student lookup
-      .mockResolvedValueOnce({ recordset: [{ id: 2 }] }) // subject lookup
-      .mockResolvedValueOnce({}); // insert
+      .mockResolvedValueOnce([[{ id: 1 }]]) // student lookup
+      .mockResolvedValueOnce([[{ id: 2 }]]) // subject lookup
+      .mockResolvedValueOnce([{}]); // insert
 
     const payload = {
       type: 'internal',

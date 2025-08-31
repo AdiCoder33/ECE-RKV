@@ -1,12 +1,11 @@
 const request = require('supertest');
 const express = require('express');
 
-const mockExecuteQuery = jest.fn().mockResolvedValue({ recordset: [], rowsAffected: [0] });
+const mockExecuteQuery = jest.fn().mockResolvedValue([[]]);
 
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 jest.mock('../middleware/auth', () => ({
