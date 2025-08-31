@@ -1,5 +1,30 @@
 # Backend API
 
+## Environment Variables
+
+Create a `.env` file in this directory and define the following variables:
+
+- `PORT` – server port (defaults to `5000`)
+- `DB_HOST` – MySQL host
+- `DB_NAME` – MySQL database name
+- `DB_USER` – MySQL username
+- `DB_PASSWORD` – MySQL password
+- `JWT_SECRET` – secret key for JWT authentication
+- `ALLOWED_ORIGINS` – comma‑separated allowed origins for CORS and WebSocket
+- `EMAIL_HOST` – SMTP host for OTP mailer
+- `EMAIL_PORT` – SMTP port
+- `EMAIL_USER` – SMTP username
+- `EMAIL_PASS` – SMTP password
+- `FIREBASE_PROJECT_ID` – Firebase project id
+- `FIREBASE_CLIENT_EMAIL` – Firebase service account email
+- `FIREBASE_PRIVATE_KEY` – Firebase service account private key
+- `VAPID_PUBLIC` – Web Push public key
+- `VAPID_PRIVATE` – Web Push private key
+- `VAPID_SUBJECT` – contact email/URL for Web Push
+- `OTP_EXPIRY_MINUTES` – minutes before OTP expires
+- `TZ` – timezone for scheduled jobs (defaults to `Asia/Kolkata`)
+- `API_BASE_URL` – base URL for generating absolute image links
+
 ## GET /students
 
 Fetch class roster for a given year, semester and section.
