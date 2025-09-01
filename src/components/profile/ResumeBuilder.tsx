@@ -76,8 +76,9 @@ const ResumeBuilder = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
-  const [personalInfo, setPersonalInfo] = useState({
+  const emptyPersonalInfo = {
     name: user?.name || '',
     email: user?.email || '',
     phone: '',
@@ -85,7 +86,9 @@ const ResumeBuilder = () => {
     linkedIn: '',
     github: '',
     objective: ''
-  });
+  };
+
+  const [personalInfo, setPersonalInfo] = useState(emptyPersonalInfo);
 
   const [education, setEducation] = useState<Education[]>([]);
 
@@ -96,6 +99,7 @@ const ResumeBuilder = () => {
   const [skills, setSkills] = useState<string[]>([]);
 
   const resumeRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchResume = async () => {
@@ -113,20 +117,21 @@ const ResumeBuilder = () => {
         });
         if (res.ok) {
           const data = await res.json();
-          setPersonalInfo(data.personalInfo || {
-            name: user?.name || '',
-            email: user?.email || '',
-            phone: '',
-            location: '',
-            linkedIn: '',
-            github: '',
-            objective: ''
-          });
-          setEducation(data.education || []);
-          setExperience(data.experience || []);
-          setProjects(data.projects || []);
-          setSkills(data.skills || []);
-        } else if (res.status !== 404) {
+          if (data.notFound) {
+            setNotFound(true);
+            setPersonalInfo(emptyPersonalInfo);
+            setEducation([]);
+            setExperience([]);
+            setProjects([]);
+            setSkills([]);
+          } else {
+            setPersonalInfo(data.personalInfo || emptyPersonalInfo);
+            setEducation(data.education || []);
+            setExperience(data.experience || []);
+            setProjects(data.projects || []);
+            setSkills(data.skills || []);
+          }
+        } else {
           throw new Error('Failed to load resume');
         }
       } catch (err) {
@@ -218,6 +223,32 @@ const ResumeBuilder = () => {
     }
   };
 
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setError(null);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${apiBase}/uploads/chat`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: formData
+      });
+      if (!res.ok) {
+        throw new Error('Upload failed');
+      }
+      alert('Resume uploaded successfully');
+      setNotFound(false);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const downloadResume = () => {
     if (!resumeRef.current) return;
     const printWindow = window.open('', '', 'width=800,height=900');
@@ -251,6 +282,20 @@ const ResumeBuilder = () => {
           className="w-24 h-24 object-contain rounded-lg shadow-lg"
           aria-label="Loading animation"
         />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4" style={{ backgroundColor: THEME.bgBeige }}>
+        <p className="text-gray-700">Resume not found</p>
+        <div className="flex gap-2">
+          <Button onClick={() => setNotFound(false)} className="bg-[#2563eb] text-white hover:bg-[#1d4ed8]">Create Resume</Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Upload Resume</Button>
+        </div>
+        <input type="file" ref={fileInputRef} className="hidden" onChange={handleUpload} />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
       </div>
     );
   }

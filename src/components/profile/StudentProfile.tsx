@@ -431,7 +431,7 @@ const StudentProfile = () => {
                 ) : resume ? (
                   <ResumeView resumeData={resume} showDownload={true} />
                 ) : (
-                  <p className="text-center text-[#8b0000]">No resume available</p>
+                  <p className="text-center text-[#8b0000]">Resume not found</p>
                 )}
               </TabsContent>
             )}

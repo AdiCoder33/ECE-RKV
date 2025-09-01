@@ -16,16 +16,23 @@ router.get('/:studentId', authenticateToken, async (req, res, next) => {
     const [rows] = await executeQuery(resumeQuery, [studentId]);
 
     if (!rows.length) {
-      return res.status(404).json({ message: 'Resume not found' });
+      return res.json({
+        personalInfo: {},
+        education: [],
+        experience: [],
+        projects: [],
+        skills: [],
+        notFound: true
+      });
     }
 
     const resume = rows[0];
     res.json({
-      personalInfo: JSON.parse(resume.personal_info),
-      education: JSON.parse(resume.education),
-      experience: JSON.parse(resume.experience),
-      projects: JSON.parse(resume.projects),
-      skills: JSON.parse(resume.skills)
+      personalInfo: JSON.parse(resume.personal_info || '{}'),
+      education: JSON.parse(resume.education || '[]'),
+      experience: JSON.parse(resume.experience || '[]'),
+      projects: JSON.parse(resume.projects || '[]'),
+      skills: JSON.parse(resume.skills || '[]')
     });
     
   } catch (error) {
