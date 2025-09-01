@@ -115,14 +115,11 @@ router.post('/send', authenticateToken, async (req, res, next) => {
 
     // Update conversation state for sender (mark as read)
     const convUpdate = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETUTCDATE());
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, 'direct', ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE last_read_at=UTC_TIMESTAMP();
     `;
-    await executeQuery(convUpdate, [senderId, receiverId, senderId, receiverId]);
+    await executeQuery(convUpdate, [senderId, receiverId]);
 
     await emitConversationUpdate(io, senderId, 'direct', receiverId);
     await emitConversationUpdate(io, receiverId, 'direct', senderId);
@@ -153,14 +150,11 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     );
 
     const convUpdate = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, 'direct' AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'direct', ?, GETUTCDATE());
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, 'direct', ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE last_read_at=UTC_TIMESTAMP();
     `;
-    await executeQuery(convUpdate, [userId, contactId, userId, contactId]);
+    await executeQuery(convUpdate, [userId, contactId]);
 
     const io = req.app.get('io');
     await emitConversationUpdate(io, userId, 'direct', contactId);

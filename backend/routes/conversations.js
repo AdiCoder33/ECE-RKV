@@ -97,15 +97,12 @@ router.post('/:type/:id/pin', authenticateToken, async (req, res, next) => {
     const { type, id } = req.params;
 
     const query = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, ? AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET pinned=1
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, pinned) VALUES (?, ?, ?, 1);
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, ?, ?, UTC_TIMESTAMP(), 1)
+      ON DUPLICATE KEY UPDATE pinned=1;
     `;
 
-    await executeQuery(query, [userId, type, id, userId, type, id]);
+    await executeQuery(query, [userId, type, id]);
 
     await emitConversationUpdate(req.app.get('io'), userId, type, id);
 
@@ -123,15 +120,12 @@ router.post('/:type/:id/unpin', authenticateToken, async (req, res, next) => {
     const { type, id } = req.params;
 
     const query = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, ? AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET pinned=0
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, pinned) VALUES (?, ?, ?, 0);
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, ?, ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE pinned=0;
     `;
 
-    await executeQuery(query, [userId, type, id, userId, type, id]);
+    await executeQuery(query, [userId, type, id]);
 
     await emitConversationUpdate(req.app.get('io'), userId, type, id);
 

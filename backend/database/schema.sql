@@ -325,7 +325,7 @@ CREATE TABLE conversation_users (
     pinned bit DEFAULT 0,
     last_read_at DATETIME DEFAULT '1900-01-01',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(user_id, conversation_type, conversation_id)
+    UNIQUE KEY uq_conversation_users (user_id, conversation_type, conversation_id)
 );
 
 -- Device tokens for push notifications
