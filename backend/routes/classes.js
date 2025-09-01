@@ -109,7 +109,7 @@ router.get('/sections', authenticateToken, async (req, res, next) => {
 // Create new class
 router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
-    const { year, semester, section, hodId } = req.body;
+    const { year, semester, section, hodId, department } = req.body;
 
     if (!year || !semester || !section) {
       return res.status(400).json({ error: 'Year, semester, and section are required' });
@@ -120,10 +120,12 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
+    const dept = department || 'ECE';
+
     // Check if class already exists
       const [existingResult] = await executeQuery(
-        'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
-        [year, sem, section]
+        'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ? AND department = ?',
+        [year, sem, section, dept]
       );
 
       if (existingResult.length > 0) {
@@ -131,8 +133,8 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
       }
 
       const [insertResult] = await executeQuery(
-        'INSERT INTO classes (year, semester, section, hod_id) VALUES (?, ?, ?, ?)',
-        [year, sem, section, hodId || null]
+        'INSERT INTO classes (year, semester, section, department, hod_id) VALUES (?, ?, ?, ?, ?)',
+        [year, sem, section, dept, hodId || null]
       );
 
       const newId = insertResult.insertId;
