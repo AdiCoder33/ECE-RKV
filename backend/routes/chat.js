@@ -127,14 +127,11 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
 
     // Update sender's read timestamp and emit conversation updates
     const convUpdate = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETUTCDATE());
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, 'group', ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE last_read_at=UTC_TIMESTAMP();
     `;
-    await executeQuery(convUpdate, [userId, groupId, userId, groupId]);
+    await executeQuery(convUpdate, [userId, groupId]);
 
     if (io) {
       for (const member of members) {
@@ -219,14 +216,11 @@ router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, nex
     const { groupId } = req.params;
 
     const query = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETUTCDATE());
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, 'group', ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE last_read_at=UTC_TIMESTAMP();
     `;
-    await executeQuery(query, [userId, groupId, userId, groupId]);
+    await executeQuery(query, [userId, groupId]);
 
     await emitConversationUpdate(req.app.get('io'), userId, 'group', groupId);
 
