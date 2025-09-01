@@ -15,8 +15,6 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
     if (!Number.isInteger(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
     fetchLimit += 1;
 
-    const params = [userId, contactId, contactId, userId, fetchLimit];
-
     const query = `
       SELECT m.*, u.name as sender_name, u.profile_image AS sender_profileImage
       FROM messages m
@@ -28,8 +26,10 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       ORDER BY m.created_at DESC
       LIMIT ?
     `;
-
-    if (params.some(p => p === undefined || Number.isNaN(p))) {
+    const params = [userId, contactId, contactId, userId, fetchLimit];
+    const placeholderCount = (query.match(/\?/g) || []).length;
+    if (placeholderCount !== params.length ||
+        params.some(p => p === undefined || Number.isNaN(p))) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 
