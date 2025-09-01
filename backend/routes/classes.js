@@ -451,9 +451,13 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
 
       // Create new first year classes for next intake if not present
       await connection.query(`
-        INSERT INTO classes (year, semester, section, hod_id)
-        SELECT 1, 1, s.section, NULL
-        FROM (SELECT DISTINCT section FROM classes WHERE section <> 'GRADUATED' AND year <= 4) s
+        INSERT INTO classes (year, semester, section, department, hod_id)
+        SELECT 1, 1, s.section, s.department, NULL
+        FROM (
+          SELECT DISTINCT section, COALESCE(department, 'ECE') AS department
+          FROM classes
+          WHERE section <> 'GRADUATED' AND year <= 4
+        ) s
         WHERE NOT EXISTS (
           SELECT 1 FROM classes c2
           WHERE c2.year = 1 AND c2.semester = 1 AND c2.section = s.section
