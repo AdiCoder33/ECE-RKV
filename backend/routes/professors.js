@@ -298,7 +298,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
 
     // Fetch distinct classes and subjects taught by the professor
     const [classes] = await executeQuery(
-      'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE CAST(faculty AS VARCHAR) = ?',
+      'SELECT DISTINCT year, semester, section, subject FROM timetable WHERE faculty = ?',
       [facultyIdStr]
     );
     const activeClasses = classes.length;
@@ -310,7 +310,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
        JOIN (
          SELECT DISTINCT year, semester, section
          FROM timetable
-         WHERE CAST(faculty AS VARCHAR) = ?
+         WHERE faculty = ?
        ) t ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
        WHERE u.role = 'student'`,
       [facultyIdStr]
@@ -320,7 +320,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
       `SELECT DISTINCT s.id
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR s.id = t.subject
-       WHERE CAST(t.faculty AS VARCHAR) = ?`,
+       WHERE t.faculty = ?`,
       [facultyIdStr]
     );
     const subjectIds = subjectsRows.map(r => r.id);
@@ -348,7 +348,7 @@ router.get('/:id/dashboard', authenticateToken, async (req, res, next) => {
            FROM timetable t
            JOIN subjects s ON s.name = t.subject OR s.id = t.subject
            JOIN users u ON u.year = t.year AND u.semester = t.semester AND u.section = t.section
-           WHERE CAST(t.faculty AS VARCHAR) = ?
+           WHERE t.faculty = ?
              AND u.role = 'student'
              AND s.id IN (${placeholders})
           GROUP BY s.id
@@ -392,7 +392,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
 
     // Find distinct classes (year/semester/section) taught by the professor
     const [classes] = await executeQuery(
-      'SELECT DISTINCT year, semester, section FROM timetable WHERE CAST(faculty AS VARCHAR) = ?',
+      'SELECT DISTINCT year, semester, section FROM timetable WHERE faculty = ?',
       [facultyIdStr]
     );
     const response = [];
@@ -414,7 +414,7 @@ router.get('/:id/classes', authenticateToken, async (req, res, next) => {
         `SELECT DISTINCT s.id
          FROM timetable t
          JOIN subjects s ON s.name = t.subject OR s.id = t.subject
-         WHERE CAST(t.faculty AS VARCHAR) = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
+         WHERE t.faculty = ? AND t.year = ? AND t.semester = ? AND t.section = ?`,
         [facultyIdStr, year, semester, section]
       );
       const subjectIds = subjectsRows.map(r => r.id);
@@ -484,7 +484,7 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
       `SELECT DISTINCT s.id
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR s.id = t.subject
-       WHERE CAST(t.faculty AS VARCHAR) = ?`,
+       WHERE t.faculty = ?`,
       [facultyIdStr]
     );
     const subjectIds = subjectsRows.map(r => r.id);
@@ -534,7 +534,7 @@ router.get('/:id/grading-distribution', authenticateToken, async (req, res, next
       `SELECT DISTINCT s.id
        FROM timetable t
        JOIN subjects s ON s.name = t.subject OR s.id = t.subject
-       WHERE CAST(t.faculty AS VARCHAR) = ?`,
+       WHERE t.faculty = ?`,
       [facultyIdStr]
     );
     const subjectIds = subjectsRows.map(r => r.id);
