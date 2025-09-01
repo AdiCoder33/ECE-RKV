@@ -9,8 +9,8 @@ const { sendToUsers } = require('../services/pushService');
 // Get messages between two users
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
   try {
-    const userId = Number(req.user.id);
-    const contactId = Number(req.params.contactId);
+    const userId = Number(req.user?.id);
+    const contactId = Number(req.params?.contactId);
     let fetchLimit = parseInt(req.query.limit, 10);
     if (!Number.isInteger(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
     fetchLimit += 1;
