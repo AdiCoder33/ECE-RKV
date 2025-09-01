@@ -3,12 +3,10 @@ const { executeQuery } = require('../config/database');
 async function getConversationSummary(userId, type, id) {
   if (type === 'direct') {
     const query = `
-      DECLARE @userId INT = ?;
-      DECLARE @contactId INT = ?;
       WITH conv AS (
         SELECT MAX(id) AS last_message_id, MAX(created_at) AS last_activity
         FROM messages
-        WHERE (sender_id=@userId AND receiver_id=@contactId) OR (sender_id=@contactId AND receiver_id=@userId)
+        WHERE (sender_id=? AND receiver_id=?) OR (sender_id=? AND receiver_id=?)
       )
       SELECT
         'direct' AS type,
@@ -19,16 +17,16 @@ async function getConversationSummary(userId, type, id) {
         conv.last_activity AS last_activity,
         (
           SELECT COUNT(*) FROM messages m2
-          WHERE m2.sender_id=@contactId AND m2.receiver_id=@userId
+          WHERE m2.sender_id=? AND m2.receiver_id=?
             AND m2.created_at > IFNULL(cu.last_read_at, '1900-01-01')
         ) AS unread_count,
         IFNULL(cu.pinned, 0) AS pinned
       FROM conv
-      JOIN users u ON u.id=@contactId
+      JOIN users u ON u.id=?
       LEFT JOIN messages m ON m.id=conv.last_message_id
-      LEFT JOIN conversation_users cu ON cu.user_id=@userId AND cu.conversation_type='direct' AND cu.conversation_id=@contactId;
+      LEFT JOIN conversation_users cu ON cu.user_id=? AND cu.conversation_type='direct' AND cu.conversation_id=?;
     `;
-    const [rows] = await executeQuery(query, [userId, id]);
+    const [rows] = await executeQuery(query, [userId, id, id, userId, id, userId, id, userId, id]);
     const row = rows[0];
     return row
       ? {
@@ -44,12 +42,10 @@ async function getConversationSummary(userId, type, id) {
       : null;
   } else {
     const query = `
-      DECLARE @userId INT = ?;
-      DECLARE @groupId INT = ?;
       WITH conv AS (
         SELECT MAX(id) AS last_message_id, MAX(timestamp) AS last_activity
         FROM chat_messages
-        WHERE group_id=@groupId
+        WHERE group_id=?
       )
       SELECT
         'group' AS type,
@@ -60,17 +56,17 @@ async function getConversationSummary(userId, type, id) {
         conv.last_activity AS last_activity,
         (
           SELECT COUNT(*) FROM chat_messages cm2
-          WHERE cm2.group_id=@groupId
+          WHERE cm2.group_id=?
             AND cm2.timestamp > IFNULL(cu.last_read_at, '1900-01-01')
-            AND cm2.sender_id <> @userId
+            AND cm2.sender_id <> ?
         ) AS unread_count,
         IFNULL(cu.pinned, 0) AS pinned
       FROM conv
-      JOIN chat_groups g ON g.id=@groupId
+      JOIN chat_groups g ON g.id=?
       LEFT JOIN chat_messages cm ON cm.id=conv.last_message_id
-      LEFT JOIN conversation_users cu ON cu.user_id=@userId AND cu.conversation_type='group' AND cu.conversation_id=@groupId;
+      LEFT JOIN conversation_users cu ON cu.user_id=? AND cu.conversation_type='group' AND cu.conversation_id=?;
     `;
-    const [rows] = await executeQuery(query, [userId, id]);
+    const [rows] = await executeQuery(query, [id, id, userId, id, userId, id]);
     const row = rows[0];
     return row
       ? {
