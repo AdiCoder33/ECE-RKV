@@ -11,11 +11,16 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
   try {
     const userId = req.user.id;
     const { contactId } = req.params;
-    const { limit = 50, before } = req.query;
+    const { before } = req.query;
 
-    const fetchLimit = parseInt(limit, 10) + 1;
+    let fetchLimit = parseInt(req.query.limit, 10);
+    if (Number.isNaN(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
+    fetchLimit += 1;
+
     const params = [userId, contactId, contactId, userId];
-    if (before) {
+    let beforeClause = '';
+    if (typeof before === 'string' && before.trim() !== '') {
+      beforeClause = 'AND m.created_at < ?';
       params.push(before);
     }
     params.push(fetchLimit);
@@ -26,10 +31,15 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       JOIN users u ON u.id = m.sender_id
       WHERE (m.sender_id = ? AND m.receiver_id = ?)
          OR (m.sender_id = ? AND m.receiver_id = ?)
-         ${before ? 'AND m.created_at < ?' : ''}
+         ${beforeClause}
       ORDER BY m.created_at DESC
       LIMIT ?
     `;
+
+    const placeholderCount = (query.match(/\?/g) || []).length;
+    if (placeholderCount !== params.length) {
+      throw new Error(`SQL placeholder count (${placeholderCount}) does not match params length (${params.length})`);
+    }
 
     const [rows] = await executeQuery(query, params);
 
