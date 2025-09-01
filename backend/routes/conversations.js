@@ -11,12 +11,12 @@ router.get('/', authenticateToken, async (req, res, next) => {
 
     const directQuery = `
       WITH conv AS (
-        SELECT CASE WHEN sender_id=? THEN receiver_id ELSE sender_id END AS contact_id,
+        SELECT IF(sender_id=?, receiver_id, sender_id) AS contact_id,
                MAX(created_at) AS last_activity,
                MAX(id) AS last_message_id
         FROM messages
         WHERE sender_id=? OR receiver_id=?
-        GROUP BY CASE WHEN sender_id=? THEN receiver_id ELSE sender_id END
+        GROUP BY contact_id
       )
       SELECT
         'direct' AS type,
@@ -64,7 +64,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     `;
 
     const [[direct], [groups]] = await Promise.all([
-      executeQuery(directQuery, [userId, userId, userId, userId, userId, userId]),
+      executeQuery(directQuery, [userId, userId, userId, userId, userId]),
       executeQuery(groupQuery, [userId, userId, userId])
     ]);
 

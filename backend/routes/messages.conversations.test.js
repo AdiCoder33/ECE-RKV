@@ -30,7 +30,7 @@ describe('GET /conversations', () => {
     mockExecuteQuery.mockResolvedValueOnce([[]]);
     mockExecuteQuery.mockResolvedValueOnce([[]]);
     await request(app).get('/conversations').expect(200);
-    expect(mockExecuteQuery).toHaveBeenNthCalledWith(1, expect.any(String), [1, 1, 1, 1, 1, 1]);
+    expect(mockExecuteQuery).toHaveBeenNthCalledWith(1, expect.any(String), [1, 1, 1, 1, 1]);
     expect(mockExecuteQuery).toHaveBeenNthCalledWith(2, expect.any(String), [1, 1, 1]);
   });
 });
