@@ -10,18 +10,16 @@ const { sendToUsers } = require('../services/pushService');
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { contactId } = req.params;
-    const { before } = req.query;
-
-    let fetchLimit = parseInt(req.query.limit, 10);
-    if (Number.isNaN(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
+    const contactId = Number(req.params.contactId);
+    let fetchLimit = Number.parseInt(req.query.limit, 10);
+    if (!Number.isInteger(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
     fetchLimit += 1;
 
     const params = [userId, contactId, contactId, userId];
     let beforeClause = '';
-    if (typeof before === 'string' && before.trim() !== '') {
+    if (req.query.before && !Number.isNaN(Date.parse(req.query.before))) {
       beforeClause = 'AND m.created_at < ?';
-      params.push(before);
+      params.push(new Date(req.query.before));
     }
     params.push(fetchLimit);
 
@@ -29,9 +27,10 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       SELECT m.*, u.name as sender_name, u.profile_image AS sender_profileImage
       FROM messages m
       JOIN users u ON u.id = m.sender_id
-      WHERE (m.sender_id = ? AND m.receiver_id = ?)
-         OR (m.sender_id = ? AND m.receiver_id = ?)
-         ${beforeClause}
+      WHERE (
+        (m.sender_id = ? AND m.receiver_id = ?) OR
+        (m.sender_id = ? AND m.receiver_id = ?)
+      ) ${beforeClause}
       ORDER BY m.created_at DESC
       LIMIT ?
     `;
@@ -39,6 +38,9 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
     const placeholderCount = (query.match(/\?/g) || []).length;
     if (placeholderCount !== params.length) {
       throw new Error(`SQL placeholder count (${placeholderCount}) does not match params length (${params.length})`);
+    }
+    if (params.some(p => p === undefined || Number.isNaN(p))) {
+      return res.status(400).json({ message: 'Invalid parameters' });
     }
 
     const [rows] = await executeQuery(query, params);
