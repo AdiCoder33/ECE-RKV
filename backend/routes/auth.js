@@ -85,7 +85,7 @@ router.post('/request-reset', async (req, res, next) => {
     const otp = generateOTP();
     const hashedOtp = await bcrypt.hash(otp, 10);
     await executeQuery(
-      'UPDATE users SET reset_otp = ?, reset_expires = DATE_ADD(minute, ?, SYSUTCDATETIME()) WHERE id = ?',
+      'UPDATE users SET reset_otp = ?, reset_expires = DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? MINUTE) WHERE id = ?',
       [hashedOtp, otpExpiryMinutes, user.id]
     );
     await sendOTPEmail(email, otp);
@@ -104,7 +104,7 @@ router.post('/verify-otp', async (req, res, next) => {
     }
 
     const [rows] = await executeQuery(
-      'SELECT reset_otp FROM users WHERE email = ? AND reset_expires > SYSUTCDATETIME()',
+      'SELECT reset_otp FROM users WHERE email = ? AND reset_expires > UTC_TIMESTAMP()',
       [email]
     );
     const user = rows && rows[0];

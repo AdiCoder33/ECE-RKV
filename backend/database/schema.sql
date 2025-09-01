@@ -3,52 +3,52 @@
 -- Users table
 -- For existing deployments, run:
 --   ALTER TABLE users ADD semester INT NULL;
---   ALTER TABLE users ADD designation NVARCHAR(100);
+--   ALTER TABLE users ADD designation VARCHAR(100);
 CREATE TABLE users (
-    id int IDENTITY(1,1) PRIMARY KEY,
-    name nvarchar(255) NOT NULL,
-    email nvarchar(255) UNIQUE NOT NULL,
-    password nvarchar(255) NOT NULL,
-    reset_otp nvarchar(255),
-    reset_expires datetime2,
-    role nvarchar(50) NOT NULL CHECK (role IN ('admin', 'hod', 'professor', 'student', 'alumni')),
-    department nvarchar(100),
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    reset_otp VARCHAR(255),
+    reset_expires DATETIME,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'hod', 'professor', 'student', 'alumni')),
+    department VARCHAR(100),
     year int,
     semester int CHECK (semester IN (1,2) OR semester IS NULL),
-    section nvarchar(10),
-    roll_number nvarchar(50),
-    phone nvarchar(20),
-    profile_image nvarchar(255),
-    linkedin_profile nvarchar(255),
-    current_company nvarchar(255),
-    current_position nvarchar(255),
-    designation nvarchar(100),
+    section VARCHAR(10),
+    roll_number VARCHAR(50),
+    phone VARCHAR(20),
+    profile_image VARCHAR(255),
+    linkedin_profile VARCHAR(255),
+    current_company VARCHAR(255),
+    current_position VARCHAR(255),
+    designation VARCHAR(100),
     graduation_year int,
-    created_at datetime2 DEFAULT GETDATE(),
-    updated_at datetime2 DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT UQ_users_year_section_roll_number UNIQUE (year, section, roll_number)
 );
 
 -- Settings table
 -- Stores global configuration values like the current semester
 CREATE TABLE settings (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     current_semester int NOT NULL CHECK (current_semester IN (1,2)),
-    updated_at datetime2 DEFAULT GETDATE()
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO settings (current_semester) VALUES (1);
 
 -- Subjects table
 CREATE TABLE subjects (
-    id int IDENTITY(1,1) PRIMARY KEY,
-    name nvarchar(255) NOT NULL,
-    code nvarchar(50) UNIQUE NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
     year int NOT NULL,
     semester int NOT NULL,
     credits int NOT NULL,
-    type nvarchar(50) DEFAULT 'theory',
-    created_at datetime2 DEFAULT GETDATE()
+    type VARCHAR(50) DEFAULT 'theory',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Classes table
@@ -58,23 +58,23 @@ CREATE TABLE subjects (
 --   ALTER TABLE classes DROP CONSTRAINT UQ_classes_year_section_department;
 --   ALTER TABLE classes ADD CONSTRAINT UQ_classes_year_semester_section UNIQUE (year, semester, section);
 CREATE TABLE classes (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     year int NOT NULL,
     semester int NOT NULL CHECK (semester IN (1,2)),
-    section nvarchar(10) NOT NULL,
-    department nvarchar(100) NOT NULL,
+    section VARCHAR(10) NOT NULL,
+    department VARCHAR(100) NOT NULL,
     hod_id int,
-    created_at datetime2 DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (hod_id) REFERENCES users(id),
     UNIQUE(year, semester, section)
 );
 
 -- Student Classes table
 CREATE TABLE student_classes (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     class_id int NOT NULL,
     student_id int NOT NULL,
-    enrollment_date datetime2,
+    enrollment_date DATETIME,
     FOREIGN KEY (class_id) REFERENCES classes(id),
     FOREIGN KEY (student_id) REFERENCES users(id),
     UNIQUE(class_id, student_id)
@@ -83,27 +83,27 @@ CREATE TABLE student_classes (
 -- Extra Classes table
 -- For existing deployments, run:
 --   CREATE TABLE extra_classes (
---       id int IDENTITY(1,1) PRIMARY KEY,
+--       id INT AUTO_INCREMENT PRIMARY KEY,
 --       subject_id int NOT NULL,
 --       class_id int NOT NULL,
 --       date date NOT NULL,
 --       start_time time NOT NULL,
 --       end_time time NOT NULL,
 --       created_by int NOT NULL,
---       created_at datetime2 DEFAULT GETDATE(),
+--       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 --       FOREIGN KEY (subject_id) REFERENCES subjects(id),
 --       FOREIGN KEY (class_id) REFERENCES classes(id),
 --       FOREIGN KEY (created_by) REFERENCES users(id)
 --   );
 CREATE TABLE extra_classes (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     subject_id int NOT NULL,
     class_id int NOT NULL,
     date date NOT NULL,
     start_time time NOT NULL,
     end_time time NOT NULL,
     created_by int NOT NULL,
-    created_at datetime2 DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (subject_id) REFERENCES subjects(id),
     FOREIGN KEY (class_id) REFERENCES classes(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
@@ -118,14 +118,14 @@ CREATE TABLE extra_classes (
 --   ALTER TABLE attendance ADD CONSTRAINT FK_attendance_extra_class
 --       FOREIGN KEY (extra_class_id) REFERENCES extra_classes(id);
 CREATE TABLE attendance (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     student_id int NOT NULL,
     subject_id int NOT NULL,
     date date NOT NULL,
     period int NOT NULL,
     present bit NOT NULL,
     extra_class_id int,
-    created_at datetime2 DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (subject_id) REFERENCES subjects(id),
     FOREIGN KEY (extra_class_id) REFERENCES extra_classes(id),
@@ -134,51 +134,51 @@ CREATE TABLE attendance (
 
 -- Marks table
 CREATE TABLE marks (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     student_id int NOT NULL,
     subject_id int NOT NULL,
-    exam_type nvarchar(50) NOT NULL,
+    exam_type VARCHAR(50) NOT NULL,
     marks decimal(5,2) NOT NULL,
     max_marks decimal(5,2) NOT NULL,
-    date date DEFAULT CAST(GETDATE() AS DATE),
-    created_at datetime2 DEFAULT GETDATE(),
+    date date DEFAULT CURRENT_DATE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (subject_id) REFERENCES subjects(id)
 );
 
 -- Announcements table
 CREATE TABLE announcements (
-    id int IDENTITY(1,1) PRIMARY KEY,
-    title nvarchar(255) NOT NULL,
-    content ntext NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
     author_id int NOT NULL,
-    target_role nvarchar(100),
-    target_section nvarchar(100),
+    target_role VARCHAR(100),
+    target_section VARCHAR(100),
     target_year int,
     is_active bit DEFAULT 1,
-    priority nvarchar(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-    expires_at datetime2,
-    created_at datetime2 DEFAULT GETDATE(),
+    priority VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    expires_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
 -- Chat Groups table
 CREATE TABLE chat_groups (
-    id int IDENTITY(1,1) PRIMARY KEY,
-    name nvarchar(255) NOT NULL,
-    description ntext,
-    type nvarchar(50) DEFAULT 'custom' CHECK (type IN ('section', 'subject', 'year', 'department', 'custom')),
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    type VARCHAR(50) DEFAULT 'custom' CHECK (type IN ('section', 'subject', 'year', 'department', 'custom')),
     created_by int NOT NULL,
-    created_at datetime2 DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
 -- Chat Group Members table
 CREATE TABLE chat_group_members (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     group_id int NOT NULL,
     user_id int NOT NULL,
-    joined_at datetime2 DEFAULT GETDATE(),
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id),
     UNIQUE(group_id, user_id)
@@ -186,11 +186,11 @@ CREATE TABLE chat_group_members (
 
 -- Chat Messages table
 CREATE TABLE chat_messages (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     group_id int NOT NULL,
     sender_id int NOT NULL,
-    content ntext NOT NULL,
-    timestamp datetime2 DEFAULT GETDATE(),
+    content TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted bit DEFAULT 0,
     FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id)
@@ -198,16 +198,16 @@ CREATE TABLE chat_messages (
 
 -- Timetable table
 CREATE TABLE timetable (
-    id int IDENTITY(1,1) PRIMARY KEY,
-    day nvarchar(20) NOT NULL,
-    time nvarchar(20) NOT NULL,
-    subject nvarchar(100) NOT NULL,
-    faculty nvarchar(100) NOT NULL,
-    room nvarchar(50) NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    day VARCHAR(20) NOT NULL,
+    time VARCHAR(20) NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    faculty VARCHAR(100) NOT NULL,
+    room VARCHAR(50) NOT NULL,
     year int NOT NULL,
     semester int NOT NULL CHECK (semester IN (1,2)),
-    section nvarchar(10) NOT NULL,
-    created_at datetime2 DEFAULT GETDATE()
+    section VARCHAR(10) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert demo timetable data
@@ -238,7 +238,7 @@ CREATE INDEX idx_timetable_year_semester_section ON timetable(year, semester, se
 
 -- Internal Marks table
 CREATE TABLE InternalMarks (
-    id INT IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     subject_id INT NOT NULL,
     type VARCHAR(50) NOT NULL, -- 'mid1', 'mid2', 'internal1', 'internal2', 'assignment', 'quiz'
@@ -246,8 +246,8 @@ CREATE TABLE InternalMarks (
     max_marks DECIMAL(5,2) NOT NULL,
     date DATE NOT NULL,
     entered_by INT,
-    created_at DATETIME DEFAULT GETDATE(),
-    updated_at DATETIME DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES Users(id) ON DELETE CASCADE,
     FOREIGN KEY (subject_id) REFERENCES Subjects(id) ON DELETE CASCADE,
     FOREIGN KEY (entered_by) REFERENCES Users(id)
@@ -255,108 +255,108 @@ CREATE TABLE InternalMarks (
 
 -- Resumes table
 CREATE TABLE resumes (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     student_id int NOT NULL,
-    personal_info nvarchar(max),
-    education nvarchar(max),
-    experience nvarchar(max),
-    projects nvarchar(max),
-    skills nvarchar(max),
-    created_at datetime2 DEFAULT GETDATE(),
-    updated_at datetime2 DEFAULT GETDATE(),
+    personal_info TEXT,
+    education TEXT,
+    experience TEXT,
+    projects TEXT,
+    skills TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Alumni Profiles table
 CREATE TABLE alumni_profiles (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id int NOT NULL,
-    company nvarchar(255),
-    position nvarchar(255),
+    company VARCHAR(255),
+    position VARCHAR(255),
     graduation_year int,
-    field_of_study nvarchar(255),
-    location nvarchar(255),
-    bio nvarchar(max),
-    linkedin nvarchar(255),
-    github nvarchar(255),
-    website nvarchar(255),
-    achievements nvarchar(max),
-    skills nvarchar(max),
-    work_experience nvarchar(max),
-    education nvarchar(max),
-    created_at datetime2 DEFAULT GETDATE(),
-    updated_at datetime2 DEFAULT GETDATE(),
+    field_of_study VARCHAR(255),
+    location VARCHAR(255),
+    bio TEXT,
+    linkedin VARCHAR(255),
+    github VARCHAR(255),
+    website VARCHAR(255),
+    achievements TEXT,
+    skills TEXT,
+    work_experience TEXT,
+    education TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Professor Achievements table
 CREATE TABLE professor_achievements (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     professor_id int NOT NULL,
-    title nvarchar(255) NOT NULL,
-    description nvarchar(max),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
     date date NOT NULL,
-    category nvarchar(100),
-    created_at datetime2 DEFAULT GETDATE(),
-    updated_at datetime2 DEFAULT GETDATE(),
+    category VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (professor_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Messages table for private messaging
 CREATE TABLE messages (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     sender_id int NOT NULL,
     receiver_id int NOT NULL,
-    content nvarchar(max) NOT NULL,
-    message_type nvarchar(50) DEFAULT 'text',
+    content TEXT NOT NULL,
+    message_type VARCHAR(50) DEFAULT 'text',
     is_read bit DEFAULT 0,
-    delivered_at datetime2,
-    created_at datetime2 DEFAULT GETDATE(),
+    delivered_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE NO ACTION
 );
 
 -- Conversation user state (pinning and read tracking)
 CREATE TABLE conversation_users (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id int NOT NULL,
-    conversation_type nvarchar(10) NOT NULL CHECK (conversation_type IN ('direct','group')),
+    conversation_type VARCHAR(10) NOT NULL CHECK (conversation_type IN ('direct','group')),
     conversation_id int NOT NULL,
     pinned bit DEFAULT 0,
-    last_read_at datetime2 DEFAULT '1900-01-01',
+    last_read_at DATETIME DEFAULT '1900-01-01',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, conversation_type, conversation_id)
 );
 
 -- Device tokens for push notifications
 CREATE TABLE device_tokens (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id int NOT NULL,
-    token nvarchar(255) NOT NULL UNIQUE,
-    platform nvarchar(50),
-    created_at datetime2 DEFAULT GETDATE(),
+    token VARCHAR(255) NOT NULL UNIQUE,
+    platform VARCHAR(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE push_subscriptions (
-    endpoint nvarchar(500) PRIMARY KEY,
-    keys_p256dh nvarchar(255) NOT NULL,
-    keys_auth nvarchar(255) NOT NULL,
-    topics nvarchar(max),
+    endpoint VARCHAR(500) PRIMARY KEY,
+    keys_p256dh VARCHAR(255) NOT NULL,
+    keys_auth VARCHAR(255) NOT NULL,
+    topics TEXT,
     user_id int NULL,
-    created_at datetime2 DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Complaints table
 CREATE TABLE complaints (
-    id int IDENTITY(1,1) PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     student_id int NOT NULL,
     type varchar(100) NOT NULL,
     title varchar(255) NOT NULL,
     description text NOT NULL,
     is_anonymous bit DEFAULT 0,
-    created_at datetime DEFAULT GETDATE(),
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id)
 );
 

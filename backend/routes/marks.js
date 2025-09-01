@@ -225,7 +225,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       params.push(subjectId);
     }
 
-    query += ' ORDER BY TRY_CAST(u.roll_number AS INT)';
+    query += ' ORDER BY CAST(u.roll_number AS UNSIGNED)';
 
     const [rows] = await executeQuery(query, params);
     res.json(rows);
@@ -251,7 +251,7 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       JOIN users u ON sc.student_id = u.id
       LEFT JOIN InternalMarks im ON im.student_id = u.id AND im.subject_id = ? AND im.type = ?
       WHERE c.year = ? AND c.semester = ? AND c.section = ?
-      ORDER BY TRY_CAST(u.roll_number AS INT)
+      ORDER BY CAST(u.roll_number AS UNSIGNED)
     `;
     const params = [subjectId, type, year, semester, section];
     const [rows] = await executeQuery(query, params);

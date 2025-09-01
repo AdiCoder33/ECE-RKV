@@ -496,13 +496,13 @@ router.get('/:id/attendance-trend', authenticateToken, async (req, res, next) =>
     const params = [...subjectIds, -(weeks - 1)];
 
     const attendanceQuery = `
-      SELECT 
-        DATE_ADD(WEEK, DATEDIFF(WEEK, 0, date), 0) AS week_start,
+      SELECT
+        DATE_SUB(date, INTERVAL WEEKDAY(date) DAY) AS week_start,
         AVG(CASE WHEN present = 1 THEN 1.0 ELSE 0 END) * 100 AS attendance
       FROM attendance
       WHERE subject_id IN (${placeholders})
-        AND date >= DATE_ADD(WEEK, ?, CAST(NOW() AS DATE))
-      GROUP BY DATE_ADD(WEEK, DATEDIFF(WEEK, 0, date), 0)
+        AND date >= DATE_ADD(CURDATE(), INTERVAL ? WEEK)
+      GROUP BY DATE_SUB(date, INTERVAL WEEKDAY(date) DAY)
       ORDER BY week_start`;
 
     const [rows] = await executeQuery(attendanceQuery, params);
