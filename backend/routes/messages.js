@@ -22,8 +22,8 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
 
     const query = `
       SELECT m.*, u.name as sender_name, u.profile_image AS sender_profileImage
-      FROM Messages m
-      JOIN Users u ON u.id = m.sender_id
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
       WHERE (m.sender_id = ? AND m.receiver_id = ?)
          OR (m.sender_id = ? AND m.receiver_id = ?)
          ${before ? 'AND m.created_at < ?' : ''}
@@ -35,7 +35,7 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
 
     // Mark messages as read
     const markReadQuery = `
-      UPDATE Messages
+      UPDATE messages
       SET is_read = 1
       WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
     `;
@@ -80,12 +80,12 @@ router.post('/send', authenticateToken, async (req, res, next) => {
     }
     
     const [insertResult] = await executeQuery(
-      'INSERT INTO Messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, UTC_TIMESTAMP())',
+      'INSERT INTO messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, UTC_TIMESTAMP())',
       [senderId, receiverId, content, messageType, JSON.stringify(attachments)]
     );
 
     const [rows] = await executeQuery(
-      'SELECT m.*, u.name AS sender_name, u.profile_image AS sender_profileImage FROM Messages m JOIN Users u ON u.id = m.sender_id WHERE m.id = ?',
+      'SELECT m.*, u.name AS sender_name, u.profile_image AS sender_profileImage FROM messages m JOIN users u ON u.id = m.sender_id WHERE m.id = ?',
       [insertResult.insertId]
     );
 
@@ -143,12 +143,12 @@ router.put('/mark-read/:contactId', authenticateToken, async (req, res, next) =>
     const { contactId } = req.params;
     
     const [updated] = await executeQuery(
-      'SELECT id, sender_id FROM Messages WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
+      'SELECT id, sender_id FROM messages WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
       [contactId, userId]
     );
 
     await executeQuery(
-      'UPDATE Messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
+      'UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
       [contactId, userId]
     );
 
@@ -186,11 +186,11 @@ router.put('/:messageId', authenticateToken, async (req, res, next) => {
     const { content } = req.body;
     const userId = req.user.id;
     const updateResult = await executeQuery(
-      'UPDATE Messages SET content = ?, edited_at = UTC_TIMESTAMP(), is_read = 0, delivered_at = NULL WHERE id = ? AND sender_id = ?',
+      'UPDATE messages SET content = ?, edited_at = UTC_TIMESTAMP(), is_read = 0, delivered_at = NULL WHERE id = ? AND sender_id = ?',
       [content, messageId, userId]
     );
     const [updatedRows] = await executeQuery(
-      'SELECT id, sender_id, receiver_id, content, message_type, attachments, is_read, delivered_at, created_at, edited_at FROM Messages WHERE id = ?',
+      'SELECT id, sender_id, receiver_id, content, message_type, attachments, is_read, delivered_at, created_at, edited_at FROM messages WHERE id = ?',
       [messageId]
     );
     if (!updatedRows.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
@@ -219,7 +219,7 @@ router.delete('/:messageId', authenticateToken, async (req, res, next) => {
     const { messageId } = req.params;
     
     const query = `
-      DELETE FROM Messages 
+      DELETE FROM messages
       WHERE id = ? AND sender_id = ?
     `;
     
