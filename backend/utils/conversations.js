@@ -20,9 +20,9 @@ async function getConversationSummary(userId, type, id) {
         (
           SELECT COUNT(*) FROM messages m2
           WHERE m2.sender_id=@contactId AND m2.receiver_id=@userId
-            AND m2.created_at > ISNULL(cu.last_read_at, '1900-01-01')
+            AND m2.created_at > IFNULL(cu.last_read_at, '1900-01-01')
         ) AS unread_count,
-        ISNULL(cu.pinned, 0) AS pinned
+        IFNULL(cu.pinned, 0) AS pinned
       FROM conv
       JOIN users u ON u.id=@contactId
       LEFT JOIN messages m ON m.id=conv.last_message_id
@@ -61,10 +61,10 @@ async function getConversationSummary(userId, type, id) {
         (
           SELECT COUNT(*) FROM chat_messages cm2
           WHERE cm2.group_id=@groupId
-            AND cm2.timestamp > ISNULL(cu.last_read_at, '1900-01-01')
+            AND cm2.timestamp > IFNULL(cu.last_read_at, '1900-01-01')
             AND cm2.sender_id <> @userId
         ) AS unread_count,
-        ISNULL(cu.pinned, 0) AS pinned
+        IFNULL(cu.pinned, 0) AS pinned
       FROM conv
       JOIN chat_groups g ON g.id=@groupId
       LEFT JOIN chat_messages cm ON cm.id=conv.last_message_id

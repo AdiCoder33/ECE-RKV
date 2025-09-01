@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_strength, 0) AS total_strength
+             IFNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
@@ -148,7 +148,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
         `
         SELECT c.id, c.year, c.semester, c.section, c.hod_id,
                h.name AS hod_name,
-               ISNULL(s.total_strength, 0) AS total_strength
+               IFNULL(s.total_strength, 0) AS total_strength
         FROM classes c
         LEFT JOIN users h ON c.hod_id = h.id
         LEFT JOIN (
@@ -189,7 +189,7 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_strength, 0) AS total_strength
+             IFNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
@@ -234,7 +234,7 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
     // Retrieve students ordered by numeric roll numbers
     const query = `
       SELECT u.*, sc.enrollment_date,
-             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             IFNULL(att.attendance_percentage, 0) AS attendance_percentage,
              ar.cgpa
       FROM users u
       JOIN student_classes sc ON u.id = sc.student_id
