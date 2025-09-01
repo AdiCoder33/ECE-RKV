@@ -28,7 +28,7 @@ router.get('/classmates', authenticateToken, async (req, res, next) => {
       LEFT JOIN attendance a ON u.id = a.student_id
       WHERE u.role = ? AND u.year = ? AND u.semester = ? AND u.section = ?
       GROUP BY u.id, u.name, u.email, u.roll_number, u.phone, u.profile_image
-      ORDER BY TRY_CAST(u.roll_number AS INT)
+      ORDER BY CAST(u.roll_number AS UNSIGNED)
     `, ['student', year, semester, section]);
 
     const classmates = rows || [];
@@ -95,7 +95,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
         c.year as class_year,
         c.semester as class_semester,
         c.section as class_section,
-        AVG(CAST(a.present AS float)) * 100 as attendance_percentage,
+        AVG(a.present) * 100 as attendance_percentage,
         ar.cgpa
       FROM users u
       LEFT JOIN student_classes sc ON u.id = sc.student_id
@@ -148,7 +148,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       c.semester,
       c.section,
       ar.cgpa
-      ORDER BY u.year, u.semester, u.section, TRY_CAST(u.roll_number AS INT)`;
+      ORDER BY u.year, u.semester, u.section, CAST(u.roll_number AS UNSIGNED)`;
 
     const [rows] = await executeQuery(query, params);
     const students = rows || [];
