@@ -273,6 +273,20 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: message });
     }
 
+    if (!date) {
+      const message = 'date is required';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
+    }
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      const message = 'Invalid date';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
+    }
+    const examDate = parsedDate.toISOString().slice(0, 10); // e.g., '2025-09-01'
+    // If time-of-day is needed, change the database column to DATETIME and supply a full timestamp
+
     if (!Array.isArray(marksData)) {
       const message = 'marksData must be an array';
       console.warn('bulk marks validation:', message);
@@ -338,7 +352,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       await executeQuery(
         `INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [p.studentId, p.subjectId, type, p.marks, p.maxMarks, date, enteredBy]
+        [p.studentId, p.subjectId, type, p.marks, p.maxMarks, examDate, enteredBy]
       );
     }
 
