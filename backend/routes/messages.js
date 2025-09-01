@@ -9,9 +9,9 @@ const { sendToUsers } = require('../services/pushService');
 // Get messages between two users
 router.get('/conversation/:contactId', authenticateToken, async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = Number(req.user.id);
     const contactId = Number(req.params.contactId);
-    let fetchLimit = Number.parseInt(req.query.limit, 10);
+    let fetchLimit = parseInt(req.query.limit, 10);
     if (!Number.isInteger(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
     fetchLimit += 1;
 
@@ -36,10 +36,10 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
     `;
 
     const placeholderCount = (query.match(/\?/g) || []).length;
-    if (placeholderCount !== params.length) {
-      throw new Error(`SQL placeholder count (${placeholderCount}) does not match params length (${params.length})`);
-    }
-    if (params.some(p => p === undefined || Number.isNaN(p))) {
+    if (
+      placeholderCount !== params.length ||
+      params.some(p => p === undefined || Number.isNaN(p))
+    ) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 
