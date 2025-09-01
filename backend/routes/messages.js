@@ -27,9 +27,7 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       LIMIT ?
     `;
     const params = [userId, contactId, contactId, userId, fetchLimit];
-    const placeholderCount = (query.match(/\?/g) || []).length;
-    if (placeholderCount !== params.length ||
-        params.some(p => p === undefined || Number.isNaN(p))) {
+    if (params.some(p => p === undefined || Number.isNaN(p))) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 
