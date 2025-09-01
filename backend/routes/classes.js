@@ -241,13 +241,13 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
       FROM users u
       JOIN student_classes sc ON u.id = sc.student_id
       LEFT JOIN (
-        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
+        SELECT student_id, AVG(present) * 100 AS attendance_percentage
         FROM attendance
         GROUP BY student_id
       ) att ON u.id = att.student_id
       LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
       WHERE sc.class_id = ? AND u.role = 'student'
-      ORDER BY TRY_CAST(u.roll_number AS INT)
+      ORDER BY CAST(u.roll_number AS UNSIGNED)
     `;
     
     const [rows] = await executeQuery(query, [classId]);
