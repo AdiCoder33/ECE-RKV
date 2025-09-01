@@ -578,10 +578,11 @@ router.get('/:id/activity-feed', authenticateToken, async (req, res, next) => {
 
     // Fetch recent notifications for the professor
     const [rows] = await executeQuery(
-      `SELECT TOP 10 id, title, message, type, created_at
+      `SELECT id, title, message, type, created_at
        FROM notifications
        WHERE user_id = ?
-       ORDER BY created_at DESC`,
+       ORDER BY created_at DESC
+       LIMIT 10;`,
       [professorId]
     );
     const activities = rows.map(row => ({
