@@ -217,9 +217,9 @@ router.delete('/:messageId', authenticateToken, async (req, res, next) => {
       WHERE id = ? AND sender_id = ?
     `;
     
-    const result = await executeQuery(query, [messageId, userId]);
-    
-    if (result.rowsAffected[0] === 0) {
+    const [result] = await executeQuery(query, [messageId, userId]);
+
+    if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Message not found or unauthorized' });
     }
     
