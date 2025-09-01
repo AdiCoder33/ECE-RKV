@@ -8,11 +8,11 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   let query =
     `SELECT t.id, t.day, t.time, t.subject, t.room, t.year, t.semester, t.section,
             COALESCE(u.name, t.faculty) AS faculty,
-            COALESCE(u.id, TRY_CAST(t.faculty AS INT)) AS faculty_id,
+            COALESCE(u.id, CAST(t.faculty AS UNSIGNED)) AS faculty_id,
             s.id AS subject_id
        FROM timetable t
-       LEFT JOIN users u ON u.id = TRY_CAST(t.faculty AS INT)
-       LEFT JOIN subjects s ON s.name = t.subject OR s.id = t.subject
+       LEFT JOIN users u ON u.id = CAST(t.faculty AS UNSIGNED)
+       LEFT JOIN subjects s ON s.name = t.subject OR s.id = CAST(t.subject AS UNSIGNED)
       WHERE 1=1`;
   const params = [];
 
@@ -32,7 +32,7 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   }
 
   if (facultyId) {
-    query += ' AND COALESCE(u.id, TRY_CAST(t.faculty AS INT)) = ?';
+    query += ' AND COALESCE(u.id, CAST(t.faculty AS UNSIGNED)) = ?';
     params.push(Number(facultyId));
   }
 
