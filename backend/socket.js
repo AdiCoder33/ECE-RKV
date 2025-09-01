@@ -73,7 +73,7 @@ function setupSocket(server) {
     socket.on('message-delivered', async ({ messageId }) => {
       try {
         const query = `
-          UPDATE Messages
+          UPDATE messages
           SET delivered_at = COALESCE(delivered_at, GETUTCDATE())
           OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id
           WHERE id = ? AND receiver_id = ?;
@@ -91,7 +91,7 @@ function setupSocket(server) {
     socket.on('message-read', async ({ messageId }) => {
       try {
         const query = `
-          SELECT sender_id, receiver_id FROM Messages WHERE id = ? AND (sender_id = ? OR receiver_id = ?);
+          SELECT sender_id, receiver_id FROM messages WHERE id = ? AND (sender_id = ? OR receiver_id = ?);
         `;
         const [rows] = await executeQuery(query, [messageId, userId, userId]);
         rows.forEach(r => {

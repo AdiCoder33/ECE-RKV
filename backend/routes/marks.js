@@ -12,8 +12,8 @@ router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
     let query = `
       SELECT im.*, s.name as subject_name, s.code as subject_code
       FROM InternalMarks im
-      INNER JOIN Subjects s ON im.subject_id = s.id
-      INNER JOIN Users u ON im.student_id = u.id
+      INNER JOIN subjects s ON im.subject_id = s.id
+      INNER JOIN users u ON im.student_id = u.id
       WHERE im.student_id = ?
     `;
     const params = [studentId];
@@ -62,8 +62,8 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
       SELECT im.id, im.subject_id, im.type, im.marks, im.max_marks, im.date,
              s.name AS subject_name
       FROM InternalMarks im
-      INNER JOIN Subjects s ON im.subject_id = s.id
-      INNER JOIN Users u ON im.student_id = u.id
+      INNER JOIN subjects s ON im.subject_id = s.id
+      INNER JOIN users u ON im.student_id = u.id
       WHERE im.student_id = ?
     `;
     const params = [id];
@@ -199,8 +199,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
     let query = `
       SELECT u.name AS student_name, u.email, u.roll_number, s.name AS subject, im.marks
       FROM InternalMarks im
-      LEFT JOIN Users u ON im.student_id = u.id
-      LEFT JOIN Subjects s ON im.subject_id = s.id
+      LEFT JOIN users u ON im.student_id = u.id
+      LEFT JOIN subjects s ON im.subject_id = s.id
       WHERE 1=1
     `;
     const params = [];
@@ -297,7 +297,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       }
 
       const params = [rollNumber, section, year];
-      let query = 'SELECT id FROM Users WHERE roll_number = ? AND section = ? AND year = ?';
+      let query = 'SELECT id FROM users WHERE roll_number = ? AND section = ? AND year = ?';
       if (semester != null) {
         query += ' AND semester = ?';
         params.push(semester);
@@ -311,7 +311,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       }
 
       const [subjRows] = await executeQuery(
-        'SELECT id FROM Subjects WHERE name = ? OR code = ?',
+        'SELECT id FROM subjects WHERE name = ? OR code = ?',
         [subject, subject]
       );
       if (!subjRows.length) {

@@ -11,8 +11,8 @@ router.get('/', async (req, res, next) => {
              ap.company, ap.position, ap.graduation_year, ap.field_of_study,
              ap.location, ap.bio, ap.linkedin, ap.github, ap.website,
              ap.achievements, ap.skills, ap.work_experience, ap.education
-      FROM Users u
-      LEFT JOIN AlumniProfiles ap ON u.id = ap.user_id
+      FROM users u
+      LEFT JOIN alumni_profiles ap ON u.id = ap.user_id
       WHERE u.role = 'alumni'
       ORDER BY u.name
     `;
@@ -57,8 +57,8 @@ router.get('/:id', async (req, res, next) => {
              ap.company, ap.position, ap.graduation_year, ap.field_of_study,
              ap.location, ap.bio, ap.linkedin, ap.github, ap.website,
              ap.achievements, ap.skills, ap.work_experience, ap.education
-      FROM Users u
-      LEFT JOIN AlumniProfiles ap ON u.id = ap.user_id
+      FROM users u
+      LEFT JOIN alumni_profiles ap ON u.id = ap.user_id
       WHERE u.id = ? AND u.role = 'alumni'
     `;
     
@@ -109,14 +109,14 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
     
     // Check if profile exists
     const existingProfileQuery = `
-      SELECT id FROM AlumniProfiles WHERE user_id = ?
+      SELECT id FROM alumni_profiles WHERE user_id = ?
     `;
     const [existingRows] = await executeQuery(existingProfileQuery, [userId]);
 
     if (existingRows.length > 0) {
       // Update existing profile
       const updateQuery = `
-        UPDATE AlumniProfiles 
+        UPDATE alumni_profiles
         SET company = ?, position = ?, graduation_year = ?, field_of_study = ?,
             location = ?, bio = ?, linkedin = ?, github = ?, website = ?,
             achievements = ?, skills = ?, work_experience = ?, education = ?,
@@ -136,7 +136,7 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
     } else {
       // Create new profile
       const insertQuery = `
-        INSERT INTO AlumniProfiles 
+        INSERT INTO alumni_profiles
         (user_id, company, position, graduation_year, field_of_study, location,
          bio, linkedin, github, website, achievements, skills, work_experience,
          education, created_at, updated_at)
@@ -165,7 +165,7 @@ router.delete('/profile', authenticateToken, async (req, res, next) => {
     const userId = req.user.id;
     
     const deleteQuery = `
-      DELETE FROM AlumniProfiles WHERE user_id = ?
+      DELETE FROM alumni_profiles WHERE user_id = ?
     `;
     
     await executeQuery(deleteQuery, [userId]);
