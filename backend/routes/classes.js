@@ -284,22 +284,34 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
 router.put('/:classId', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
     const { classId } = req.params;
-    const { year, semester, section, hodId } = req.body;
+    const { year, semester, section, department, hodId } = req.body;
 
-    const sem = Number(semester);
-    if (![1, 2].includes(sem)) {
-      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    let sem = null;
+    if (semester !== undefined && semester !== null) {
+      sem = Number(semester);
+      if (![1, 2].includes(sem)) {
+        return res.status(400).json({ error: 'Semester must be 1 or 2' });
+      }
     }
 
-    const result = await executeQuery(
-      'UPDATE classes SET year = ?, semester = ?, section = ?, hod_id = ? WHERE id = ?',
-      [year, sem, section, hodId, classId]
+    const params = [
+      year ?? null,
+      sem,
+      section ?? null,
+      department ?? null,
+      hodId ?? null,
+      classId,
+    ];
+
+    const [result] = await executeQuery(
+      'UPDATE classes SET year=?, semester=?, section=?, department=?, hod_id=? WHERE id=?',
+      params
     );
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Class not found' });
     }
-    
+
     res.json({ message: 'Class updated successfully' });
   } catch (error) {
     console.error('Update class error:', error);
