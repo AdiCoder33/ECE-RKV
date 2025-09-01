@@ -84,7 +84,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     }
     
     // Ensure roll numbers sort numerically rather than lexicographically
-    query += ' ORDER BY a.date DESC, a.period, TRY_CAST(u.roll_number AS INT)';
+    query += ' ORDER BY a.date DESC, a.period, CAST(u.roll_number AS UNSIGNED)';
     
     const [rows] = await executeQuery(query, params);
     
@@ -151,7 +151,7 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     query += ' WHERE ' + whereConditions.join(' AND ');
     // Group and order by numeric roll numbers for predictable sorting
     // Ensure all selected non-aggregated fields are included in the GROUP BY clause
-    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY TRY_CAST(u.roll_number AS INT)';
+    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY CAST(u.roll_number AS UNSIGNED)';
     
     const [rows] = await executeQuery(query, params);
     
