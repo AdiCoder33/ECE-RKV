@@ -26,29 +26,25 @@ describe('GET /conversation/:contactId', () => {
     mockExecuteQuery.mockClear();
   });
 
-  it('builds parameters correctly when before is absent', async () => {
+  it('uses default limit when none is provided', async () => {
     await request(app).get('/messages/conversation/2').expect(200);
     const [query, params] = mockExecuteQuery.mock.calls[0];
-    const placeholders = (query.match(/\?/g) || []).length;
-    expect(params).toHaveLength(placeholders);
+    expect(query.match(/\?/g)).toHaveLength(5);
+    expect(params).toEqual([1, 2, 2, 1, 51]);
   });
 
-  it('builds parameters correctly when before is empty', async () => {
+  it('ignores empty before parameter', async () => {
     await request(app).get('/messages/conversation/2').query({ before: '' }).expect(200);
-    const [query, params] = mockExecuteQuery.mock.calls[0];
-    const placeholders = (query.match(/\?/g) || []).length;
-    expect(params).toHaveLength(placeholders);
+    const [, params] = mockExecuteQuery.mock.calls[0];
+    expect(params).toEqual([1, 2, 2, 1, 51]);
   });
 
-  it('builds parameters correctly when before is provided', async () => {
+  it('parses limit correctly when provided alongside before', async () => {
     await request(app)
       .get('/messages/conversation/2')
       .query({ before: '2024-01-01T00:00:00Z', limit: '10' })
       .expect(200);
-    const [query, params] = mockExecuteQuery.mock.calls[0];
-    const placeholders = (query.match(/\?/g) || []).length;
-    expect(params).toHaveLength(placeholders);
-    // ensure limit parsed and incremented
-    expect(params[params.length - 1]).toBe(11);
+    const [, params] = mockExecuteQuery.mock.calls[0];
+    expect(params).toEqual([1, 2, 2, 1, 11]);
   });
 });

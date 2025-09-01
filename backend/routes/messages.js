@@ -15,13 +15,7 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
     if (!Number.isInteger(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
     fetchLimit += 1;
 
-    const params = [userId, contactId, contactId, userId];
-    let beforeClause = '';
-    if (req.query.before && !Number.isNaN(Date.parse(req.query.before))) {
-      beforeClause = 'AND m.created_at < ?';
-      params.push(new Date(req.query.before));
-    }
-    params.push(fetchLimit);
+    const params = [userId, contactId, contactId, userId, fetchLimit];
 
     const query = `
       SELECT m.*, u.name as sender_name, u.profile_image AS sender_profileImage
@@ -30,16 +24,12 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       WHERE (
         (m.sender_id = ? AND m.receiver_id = ?) OR
         (m.sender_id = ? AND m.receiver_id = ?)
-      ) ${beforeClause}
+      )
       ORDER BY m.created_at DESC
       LIMIT ?
     `;
 
-    const placeholderCount = (query.match(/\?/g) || []).length;
-    if (
-      placeholderCount !== params.length ||
-      params.some(p => p === undefined || Number.isNaN(p))
-    ) {
+    if (params.some(p => p === undefined || Number.isNaN(p))) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 
