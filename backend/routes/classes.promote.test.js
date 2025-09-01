@@ -58,7 +58,14 @@ function mockHandleQuery(state, q) {
     q.includes("VALUES (5, 1, 'GRADUATED', NULL)")
   ) {
     const id = state.nextClassId++;
-    state.classes.push({ id, year: 5, semester: 1, section: 'GRADUATED', hod_id: null });
+    state.classes.push({
+      id,
+      year: 5,
+      semester: 1,
+      section: 'GRADUATED',
+      department: null,
+      hod_id: null,
+    });
     return [{ insertId: id, affectedRows: 1 }];
   } else if (q.startsWith('UPDATE users') && q.includes("section = 'GRADUATED'")) {
     let count = 0;
@@ -102,21 +109,30 @@ function mockHandleQuery(state, q) {
     });
     return [{ affectedRows: count }];
   } else if (
-    q.startsWith('INSERT INTO classes (year, semester, section, hod_id)') &&
-    q.includes('SELECT 1, 1, s.section, NULL')
+    q.startsWith('INSERT INTO classes (year, semester, section, department, hod_id)') &&
+    q.includes('SELECT 1, 1, s.section, s.department, NULL')
   ) {
-    const sections = Array.from(
-      new Set(
-        state.classes
-          .filter(c => c.section !== 'GRADUATED' && c.year <= 4)
-          .map(c => c.section)
-      )
-    );
+    const sectionMap = new Map();
+    state.classes
+      .filter(c => c.section !== 'GRADUATED' && c.year <= 4)
+      .forEach(c => {
+        if (!sectionMap.has(c.section)) {
+          sectionMap.set(c.section, c.department || 'ECE');
+        }
+      });
+
     let count = 0;
-    sections.forEach(section => {
+    sectionMap.forEach((department, section) => {
       if (!state.classes.some(c => c.year === 1 && c.semester === 1 && c.section === section)) {
         const id = state.nextClassId++;
-        state.classes.push({ id, year: 1, semester: 1, section, hod_id: null });
+        state.classes.push({
+          id,
+          year: 1,
+          semester: 1,
+          section,
+          department,
+          hod_id: null,
+        });
         count++;
       }
     });
@@ -159,8 +175,8 @@ describe('class promotion', () => {
       { id: 2, role: 'student', year: 4, semester: 2, section: 'A' },
     ];
     mockDbState.classes = [
-      { id: 10, year: 1, semester: 2, section: 'A', hod_id: null },
-      { id: 20, year: 4, semester: 2, section: 'A', hod_id: null },
+      { id: 10, year: 1, semester: 2, section: 'A', department: 'ECE', hod_id: null },
+      { id: 20, year: 4, semester: 2, section: 'A', department: 'ECE', hod_id: null },
     ];
     mockDbState.studentClasses = [
       { class_id: 10, student_id: 1 },
@@ -192,6 +208,11 @@ describe('class promotion', () => {
         c => c.year === 1 && c.semester === 1 && c.section === 'GRADUATED'
       )
     ).toBe(false);
+    expect(
+      mockDbState.classes.some(
+        c => c.year === 1 && c.semester === 1 && c.section === 'A' && c.department === 'ECE'
+      )
+    ).toBe(true);
 
     await request(app)
       .post('/classes/promote')
