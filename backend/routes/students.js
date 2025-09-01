@@ -386,7 +386,7 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
     // Basic student info with current CGPA and overall attendance
     const [studentRows] = await executeQuery(`
       SELECT u.*,
-             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             IFNULL(att.attendance_percentage, 0) AS attendance_percentage,
              ar.cgpa
       FROM users u
       LEFT JOIN (
@@ -411,7 +411,7 @@ router.get('/:id(\\d+)/details', authenticateToken, async (req, res, next) => {
         s.code,
         s.credits,
         s.type,
-        ISNULL(AVG(m.marks), 0) as marks,
+        IFNULL(AVG(m.marks), 0) as marks,
         COUNT(a.id) as total_classes,
         SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
@@ -535,7 +535,7 @@ router.get('/:id(\\d+)', authenticateToken, async (req, res, next) => {
 
     const query = `
       SELECT u.*,
-             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             IFNULL(att.attendance_percentage, 0) AS attendance_percentage,
              ar.cgpa
       FROM users u
       LEFT JOIN (
