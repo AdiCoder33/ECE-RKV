@@ -14,6 +14,7 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
     let fetchLimit = parseInt(req.query.limit, 10);
     if (!Number.isInteger(fetchLimit) || fetchLimit <= 0) fetchLimit = 50;
     fetchLimit += 1;
+    const limit = Number(fetchLimit); // ensure integer
 
     const query = `
       SELECT m.*, u.name as sender_name, u.profile_image AS sender_profileImage
@@ -24,14 +25,10 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
         (m.sender_id = ? AND m.receiver_id = ?)
       )
       ORDER BY m.created_at DESC
-      LIMIT ?
+      LIMIT ${limit}
     `;
-    const params = [userId, contactId, contactId, userId, fetchLimit];
-    const placeholderCount = (query.match(/\?/g) || []).length;
-    if (
-      placeholderCount !== params.length ||
-      params.some(p => p === undefined || Number.isNaN(p))
-    ) {
+    const params = [userId, contactId, contactId, userId];
+    if (params.some(p => p === undefined || Number.isNaN(p))) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 

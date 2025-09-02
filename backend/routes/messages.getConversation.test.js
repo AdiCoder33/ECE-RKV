@@ -29,14 +29,16 @@ describe('GET /conversation/:contactId', () => {
   it('uses default limit when none is provided', async () => {
     await request(app).get('/messages/conversation/2').expect(200);
     const [query, params] = mockExecuteQuery.mock.calls[0];
-    expect(query.match(/\?/g)).toHaveLength(5);
-    expect(params).toEqual([1, 2, 2, 1, 51]);
+    expect(query.match(/\?/g)).toHaveLength(4);
+    expect(query).toMatch(/LIMIT 51/);
+    expect(params).toEqual([1, 2, 2, 1]);
   });
 
   it('ignores empty before parameter', async () => {
     await request(app).get('/messages/conversation/2').query({ before: '' }).expect(200);
-    const [, params] = mockExecuteQuery.mock.calls[0];
-    expect(params).toEqual([1, 2, 2, 1, 51]);
+    const [query, params] = mockExecuteQuery.mock.calls[0];
+    expect(query).toMatch(/LIMIT 51/);
+    expect(params).toEqual([1, 2, 2, 1]);
   });
 
   it('parses limit correctly when provided alongside before', async () => {
@@ -44,7 +46,8 @@ describe('GET /conversation/:contactId', () => {
       .get('/messages/conversation/2')
       .query({ before: '2024-01-01T00:00:00Z', limit: '10' })
       .expect(200);
-    const [, params] = mockExecuteQuery.mock.calls[0];
-    expect(params).toEqual([1, 2, 2, 1, 11]);
+    const [query, params] = mockExecuteQuery.mock.calls[0];
+    expect(query).toMatch(/LIMIT 11/);
+    expect(params).toEqual([1, 2, 2, 1]);
   });
 });
