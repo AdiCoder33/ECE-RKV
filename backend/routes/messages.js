@@ -27,14 +27,15 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
       LIMIT ?
     `;
     const params = [userId, contactId, contactId, userId, fetchLimit];
-    const placeholders = (query.match(/\?/g) || []).length;
+    const placeholderCount = (query.match(/\?/g) || []).length;
     if (
-      placeholders !== params.length ||
-      params.some(v => v === undefined || Number.isNaN(v))
+      placeholderCount !== params.length ||
+      params.some(p => p === undefined || Number.isNaN(p))
     ) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 
+    console.debug('Conversation params:', params);
     const [rows] = await executeQuery(query, params);
 
     // Mark messages as read
