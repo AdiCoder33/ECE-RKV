@@ -72,17 +72,21 @@ function setupSocket(server) {
 
     socket.on('message-delivered', async ({ messageId }) => {
       try {
-        const query = `
-          UPDATE messages
-          SET delivered_at = COALESCE(delivered_at, GETUTCDATE())
-          OUTPUT INSERTED.id, INSERTED.sender_id, INSERTED.receiver_id
-          WHERE id = ? AND receiver_id = ?;
-        `;
-        const [rows] = await executeQuery(query, [messageId, userId]);
-        rows.forEach(r => {
-          io.to(`user:${r.sender_id}`).emit('message-delivered', { messageId: r.id });
-          io.to(`user:${r.receiver_id}`).emit('message-delivered', { messageId: r.id });
-        });
+        const updateSql = `UPDATE messages
+      SET delivered_at = IFNULL(delivered_at, UTC_TIMESTAMP())
+      WHERE id = ? AND receiver_id = ?`;
+        const [result] = await executeQuery(updateSql, [messageId, userId]);
+
+        if (result.affectedRows) {
+          const [rows] = await executeQuery(
+            'SELECT sender_id, receiver_id FROM messages WHERE id = ?',
+            [messageId]
+          );
+          rows.forEach(({ sender_id, receiver_id }) => {
+            io.to(`user:${sender_id}`).emit('message-delivered', { messageId });
+            io.to(`user:${receiver_id}`).emit('message-delivered', { messageId });
+          });
+        }
       } catch (err) {
         console.error('message-delivered error:', err);
       }
