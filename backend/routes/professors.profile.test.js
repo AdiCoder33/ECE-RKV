@@ -115,5 +115,15 @@ describe('PUT /professors/:id/profile', () => {
       1,
     ]);
   });
+
+  it('rejects invalid dateOfBirth', async () => {
+    const res = await request(app)
+      .put('/professors/1/profile')
+      .send({ dateOfBirth: 'invalid-date' })
+      .expect(400);
+
+    expect(res.body).toEqual({ error: 'Invalid dateOfBirth' });
+    expect(mockExecuteQuery).not.toHaveBeenCalled();
+  });
 });
 
