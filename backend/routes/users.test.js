@@ -248,4 +248,16 @@ describe('users routes handle values correctly', () => {
       [3, 'C']
     );
   });
+
+  it('applies limit parameter safely', async () => {
+    await request(app)
+      .get('/users')
+      .query({ limit: '100' })
+      .expect(200);
+
+    expect(executeQuery).toHaveBeenCalledWith(
+      expect.stringContaining('LIMIT 100'),
+      []
+    );
+  });
 });

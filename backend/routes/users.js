@@ -37,12 +37,10 @@ router.get('/', authenticateToken, async (req, res, next) => {
 
       query += ` WHERE ${conditions.join(' AND ')} ORDER BY name ASC`;
 
-      if (limit) {
-        query += ' LIMIT ?';
-        params.push(Number(limit));
-      }
+      const limitNum = Number.parseInt(limit, 10);
+      const limitClause = Number.isInteger(limitNum) && limitNum > 0 ? ` LIMIT ${limitNum}` : '';
 
-      const [records] = await executeQuery(query, params);
+      const [records] = await executeQuery(query + limitClause, params);
       const formatted = await Promise.all(
         records.map(async ({ id, name, role, designation, profileImage }) => ({
           id,
@@ -76,11 +74,9 @@ router.get('/', authenticateToken, async (req, res, next) => {
       query += ` WHERE ${conditions.join(' AND ')}`;
     }
     query += ' ORDER BY created_at DESC';
-    if (limit) {
-      query += ' LIMIT ?';
-      params.push(Number(limit));
-    }
-    const [records] = await executeQuery(query, params);
+    const limitNum = Number.parseInt(limit, 10);
+    const limitClause = Number.isInteger(limitNum) && limitNum > 0 ? ` LIMIT ${limitNum}` : '';
+    const [records] = await executeQuery(query + limitClause, params);
     const formatted = await Promise.all(
       records.map(async ({ profile_image, ...rest }) => ({
         ...rest,
