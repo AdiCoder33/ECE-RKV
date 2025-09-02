@@ -78,6 +78,17 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
       dateOfBirth
     } = req.body;
     const phone = sanitizePhone(rawPhone);
+    let dob;
+    if (dateOfBirth !== undefined) {
+      if (dateOfBirth) {
+        if (Number.isNaN(Date.parse(dateOfBirth))) {
+          return res.status(400).json({ error: 'Invalid dateOfBirth' });
+        }
+        dob = new Date(dateOfBirth).toISOString().slice(0, 10);
+      } else {
+        dob = null;
+      }
+    }
     const fields = [];
     const params = [];
     if (phone !== undefined) {
@@ -106,7 +117,7 @@ router.put('/:id/profile', authenticateToken, async (req, res, next) => {
     }
     if (dateOfBirth !== undefined) {
       fields.push('date_of_birth = ?');
-      params.push(dateOfBirth);
+      params.push(dob);
     }
 
     if (!fields.length) {
