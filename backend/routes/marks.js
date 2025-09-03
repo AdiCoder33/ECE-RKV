@@ -180,9 +180,9 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
 
     const monthlyTrend = Object.values(monthlyTrendMap)
       .sort((a, b) => a.month.localeCompare(b.month))
-      .map((m) => ({
-        month: new Date(m.month + '-01').toLocaleString('default', { month: 'short' }),
-        percentage: m.total ? (m.obtained / m.total) * 100 : 0,
+      .map(m => ({
+        month: new Date(m.month + '-01').toISOString(),
+        percentage: m.total ? (m.obtained / m.total) * 100 : 0
       }));
 
     res.json({ subjectStats, monthlyTrend, records, overall });
