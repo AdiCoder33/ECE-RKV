@@ -29,6 +29,7 @@ const NotificationDropdown: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
 
   const { data: notifications = [], isLoading } = useQuery({
@@ -99,9 +100,26 @@ const NotificationDropdown: React.FC = () => {
       if (!response.ok) throw new Error('Failed to delete notification');
       return response.json();
     },
+    onMutate: (id: string) => {
+      setDeletingId(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast({
+        title: 'Deleted',
+        description: 'Notification deleted',
+      });
     },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete notification',
+      });
+    },
+    onSettled: () => {
+      setDeletingId(null);
+    }
   });
 
   const unreadCount = notifications.filter((n: Notification) => !n.is_read).length;
@@ -226,6 +244,7 @@ const NotificationDropdown: React.FC = () => {
                           e.stopPropagation();
                           deleteNotificationMutation.mutate(notification.id);
                         }}
+                        disabled={deletingId === notification.id}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
