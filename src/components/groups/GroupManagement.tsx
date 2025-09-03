@@ -12,12 +12,26 @@ import {
   Edit,
   Trash2,
   MessageCircle,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AddGroupMembersModal from './AddGroupMembersModal';
+import { useToast } from '@/components/ui/use-toast';
+import { motion } from "framer-motion";
 
 const apiBase = import.meta.env.VITE_API_URL || '/api';
+
+// Theme colors matching UserManagement
+const THEME = {
+  bgBeige: '#fbf4ea',
+  bgSoft: '#fdfaf6',
+  accent: '#8b0000',
+  accentHover: '#a52a2a',
+  cardBg: 'bg-white',
+  cardShadow: 'shadow-lg',
+  textMuted: 'text-gray-600'
+};
 
 interface ChatGroup {
   id: string;
@@ -45,7 +59,7 @@ const GroupManagement = () => {
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
-    type: 'custom' as const
+    type: 'custom' as ChatGroup['type']
   });
 
   const [groups, setGroups] = useState<ChatGroup[]>([]);
@@ -53,6 +67,11 @@ const GroupManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchGroups = async () => {
     try {
@@ -91,6 +110,7 @@ const GroupManagement = () => {
   const handleCreateGroup = async () => {
     if (!newGroup.name.trim()) return;
     try {
+      setIsCreating(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups`, {
         method: 'POST',
@@ -108,8 +128,22 @@ const GroupManagement = () => {
       await fetchGroups();
       setNewGroup({ name: '', description: '', type: 'custom' });
       setIsCreateModalOpen(false);
+      
+      // Show success alert
+      toast({
+        title: "Success",
+        description: "Group successfully created",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (err) {
       console.error('Create group error', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create group. Please try again.",
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -121,6 +155,7 @@ const GroupManagement = () => {
   const handleUpdateGroup = async () => {
     if (!editingGroup) return;
     try {
+      setIsUpdating(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups/${editingGroup.id}`, {
         method: 'PUT',
@@ -138,13 +173,28 @@ const GroupManagement = () => {
       await fetchGroups();
       setIsEditModalOpen(false);
       setEditingGroup(null);
+      
+      // Show success alert
+      toast({
+        title: "Success",
+        description: "Group successfully updated",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (err) {
       console.error('Update group error', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update group. Please try again.",
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDeleteGroup = async (groupId: string) => {
     try {
+      setDeletingId(groupId);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups/${groupId}`, {
         method: 'DELETE',
@@ -154,9 +204,29 @@ const GroupManagement = () => {
       });
       if (!response.ok) throw new Error('Failed to delete group');
       await fetchGroups();
+      
+      // Show success alert
+      toast({
+        title: "Success",
+        description: "Group successfully deleted",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
     } catch (err) {
       console.error('Delete group error', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete group. Please try again.",
+      });
+    } finally {
+      setDeletingId(null);
     }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    await handleDeleteGroup(confirmDeleteId);
+    setConfirmDeleteId(null);
   };
 
   const getTypeColor = (type: string) => {
@@ -170,24 +240,40 @@ const GroupManagement = () => {
   };
 
   return (
-    <div className="space-y-6 px-4 py-4 sm:px-6 md:px-0">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div 
+      className="min-h-screen space-y-6 px-4 py-6 sm:px-6 md:px-8"
+      style={{ backgroundColor: THEME.bgSoft }}
+    >
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Chat Groups</h1>
-          <p className="text-muted-foreground">Manage chat groups and communications</p>
+          <h1 className="text-3xl sm:text-4xl font-bold" style={{ color: THEME.accent }}>
+            Chat Groups
+          </h1>
+          <p className="text-lg text-gray-600 mt-2">Manage chat groups and communications</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button 
             variant="outline" 
             onClick={() => window.history.back()}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto border-2 hover:bg-gray-50 transition-all duration-200"
+            style={{ borderColor: THEME.accent, color: THEME.accent }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
+              <Button 
+                className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{ backgroundColor: THEME.accent }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = THEME.accentHover}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = THEME.accent}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Create Group
               </Button>
@@ -233,10 +319,11 @@ const GroupManagement = () => {
                   </Select>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsCreateModalOpen(false)} disabled={isCreating}>
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateGroup}>
+                  <Button onClick={handleCreateGroup} disabled={isCreating}>
+                    {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Create Group
                   </Button>
                 </div>
@@ -244,7 +331,7 @@ const GroupManagement = () => {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+      </motion.div>
 
       <Dialog open={isEditModalOpen} onOpenChange={(open) => { setIsEditModalOpen(open); if (!open) setEditingGroup(null); }}>
         {editingGroup && (
@@ -290,7 +377,8 @@ const GroupManagement = () => {
                 <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateGroup}>
+                <Button onClick={handleUpdateGroup} disabled={isUpdating}>
+                  {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Save Changes
                 </Button>
               </div>
@@ -300,24 +388,35 @@ const GroupManagement = () => {
       </Dialog>
 
       {/* Search */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search groups..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <Card className={`${THEME.cardShadow} border-0`}>
+          <CardContent className="p-6">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                placeholder="Search groups by name or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 h-12 text-lg border-2 focus:border-blue-500 transition-all duration-200"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Groups Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
         {filteredGroups.map((group) => (
-          <Card key={group.id} className="hover:shadow-md transition-shadow">
+          <Card key={group.id} className={`${THEME.cardShadow} hover:shadow-xl transition-all duration-300 border-0 overflow-hidden`}>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -363,30 +462,49 @@ const GroupManagement = () => {
                   size="sm"
                   variant="outline"
                   className="text-red-600 hover:text-red-700"
-                  onClick={() => handleDeleteGroup(group.id)}
+                  onClick={() => setConfirmDeleteId(group.id)}
+                  disabled={deletingId === group.id}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {deletingId === group.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
-      </div>
+      </motion.div>
 
       {filteredGroups.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No groups found</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm ? 'No groups match your search.' : 'Create your first chat group to get started.'}
-            </p>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create Group
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Card className={`${THEME.cardShadow} border-0 text-center`}>
+            <CardContent className="p-12">
+              <Users className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+              <h3 className="text-2xl font-bold mb-3" style={{ color: THEME.accent }}>
+                No groups found
+              </h3>
+              <p className="text-lg text-gray-600 mb-6 max-w-md mx-auto">
+                {searchTerm ? 'No groups match your search criteria.' : 'Create your first chat group to get started with team communication.'}
+              </p>
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{ backgroundColor: THEME.accent }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = THEME.accentHover}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = THEME.accent}
+              >
+                <UserPlus className="h-5 w-5 mr-2" />
+                Create Group
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
       {selectedGroup && (
         <AddGroupMembersModal
@@ -396,9 +514,33 @@ const GroupManagement = () => {
             setIsMembersModalOpen(false);
             setSelectedGroup(null);
             fetchGroups();
+            
+            // Show success alert for members added
+            toast({
+              title: "Success",
+              description: "Members successfully added to the group",
+              className: "bg-green-50 border-green-200 text-green-800",
+            });
           }}
         />
       )}
+      <Dialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Group</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this group? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)} disabled={deletingId !== null}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700 text-white" disabled={deletingId !== null}>
+              {deletingId !== null && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useContext, useRef, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Virtuoso } from 'react-virtuoso';
-import { ArrowLeft, Loader2, Send, Pencil, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Pencil, Trash2, X, Users } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import MessageItem from './MessageItem';
@@ -200,7 +200,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <Avatar className="h-9 w-9">
             {avatarSrc && <AvatarImage src={avatarSrc} alt={activeChat.title} />}
             <AvatarFallback className="bg-primary text-primary-foreground">
-              {activeChat.title.charAt(0)}
+              {activeChat.type === 'group' ? <Users className="h-4 w-4" /> : activeChat.title.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col leading-none">
@@ -251,7 +251,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp">
+      <CardContent className="flex-1 p-0 flex flex-col chat-bg-whatsapp min-h-0">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -291,7 +291,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </>
         )}
       </CardContent>
-      <div className="border-t bg-[#fbeee6] px-4 py-3">
+      <div className="border-t bg-[#fbeee6] px-4 py-3 flex-shrink-0">
         {editingMsg && (
           <div className="flex items-center justify-between bg-[#fdf7f2] text-xs px-2 py-1 rounded mb-2">
             <span>Editing message</span>

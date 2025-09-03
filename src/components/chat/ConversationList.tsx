@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Search, X, Loader2, CheckCheck, Pin } from 'lucide-react';
+import { MessageSquare, Search, X, Loader2, CheckCheck, Pin, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -97,7 +97,7 @@ const ConversationRow: React.FC<{
         <Avatar className="h-12 w-12">
           {src && <AvatarImage src={src} alt={conversation.title} />}
           <AvatarFallback className="bg-[#8B1F2F] text-white font-medium">
-            {conversation.title.charAt(0)}
+            {conversation.type === 'group' ? <Users className="h-5 w-5" /> : conversation.title.charAt(0)}
           </AvatarFallback>
         </Avatar>
         {conversation.type === 'direct' && onlineUsers.has(Number(conversation.id)) && (
