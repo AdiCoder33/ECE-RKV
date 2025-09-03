@@ -84,9 +84,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     });
     const formatted = conversations.map(c => ({
       ...c,
-      lastActivity: c.lastActivity
-        ? new Date(c.lastActivity).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
-        : null,
+      lastActivity: c.lastActivity ? c.lastActivity.toISOString() : null
     }));
 
     res.json(formatted);
