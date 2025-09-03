@@ -54,6 +54,13 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
         .reverse()
         .map(async m => ({
           ...m,
+          created_at: new Date(m.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          delivered_at: m.delivered_at
+            ? new Date(m.delivered_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+            : null,
+          edited_at: m.edited_at
+            ? new Date(m.edited_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+            : null,
           sender_profileImage: await resolveProfileImage(m.sender_profileImage),
           attachments: m.attachments ? JSON.parse(m.attachments) : []
         }))
@@ -99,6 +106,15 @@ router.post('/send', authenticateToken, async (req, res, next) => {
       ...rows[0],
       attachments: rows[0].attachments ? JSON.parse(rows[0].attachments) : [],
     };
+    savedMessage.created_at = new Date(savedMessage.created_at).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+    });
+    savedMessage.delivered_at = savedMessage.delivered_at
+      ? new Date(savedMessage.delivered_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : null;
+    savedMessage.edited_at = savedMessage.edited_at
+      ? new Date(savedMessage.edited_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : null;
     savedMessage.sender_profileImage = await resolveProfileImage(savedMessage.sender_profileImage);
     const io = req.app.get('io');
     if (io) {
@@ -195,6 +211,16 @@ router.put('/:messageId', authenticateToken, async (req, res, next) => {
       ...updatedRows[0],
       attachments: updatedRows[0].attachments ? JSON.parse(updatedRows[0].attachments) : [],
     };
+
+    updatedMessage.created_at = new Date(updatedMessage.created_at).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+    });
+    updatedMessage.delivered_at = updatedMessage.delivered_at
+      ? new Date(updatedMessage.delivered_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : null;
+    updatedMessage.edited_at = updatedMessage.edited_at
+      ? new Date(updatedMessage.edited_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : null;
 
     const io = req.app.get('io');
     if (io) {
