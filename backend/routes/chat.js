@@ -51,7 +51,9 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
         senderRole: msg.sender_role,
         sender_profileImage: msg.sender_profileImage,
         content: msg.content,
-        timestamp: msg.timestamp,
+        timestamp: new Date(msg.timestamp).toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+        }),
         groupId: msg.group_id.toString(),
         attachments: msg.attachments ? JSON.parse(msg.attachments) : []
       }))
@@ -109,6 +111,9 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
       groupId: rows[0].group_id.toString(),
       attachments: rows[0].attachments ? JSON.parse(rows[0].attachments) : []
     };
+    formatted.timestamp = new Date(formatted.timestamp).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+    });
 
     const io = req.app.get('io');
     if (io) {
@@ -170,6 +175,9 @@ router.put('/groups/:groupId/messages/:messageId',
       );
       if (!rows.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
       const updated = { ...rows[0], attachments: JSON.parse(rows[0].attachments || '[]') };
+      updated.timestamp = new Date(updated.timestamp).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+      });
       req.app.get('io')?.to(`group-${groupId}`).emit('chat-message-edit', updated);
       res.json(updated);
     } catch (err) {

@@ -82,8 +82,14 @@ router.get('/', authenticateToken, async (req, res, next) => {
       if (b.pinned !== a.pinned) return b.pinned - a.pinned;
       return new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0);
     });
+    const formatted = conversations.map(c => ({
+      ...c,
+      lastActivity: c.lastActivity
+        ? new Date(c.lastActivity).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+        : null,
+    }));
 
-    res.json(conversations);
+    res.json(formatted);
   } catch (error) {
     console.error('Conversations fetch error:', error);
     next(error);
