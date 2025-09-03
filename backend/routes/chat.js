@@ -15,16 +15,17 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
     if (!Number.isInteger(limit) || limit <= 0) limit = 50;
     const { before } = req.query;
 
-    const params = [userId, groupId, limit];
+    const params = [userId, groupId];
     if (params.some(v => v === undefined || Number.isNaN(v))) {
       return res.status(400).json({ message: 'Invalid parameters' });
     }
 
-    const fetchLimit = limit + 1;
-    params[2] = fetchLimit;
     if (before) {
-      params.splice(2, 0, before);
+      params.push(before);
     }
+
+    const requestedLimit = limit;
+    limit += 1;
 
     const query = `
       SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
@@ -34,13 +35,13 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
       JOIN users u ON cm.sender_id = u.id
       WHERE cm.group_id = ? AND cm.is_deleted = 0 ${before ? 'AND cm.timestamp < ?' : ''}
       ORDER BY cm.timestamp DESC
-      LIMIT ?
+      LIMIT ${limit}
     `;
 
     const [rows] = await executeQuery(query, params);
 
-    const hasMore = rows.length === fetchLimit;
-    const sliced = hasMore ? rows.slice(0, fetchLimit - 1) : rows;
+    const hasMore = rows.length === limit;
+    const sliced = hasMore ? rows.slice(0, requestedLimit) : rows;
 
     const formatted = sliced
       .map(msg => ({
