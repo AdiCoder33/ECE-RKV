@@ -20,13 +20,6 @@ import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
 
-// Theme colors consistent with other chat components
-const THEME = {
-  bgSoft: '#fdfaf6',
-  accent: '#8B1F2F',
-  accentHover: '#a83246'
-};
-
 interface ChatSidebarProps {
   isOpen: boolean;
   expanded: boolean;
@@ -136,24 +129,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return () => clearTimeout(handler);
   }, [search, searchUsers, user?.id]);
 
-  // Lock body scroll on mobile when sidebar is expanded/open
-  useEffect(() => {
-    const isMobile = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
-    const shouldLock = isOpen && expanded && isMobile;
-    if (shouldLock) {
-      const originalOverflow = document.body.style.overflow;
-      const originalTouchAction = document.body.style.touchAction;
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-      document.body.classList.add('overscroll-none');
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.body.style.touchAction = originalTouchAction;
-        document.body.classList.remove('overscroll-none');
-      };
-    }
-  }, [isOpen, expanded]);
-
   useEffect(() => {
     if (!activeChat) return;
     const { id, type } = activeChat;
@@ -243,7 +218,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     try {
       if (activeChat.type === 'direct') {
         await sendDirectMessage(Number(activeChat.id), text, files);
-        if (!conversations.some(c => String(c.id) === activeChat.id)) {
+        if (!conversations.some(c => c.id === activeChat.id)) {
           fetchConversations().catch(() => { });
         }
       } else {
@@ -360,11 +335,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   );
 
   const filteredSearchResults = searchResults.filter(
-    u => String(u.id) !== String(user?.id ?? '') && !conversations.some(c => String(c.id) === String(u.id))
+    u => u.id !== user?.id && !conversations.some(c => c.id === u.id)
   );
 
   const handleSelectConversation = useCallback(
-    (c: any) => {
+    (c: typeof conversations[number]) => {
       setActiveChat({ type: c.type, id: String(c.id), title: c.title });
     },
     []
@@ -373,7 +348,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const handlePin = useCallback(
     (
       e: React.MouseEvent,
-      c: any
+      c: typeof conversations[number]
     ) => {
       e.stopPropagation();
       pinConversation(c.type, c.id, Boolean(c.pinned)).catch(() => { });
@@ -419,23 +394,22 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </DialogContent>
       </Dialog>
       <div
-        className={`fixed right-0 top-0 h-full border-l z-30 transition-[width] duration-300 ${isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'}`}
-        style={{ backgroundColor: THEME.bgSoft }}
+        className={`fixed right-0 top-0 h-full bg-background border-l z-30 transition-[width] duration-300 ${isOpen ? (expanded ? 'w-full sm:w-80' : 'w-16') : 'w-0'
+          }`}
         onMouseEnter={() => isOpen && onExpandedChange(true)}
         onMouseLeave={() => isOpen && onExpandedChange(false)}
       >
         {isOpen && expanded ? (
           <div className="h-full w-full flex flex-col">
             {!activeChat ? (
-              // @ts-ignore - relax prop types at the call site to avoid cross-type Conversation conflicts
               <ConversationList
                 search={search}
                 onSearchChange={setSearch}
-                searchResults={filteredSearchResults as any}
+                searchResults={filteredSearchResults}
                 searchLoading={searchLoading}
-                conversations={sortedConversations as any}
-                onSelectConversation={handleSelectConversation as any}
-                onPin={handlePin as any}
+                conversations={sortedConversations}
+                onSelectConversation={handleSelectConversation}
+                onPin={handlePin}
                 onlineUsers={onlineUsers}
                 onStartChat={handleStartChat}
                 onNewChat={() => setIsGroupDialogOpen(true)}
@@ -470,7 +444,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
         ) : isOpen ? (
           <div className="flex flex-col items-center py-4 space-y-4">
-            <Button variant="ghost" size="icon" onClick={onToggle} className="bg-[#8B1F2F] hover:bg-[#a83246] text-white">
+            <Button variant="ghost" size="icon" onClick={onToggle}>
               <MessageSquare className="h-5 w-5" />
             </Button>
             {conversations.slice(0, 10).map(c => (
