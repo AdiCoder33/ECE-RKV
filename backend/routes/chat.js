@@ -9,16 +9,22 @@ const router = express.Router();
 // Get messages for a specific chat group
 router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
-    const { groupId } = req.params;
     const userId = req.user.id;
-    const { limit = 50, before } = req.query;
+    const groupId = Number(req.params.groupId);
+    let limit = parseInt(req.query.limit, 10);
+    if (!Number.isInteger(limit) || limit <= 0) limit = 50;
+    const { before } = req.query;
 
-    const fetchLimit = parseInt(limit, 10) + 1;
-    const params = [userId, groupId];
-    if (before) {
-      params.push(before);
+    const params = [userId, groupId, limit];
+    if (params.some(v => v === undefined || Number.isNaN(v))) {
+      return res.status(400).json({ message: 'Invalid parameters' });
     }
-    params.push(fetchLimit);
+
+    const fetchLimit = limit + 1;
+    params[2] = fetchLimit;
+    if (before) {
+      params.splice(2, 0, before);
+    }
 
     const query = `
       SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
