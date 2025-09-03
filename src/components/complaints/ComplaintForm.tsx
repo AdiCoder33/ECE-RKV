@@ -52,7 +52,7 @@ const ComplaintForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: THEME.bgBeige }}>
+    <div className="min-h-screen flex items-start justify-center px-4 pt-8" style={{ backgroundColor: THEME.bgBeige }}>
       <Card className="w-full max-w-xl shadow-lg" style={{ backgroundColor: THEME.cardBg }}>
         <CardHeader>
           <CardTitle style={{ color: THEME.accent }} className="flex items-center gap-2">

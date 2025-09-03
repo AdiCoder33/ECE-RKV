@@ -12,7 +12,8 @@ import {
   Edit,
   Trash2,
   MessageCircle,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AddGroupMembersModal from './AddGroupMembersModal';
@@ -66,6 +67,9 @@ const GroupManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -106,6 +110,7 @@ const GroupManagement = () => {
   const handleCreateGroup = async () => {
     if (!newGroup.name.trim()) return;
     try {
+      setIsCreating(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups`, {
         method: 'POST',
@@ -137,6 +142,8 @@ const GroupManagement = () => {
         title: "Error",
         description: "Failed to create group. Please try again.",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -148,6 +155,7 @@ const GroupManagement = () => {
   const handleUpdateGroup = async () => {
     if (!editingGroup) return;
     try {
+      setIsUpdating(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups/${editingGroup.id}`, {
         method: 'PUT',
@@ -179,11 +187,14 @@ const GroupManagement = () => {
         title: "Error",
         description: "Failed to update group. Please try again.",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDeleteGroup = async (groupId: string) => {
     try {
+      setDeletingId(groupId);
       const token = localStorage.getItem('token');
       const response = await fetch(`${apiBase}/groups/${groupId}`, {
         method: 'DELETE',
@@ -207,6 +218,8 @@ const GroupManagement = () => {
         title: "Error",
         description: "Failed to delete group. Please try again.",
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -306,10 +319,11 @@ const GroupManagement = () => {
                   </Select>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsCreateModalOpen(false)} disabled={isCreating}>
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateGroup}>
+                  <Button onClick={handleCreateGroup} disabled={isCreating}>
+                    {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Create Group
                   </Button>
                 </div>
@@ -363,7 +377,8 @@ const GroupManagement = () => {
                 <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateGroup}>
+                <Button onClick={handleUpdateGroup} disabled={isUpdating}>
+                  {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Save Changes
                 </Button>
               </div>
@@ -448,8 +463,13 @@ const GroupManagement = () => {
                   variant="outline"
                   className="text-red-600 hover:text-red-700"
                   onClick={() => setConfirmDeleteId(group.id)}
+                  disabled={deletingId === group.id}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {deletingId === group.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -513,8 +533,11 @@ const GroupManagement = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700 text-white">Delete</Button>
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)} disabled={deletingId !== null}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700 text-white" disabled={deletingId !== null}>
+              {deletingId !== null && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
