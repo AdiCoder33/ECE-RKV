@@ -82,15 +82,31 @@ router.get('/conversation/:contactId', authenticateToken, async (req, res, next)
 router.post('/send', authenticateToken, async (req, res, next) => {
   try {
     const senderId = req.user.id;
-    const { receiverId, content, messageType = 'text', attachments = [] } = req.body;
-    
-    if (!receiverId || !content) {
-      return res.status(400).json({ message: 'Receiver ID and content are required' });
+    const {
+      receiverId,
+      content,
+      messageType = 'text',
+      attachments = [],
+    } = req.body;
+
+    if (!receiverId || (!content?.trim() && attachments.length === 0)) {
+      return res
+        .status(400)
+        .json({ message: 'Receiver ID or content/attachments required' });
     }
-    
+
+    const finalMessageType =
+      attachments.length > 0 && !content?.trim() ? 'attachment' : messageType;
+
     const [insertResult] = await executeQuery(
       'INSERT INTO messages (sender_id, receiver_id, content, message_type, attachments, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, UTC_TIMESTAMP())',
-      [senderId, receiverId, content, messageType, JSON.stringify(attachments)]
+      [
+        senderId,
+        receiverId,
+        content,
+        finalMessageType,
+        JSON.stringify(attachments),
+      ]
     );
 
     const [rows] = await executeQuery(
