@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageSquare, Search, Users, Link2 } from 'lucide-react';
+import { Loader2, MessageSquare, Search, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { User } from '@/types';
 import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
+import FileUpload from './FileUpload';
 
 const UserSearchResult: React.FC<{
   result: User;
@@ -43,6 +44,7 @@ const ChatList: React.FC = () => {
     fetchGroups,
     fetchConversations,
     searchUsers,
+    handleFileSelect,
   } = useChat();
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -99,13 +101,7 @@ const ChatList: React.FC = () => {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Chats</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/dashboard/alumni')}
-            >
-              <Link2 className="h-4 w-4" />
-            </Button>
+            <FileUpload onFileSelect={handleFileSelect} />
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

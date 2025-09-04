@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import MessageItem from './MessageItem';
 import { ChatMessage } from '@/types';
+import FileUpload from './FileUpload';
 
 expect.extend(matchers);
 
@@ -45,5 +47,21 @@ describe('MessageItem', () => {
     const name = screen.getByText('Other');
     expect(bubble).toContainElement(name);
     expect(name).toHaveClass('text-purple-900');
+  });
+
+  it('calls onFileSelect when choosing a file', () => {
+    const handleFileSelect = vi.fn();
+    render(<FileUpload onFileSelect={handleFileSelect} />);
+
+    const trigger = screen.getByLabelText('Attach file');
+    fireEvent.click(trigger);
+
+    const input = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    const file = new File(['data'], 'image.png', { type: 'image/png' });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(handleFileSelect).toHaveBeenCalledWith(file, 'image');
   });
 });
