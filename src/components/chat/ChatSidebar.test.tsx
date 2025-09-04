@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
@@ -198,6 +199,84 @@ describe('ChatSidebar search filtering', () => {
       expect(screen.queryByText('Alice')).not.toBeInTheDocument();
       expect(screen.getByText('Bob')).toBeInTheDocument();
     });
+  });
+});
+
+describe('ChatSidebar history navigation', () => {
+  const TestWrapper = () => {
+    const [open, setOpen] = React.useState(false);
+    const [expanded, setExpanded] = React.useState(false);
+
+    React.useEffect(() => {
+      if (!open) return;
+      const onPop = () => {
+        setOpen(false);
+        setExpanded(false);
+      };
+      window.addEventListener('popstate', onPop);
+      return () => window.removeEventListener('popstate', onPop);
+    }, [open]);
+
+    const toggle = () => {
+      const newOpen = !open;
+      setOpen(newOpen);
+      setExpanded(newOpen);
+      if (newOpen) {
+        window.history.pushState({ chat: true }, '');
+      } else {
+        window.history.back();
+      }
+    };
+
+    return (
+      <div>
+        <button onClick={toggle}>toggle</button>
+        <span data-testid="state">{open ? 'open' : 'closed'}</span>
+        <ChatSidebar
+          isOpen={open}
+          expanded={expanded}
+          onToggle={toggle}
+          onExpandedChange={setExpanded}
+        />
+      </div>
+    );
+  };
+
+  it('closes chat on back navigation', async () => {
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const backSpy = vi.spyOn(window.history, 'back');
+
+    render(<TestWrapper />);
+
+    fireEvent.click(screen.getByText('toggle'));
+    expect(pushSpy).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('open'));
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+
+    await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('closed'));
+    expect(backSpy).not.toHaveBeenCalled();
+
+    pushSpy.mockRestore();
+    backSpy.mockRestore();
+  });
+
+  it('removes history entry when chat closes programmatically', () => {
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const backSpy = vi.spyOn(window.history, 'back');
+
+    render(<TestWrapper />);
+
+    fireEvent.click(screen.getByText('toggle'));
+    expect(pushSpy).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('toggle'));
+
+    expect(backSpy).toHaveBeenCalled();
+    expect(screen.getByTestId('state').textContent).toBe('closed');
+
+    pushSpy.mockRestore();
+    backSpy.mockRestore();
   });
 });
 
