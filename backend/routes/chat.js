@@ -75,9 +75,10 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     const { content, attachments = [] } = req.body;
     const userId = req.user.id;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ error: 'Message content is required' });
+    if ((!content || !content.trim()) && attachments.length === 0) {
+      return res.status(400).json({ error: 'Message content or attachments required' });
     }
+    const sanitizedContent = content?.trim() ?? '';
 
     // Verify membership in the group
     const [membership] = await executeQuery(
@@ -90,7 +91,7 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     }
     const [insertResult] = await executeQuery(
       'INSERT INTO chat_messages (group_id, sender_id, content, attachments, timestamp) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
-      [groupId, userId, content.trim(), JSON.stringify(attachments)]
+      [groupId, userId, sanitizedContent, JSON.stringify(attachments)]
     );
 
     const [rows] = await executeQuery(
