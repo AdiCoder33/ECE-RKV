@@ -50,8 +50,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
     'sender_id' in message ? message.sender_id : message.senderId;
 
   // Base bubble styling. Limit width to 80% of the container to prevent overflow.
-  const bubbleClass =
-    "inline-flex items-end whitespace-pre-wrap px-3 pt-2 pb-5 rounded-2xl shadow-sm max-w-[80%] min-w-[5rem] break-words break-all relative after:absolute after:-bottom-1 after:w-0 after:h-0";
+  const hasAttachments = message.attachments && message.attachments.length > 0;
+  const bubbleBaseClass =
+    "whitespace-pre-wrap px-3 pt-2 pb-5 rounded-2xl shadow-sm max-w-[80%] min-w-[5rem] break-words break-all relative after:absolute after:-bottom-1 after:w-0 after:h-0";
+  const orientationClass = hasAttachments || (isGroup && !isOwn)
+    ? `flex flex-col ${isOwn ? 'items-end' : 'items-start'}`
+    : 'inline-flex items-end';
+  const bubbleClass = `${orientationClass} ${bubbleBaseClass}`;
   let bubbleColor = '';
   let nameTextColor = '';
   if (isOwn) {
@@ -109,9 +114,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       {/* Message bubble */}
       <div className={`w-full flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
         <div
-          className={`${bubbleClass} ${
-            isGroup && !isOwn ? 'flex flex-col items-start' : ''
-          } ${bubbleColor} ${tailClass} ${
+          className={`${bubbleClass} ${bubbleColor} ${tailClass} ${
             isOwn ? 'pr-12' : ''
           } ${selected ? 'ring-2 ring-green-400' : ''}`}
         >
@@ -122,7 +125,29 @@ const MessageItem: React.FC<MessageItemProps> = ({
               {senderName}
             </span>
           )}
-          <span className="flex-1">{message.content}</span>
+          {message.content && (
+            <span className="flex-1">{message.content}</span>
+          )}
+          {message.attachments?.map((att, index) =>
+            att.type === 'image' ? (
+              <img
+                key={index}
+                src={att.url}
+                alt={att.name}
+                className="rounded-md max-w-[200px] mt-2"
+              />
+            ) : (
+              <a
+                key={index}
+                href={att.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-sm mt-2 break-all"
+              >
+                {att.name}
+              </a>
+            )
+          )}
           <span
             className={`absolute bottom-1 right-2 flex items-end text-[10px] ${
               isOwn ? 'text-gray-200' : 'text-gray-500'
