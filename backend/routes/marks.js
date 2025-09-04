@@ -12,8 +12,8 @@ router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
     let query = `
       SELECT im.*, s.name as subject_name, s.code as subject_code
       FROM InternalMarks im
-      INNER JOIN Subjects s ON im.subject_id = s.id
-      INNER JOIN Users u ON im.student_id = u.id
+      INNER JOIN subjects s ON im.subject_id = s.id
+      INNER JOIN users u ON im.student_id = u.id
       WHERE im.student_id = ?
     `;
     const params = [studentId];
@@ -44,8 +44,8 @@ router.get('/student/:studentId', authenticateToken, async (req, res, next) => {
 
     query += ' ORDER BY im.date DESC';
 
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const [rows] = await executeQuery(query, params);
+    res.json(rows);
   } catch (error) {
     console.error('Get student marks error:', error);
     next(error);
@@ -62,8 +62,8 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
       SELECT im.id, im.subject_id, im.type, im.marks, im.max_marks, im.date,
              s.name AS subject_name
       FROM InternalMarks im
-      INNER JOIN Subjects s ON im.subject_id = s.id
-      INNER JOIN Users u ON im.student_id = u.id
+      INNER JOIN subjects s ON im.subject_id = s.id
+      INNER JOIN users u ON im.student_id = u.id
       WHERE im.student_id = ?
     `;
     const params = [id];
@@ -84,8 +84,8 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
 
     query += ' ORDER BY im.date DESC';
 
-    const result = await executeQuery(query, params);
-    const rawRecords = result.recordset || [];
+    const [rows] = await executeQuery(query, params);
+    const rawRecords = rows || [];
 
     const groupedMids = {};
 
@@ -180,9 +180,9 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
 
     const monthlyTrend = Object.values(monthlyTrendMap)
       .sort((a, b) => a.month.localeCompare(b.month))
-      .map((m) => ({
-        month: new Date(m.month + '-01').toLocaleString('default', { month: 'short' }),
-        percentage: m.total ? (m.obtained / m.total) * 100 : 0,
+      .map(m => ({
+        month: new Date(m.month + '-01').toISOString(),
+        percentage: m.total ? (m.obtained / m.total) * 100 : 0
       }));
 
     res.json({ subjectStats, monthlyTrend, records, overall });
@@ -199,8 +199,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
     let query = `
       SELECT u.name AS student_name, u.email, u.roll_number, s.name AS subject, im.marks
       FROM InternalMarks im
-      LEFT JOIN Users u ON im.student_id = u.id
-      LEFT JOIN Subjects s ON im.subject_id = s.id
+      LEFT JOIN users u ON im.student_id = u.id
+      LEFT JOIN subjects s ON im.subject_id = s.id
       WHERE 1=1
     `;
     const params = [];
@@ -225,10 +225,10 @@ router.get('/', authenticateToken, async (req, res, next) => {
       params.push(subjectId);
     }
 
-    query += ' ORDER BY TRY_CAST(u.roll_number AS INT)';
+    query += ' ORDER BY CAST(u.roll_number AS UNSIGNED)';
 
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const [rows] = await executeQuery(query, params);
+    res.json(rows);
   } catch (error) {
     console.error('Get marks error:', error);
     next(error);
@@ -251,11 +251,11 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
       JOIN users u ON sc.student_id = u.id
       LEFT JOIN InternalMarks im ON im.student_id = u.id AND im.subject_id = ? AND im.type = ?
       WHERE c.year = ? AND c.semester = ? AND c.section = ?
-      ORDER BY TRY_CAST(u.roll_number AS INT)
+      ORDER BY CAST(u.roll_number AS UNSIGNED)
     `;
     const params = [subjectId, type, year, semester, section];
-    const result = await executeQuery(query, params);
-    res.json(result.recordset);
+    const [rows] = await executeQuery(query, params);
+    res.json(rows);
   } catch (error) {
     console.error('Marks overview error:', error);
     next(error);
@@ -272,6 +272,20 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       console.warn('bulk marks validation:', message);
       return res.status(400).json({ error: message });
     }
+
+    if (!date) {
+      const message = 'date is required';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
+    }
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      const message = 'Invalid date';
+      console.warn('bulk marks validation:', message);
+      return res.status(400).json({ error: message });
+    }
+    const examDate = parsedDate.toISOString().slice(0, 10); // e.g., '2025-09-01'
+    // If time-of-day is needed, change the database column to DATETIME and supply a full timestamp
 
     if (!Array.isArray(marksData)) {
       const message = 'marksData must be an array';
@@ -297,31 +311,31 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       }
 
       const params = [rollNumber, section, year];
-      let query = 'SELECT id FROM Users WHERE roll_number = ? AND section = ? AND year = ?';
+      let query = 'SELECT id FROM users WHERE roll_number = ? AND section = ? AND year = ?';
       if (semester != null) {
         query += ' AND semester = ?';
         params.push(semester);
       }
 
-      const student = await executeQuery(query, params);
-      const students = student.recordset || [];
+      const [studentRows] = await executeQuery(query, params);
+      const students = studentRows || [];
       if (students.length !== 1) {
         errors.push(`Student lookup error for ${rollNumber}`);
         continue;
       }
 
-      const subj = await executeQuery(
-        'SELECT id FROM Subjects WHERE name = ? OR code = ?',
+      const [subjRows] = await executeQuery(
+        'SELECT id FROM subjects WHERE name = ? OR code = ?',
         [subject, subject]
       );
-      if (!subj.recordset.length) {
+      if (!subjRows.length) {
         errors.push(`Subject not found: ${subject}`);
         continue;
       }
 
       prepared.push({
         studentId: students[0].id,
-        subjectId: subj.recordset[0].id,
+        subjectId: subjRows[0].id,
         maxMarks,
         marks,
       });
@@ -337,8 +351,8 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     for (const p of prepared) {
       await executeQuery(
         `INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())`,
-        [p.studentId, p.subjectId, type, p.marks, p.maxMarks, date, enteredBy]
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [p.studentId, p.subjectId, type, p.marks, p.maxMarks, examDate, enteredBy]
       );
     }
 

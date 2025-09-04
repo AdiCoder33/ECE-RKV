@@ -7,14 +7,13 @@ const router = express.Router();
 // Get announcements
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT a.*, u.name as author_name
       FROM announcements a
       LEFT JOIN users u ON a.author_id = u.id
       WHERE a.is_active = 1
       ORDER BY a.created_at DESC
     `);
-    const rows = result.recordset;
     res.json(rows);
   } catch (error) {
     console.error('Announcements fetch error:', error);
@@ -40,12 +39,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
       ? `${authorName}: ${sanitizedTitle}`
       : authorName;
 
-    const result = await executeQuery(
-      'INSERT INTO announcements (title, content, author_id, target_role, target_section, target_year, priority) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO announcements (title, content, author_id, target_role, target_section, target_year, priority) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [title, content, req.user.id, targetRole, targetSection, targetYear, priority]
     );
 
-    const newId = result.recordset[0].id;
+    const newId = result.insertId;
 
     // Determine recipients based on targeting parameters
     const conditions = [];
@@ -64,7 +63,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
     }
 
     const usersQuery = `SELECT id FROM users${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''}`;
-    const { recordset: recipients } = await executeQuery(usersQuery, params);
+    const [recipients] = await executeQuery(usersQuery, params);
 
     const notificationPromises = recipients.map((user) =>
       executeQuery(

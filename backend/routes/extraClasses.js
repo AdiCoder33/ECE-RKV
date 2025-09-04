@@ -20,20 +20,19 @@ router.post('/', authenticateToken, requireRole(['professor', 'hod']), async (re
       return res.status(400).json({ error: 'subjectId, classId, date, startTime and endTime are required' });
     }
 
-    const result = await executeQuery(
-      'INSERT INTO extra_classes (subject_id, class_id, date, start_time, end_time, created_by) OUTPUT INSERTED.* VALUES (?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO extra_classes (subject_id, class_id, date, start_time, end_time, created_by) VALUES (?, ?, ?, ?, ?, ?)',
       [subjectId, classId, date, startTime, endTime, req.user.id]
     );
 
-    const row = result.recordset[0];
     res.status(201).json({
-      id: row.id,
-      subjectId: row.subject_id,
-      classId: row.class_id,
-      date: row.date,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      createdBy: row.created_by,
+      id: result.insertId,
+      subjectId,
+      classId,
+      date,
+      startTime,
+      endTime,
+      createdBy: req.user.id,
     });
   } catch (error) {
     console.error('Create extra class error:', error);
@@ -50,7 +49,7 @@ router.get('/', authenticateToken, requireRole(['professor', 'hod']), async (req
       return res.status(400).json({ error: 'professorId and date are required' });
     }
 
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT ec.*, s.name AS subject_name
        FROM extra_classes ec
        LEFT JOIN subjects s ON ec.subject_id = s.id
@@ -59,7 +58,7 @@ router.get('/', authenticateToken, requireRole(['professor', 'hod']), async (req
       [professorId, date]
     );
 
-    res.json(result.recordset || []);
+    res.json(rows || []);
   } catch (error) {
     console.error('Fetch extra classes error:', error);
     next(error);

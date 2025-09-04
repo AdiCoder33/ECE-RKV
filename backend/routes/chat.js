@@ -9,16 +9,23 @@ const router = express.Router();
 // Get messages for a specific chat group
 router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next) => {
   try {
-    const { groupId } = req.params;
     const userId = req.user.id;
-    const { limit = 50, before } = req.query;
+    const groupId = Number(req.params.groupId);
+    let limit = parseInt(req.query.limit, 10);
+    if (!Number.isInteger(limit) || limit <= 0) limit = 50;
+    const { before } = req.query;
 
-    const fetchLimit = parseInt(limit, 10) + 1;
     const params = [userId, groupId];
+    if (params.some(v => v === undefined || Number.isNaN(v))) {
+      return res.status(400).json({ message: 'Invalid parameters' });
+    }
+
     if (before) {
       params.push(before);
     }
-    params.push(fetchLimit);
+
+    const requestedLimit = limit;
+    limit += 1;
 
     const query = `
       SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments,
@@ -28,13 +35,13 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
       JOIN users u ON cm.sender_id = u.id
       WHERE cm.group_id = ? AND cm.is_deleted = 0 ${before ? 'AND cm.timestamp < ?' : ''}
       ORDER BY cm.timestamp DESC
-      OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY
+      LIMIT ${limit}
     `;
 
-    const { recordset } = await executeQuery(query, params);
+    const [rows] = await executeQuery(query, params);
 
-    const hasMore = recordset.length === fetchLimit;
-    const sliced = hasMore ? recordset.slice(0, fetchLimit - 1) : recordset;
+    const hasMore = rows.length === limit;
+    const sliced = hasMore ? rows.slice(0, requestedLimit) : rows;
 
     const formatted = sliced
       .map(msg => ({
@@ -44,7 +51,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res, next
         senderRole: msg.sender_role,
         sender_profileImage: msg.sender_profileImage,
         content: msg.content,
-        timestamp: msg.timestamp,
+        timestamp: new Date(msg.timestamp).toISOString(),
         groupId: msg.group_id.toString(),
         attachments: msg.attachments ? JSON.parse(msg.attachments) : []
       }))
@@ -73,7 +80,7 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     }
 
     // Verify membership in the group
-    const { recordset: membership } = await executeQuery(
+    const [membership] = await executeQuery(
       'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
       [groupId, userId]
     );
@@ -81,51 +88,35 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
     if (membership.length === 0) {
       return res.status(403).json({ error: 'User is not a member of this group' });
     }
+    const [insertResult] = await executeQuery(
+      'INSERT INTO chat_messages (group_id, sender_id, content, attachments, timestamp) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
+      [groupId, userId, content.trim(), JSON.stringify(attachments)]
+    );
 
-    const insertQuery = `
-      DECLARE @Inserted TABLE (
-        id INT, group_id INT, sender_id INT,
-        content NVARCHAR(MAX), timestamp DATETIME, attachments NVARCHAR(MAX)
-      );
+    const [rows] = await executeQuery(
+      'SELECT cm.id, cm.group_id, cm.sender_id, cm.content, cm.timestamp, cm.attachments, u.name AS sender_name, u.role AS sender_role, u.profile_image AS sender_profileImage FROM chat_messages cm JOIN users u ON u.id = cm.sender_id WHERE cm.id = ?',
+      [insertResult.insertId]
+    );
 
-      INSERT INTO chat_messages (group_id, sender_id, content, attachments, timestamp)
-      OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
-             INSERTED.content, INSERTED.timestamp, INSERTED.attachments
-      INTO @Inserted
-      VALUES (?, ?, ?, ?, GETUTCDATE());
-
-      SELECT i.*, u.name AS sender_name, u.role AS sender_role,
-             u.profile_image AS sender_profileImage
-      FROM @Inserted i
-      JOIN users u ON u.id = i.sender_id;
-    `;
-    const { recordset } = await executeQuery(insertQuery, [
-      groupId,
-      userId,
-      content.trim(),
-      JSON.stringify(attachments)
-    ]);
-
-    if (!recordset || recordset.length === 0) {
+    if (!rows || rows.length === 0) {
       return res.status(500).json({ error: 'Failed to create message' });
     }
 
     const formatted = {
-      ...recordset[0],
-      id: recordset[0].id.toString(),
-      senderId: Number(recordset[0].sender_id),
-      groupId: recordset[0].group_id.toString(),
-      attachments: recordset[0].attachments
-        ? JSON.parse(recordset[0].attachments)
-        : []
+      ...rows[0],
+      id: rows[0].id.toString(),
+      senderId: Number(rows[0].sender_id),
+      groupId: rows[0].group_id.toString(),
+      attachments: rows[0].attachments ? JSON.parse(rows[0].attachments) : []
     };
+    formatted.timestamp = new Date(formatted.timestamp).toISOString();
 
     const io = req.app.get('io');
     if (io) {
       io.to(`group-${groupId}`).emit('chat-message', formatted);
     }
 
-    const { recordset: members } = await executeQuery(
+    const [members] = await executeQuery(
       `SELECT gm.user_id, g.name AS group_name
          FROM chat_group_members gm
          JOIN chat_groups g ON gm.group_id = g.id
@@ -144,14 +135,11 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res, nex
 
     // Update sender's read timestamp and emit conversation updates
     const convUpdate = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETUTCDATE());
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, 'group', ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE last_read_at=UTC_TIMESTAMP();
     `;
-    await executeQuery(convUpdate, [userId, groupId, userId, groupId]);
+    await executeQuery(convUpdate, [userId, groupId]);
 
     if (io) {
       for (const member of members) {
@@ -173,16 +161,17 @@ router.put('/groups/:groupId/messages/:messageId',
       const { content } = req.body;
       const userId = req.user.id;
       // Ensure sender owns the message and belongs to the group
-      const query = `
-        UPDATE chat_messages
-        SET content = ?, edited_at = GETUTCDATE()
-        OUTPUT INSERTED.id, INSERTED.group_id, INSERTED.sender_id,
-               INSERTED.content, INSERTED.timestamp, INSERTED.attachments
-        WHERE id = ? AND group_id = ? AND sender_id = ?;
-      `;
-      const { recordset } = await executeQuery(query, [content, messageId, groupId, userId]);
-      if (!recordset.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
-      const updated = { ...recordset[0], attachments: JSON.parse(recordset[0].attachments || '[]') };
+      await executeQuery(
+        'UPDATE chat_messages SET content = ?, edited_at = UTC_TIMESTAMP() WHERE id = ? AND group_id = ? AND sender_id = ?',
+        [content, messageId, groupId, userId]
+      );
+      const [rows] = await executeQuery(
+        'SELECT id, group_id, sender_id, content, timestamp, attachments FROM chat_messages WHERE id = ?',
+        [messageId]
+      );
+      if (!rows.length) return res.status(404).json({ message: 'Message not found or unauthorized' });
+      const updated = { ...rows[0], attachments: JSON.parse(rows[0].attachments || '[]') };
+      updated.timestamp = new Date(updated.timestamp).toISOString();
       req.app.get('io')?.to(`group-${groupId}`).emit('chat-message-edit', updated);
       res.json(updated);
     } catch (err) {
@@ -198,7 +187,7 @@ router.delete('/groups/:groupId/messages/:messageId',
       const userId = req.user.id;
 
       // Verify the user is a member of the group
-      const { recordset: membership } = await executeQuery(
+      const [membership] = await executeQuery(
         'SELECT 1 FROM chat_group_members WHERE group_id = ? AND user_id = ?',
         [groupId, userId]
       );
@@ -212,8 +201,8 @@ router.delete('/groups/:groupId/messages/:messageId',
         SET is_deleted = 1
         WHERE id = ? AND group_id = ? AND sender_id = ? AND is_deleted = 0;
       `;
-      const { rowsAffected } = await executeQuery(delQuery, [messageId, groupId, userId]);
-      if (!rowsAffected || rowsAffected[0] === 0) {
+      const [delResult] = await executeQuery(delQuery, [messageId, groupId, userId]);
+      if (!delResult.affectedRows) {
         return res.status(404).json({ message: 'Message not found or unauthorized' });
       }
 
@@ -236,14 +225,11 @@ router.put('/groups/:groupId/mark-read', authenticateToken, async (req, res, nex
     const { groupId } = req.params;
 
     const query = `
-      MERGE conversation_users AS target
-      USING (SELECT ? AS user_id, 'group' AS conversation_type, ? AS conversation_id) AS source
-      ON target.user_id=source.user_id AND target.conversation_type=source.conversation_type AND target.conversation_id=source.conversation_id
-      WHEN MATCHED THEN UPDATE SET last_read_at=GETUTCDATE()
-      WHEN NOT MATCHED THEN
-        INSERT (user_id, conversation_type, conversation_id, last_read_at) VALUES (?, 'group', ?, GETUTCDATE());
+      INSERT INTO conversation_users (user_id, conversation_type, conversation_id, last_read_at, pinned)
+      VALUES (?, 'group', ?, UTC_TIMESTAMP(), 0)
+      ON DUPLICATE KEY UPDATE last_read_at=UTC_TIMESTAMP();
     `;
-    await executeQuery(query, [userId, groupId, userId, groupId]);
+    await executeQuery(query, [userId, groupId]);
 
     await emitConversationUpdate(req.app.get('io'), userId, 'group', groupId);
 

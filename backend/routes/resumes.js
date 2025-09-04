@@ -9,17 +9,17 @@ router.get('/:studentId', authenticateToken, async (req, res, next) => {
     const { studentId } = req.params;
     
     const resumeQuery = `
-      SELECT * FROM Resumes 
+      SELECT * FROM resumes
       WHERE student_id = ?
     `;
     
-    const result = await executeQuery(resumeQuery, [studentId]);
-    
-    if (result.recordset.length === 0) {
+    const [rows] = await executeQuery(resumeQuery, [studentId]);
+
+    if (!rows.length) {
       return res.status(404).json({ message: 'Resume not found' });
     }
-    
-    const resume = result.recordset[0];
+
+    const resume = rows[0];
     res.json({
       personalInfo: JSON.parse(resume.personal_info),
       education: JSON.parse(resume.education),
@@ -42,15 +42,15 @@ router.post('/', authenticateToken, async (req, res, next) => {
     
     // Check if resume exists
     const existingResumeQuery = `
-      SELECT id FROM Resumes WHERE student_id = ?
+      SELECT id FROM resumes WHERE student_id = ?
     `;
-    const existingResult = await executeQuery(existingResumeQuery, [studentId]);
-    
-    if (existingResult.recordset.length > 0) {
+    const [existingRows] = await executeQuery(existingResumeQuery, [studentId]);
+
+    if (existingRows.length > 0) {
       // Update existing resume
       const updateQuery = `
-        UPDATE Resumes 
-        SET personal_info = ?, education = ?, experience = ?, projects = ?, skills = ?, updated_at = GETDATE()
+        UPDATE resumes
+        SET personal_info = ?, education = ?, experience = ?, projects = ?, skills = ?, updated_at = NOW()
         WHERE student_id = ?
       `;
       
@@ -67,8 +67,8 @@ router.post('/', authenticateToken, async (req, res, next) => {
     } else {
       // Create new resume
       const insertQuery = `
-        INSERT INTO Resumes (student_id, personal_info, education, experience, projects, skills, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+        INSERT INTO resumes (student_id, personal_info, education, experience, projects, skills, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
       
       await executeQuery(insertQuery, [
@@ -95,7 +95,7 @@ router.delete('/:studentId', authenticateToken, async (req, res, next) => {
     const { studentId } = req.params;
     
     const deleteQuery = `
-      DELETE FROM Resumes WHERE student_id = ?
+      DELETE FROM resumes WHERE student_id = ?
     `;
     
     await executeQuery(deleteQuery, [studentId]);

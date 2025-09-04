@@ -1,3 +1,2 @@
 -- Migration: add designation column to users
-IF COL_LENGTH('users', 'designation') IS NULL
-    ALTER TABLE users ADD designation NVARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS designation VARCHAR(100);

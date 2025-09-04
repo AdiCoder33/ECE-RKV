@@ -27,11 +27,11 @@ if (
 
     try {
       const placeholders = userIds.map(() => '?').join(',');
-      const { recordset } = await executeQuery(
+      const [rows] = await executeQuery(
         `SELECT token FROM device_tokens WHERE user_id IN (${placeholders})`,
         userIds
       );
-      const tokens = recordset.map((row) => row.token).filter(Boolean);
+      const tokens = rows.map((row) => row.token).filter(Boolean);
       if (!tokens.length) return;
 
       const payload = {
@@ -83,15 +83,15 @@ if (
 
     try {
       const placeholders = userIds.map(() => '?').join(',');
-      const { recordset } = await executeQuery(
+      const [rows] = await executeQuery(
         `SELECT endpoint, keys_p256dh, keys_auth FROM push_subscriptions WHERE user_id IN (${placeholders})`,
         userIds
       );
 
-      if (!recordset.length) return;
+      if (!rows.length) return;
 
       const payload = JSON.stringify({ title, body, data });
-      for (const row of recordset) {
+      for (const row of rows) {
         const subscription = {
           endpoint: row.endpoint,
           keys: { p256dh: row.keys_p256dh, auth: row.keys_auth },

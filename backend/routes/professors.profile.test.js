@@ -14,7 +14,6 @@ const mockExecuteQuery = jest.fn();
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 const professorsRouter = require('./professors');
@@ -48,10 +47,10 @@ describe('PUT /professors/:id/profile', () => {
           updated.blood_group,
           updated.date_of_birth,
         ] = params;
-        return { rowsAffected: [1] };
+        return Promise.resolve([{ affectedRows: 1 }]);
       }
-      return {
-        recordset: [
+      return Promise.resolve([
+        [
           {
             id: 1,
             name: updated.name,
@@ -64,8 +63,7 @@ describe('PUT /professors/:id/profile', () => {
             date_of_birth: updated.date_of_birth,
           },
         ],
-        rowsAffected: [1],
-      };
+      ]);
     });
   });
 
@@ -116,6 +114,16 @@ describe('PUT /professors/:id/profile', () => {
       '2000-01-01',
       1,
     ]);
+  });
+
+  it('rejects invalid dateOfBirth', async () => {
+    const res = await request(app)
+      .put('/professors/1/profile')
+      .send({ dateOfBirth: 'invalid-date' })
+      .expect(400);
+
+    expect(res.body).toEqual({ error: 'Invalid dateOfBirth' });
+    expect(mockExecuteQuery).not.toHaveBeenCalled();
   });
 });
 

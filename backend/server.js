@@ -1,4 +1,5 @@
 
+process.env.TZ = 'Asia/Kolkata';
 const express = require('express');
 const path = require('path');
 const http = require('http');
@@ -54,7 +55,7 @@ const { connectDB } = require('./config/database');
 async function connectToDatabase() {
   try {
     await connectDB();
-    console.log('Connected to MSSQL database');
+      console.log('Connected to MySQL database');
   } catch (error) {
     console.error('Database connection failed:', error);
     process.exit(1);

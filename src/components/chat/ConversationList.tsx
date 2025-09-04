@@ -104,8 +104,10 @@ const ConversationRow: React.FC<{
           <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
         )}
       </div>
-      <div className="flex-1 overflow-hidden text-left">
-        <p className="text-sm font-semibold truncate text-[#8B1F2F]">{conversation.title}</p>
+      <div className="flex flex-col flex-1 overflow-hidden text-left">
+        <p className="text-sm font-semibold truncate text-[#8B1F2F]">
+          {conversation.title}
+        </p>
         <p className="text-xs text-gray-500 flex items-center truncate">
           {conversation.pinned && (
             <Pin className="h-4 w-4 text-gray-400 mr-1" />

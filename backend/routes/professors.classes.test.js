@@ -12,7 +12,6 @@ const mockExecuteQuery = jest.fn();
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 const professorsRouter = require('./professors');
@@ -27,11 +26,11 @@ describe('GET /professors/:id/classes', () => {
 
     mockExecuteQuery.mockReset();
     mockExecuteQuery
-      .mockResolvedValueOnce({ recordset: [{ year: 1, semester: 1, section: 'A' }] })
-      .mockResolvedValueOnce({ recordset: [{ count: 2 }] })
-      .mockResolvedValueOnce({ recordset: [{ id: 1 }, { id: 2 }] })
-      .mockResolvedValueOnce({ recordset: [{ avg_score: 75 }] })
-      .mockResolvedValueOnce({ recordset: [{ attendance: 80 }] });
+      .mockResolvedValueOnce([[{ year: 1, semester: 1, section: 'A' }]])
+      .mockResolvedValueOnce([[{ count: 2 }]])
+      .mockResolvedValueOnce([[{ id: 1 }, { id: 2 }]])
+      .mockResolvedValueOnce([[{ avg_score: 75 }]])
+      .mockResolvedValueOnce([[{ attendance: 80 }]]);
   });
 
   it('returns class metrics using present column', async () => {

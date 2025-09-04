@@ -6,12 +6,12 @@ const router = express.Router();
 
 async function shouldSendAttendanceReminder(userId) {
   try {
-    const { recordset } = await executeQuery(
+    const [rows] = await executeQuery(
       'SELECT attendance_reminders FROM user_settings WHERE user_id = ?',
       [userId]
     );
-    if (!recordset.length) return true;
-    return recordset[0].attendance_reminders !== 0;
+    if (!rows.length) return true;
+    return rows[0].attendance_reminders !== 0;
   } catch (err) {
     return true;
   }
@@ -84,10 +84,9 @@ router.get('/', authenticateToken, async (req, res, next) => {
     }
     
     // Ensure roll numbers sort numerically rather than lexicographically
-    query += ' ORDER BY a.date DESC, a.period, TRY_CAST(u.roll_number AS INT)';
+    query += ' ORDER BY a.date DESC, a.period, CAST(u.roll_number AS UNSIGNED)';
     
-    const result = await executeQuery(query, params);
-    const rows = result.recordset;
+    const [rows] = await executeQuery(query, params);
     
     res.json(rows.map(row => ({
       id: row.id,
@@ -152,10 +151,9 @@ router.get('/summary', authenticateToken, async (req, res, next) => {
     query += ' WHERE ' + whereConditions.join(' AND ');
     // Group and order by numeric roll numbers for predictable sorting
     // Ensure all selected non-aggregated fields are included in the GROUP BY clause
-    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY TRY_CAST(u.roll_number AS INT)';
+    query += ' GROUP BY u.id, u.name, u.roll_number ORDER BY CAST(u.roll_number AS UNSIGNED)';
     
-    const result = await executeQuery(query, params);
-    const rows = result.recordset;
+    const [rows] = await executeQuery(query, params);
     
     res.json(rows.map(row => ({
       studentId: row.student_id,
@@ -203,8 +201,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
       ORDER BY a.date DESC, a.period
     `;
-    const recordsResult = await executeQuery(recordsQuery, params);
-    const records = recordsResult.recordset.map(row => ({
+    const [recordsRows] = await executeQuery(recordsQuery, params);
+    const records = recordsRows.map(row => ({
       id: row.id,
       subjectId: row.subject_id,
       subjectName: row.subject_name,
@@ -235,8 +233,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       GROUP BY a.subject_id, s.name
       ORDER BY s.name
     `;
-    const subjectStatsResult = await executeQuery(subjectStatsQuery, params);
-    const subjectStats = subjectStatsResult.recordset.map(row => ({
+    const [subjectStatsRows] = await executeQuery(subjectStatsQuery, params);
+    const subjectStats = subjectStatsRows.map(row => ({
       subjectId: row.subject_id,
       subjectName: row.subject_name,
       attended: row.attended,
@@ -260,8 +258,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       GROUP BY YEAR(a.date), MONTH(a.date)
       ORDER BY YEAR(a.date), MONTH(a.date)
     `;
-    const monthlyTrendResult = await executeQuery(monthlyTrendQuery, params);
-    const monthlyTrend = monthlyTrendResult.recordset.map(row => ({
+    const [monthlyTrendRows] = await executeQuery(monthlyTrendQuery, params);
+    const monthlyTrend = monthlyTrendRows.map(row => ({
       month: row.month,
       percentage: row.percentage
     }));
@@ -281,8 +279,8 @@ router.get('/student/:id', authenticateToken, async (req, res, next) => {
       LEFT JOIN extra_classes ec ON a.extra_class_id = ec.id
       WHERE a.student_id = ?${dateFilter} AND s.year = u.year AND s.semester = u.semester
     `;
-    const overallResult = await executeQuery(overallQuery, params);
-    const overallRow = overallResult.recordset[0] || {};
+    const [overallRows] = await executeQuery(overallQuery, params);
+    const overallRow = overallRows[0] || {};
     const overall = {
       attended: overallRow.attended || 0,
       missed: overallRow.missed || 0,
@@ -330,7 +328,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
     const studentIds = [...new Set(attendanceData.map(r => r.studentId))];
     if (studentIds.length) {
       const placeholders = studentIds.map(() => '?').join(',');
-      const { recordset } = await executeQuery(
+      const [rows] = await executeQuery(
         `SELECT student_id,
                 ROUND(SUM(CASE WHEN present = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS percentage
            FROM attendance
@@ -338,7 +336,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           GROUP BY student_id`,
         studentIds
       );
-      const lowAttendance = recordset.filter(r => r.percentage !== null && r.percentage < 75);
+      const lowAttendance = rows.filter(r => r.percentage !== null && r.percentage < 75);
       for (const student of lowAttendance) {
         if (await shouldSendAttendanceReminder(student.student_id)) {
           const message = `Your attendance is ${student.percentage}%. Please attend classes regularly.`;

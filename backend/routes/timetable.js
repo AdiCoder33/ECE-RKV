@@ -8,11 +8,11 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   let query =
     `SELECT t.id, t.day, t.time, t.subject, t.room, t.year, t.semester, t.section,
             COALESCE(u.name, t.faculty) AS faculty,
-            COALESCE(u.id, TRY_CAST(t.faculty AS INT)) AS faculty_id,
+            COALESCE(u.id, CAST(t.faculty AS UNSIGNED)) AS faculty_id,
             s.id AS subject_id
        FROM timetable t
-       LEFT JOIN users u ON u.id = TRY_CAST(t.faculty AS INT)
-       LEFT JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       LEFT JOIN users u ON u.id = CAST(t.faculty AS UNSIGNED)
+       LEFT JOIN subjects s ON s.name = t.subject OR s.id = CAST(t.subject AS UNSIGNED)
       WHERE 1=1`;
   const params = [];
 
@@ -32,7 +32,7 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   }
 
   if (facultyId) {
-    query += ' AND COALESCE(u.id, TRY_CAST(t.faculty AS INT)) = ?';
+    query += ' AND COALESCE(u.id, CAST(t.faculty AS UNSIGNED)) = ?';
     params.push(Number(facultyId));
   }
 
@@ -42,8 +42,8 @@ async function fetchTimetable({ year, semester, section, facultyId, day }) {
   }
 
   query += ' ORDER BY t.day, t.time';
-  const result = await executeQuery(query, params);
-  return result.recordset;
+  const [rows] = await executeQuery(query, params);
+  return rows;
 }
 
 // Get timetable
@@ -67,23 +67,22 @@ router.post('/', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid faculty id' });
     }
 
-    const clash = await executeQuery(
+    const [clash] = await executeQuery(
       'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ?',
       [day, time, String(professorId)]
     );
-    if (clash.recordset[0].cnt > 0) {
+    if (clash[0].cnt > 0) {
       return res
         .status(409)
         .json({ message: 'Faculty already assigned to another slot at this time' });
     }
 
-    const result = await executeQuery(
-      'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) OUTPUT INSERTED.id AS id VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO timetable (day, time, subject, faculty, room, year, semester, section) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [day, time, subject, String(professorId), room, year, semester, section]
     );
 
-    const newId = result.recordset?.[0]?.id;
-    res.status(201).json({ id: newId, message: 'Timetable slot created successfully' });
+    res.status(201).json({ id: result.insertId, message: 'Timetable slot created successfully' });
   } catch (error) {
     console.error('Create timetable slot error:', error);
     next(error);
@@ -100,11 +99,11 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid faculty id' });
     }
 
-    const clash = await executeQuery(
+    const [clash] = await executeQuery(
       'SELECT COUNT(*) AS cnt FROM timetable WHERE day = ? AND time = ? AND faculty = ? AND id <> ?',
       [day, time, String(professorId), id]
     );
-    if (clash.recordset[0].cnt > 0) {
+    if (clash[0].cnt > 0) {
       return res
         .status(409)
         .json({ message: 'Faculty already assigned to another slot at this time' });

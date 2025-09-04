@@ -6,7 +6,7 @@ const router = express.Router();
 // Get all chat groups with member counts
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT g.id, g.name, g.description, g.type, g.created_by, g.created_at,
               COUNT(m.id) as member_count
        FROM chat_groups g
@@ -14,7 +14,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
        GROUP BY g.id, g.name, g.description, g.type, g.created_by, g.created_at
        ORDER BY g.created_at DESC`
     );
-    const formatted = result.recordset.map(g => ({
+    const formatted = rows.map(g => ({
       id: g.id,
       name: g.name,
       description: g.description,
@@ -36,12 +36,12 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const { name, description, type } = req.body;
     const createdBy = req.user.id;
     
-    const result = await executeQuery(
-      'INSERT INTO chat_groups (name, description, type, created_by) OUTPUT inserted.id VALUES (?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO chat_groups (name, description, type, created_by) VALUES (?, ?, ?, ?)',
       [name, description, type, createdBy]
     );
 
-    res.status(201).json({ id: result.recordset[0].id, message: 'Group created successfully' });
+    res.status(201).json({ id: result.insertId, message: 'Group created successfully' });
   } catch (error) {
     console.error('Create group error:', error);
     next(error);
@@ -82,14 +82,14 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
 router.get('/:id/members', authenticateToken, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       `SELECT u.id, u.name, u.email
        FROM chat_group_members gm
        JOIN users u ON gm.user_id = u.id
        WHERE gm.group_id = ?`,
       [id]
     );
-    res.json(result.recordset);
+    res.json(rows);
   } catch (error) {
     console.error('Group members fetch error:', error);
     next(error);

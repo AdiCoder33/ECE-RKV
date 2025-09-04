@@ -11,15 +11,15 @@ router.get('/', async (req, res, next) => {
              ap.company, ap.position, ap.graduation_year, ap.field_of_study,
              ap.location, ap.bio, ap.linkedin, ap.github, ap.website,
              ap.achievements, ap.skills, ap.work_experience, ap.education
-      FROM Users u
-      LEFT JOIN AlumniProfiles ap ON u.id = ap.user_id
+      FROM users u
+      LEFT JOIN alumni_profiles ap ON u.id = ap.user_id
       WHERE u.role = 'alumni'
       ORDER BY u.name
     `;
     
-    const result = await executeQuery(query);
-    
-    const alumni = result.recordset.map(row => ({
+    const [rows] = await executeQuery(query);
+
+    const alumni = rows.map(row => ({
       id: row.id,
       name: row.name,
       email: row.email,
@@ -57,18 +57,18 @@ router.get('/:id', async (req, res, next) => {
              ap.company, ap.position, ap.graduation_year, ap.field_of_study,
              ap.location, ap.bio, ap.linkedin, ap.github, ap.website,
              ap.achievements, ap.skills, ap.work_experience, ap.education
-      FROM Users u
-      LEFT JOIN AlumniProfiles ap ON u.id = ap.user_id
+      FROM users u
+      LEFT JOIN alumni_profiles ap ON u.id = ap.user_id
       WHERE u.id = ? AND u.role = 'alumni'
     `;
     
-    const result = await executeQuery(query, [id]);
-    
-    if (result.recordset.length === 0) {
+    const [rows] = await executeQuery(query, [id]);
+
+    if (!rows.length) {
       return res.status(404).json({ message: 'Alumni not found' });
     }
-    
-    const row = result.recordset[0];
+
+    const row = rows[0];
     const alumni = {
       id: row.id,
       name: row.name,
@@ -109,18 +109,18 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
     
     // Check if profile exists
     const existingProfileQuery = `
-      SELECT id FROM AlumniProfiles WHERE user_id = ?
+      SELECT id FROM alumni_profiles WHERE user_id = ?
     `;
-    const existingResult = await executeQuery(existingProfileQuery, [userId]);
-    
-    if (existingResult.recordset.length > 0) {
+    const [existingRows] = await executeQuery(existingProfileQuery, [userId]);
+
+    if (existingRows.length > 0) {
       // Update existing profile
       const updateQuery = `
-        UPDATE AlumniProfiles 
+        UPDATE alumni_profiles
         SET company = ?, position = ?, graduation_year = ?, field_of_study = ?,
             location = ?, bio = ?, linkedin = ?, github = ?, website = ?,
             achievements = ?, skills = ?, work_experience = ?, education = ?,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE user_id = ?
       `;
       
@@ -136,11 +136,11 @@ router.put('/profile', authenticateToken, async (req, res, next) => {
     } else {
       // Create new profile
       const insertQuery = `
-        INSERT INTO AlumniProfiles 
+        INSERT INTO alumni_profiles
         (user_id, company, position, graduation_year, field_of_study, location,
          bio, linkedin, github, website, achievements, skills, work_experience,
          education, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
       
       await executeQuery(insertQuery, [
@@ -165,7 +165,7 @@ router.delete('/profile', authenticateToken, async (req, res, next) => {
     const userId = req.user.id;
     
     const deleteQuery = `
-      DELETE FROM AlumniProfiles WHERE user_id = ?
+      DELETE FROM alumni_profiles WHERE user_id = ?
     `;
     
     await executeQuery(deleteQuery, [userId]);

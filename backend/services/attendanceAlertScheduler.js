@@ -27,16 +27,16 @@ async function runCheck() {
     const dayName = now.format('dddd');
     const currentTime = now.format('HH:mm');
 
-    const { recordset: slots } = await executeQuery(
+    const [slots] = await executeQuery(
       `SELECT s.id AS subject_id, t.year, t.semester, t.section
        FROM timetable t
-       JOIN subjects s ON s.name = t.subject OR CAST(s.id AS NVARCHAR) = t.subject
+       JOIN subjects s ON s.name = t.subject OR s.id = t.subject
        WHERE t.day = ? AND LEFT(t.time,5) = ?`,
       [dayName, currentTime]
     );
 
     for (const slot of slots) {
-      const { recordset: students } = await executeQuery(
+      const [students] = await executeQuery(
         "SELECT id FROM users WHERE role='student' AND year = ? AND semester = ? AND section = ?",
         [slot.year, slot.semester, slot.section]
       );
@@ -44,7 +44,7 @@ async function runCheck() {
       const studentIds = students.map(s => s.id);
       const placeholders = studentIds.map(() => '?').join(',');
       const params = [slot.subject_id, ...studentIds];
-      const { recordset: attendance } = await executeQuery(
+      const [attendance] = await executeQuery(
         `SELECT student_id, ROUND(SUM(CASE WHEN present=1 THEN 1 ELSE 0 END)*100.0/COUNT(*),2) AS pct FROM attendance WHERE subject_id=? AND student_id IN (${placeholders}) GROUP BY student_id`,
         params
       );

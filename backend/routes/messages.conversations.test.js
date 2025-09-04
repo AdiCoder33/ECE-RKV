@@ -8,15 +8,11 @@ jest.mock('../middleware/auth', () => ({
   },
 }));
 
-const mockExecuteQuery = jest.fn().mockResolvedValue({
-  recordset: [],
-  rowsAffected: [],
-});
+const mockExecuteQuery = jest.fn().mockResolvedValue([[]]);
 
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 const conversationsRouter = require('./conversations');
@@ -30,11 +26,11 @@ describe('GET /conversations', () => {
     mockExecuteQuery.mockClear();
   });
 
-  it('queries conversations using single userId parameter for each query', async () => {
-    mockExecuteQuery.mockResolvedValueOnce({ recordset: [] });
-    mockExecuteQuery.mockResolvedValueOnce({ recordset: [] });
+  it('queries conversations using multiple userId parameters for each query', async () => {
+    mockExecuteQuery.mockResolvedValueOnce([[]]);
+    mockExecuteQuery.mockResolvedValueOnce([[]]);
     await request(app).get('/conversations').expect(200);
-    expect(mockExecuteQuery).toHaveBeenNthCalledWith(1, expect.any(String), [1]);
-    expect(mockExecuteQuery).toHaveBeenNthCalledWith(2, expect.any(String), [1]);
+    expect(mockExecuteQuery).toHaveBeenNthCalledWith(1, expect.any(String), [1, 1, 1, 1, 1]);
+    expect(mockExecuteQuery).toHaveBeenNthCalledWith(2, expect.any(String), [1, 1, 1]);
   });
 });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { executeQuery, connectDB, sql } = require('../config/database');
+const { executeQuery, connectDB } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { resolveProfileImage } = require('../utils/images');
 const router = express.Router();
@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_strength, 0) AS total_strength
+             IFNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
@@ -30,8 +30,8 @@ router.get('/', authenticateToken, async (req, res, next) => {
       ORDER BY c.year, c.semester, c.section
     `;
     
-    const result = await executeQuery(query);
-    const classes = result.recordset || [];
+    const [rows] = await executeQuery(query);
+    const classes = rows || [];
     
     res.json(classes.map(cls => ({
       id: cls.id.toString(),
@@ -63,8 +63,8 @@ router.get('/promotion-summary', authenticateToken, async (req, res, next) => {
       ORDER BY year
     `;
 
-    const result = await executeQuery(query);
-    const summary = result.recordset || [];
+    const [rows] = await executeQuery(query);
+    const summary = rows || [];
 
     res.json(
       summary.map(row => ({
@@ -96,8 +96,8 @@ router.get('/sections', authenticateToken, async (req, res, next) => {
       params.push(Number(semester));
     }
 
-    const result = await executeQuery(query, params);
-    const sections = (result.recordset || []).map(row => row.section);
+    const [rows] = await executeQuery(query, params);
+    const sections = (rows || []).map(row => row.section);
 
     res.json(sections);
   } catch (error) {
@@ -109,7 +109,7 @@ router.get('/sections', authenticateToken, async (req, res, next) => {
 // Create new class
 router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
-    const { year, semester, section, hodId } = req.body;
+    const { year, semester, section, hodId, department } = req.body;
 
     if (!year || !semester || !section) {
       return res.status(400).json({ error: 'Year, semester, and section are required' });
@@ -120,22 +120,24 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
       return res.status(400).json({ error: 'Semester must be 1 or 2' });
     }
 
+    const dept = department || 'ECE';
+
     // Check if class already exists
-    const existingResult = await executeQuery(
-      'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
-      [year, sem, section]
-    );
+      const [existingResult] = await executeQuery(
+        'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ? AND department = ?',
+        [year, sem, section, dept]
+      );
 
-    if (existingResult.recordset.length > 0) {
-      return res.status(400).json({ error: 'Class already exists' });
-    }
+      if (existingResult.length > 0) {
+        return res.status(400).json({ error: 'Class already exists' });
+      }
 
-    const insertResult = await executeQuery(
-      'INSERT INTO classes (year, semester, section, hod_id) OUTPUT INSERTED.id VALUES (?, ?, ?, ?)',
-      [year, sem, section, hodId || null]
-    );
+      const [insertResult] = await executeQuery(
+        'INSERT INTO classes (year, semester, section, department, hod_id) VALUES (?, ?, ?, ?, ?)',
+        [year, sem, section, dept, hodId || null]
+      );
 
-    const newId = insertResult.recordset[0].id;
+      const newId = insertResult.insertId;
 
     // Link existing students of the same year, semester, and section to this class
     await executeQuery(
@@ -143,38 +145,38 @@ router.post('/', authenticateToken, requireRole(['admin', 'hod']), async (req, r
       [newId, year, sem, section]
     );
 
-    // Fetch the created class
-    const createdResult = await executeQuery(
-      `
-      SELECT c.id, c.year, c.semester, c.section, c.hod_id,
-             h.name AS hod_name,
-             ISNULL(s.total_strength, 0) AS total_strength
-      FROM classes c
-      LEFT JOIN users h ON c.hod_id = h.id
-      LEFT JOIN (
-        SELECT year, semester, section, COUNT(*) AS total_strength
-        FROM users
-        WHERE role = 'student'
-        GROUP BY year, semester, section
-      ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
-      WHERE c.id = ?
-    `,
-      [newId]
-    );
+      // Fetch the created class
+      const [createdResult] = await executeQuery(
+        `
+        SELECT c.id, c.year, c.semester, c.section, c.hod_id,
+               h.name AS hod_name,
+               IFNULL(s.total_strength, 0) AS total_strength
+        FROM classes c
+        LEFT JOIN users h ON c.hod_id = h.id
+        LEFT JOIN (
+          SELECT year, semester, section, COUNT(*) AS total_strength
+          FROM users
+          WHERE role = 'student'
+          GROUP BY year, semester, section
+        ) s ON c.year = s.year AND c.semester = s.semester AND c.section = s.section
+        WHERE c.id = ?
+      `,
+        [newId]
+      );
 
-    const newClass = createdResult.recordset[0];
+      const newClass = createdResult[0];
 
-    res.status(201).json({
-      id: newClass.id.toString(),
-      year: newClass.year,
-      semester: newClass.semester,
-      section: newClass.section,
-      hodId: newClass.hod_id?.toString(),
-      hodName: newClass.hod_name,
-      totalStrength: newClass.total_strength,
-      subjects: [],
-      students: []
-    });
+      res.status(201).json({
+        id: newClass.id.toString(),
+        year: newClass.year,
+        semester: newClass.semester,
+        section: newClass.section,
+        hodId: newClass.hod_id?.toString(),
+        hodName: newClass.hod_name,
+        totalStrength: newClass.total_strength,
+        subjects: [],
+        students: []
+      });
   } catch (error) {
     console.error('Create class error:', error);
     next(error);
@@ -189,7 +191,7 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
     const query = `
       SELECT c.id, c.year, c.semester, c.section, c.hod_id,
              h.name AS hod_name,
-             ISNULL(s.total_strength, 0) AS total_strength
+             IFNULL(s.total_strength, 0) AS total_strength
       FROM classes c
       LEFT JOIN users h ON c.hod_id = h.id
       LEFT JOIN (
@@ -201,13 +203,13 @@ router.get('/:classId', authenticateToken, async (req, res, next) => {
       WHERE c.id = ?
     `;
 
-    const result = await executeQuery(query, [classId]);
+    const [rows] = await executeQuery(query, [classId]);
 
-    if (result.recordset.length === 0) {
+    if (!rows.length) {
       return res.status(404).json({ error: 'Class not found' });
     }
 
-    const cls = result.recordset[0];
+    const cls = rows[0];
 
     res.json({
       id: cls.id.toString(),
@@ -234,22 +236,22 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
     // Retrieve students ordered by numeric roll numbers
     const query = `
       SELECT u.*, sc.enrollment_date,
-             ISNULL(att.attendance_percentage, 0) AS attendance_percentage,
+             IFNULL(att.attendance_percentage, 0) AS attendance_percentage,
              ar.cgpa
       FROM users u
       JOIN student_classes sc ON u.id = sc.student_id
       LEFT JOIN (
-        SELECT student_id, AVG(CAST(present AS float)) * 100 AS attendance_percentage
+        SELECT student_id, AVG(present) * 100 AS attendance_percentage
         FROM attendance
         GROUP BY student_id
       ) att ON u.id = att.student_id
       LEFT JOIN academic_records ar ON u.id = ar.student_id AND ar.year = u.year
       WHERE sc.class_id = ? AND u.role = 'student'
-      ORDER BY TRY_CAST(u.roll_number AS INT)
+      ORDER BY CAST(u.roll_number AS UNSIGNED)
     `;
     
-    const result = await executeQuery(query, [classId]);
-    const students = result.recordset || [];
+    const [rows] = await executeQuery(query, [classId]);
+    const students = rows || [];
 
     const formatted = await Promise.all(
       students.map(async student => ({
@@ -282,22 +284,34 @@ router.get('/:classId/students', authenticateToken, async (req, res, next) => {
 router.put('/:classId', authenticateToken, requireRole(['admin', 'hod']), async (req, res, next) => {
   try {
     const { classId } = req.params;
-    const { year, semester, section, hodId } = req.body;
+    const { year, semester, section, department, hodId } = req.body;
 
-    const sem = Number(semester);
-    if (![1, 2].includes(sem)) {
-      return res.status(400).json({ error: 'Semester must be 1 or 2' });
+    let sem = null;
+    if (semester !== undefined && semester !== null) {
+      sem = Number(semester);
+      if (![1, 2].includes(sem)) {
+        return res.status(400).json({ error: 'Semester must be 1 or 2' });
+      }
     }
 
-    const result = await executeQuery(
-      'UPDATE classes SET year = ?, semester = ?, section = ?, hod_id = ? WHERE id = ?',
-      [year, sem, section, hodId, classId]
+    const params = [
+      year ?? null,
+      sem,
+      section ?? null,
+      department ?? null,
+      hodId ?? null,
+      classId,
+    ];
+
+    const [result] = await executeQuery(
+      'UPDATE classes SET year=?, semester=?, section=?, department=?, hod_id=? WHERE id=?',
+      params
     );
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Class not found' });
     }
-    
+
     res.json({ message: 'Class updated successfully' });
   } catch (error) {
     console.error('Update class error:', error);
@@ -311,12 +325,12 @@ router.delete('/:classId', authenticateToken, requireRole(['admin', 'hod']), asy
     const { classId } = req.params;
     
     // Check if class exists and has no students
-    const studentsResult = await executeQuery(
+    const [studentsResult] = await executeQuery(
       'SELECT COUNT(*) as count FROM student_classes WHERE class_id = ?',
       [classId]
     );
 
-    if (studentsResult.recordset[0].count > 0) {
+    if (studentsResult[0].count > 0) {
       return res.status(400).json({ error: 'Cannot delete class with enrolled students' });
     }
 
@@ -338,12 +352,12 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
     }
 
     const pool = await connectDB();
-    const transaction = new sql.Transaction(pool);
-    await transaction.begin();
-
+    const connection = await pool.getConnection();
     try {
+      await connection.beginTransaction();
+
       // Convert any existing fifth-year students to alumni before promotion
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         UPDATE users
         SET role = 'alumni',
             year = NULL,
@@ -353,40 +367,40 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
       `);
 
       // Clean up any remaining links and classes from previous fifth years
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         DELETE FROM student_classes
         WHERE class_id IN (SELECT id FROM classes WHERE year = 5);
       `);
 
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         DELETE FROM classes WHERE year = 5;
       `);
 
       if (semester === 1) {
         // Move all semester 1 classes and students to semester 2
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           UPDATE classes
           SET semester = 2
           WHERE semester = 1;
         `);
 
-        const promotedResult = await new sql.Request(transaction).query(`
+        const [promotedResult] = await connection.query(`
           UPDATE users
           SET semester = 2
           WHERE role = 'student' AND semester = 1;
         `);
 
-        await transaction.commit();
+        await connection.commit();
 
         return res.json({
           message: 'Students moved to semester 2',
-          promoted: promotedResult.rowsAffected[0],
+          promoted: promotedResult.affectedRows,
           graduated: 0
         });
       }
 
       // Update non-final-year semester 2 classes to next year semester 1
-      await new sql.Request(transaction).query(`
+      await connection.query(`
         UPDATE classes
         SET year = year + 1,
             semester = 1
@@ -394,39 +408,39 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
       `);
 
       // Handle final year students
-      let graduatedResult = { rowsAffected: [0] };
-      const finalYearStudents = await new sql.Request(transaction).query(`
+      let graduatedResult = { affectedRows: 0 };
+      const [finalYearStudents] = await connection.query(`
         SELECT id FROM users WHERE role = 'student' AND year = 4 AND semester = 2;
       `);
 
-      if (finalYearStudents.recordset.length > 0) {
+      if (finalYearStudents.length > 0) {
         // Create a single class to hold all graduating students
-        const graduatedClassResult = await new sql.Request(transaction).query(`
+        const [graduatedClassResult] = await connection.query(`
           INSERT INTO classes (year, semester, section, hod_id)
-          OUTPUT INSERTED.id
           VALUES (5, 1, 'GRADUATED', NULL);
         `);
-        const graduatedClassId = graduatedClassResult.recordset[0].id;
+        const graduatedClassId = graduatedClassResult.insertId;
 
         // Move final year students into the graduated class
-        graduatedResult = await new sql.Request(transaction).query(`
+        const [gradRes] = await connection.query(`
           UPDATE users
           SET year = 5,
               semester = 1,
               section = 'GRADUATED',
-              graduation_year = YEAR(GETDATE())
+              graduation_year = YEAR(CURDATE())
           WHERE role = 'student' AND year = 4 AND semester = 2;
         `);
+        graduatedResult = gradRes;
 
         // Rebuild student_classes for graduated students
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           DELETE sc
           FROM student_classes sc
           JOIN users u ON sc.student_id = u.id
           WHERE u.role = 'student' AND u.year = 5 AND u.semester = 1 AND u.section = 'GRADUATED';
         `);
 
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           INSERT INTO student_classes (class_id, student_id)
           SELECT ${graduatedClassId} AS class_id, u.id
           FROM users u
@@ -434,13 +448,13 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
         `);
 
         // Remove old fourth-year semester 2 classes
-        await new sql.Request(transaction).query(`
+        await connection.query(`
           DELETE FROM classes WHERE year = 4 AND semester = 2;
         `);
       }
 
       // Promote remaining students to next year, semester 1
-      const promotedResult = await new sql.Request(transaction).query(`
+      const [promotedResult] = await connection.query(`
         UPDATE users
         SET year = year + 1,
             semester = 1
@@ -448,31 +462,37 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
       `);
 
       // Create new first year classes for next intake if not present
-      await new sql.Request(transaction).query(`
-        INSERT INTO classes (year, semester, section, hod_id)
-        SELECT 1, 1, s.section, NULL
-        FROM (SELECT DISTINCT section FROM classes WHERE section <> 'GRADUATED' AND year <= 4) s
+      await connection.query(`
+        INSERT INTO classes (year, semester, section, department, hod_id)
+        SELECT 1, 1, s.section, s.department, NULL
+        FROM (
+          SELECT DISTINCT section, COALESCE(department, 'ECE') AS department
+          FROM classes
+          WHERE section <> 'GRADUATED' AND year <= 4
+        ) s
         WHERE NOT EXISTS (
           SELECT 1 FROM classes c2
           WHERE c2.year = 1 AND c2.semester = 1 AND c2.section = s.section
         );
       `);
 
-      await transaction.commit();
+      await connection.commit();
 
       res.json({
         message: 'Students promoted successfully',
-        promoted: promotedResult.rowsAffected[0],
-        graduated: graduatedResult.rowsAffected[0]
+        promoted: promotedResult.affectedRows,
+        graduated: graduatedResult.affectedRows
       });
     } catch (error) {
       try {
-        await transaction.rollback();
+        await connection.rollback();
       } catch (rollbackError) {
         console.error('Rollback failed:', rollbackError);
       }
       console.error('Promotion transaction error:', error);
       throw error;
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Promote students error:', error);
@@ -492,19 +512,19 @@ router.post('/promote', authenticateToken, requireRole(['admin', 'hod']), async 
 
           for (let semester = 1; semester <= 2; semester++) {
             // Check if class already exists
-            const existingResult = await executeQuery(
+            const [existingResult] = await executeQuery(
               'SELECT id FROM classes WHERE year = ? AND semester = ? AND section = ?',
               [year, semester, section]
             );
 
-            if (existingResult.recordset.length === 0) {
-              const insertResult = await executeQuery(
-                'INSERT INTO classes (year, semester, section) OUTPUT INSERTED.id VALUES (?, ?, ?)',
+            if (existingResult.length === 0) {
+              const [insertResult] = await executeQuery(
+                'INSERT INTO classes (year, semester, section) VALUES (?, ?, ?)',
                 [year, semester, section]
               );
 
               classes.push({
-                id: insertResult.recordset[0].id,
+                id: insertResult.insertId,
                 year,
                 semester,
                 section,

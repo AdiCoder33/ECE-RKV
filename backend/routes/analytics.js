@@ -6,28 +6,25 @@ const router = express.Router();
 // Get analytics overview
 router.get('/overview', authenticateToken, async (req, res, next) => {
   try {
-    const userResult = await executeQuery('SELECT role, COUNT(*) as count FROM users GROUP BY role');
-    const userStats = userResult.recordset;
+    const [userStats] = await executeQuery('SELECT role, COUNT(*) as count FROM users GROUP BY role');
 
-    const subjectResult = await executeQuery('SELECT COUNT(*) as total_subjects FROM subjects');
-    const subjectStats = subjectResult.recordset;
+    const [subjectStats] = await executeQuery('SELECT COUNT(*) as total_subjects FROM subjects');
 
-    const attendanceResult = await executeQuery(`
+    const [attendanceStats] = await executeQuery(`
       SELECT
         AVG(CASE WHEN present = 1 THEN 100 ELSE 0 END) as avg_attendance
       FROM attendance
-      WHERE date >= DATEADD(DAY, -30, GETDATE())
+      WHERE date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `);
-    const attendanceStats = attendanceResult.recordset;
+    
+    const [classesRows] = await executeQuery('SELECT COUNT(*) AS total_classes FROM classes');
+    const totalClasses = classesRows[0].total_classes;
 
-    const classesResult = await executeQuery('SELECT COUNT(*) AS total_classes FROM classes');
-    const totalClasses = classesResult.recordset[0].total_classes;
+    const [studentsRows] = await executeQuery("SELECT COUNT(*) AS total_users FROM users WHERE role='student'");
+    const totalUsers = studentsRows[0].total_users;
 
-    const studentsResult = await executeQuery("SELECT COUNT(*) AS total_users FROM users WHERE role='student'");
-    const totalUsers = studentsResult.recordset[0].total_users;
-
-    const professorsResult = await executeQuery("SELECT COUNT(*) AS total_professors FROM users WHERE role='professor'");
-    const totalProfessors = professorsResult.recordset[0].total_professors;
+    const [professorsRows] = await executeQuery("SELECT COUNT(*) AS total_professors FROM users WHERE role='professor'");
+    const totalProfessors = professorsRows[0].total_professors;
 
     res.json({
       userStats,
@@ -46,10 +43,10 @@ router.get('/overview', authenticateToken, async (req, res, next) => {
 // Get year-wise student enrollment stats
 router.get('/enrollment', authenticateToken, async (req, res, next) => {
   try {
-    const result = await executeQuery(
+    const [rows] = await executeQuery(
       "SELECT year, COUNT(*) AS students FROM users WHERE role='student' GROUP BY year ORDER BY year"
     );
-    res.json(result.recordset);
+    res.json(rows);
   } catch (error) {
     console.error('Enrollment analytics error:', error);
     next(error);
@@ -60,10 +57,10 @@ router.get('/enrollment', authenticateToken, async (req, res, next) => {
 // Get recent activities
 router.get('/activities', authenticateToken, async (req, res, next) => {
   try {
-    const { recordset } = await executeQuery(
-      'SELECT id, title AS action, created_at FROM notifications ORDER BY created_at DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY'
+    const [rows] = await executeQuery(
+      'SELECT id, title AS action, created_at FROM notifications ORDER BY created_at DESC LIMIT 10'
     );
-    res.json(recordset);
+    res.json(rows);
   } catch (error) {
     console.error('Activities analytics error:', error);
     next(error);

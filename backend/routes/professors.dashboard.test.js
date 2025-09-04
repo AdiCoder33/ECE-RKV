@@ -12,7 +12,6 @@ const mockExecuteQuery = jest.fn();
 jest.mock('../config/database', () => ({
   executeQuery: mockExecuteQuery,
   connectDB: jest.fn(),
-  sql: {},
 }));
 
 const professorsRouter = require('./professors');
@@ -27,12 +26,12 @@ describe('GET /professors/:id/dashboard', () => {
 
     mockExecuteQuery.mockReset();
     mockExecuteQuery
-      .mockResolvedValueOnce({ recordset: [{ year: 1, semester: 1, section: 'A', subject: 'Sub1' }] })
-      .mockResolvedValueOnce({ recordset: [{ total_students: 10 }] })
-      .mockResolvedValueOnce({ recordset: [{ id: 1 }, { id: 2 }] })
-      .mockResolvedValueOnce({ recordset: [{ avg_attendance: 80 }] })
-      .mockResolvedValueOnce({ recordset: [{ expected: 20 }] })
-      .mockResolvedValueOnce({ recordset: [{ graded: 5 }] });
+      .mockResolvedValueOnce([[{ year: 1, semester: 1, section: 'A', subject: 'Sub1' }]])
+      .mockResolvedValueOnce([[{ total_students: 10 }]])
+      .mockResolvedValueOnce([[{ id: 1 }, { id: 2 }]])
+      .mockResolvedValueOnce([[{ avg_attendance: 80 }]])
+      .mockResolvedValueOnce([[{ expected: 20 }]])
+      .mockResolvedValueOnce([[{ graded: 5 }]]);
   });
 
   it('returns dashboard metrics using numeric subject IDs', async () => {

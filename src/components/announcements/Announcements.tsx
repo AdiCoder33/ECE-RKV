@@ -301,6 +301,17 @@ const Announcements = () => {
     }
   };
 
+  // --- EDIT HANDLER ---
+  const handleEdit = (announcement: Announcement) => {
+    setEditingId(announcement.id);
+    setTitle(announcement.title);
+    setContent(announcement.content);
+    setPriority(announcement.priority);
+    setTargetRole(announcement.targetRole ?? 'all');
+    setTargetYear(announcement.targetYear ? String(announcement.targetYear) : '');
+    setShowCreateForm(true);
+  };
+
   // Loader while fetching data
   if (loading) {
     return <EceVideoLoader message="Loading Announcements..." />;

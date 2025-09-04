@@ -8,63 +8,41 @@ jest.mock('../middleware/auth', () => ({
   },
 }));
 
-const mockBegin = jest.fn(function () {
-  this._state = 'started';
-  return Promise.resolve();
-});
-const mockCommit = jest.fn(function () {
-  this._state = 'committed';
-  return Promise.resolve();
-});
-const mockRollback = jest.fn(function () {
-  this._state = 'rolledback';
-  return Promise.resolve();
+const mockBegin = jest.fn().mockResolvedValue();
+const mockCommit = jest.fn().mockResolvedValue();
+const mockRollback = jest.fn().mockResolvedValue();
+const mockRelease = jest.fn().mockResolvedValue();
+
+const mockQuery = jest.fn(async (q, params) => {
+  if (q.startsWith('SAVEPOINT') || q.startsWith('ROLLBACK TO SAVEPOINT')) return [{}];
+  if (q.startsWith('SELECT id, name')) return [[]];
+  if (q.startsWith('INSERT INTO users')) {
+    if (params[1] === 'fail@example.com') {
+      throw new Error('duplicate email');
+    }
+    return [{ insertId: 1, affectedRows: 1 }];
+  }
+  if (q.startsWith('SELECT id FROM classes')) return [[]];
+  if (q.startsWith('INSERT INTO student_classes')) return [{ affectedRows: 1 }];
+  return [[]];
 });
 
-class MockTransaction {
-  constructor() {
-    this._state = 'pending';
-    this.begin = mockBegin;
-    this.commit = mockCommit;
-    this.rollback = mockRollback;
-  }
-}
+const mockConnection = {
+  beginTransaction: mockBegin,
+  commit: mockCommit,
+  rollback: mockRollback,
+  query: mockQuery,
+  release: mockRelease,
+};
 
-class MockRequest {
-  constructor(transaction) {
-    this.transaction = transaction;
-    this.params = {};
-  }
-  input(name, value) {
-    this.params[name] = value;
-    return this;
-  }
-  async query(q) {
-    if (q.startsWith('SAVE TRANSACTION')) return {};
-    if (q.startsWith('ROLLBACK TRANSACTION')) return {};
-    if (q.startsWith('SELECT id, name')) {
-      return { recordset: [] };
-    }
-    if (q.startsWith('INSERT INTO users')) {
-      if (this.params.email === 'fail@example.com') {
-        throw new Error('duplicate email');
-      }
-      return { recordset: [{ id: 1 }] };
-    }
-    if (q.startsWith('SELECT id FROM classes')) {
-      return { recordset: [] };
-    }
-    return { recordset: [] };
-  }
-}
+const mockGetConnection = jest.fn().mockResolvedValue(mockConnection);
 
 jest.mock('../config/database', () => {
-  const connectDB = jest.fn().mockResolvedValue({});
-  const executeQuery = jest.fn().mockResolvedValue({ recordset: [] });
+  const connectDB = jest.fn().mockResolvedValue({ getConnection: mockGetConnection });
+  const executeQuery = jest.fn().mockResolvedValue([[]]);
   return {
     executeQuery,
     connectDB,
-    sql: { Transaction: MockTransaction, Request: MockRequest },
   };
 });
 
@@ -86,6 +64,9 @@ describe('bulk user creation', () => {
     mockBegin.mockClear();
     mockCommit.mockClear();
     mockRollback.mockClear();
+    mockRelease.mockClear();
+    mockQuery.mockClear();
+    mockGetConnection.mockClear();
   });
 
   it('processes valid users even when some entries fail', async () => {

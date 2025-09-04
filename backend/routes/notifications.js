@@ -8,7 +8,7 @@ const router = express.Router();
 // Get notifications for the current user
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
-    const { recordset } = await executeQuery(`
+    const [rows] = await executeQuery(`
       SELECT
         id,
         title,
@@ -22,7 +22,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
       ORDER BY created_at DESC
     `, [req.user.id]);
 
-    const notifications = recordset.map(notification => {
+    const notifications = rows.map(notification => {
       let parsedData = null;
       if (notification.data) {
         try {
@@ -79,8 +79,8 @@ router.post('/', authenticateToken, async (req, res, next) => {
     const authorName = (req.user && req.user.name ? req.user.name : 'ECE Portal').trim();
     const finalTitle = (title || authorName).trim();
     
-    const { recordset } = await executeQuery(
-      'INSERT INTO notifications (title, message, type, user_id, data) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?)',
+    const [result] = await executeQuery(
+      'INSERT INTO notifications (title, message, type, user_id, data) VALUES (?, ?, ?, ?, ?)',
       [finalTitle, message, type, userId, JSON.stringify(data || {})]
     );
 
@@ -88,7 +88,7 @@ router.post('/', authenticateToken, async (req, res, next) => {
       .catch((err) => console.error('Push notification error:', err));
 
     res.status(201).json({
-      id: recordset[0].id,
+      id: result.insertId,
       message: 'Notification created successfully'
     });
   } catch (error) {
