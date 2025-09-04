@@ -212,10 +212,26 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       for (let j = 0; j < batch.length; j++) {
         const i = start + j;
         const u = batch[j];
-        const year = Number(u.year);
-        const sem = Number(u.semester);
+        const yearRaw = u.year;
+        const year = yearRaw === undefined ? undefined : parseInt(yearRaw, 10);
+        if (yearRaw !== undefined && Number.isNaN(year)) {
+          results.push({ index: i, error: 'Invalid year' });
+          continue;
+        }
+        const semRaw = u.semester;
+        const sem = semRaw === undefined ? undefined : parseInt(semRaw, 10);
+        if (semRaw !== undefined && Number.isNaN(sem)) {
+          results.push({ index: i, error: 'Invalid semester' });
+          continue;
+        }
         const section = typeof u.section === 'string' ? u.section.trim() : u.section;
-        const rollNumber = typeof u.rollNumber === 'string' ? u.rollNumber.trim() : u.rollNumber;
+        const rollRaw = u.rollNumber;
+        const rollNumber =
+          rollRaw === undefined ? undefined : parseInt(String(rollRaw).trim(), 10);
+        if (rollRaw !== undefined && Number.isNaN(rollNumber)) {
+          results.push({ index: i, error: 'Invalid rollNumber' });
+          continue;
+        }
         const phone = sanitizePhone(u.phone);
         const designation =
           typeof u.designation === 'string' ? u.designation.trim() : u.designation;
@@ -239,8 +255,8 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
           if (!section) {
             errs.push('section is required');
           }
-          if (!rollNumber) {
-            errs.push('rollNumber is required');
+          if (!Number.isInteger(rollNumber) || rollNumber <= 0) {
+            errs.push('rollNumber must be a positive integer');
           }
         } else if (['professor', 'hod'].includes(u.role) && !designation) {
           errs.push('designation is required');
