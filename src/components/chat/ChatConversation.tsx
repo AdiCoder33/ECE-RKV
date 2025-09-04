@@ -119,18 +119,13 @@ const ChatConversation: React.FC = () => {
   const handleSendMessage = async () => {
     if ((!message.trim() && attachedFiles.length === 0) || !id) return;
 
-    let messageContent = message;
-    if (attachedFiles.length > 0) {
-      const fileNames = attachedFiles.map(f => f.file.name).join(', ');
-      messageContent += attachedFiles.length > 0 ? `\n📎 Attached: ${fileNames}` : '';
-    }
-
     try {
+      const files = attachedFiles.map(f => f.file);
       if (type === 'user') {
-        const newMsg = await sendDirectMessage(Number(id), messageContent);
+        const newMsg = await sendDirectMessage(Number(id), message, files);
         if (newMsg) setDirectMessages(prev => [...prev, newMsg]);
       } else {
-        await sendGroupMessage(id, messageContent);
+        await sendGroupMessage(id, message, files);
       }
       setMessage('');
       setAttachedFiles([]);
