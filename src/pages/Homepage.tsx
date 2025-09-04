@@ -746,13 +746,13 @@ const LandingPage: React.FC = () => {
       >
           <div className="w-full max-w-7xl">
     {/* Announcements and Quick Links side by side on desktop, stacked on mobile */}
-    <div className="flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-start">
+    <div className="md:flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-start">
       {/* Announcements - Left Side */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-red-700 mb-3 lg:mb-4 xl:mb-6 text-left">
           Latest Announcements
         </h2>
-        <div
+        <div 
           ref={announcementsRef}
           className="space-y-2 sm:space-y-3 lg:space-y-4 xl:space-y-5 max-h-[280px] lg:max-h-[320px] xl:max-h-[360px] overflow-y-auto pr-2"
           onMouseEnter={stopAnnouncementsScroll}
@@ -761,7 +761,7 @@ const LandingPage: React.FC = () => {
           {announcements.map((notice, index) => (
             <div
               key={index}
-              className="bg-white dark:bg-gray-800 border-l-4 rounded-lg shadow-md p-2 sm:p-2.5 md:p-3 lg:p-4 xl:p-5 transition hover:shadow-lg text-left"
+              className="flex-1 bg-white dark:bg-gray-800 border-l-4 rounded-lg shadow-md p-2 sm:p-2.5 md:p-3 lg:p-4 xl:p-5 transition hover:shadow-lg text-left"
               style={{ borderLeftColor: '#E8EAF6' }}
             >
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 gap-1">
@@ -960,16 +960,16 @@ const LandingPage: React.FC = () => {
           
           {/* Copyright Section */}
           <div className="border-t border-white/20 pt-6">
-            {/* Department Info and Links Row */}
-            <div className="flex flex-col lg:flex-row justify-between items-start mb-6">
+            {/* Department Info, Map, and Links Row */}
+            <div className="flex flex-col lg:flex-row justify-between items-start mb-6 gap-8">
               {/* Left Column - Department Info */}
-              <div className="mb-6 lg:mb-0">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-lg mb-2">
-              Department of Electronics and Communication Engineering
-            </h3>
+                  Department of Electronics and Communication Engineering
+                </h3>
                 <p className="text-sm mb-3">
-              Rajiv Gandhi University of Knowledge Technologies - RK Valley
-            </p>
+                  Rajiv Gandhi University of Knowledge Technologies - RK Valley
+                </p>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-sm">
                     <svg className="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 20 20">
@@ -977,7 +977,7 @@ const LandingPage: React.FC = () => {
                     </svg>
                     <span className="text-white/80">Address:</span>
                     <span className="text-white/90">RK Valley, Vempalli, Kadapa, 516330</span>
-          </div>
+                  </div>
                   <div className="flex items-center space-x-2 text-sm">
                     <svg className="w-4 h-4 text-white/80" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -986,25 +986,28 @@ const LandingPage: React.FC = () => {
                     <span className="text-white/80">Email:</span>
                     <span className="text-white/90">hodece@rguktrkv.ac.in</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm">
-  {/* FontAwesome Location Icon */}
-  <FontAwesomeIcon icon={faLocationDot} className="text-red-500 w-5 h-5" />
-
-  {/* Google Maps Link */}
-  <a 
-    href="https://maps.google.com/?q=RK+Valley,+Vempalli,+Kadapa,+516330" 
-    target="_blank" 
-    rel="noopener noreferrer"
-    className="text-white/90 hover:text-white transition-colors"
-  >
-    View on Google Maps
-  </a>
-</div>
                 </div>
               </div>
               
+              {/* Center Column - Google Map Preview */}
+              <div className="flex-1 min-w-0 w-full lg:w-auto">
+                <h4 className="font-semibold text-white mb-3">LOCATION</h4>
+                <div className="w-full h-48 rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.602741995817!2d78.5373097!3d14.3353797!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb3a24eacd4a67d%3A0x88cc62e6279e1ef0!2sIIIT%20RGUKT%20RK%20VALLEY!5e0!3m2!1sen!2sin!4v1693617600000!5m2!1sen!2sin"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="RGUKT RK Valley Location"
+                    ></iframe>
+                </div>
+              </div>
+
               {/* Right Column - Other Links */}
-              <div className="lg:text-right">
+              <div className="flex-1 min-w-0 lg:text-right">
                 <h4 className="font-semibold text-white mb-3">OTHER LINKS</h4>
                 <div className="space-y-2 text-sm">
                   <div><a href="#" className="text-white/80 hover:text-white transition-colors">Institute ERP</a></div>
