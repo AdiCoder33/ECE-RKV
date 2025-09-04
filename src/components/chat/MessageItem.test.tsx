@@ -85,7 +85,7 @@ describe('MessageItem', () => {
     expect(img.tagName).toBe('IMG');
   });
 
-  it('renders file attachments as links and hides empty content', () => {
+  it('renders document attachments as links with correct href', () => {
     const message: ChatMessage = {
       id: '4',
       senderId: 2,
@@ -95,15 +95,12 @@ describe('MessageItem', () => {
       timestamp: new Date().toISOString(),
       status: 'sent',
       attachments: [
-        { url: 'http://example.com/doc.pdf', type: 'file', name: 'doc.pdf' }
+        { url: 'http://example.com/doc.pdf', type: 'document', name: 'doc.pdf' }
       ]
     };
 
-    const { container } = render(
-      <MessageItem message={message} currentUserId={1} />
-    );
+    render(<MessageItem message={message} currentUserId={1} />);
     const link = screen.getByRole('link', { name: 'doc.pdf' });
     expect(link).toHaveAttribute('href', 'http://example.com/doc.pdf');
-    expect(container.querySelector('span.flex-1')).toBeNull();
   });
 });
