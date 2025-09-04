@@ -38,7 +38,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, disabled = false 
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" disabled={disabled}>
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
+            aria-label="Attach file"
+          >
             <Paperclip className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

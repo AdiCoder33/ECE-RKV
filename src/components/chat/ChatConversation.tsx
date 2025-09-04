@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, MoreVertical, ArrowLeft, Link2, X, Loader2 } from 'lucide-react';
+import { Send, MoreVertical, ArrowLeft, X, Loader2 } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileUpload from './FileUpload';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,7 +107,10 @@ const ChatConversation: React.FC = () => {
       | PrivateMessage
       | ChatMessage
       | undefined;
-    const senderId = (last as any)?.sender_id ?? (last as any)?.senderId;
+    const senderId =
+      last && 'sender_id' in last
+        ? (last as PrivateMessage).sender_id
+        : (last as ChatMessage | undefined)?.senderId;
     if (last && isAtBottom && senderId === user?.id) {
       scrollToBottom();
     }
@@ -220,16 +223,10 @@ const ChatConversation: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {user?.role === 'student' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate('/dashboard/alumni')}
-                  title="Alumni Directory"
-                >
-                  <Link2 className="h-4 w-4" />
-                </Button>
-              )}
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                disabled={attachedFiles.length >= 5}
+              />
               <Button variant="ghost" size="icon">
                 <MoreVertical className="h-4 w-4" />
               </Button>

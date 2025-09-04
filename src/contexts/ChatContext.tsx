@@ -73,6 +73,7 @@ interface ChatContextType {
     m: ChatMessage | PrivateMessage,
     content: string
   ) => Promise<void>;
+  handleFileSelect: (file: File, type: 'image' | 'document') => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -109,6 +110,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const socketRef = useRef<Socket | null>(null);
   const { user } = useAuth();
+
+  const handleFileSelect = useCallback(
+    (_file: File, _type: 'image' | 'document') => {
+      // Placeholder for future file handling logic
+    },
+    []
+  );
 
   const sortConversations = useCallback((list: Conversation[]) => {
     return [...list].sort((a, b) => {
@@ -735,6 +743,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTyping,
           deleteMessage,
           updateMessage,
+          handleFileSelect,
         }}
     >
       {children}

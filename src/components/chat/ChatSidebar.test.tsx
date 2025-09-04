@@ -9,8 +9,10 @@ const mockFetchConversation = vi
   .fn()
   .mockResolvedValue({ messages: [], hasMore: false });
 const mockToast = vi.fn();
+const mockHandleFileSelect = vi.fn();
 const mockUseChat = {
   conversations: [] as unknown[],
+  groups: [] as unknown[],
   fetchConversations: vi.fn().mockResolvedValue([]),
   fetchConversation: mockFetchConversation,
   fetchMoreConversation: vi.fn(),
@@ -28,6 +30,7 @@ const mockUseChat = {
   setTyping: vi.fn(),
   searchUsers: vi.fn().mockResolvedValue([]),
   socketRef: { current: { emit: vi.fn() } },
+  handleFileSelect: mockHandleFileSelect,
 };
 
 vi.mock('./ConversationList', () => ({
@@ -77,12 +80,16 @@ vi.mock('@/contexts/ChatContext', () => ({
   useChat: () => mockUseChat,
 }));
 
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
 
 import ChatSidebar from './ChatSidebar';
+import ChatList from './ChatList';
 
 beforeEach(() => {
   mockUseChat.socketRef.current.emit.mockReset();
+  mockNavigate.mockReset();
+  mockHandleFileSelect.mockReset();
 });
 
 afterEach(() => {
@@ -191,5 +198,23 @@ describe('ChatSidebar search filtering', () => {
       expect(screen.queryByText('Alice')).not.toBeInTheDocument();
       expect(screen.getByText('Bob')).toBeInTheDocument();
     });
+  });
+});
+
+describe('ChatList file upload', () => {
+  it('opens file picker and does not navigate', () => {
+    render(<ChatList />);
+
+    const trigger = screen.getByLabelText('Attach file');
+    fireEvent.click(trigger);
+
+    const input = document.querySelector(
+      'input[type="file"][accept="image/png,image/jpeg,image/webp"]'
+    ) as HTMLInputElement;
+    const file = new File(['content'], 'test.png', { type: 'image/png' });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(mockHandleFileSelect).toHaveBeenCalledWith(file, 'image');
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
