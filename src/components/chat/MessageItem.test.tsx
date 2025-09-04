@@ -64,4 +64,46 @@ describe('MessageItem', () => {
 
     expect(handleFileSelect).toHaveBeenCalledWith(file, 'image');
   });
+
+  it('renders image attachments as img elements', () => {
+    const message: ChatMessage = {
+      id: '3',
+      senderId: 2,
+      senderName: 'Other',
+      senderRole: 'student',
+      content: 'look',
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+      attachments: [
+        { url: 'http://example.com/pic.jpg', type: 'image', name: 'pic' }
+      ]
+    };
+
+    render(<MessageItem message={message} currentUserId={1} />);
+    const img = screen.getByAltText('pic') as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    expect(img.tagName).toBe('IMG');
+  });
+
+  it('renders file attachments as links and hides empty content', () => {
+    const message: ChatMessage = {
+      id: '4',
+      senderId: 2,
+      senderName: 'Other',
+      senderRole: 'student',
+      content: '',
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+      attachments: [
+        { url: 'http://example.com/doc.pdf', type: 'file', name: 'doc.pdf' }
+      ]
+    };
+
+    const { container } = render(
+      <MessageItem message={message} currentUserId={1} />
+    );
+    const link = screen.getByRole('link', { name: 'doc.pdf' });
+    expect(link).toHaveAttribute('href', 'http://example.com/doc.pdf');
+    expect(container.querySelector('span.flex-1')).toBeNull();
+  });
 });

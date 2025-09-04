@@ -270,7 +270,29 @@ const ChatConversation: React.FC = () => {
                                 : 'bg-muted'
                             }`}
                           >
-                            <p className="text-sm">{dm.content}</p>
+                            {dm.content && (
+                              <p className="text-sm">{dm.content}</p>
+                            )}
+                            {dm.attachments?.map((att, index) =>
+                              att.type === 'image' ? (
+                                <img
+                                  key={index}
+                                  src={att.url}
+                                  alt={att.name}
+                                  className="rounded-md max-w-[200px] mt-2"
+                                />
+                              ) : (
+                                <a
+                                  key={index}
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline text-sm mt-2 break-all"
+                                >
+                                  {att.name}
+                                </a>
+                              )
+                            )}
                           </div>
                         </div>
                       </div>
@@ -310,7 +332,29 @@ const ChatConversation: React.FC = () => {
                               : 'bg-muted'
                           }`}
                         >
-                          <p className="text-sm">{gm.content}</p>
+                          {gm.content && (
+                            <p className="text-sm">{gm.content}</p>
+                          )}
+                          {gm.attachments?.map((att, index) =>
+                            att.type === 'image' ? (
+                              <img
+                                key={index}
+                                src={att.url}
+                                alt={att.name}
+                                className="rounded-md max-w-[200px] mt-2"
+                              />
+                            ) : (
+                              <a
+                                key={index}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline text-sm mt-2 break-all"
+                              >
+                                {att.name}
+                              </a>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
