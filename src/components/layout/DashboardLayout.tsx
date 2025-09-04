@@ -61,6 +61,20 @@ const DashboardLayout: React.FC = () => {
     setChatOpen(!isMobile);
   }, [isMobile]);
 
+  useEffect(() => {
+    if (!isMobile || !chatOpen) return;
+
+    const handlePopState = () => {
+      setChatOpen(false);
+      setChatExpanded(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [chatOpen, isMobile]);
+
   const currentPage = location.pathname.split('/').pop() || 'dashboard';
 
   const getMenuItems = () => {
@@ -172,6 +186,19 @@ const DashboardLayout: React.FC = () => {
         setSidebarOpen(true);
       } else if (sidebarOpen && deltaX < -80 && Math.abs(deltaY) < 30) {
         setSidebarOpen(false);
+      }
+    }
+  };
+
+  const handleChatToggle = () => {
+    const newOpen = !chatOpen;
+    setChatOpen(newOpen);
+    setChatExpanded(newOpen);
+    if (isMobile) {
+      if (newOpen) {
+        window.history.pushState({ chat: true }, '');
+      } else {
+        window.history.back();
       }
     }
   };
@@ -307,11 +334,7 @@ const DashboardLayout: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
-                      const newOpen = !chatOpen;
-                      setChatOpen(newOpen);
-                      setChatExpanded(newOpen);
-                    }}
+                    onClick={handleChatToggle}
                     className="relative z-10"
                   >
                     <MessageSquare className="h-5 w-5" />
@@ -387,11 +410,7 @@ const DashboardLayout: React.FC = () => {
       <ChatSidebar
         isOpen={chatOpen}
         expanded={chatExpanded}
-        onToggle={() => {
-          const newOpen = !chatOpen;
-          setChatOpen(newOpen);
-          setChatExpanded(newOpen);
-        }}
+        onToggle={handleChatToggle}
         onExpandedChange={setChatExpanded}
       />
 
