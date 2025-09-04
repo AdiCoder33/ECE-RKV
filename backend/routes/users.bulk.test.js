@@ -13,7 +13,7 @@ const mockCommit = jest.fn().mockResolvedValue();
 const mockRollback = jest.fn().mockResolvedValue();
 const mockRelease = jest.fn().mockResolvedValue();
 
-const mockQuery = jest.fn(async (q, params) => {
+const defaultQueryImpl = async (q, params) => {
   if (q.startsWith('SAVEPOINT') || q.startsWith('ROLLBACK TO SAVEPOINT')) return [{}];
   if (q.startsWith('SELECT id, name')) return [[]];
   if (q.startsWith('INSERT INTO users')) {
@@ -25,7 +25,9 @@ const mockQuery = jest.fn(async (q, params) => {
   if (q.startsWith('SELECT id FROM classes')) return [[]];
   if (q.startsWith('INSERT INTO student_classes')) return [{ affectedRows: 1 }];
   return [[]];
-});
+};
+
+const mockQuery = jest.fn(defaultQueryImpl);
 
 const mockConnection = {
   beginTransaction: mockBegin,
@@ -66,6 +68,7 @@ describe('bulk user creation', () => {
     mockRollback.mockClear();
     mockRelease.mockClear();
     mockQuery.mockClear();
+    mockQuery.mockImplementation(defaultQueryImpl);
     mockGetConnection.mockClear();
   });
 
@@ -135,5 +138,38 @@ describe('bulk user creation', () => {
 
     // analytics requests should still respond
     await request(app).get('/analytics/enrollment').expect(200);
+  });
+
+  it('imports professor without year/section without NaN error', async () => {
+    mockQuery.mockImplementation((q, params) => {
+      if (
+        q.startsWith(
+          'SELECT id, name, role, department, year, semester, section, roll_number, phone, password, designation FROM users'
+        )
+      ) {
+        if (params.some(p => typeof p === 'number' && Number.isNaN(p))) {
+          throw new Error("Unknown column 'NaN'");
+        }
+        return [[]];
+      }
+      return defaultQueryImpl(q, params);
+    });
+
+    const payload = {
+      users: [
+        {
+          name: 'Prof Test',
+          email: 'prof.test@example.com',
+          password: 'secret',
+          role: 'professor',
+          department: 'ECE',
+          phone: '555',
+          designation: 'Lecturer',
+        },
+      ],
+    };
+
+    const res = await request(app).post('/users/bulk').send(payload).expect(201);
+    expect(res.body.results).toEqual([{ index: 0, id: 1, action: 'inserted' }]);
   });
 });

@@ -212,10 +212,20 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       for (let j = 0; j < batch.length; j++) {
         const i = start + j;
         const u = batch[j];
-        const year = Number(u.year);
-        const sem = Number(u.semester);
-        const section = typeof u.section === 'string' ? u.section.trim() : u.section;
-        const rollNumber = typeof u.rollNumber === 'string' ? u.rollNumber.trim() : u.rollNumber;
+        const year = u.year === undefined ? null : Number(u.year);
+        const sem = u.semester === undefined ? null : Number(u.semester);
+        const section =
+          u.section === undefined
+            ? null
+            : typeof u.section === 'string'
+              ? u.section.trim()
+              : u.section;
+        const rollNumber =
+          u.rollNumber === undefined
+            ? null
+            : typeof u.rollNumber === 'string'
+              ? u.rollNumber.trim()
+              : u.rollNumber;
         const phone = sanitizePhone(u.phone);
         const designation =
           typeof u.designation === 'string' ? u.designation.trim() : u.designation;
@@ -254,7 +264,7 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
         try {
           const [existing] = await connection.query(
             'SELECT id, name, role, department, year, semester, section, roll_number, phone, password, designation FROM users WHERE email = ? OR (roll_number = ? AND section = ? AND year = ?)',
-            [u.email, rollNumber, section, year]
+            [u.email, rollNumber ?? null, section ?? null, year ?? null]
           );
 
           let userId;
@@ -275,22 +285,22 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
               updates.push('department = ?');
               params.push(dept);
             }
-            const yr = Number.isNaN(year) ? null : year;
+            const yr = year;
             if (ex.year !== yr) {
               updates.push('year = ?');
               params.push(yr);
             }
-            const sm = Number.isNaN(sem) ? null : sem;
+            const sm = sem;
             if (ex.semester !== sm) {
               updates.push('semester = ?');
               params.push(sm);
             }
-            const sec = section === undefined ? null : section;
+            const sec = section;
             if (ex.section !== sec) {
               updates.push('section = ?');
               params.push(sec);
             }
-            const roll = rollNumber === undefined ? null : rollNumber;
+            const roll = rollNumber;
             if (ex.roll_number !== roll) {
               updates.push('roll_number = ?');
               params.push(roll);
@@ -332,8 +342,8 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
                 hashedPassword,
                 u.role,
                 u.department === undefined ? null : u.department,
-                Number.isNaN(year) ? null : year,
-                Number.isNaN(sem) ? null : sem,
+                year,
+                sem,
                 section,
                 rollNumber,
                 phone,
