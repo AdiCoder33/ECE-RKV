@@ -352,18 +352,18 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
       const mid1 = subject.mid1 ?? 0;
       const mid2 = subject.mid2 ?? 0;
       const mid3 = subject.mid3 ?? 0;
-      const mid1Max = subject.mid1Max;
-      const mid2Max = subject.mid2Max;
-      const mid3Max = subject.mid3Max;
-      const bestTwo = [mid1, mid2, mid3]
-        .sort((a, b) => b - a)
-        .slice(0, 2)
-        .reduce((sum, val) => sum + (val ?? 0), 0);
-      const bestMax = [mid1Max, mid2Max, mid3Max]
-        .sort((a, b) => b - a)
-        .slice(0, 2)
-        .reduce((sum, val) => sum + (val ?? 0), 0);
-      const internal40 = bestMax ? Math.round((bestTwo / bestMax) * 40) : 0;
+      const mid1Max = subject.mid1Max ?? 20;
+      const mid2Max = subject.mid2Max ?? 20;
+      const mid3Max = subject.mid3Max ?? 20;
+      const mids = [mid1, mid2, mid3];
+      const midMax = [mid1Max, mid2Max, mid3Max];
+      const topTwo = mids.sort((a, b) => b - a).slice(0, 2);
+      const topTwoMax = midMax.sort((a, b) => b - a).slice(0, 2);
+      const topTwoSum = (topTwo[0] ?? 0) + (topTwo[1] ?? 0);
+      const topTwoMaxSum = (topTwoMax[0] ?? 0) + (topTwoMax[1] ?? 0);
+      const internal40 = topTwoMaxSum
+        ? Math.round((topTwoSum / topTwoMaxSum) * 40)
+        : 0;
 
       return {
         id: subject.id.toString(),
