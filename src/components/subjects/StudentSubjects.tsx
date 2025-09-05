@@ -19,7 +19,10 @@ interface StudentSubject {
   code: string;
   credits: number;
   type: string;
-  marks: number;
+  mid1: number;
+  mid2: number;
+  mid3: number;
+  internal: number;
   attendance: number;
   status: 'ongoing' | 'completed';
 }
@@ -94,7 +97,17 @@ const StudentSubjects = () => {
           setSubjects([]);
           return;
         }
-        setSubjects(await response.json());
+        const data = await response.json();
+        setSubjects(
+          data.map((s: any) => ({
+            ...s,
+            mid1: s.mid1 ?? 0,
+            mid2: s.mid2 ?? 0,
+            mid3: s.mid3 ?? 0,
+            internal: s.internal ?? 0,
+            status: 'ongoing'
+          }))
+        );
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -115,8 +128,9 @@ const StudentSubjects = () => {
   };
 
   const getMarksColor = (marks: number) => {
-    if (marks >= 80) return 'text-indigo-700';
-    if (marks >= 60) return 'text-yellow-700';
+    const percent = (marks / 40) * 100;
+    if (percent >= 80) return 'text-indigo-700';
+    if (percent >= 60) return 'text-yellow-700';
     return 'text-red-700';
   };
 
@@ -172,7 +186,7 @@ const StudentSubjects = () => {
           </CardContent>
         </Card>
         
-        {/* Average Marks */}
+        {/* Average Internal */}
         <Card className={`rounded-lg shadow ${gradientMetrics[1]}`}>
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-col items-center text-center gap-2">
@@ -180,9 +194,9 @@ const StudentSubjects = () => {
                 <Award className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               <div>
-                <p className="text-xs sm:text-sm text-white font-medium">Avg Marks</p>
+                <p className="text-xs sm:text-sm text-white font-medium">Avg Internal</p>
                 <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                  {subjects.length > 0 ? Math.round(subjects.reduce((acc, s) => acc + s.marks, 0) / subjects.length) : 0}
+                  {subjects.length > 0 ? Math.round(subjects.reduce((acc, s) => acc + s.internal, 0) / subjects.length) : 0}
                 </p>
               </div>
             </div>
@@ -261,19 +275,40 @@ const StudentSubjects = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium text-[#b91c1c]">Internal Marks</h4>
-                      <span className={`text-sm font-bold ${getMarksColor(subject.marks)}`}>
-                        {subject.marks}/100
+                      <span className={`text-sm font-bold ${getMarksColor(subject.internal)}`}>
+                        {subject.internal}/40
                       </span>
                     </div>
                     <div className="w-full bg-[#fee2e2] rounded-full h-2">
-                      <div 
+                      <div
                         className="h-2 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${subject.marks}%`,
-                          backgroundColor: subject.marks >= 80 ? '#6366f1' : subject.marks >= 60 ? '#f59e0b' : '#ef4444'
+                        style={{
+                          width: `${(subject.internal / 40) * 100}%`,
+                          backgroundColor:
+                            (subject.internal / 40) * 100 >= 80
+                              ? '#6366f1'
+                              : (subject.internal / 40) * 100 >= 60
+                                ? '#f59e0b'
+                                : '#ef4444'
                         }}
                       ></div>
                     </div>
+                    {(() => {
+                      const mids = [subject.mid1, subject.mid2, subject.mid3];
+                      const topTwo = [...mids].sort((a, b) => b - a).slice(0, 2);
+                      return (
+                        <div className="flex justify-between text-xs text-[#64748b]">
+                          {mids.map((m, idx) => (
+                            <span
+                              key={idx}
+                              className={topTwo.includes(m) ? 'font-semibold text-[#b91c1c]' : ''}
+                            >
+                              {`Mid${idx + 1}: ${m}`}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Attendance */}
@@ -301,7 +336,7 @@ const StudentSubjects = () => {
 
                 {/* Performance Indicators */}
                 <div className="flex flex-wrap gap-2 pt-3 border-t border-[#fee2e2]">
-                  {subject.marks >= 80 && (
+                  {(subject.internal / 40) * 100 >= 80 && (
                     <Badge className="bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca] text-xs">
                       Excellent Performance
                     </Badge>
@@ -311,12 +346,12 @@ const StudentSubjects = () => {
                       Perfect Attendance
                     </Badge>
                   )}
-                  {subject.marks < 40 && (
+                  {(subject.internal / 40) * 100 < 40 && (
                     <Badge className="bg-red-100 text-red-800 border border-red-300 text-xs">
                       Needs Improvement
                     </Badge>
                   )}
-                  {subject.marks >= 70 && subject.attendance >= 75 && (
+                  {(subject.internal / 40) * 100 >= 70 && subject.attendance >= 75 && (
                     <Badge className="bg-[#fff1f2] border text-xs text-[#b91c1c] border-[#fecaca]">
                       On Track
                     </Badge>
