@@ -30,6 +30,7 @@ import lab3Image from "../Assets/lab_facilities/lab3.jpg";
 // Faculty images - imported directly
 import arunKumarReddy from "../Assets/faculty/arun_kumar_reddy.jpg";
 import sudhakarReddy from "../Assets/faculty/sudhakar_reddy.jpg";
+import mohammodrafi from "../Assets/faculty/shaik_mohammod_rafi.jpg";
 import lakshmiShirisha from "../Assets/faculty/lakshmi_shirisha.jpg";
 import lakshmiPrasanna from "../Assets/faculty/lakshmi_prasanna.jpg";
 import abdulMunaf from "../Assets/faculty/abdul_munaf.jpg";
@@ -292,7 +293,8 @@ const LandingPage: React.FC = () => {
     }, delay);
   };
 
-  // NEW: handlers to manage the modal
+
+  // NEW: handler to manage the modal
   const handleFacultyClick = (faculty: Faculty) => {
     setSelectedFaculty(faculty);
     setShowModal(true);

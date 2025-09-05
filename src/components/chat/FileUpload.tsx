@@ -41,6 +41,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, disabled = false 
           <Button
             variant="ghost"
             size="icon"
+            type="button"
             disabled={disabled}
             aria-label="Attach file"
           >
