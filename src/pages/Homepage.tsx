@@ -53,11 +53,6 @@ import { faLocationDot } from "@fortawesome/free-solid-svg-icons";
 import FacultyDetailsModal from "../components/FacultyDetailsModal";
 import CreatorsPage from "../components/CreatorsPage";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-}
-
 interface Announcement {
   author: string;
   time: string;
@@ -171,10 +166,6 @@ const LandingPage: React.FC = () => {
   // NEW state for the Creators page floating window
   const [isCreatorsPageOpen, setIsCreatorsPageOpen] = useState(false);
 
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstall, setShowInstall] = useState(false);
-
   // NEW: Ref for the Faculty section to enable scrolling to it
   const facultySectionRef = useRef<HTMLElement>(null);
 
@@ -207,21 +198,6 @@ const LandingPage: React.FC = () => {
 
     fetchAnnouncements();
   }, [apiBase]);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstall(true);
-    };
-    const handleAppInstalled = () => setShowInstall(false);
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
 
   // --- Hero slider state ---
   const images = [department_img, director_and_co, hero3];
@@ -322,13 +298,6 @@ const LandingPage: React.FC = () => {
     }, delay);
   };
 
-
-  const handleInstall = async () => {
-    await deferredPrompt?.prompt();
-    await deferredPrompt?.userChoice;
-    setShowInstall(false);
-    setDeferredPrompt(null);
-  };
 
   // NEW: handler to manage the modal
   const handleFacultyClick = (faculty: Faculty) => {
@@ -824,14 +793,6 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="font-sans bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col m-0 p-0 transition-colors duration-300">
-      {showInstall && (
-        <button
-          onClick={handleInstall}
-          className="fixed bottom-4 right-4 z-50 bg-red-700 text-white font-bold px-4 py-2 rounded-full shadow-lg hover:bg-red-800"
-        >
-          Install App
-        </button>
-      )}
       {/* HEADER */}
       <header className="flex flex-wrap items-center justify-between w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm px-4 sm:px-8 transition-colors">
         {/* Left: Logo + Text */}
