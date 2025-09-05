@@ -334,6 +334,9 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
         MAX(CASE WHEN im.type = 'mid1' THEN im.marks END) AS mid1,
         MAX(CASE WHEN im.type = 'mid2' THEN im.marks END) AS mid2,
         MAX(CASE WHEN im.type = 'mid3' THEN im.marks END) AS mid3,
+        MAX(CASE WHEN im.type = 'mid1' THEN im.max_marks END) AS mid1Max,
+        MAX(CASE WHEN im.type = 'mid2' THEN im.max_marks END) AS mid2Max,
+        MAX(CASE WHEN im.type = 'mid3' THEN im.max_marks END) AS mid3Max,
         COUNT(a.id) as total_classes,
         SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END) as attended_classes
       FROM subjects s
@@ -349,10 +352,18 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
       const mid1 = subject.mid1 ?? 0;
       const mid2 = subject.mid2 ?? 0;
       const mid3 = subject.mid3 ?? 0;
+      const mid1Max = subject.mid1Max;
+      const mid2Max = subject.mid2Max;
+      const mid3Max = subject.mid3Max;
       const bestTwo = [mid1, mid2, mid3]
         .sort((a, b) => b - a)
         .slice(0, 2)
-        .reduce((sum, val) => sum + val, 0);
+        .reduce((sum, val) => sum + (val ?? 0), 0);
+      const bestMax = [mid1Max, mid2Max, mid3Max]
+        .sort((a, b) => b - a)
+        .slice(0, 2)
+        .reduce((sum, val) => sum + (val ?? 0), 0);
+      const internal40 = bestMax ? Math.round((bestTwo / bestMax) * 40) : 0;
 
       return {
         id: subject.id.toString(),
@@ -363,7 +374,8 @@ router.get('/:studentId(\\d+)/subjects', authenticateToken, async (req, res, nex
         mid1: Math.round(mid1),
         mid2: Math.round(mid2),
         mid3: Math.round(mid3),
-        marks: Math.round(bestTwo),
+        internal: internal40,
+        internalTotal: 40,
         attendance:
           subject.total_classes > 0
             ? Math.round((subject.attended_classes / subject.total_classes) * 100)
