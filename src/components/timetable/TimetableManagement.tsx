@@ -59,10 +59,6 @@ const ProfessorCombobox = ({
   placeholder = 'Select faculty'
 }: ProfessorComboboxProps) => {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const filtered = professors.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   const selectedProfessor = professors.find((p) => p.id === value);
 
@@ -81,21 +77,21 @@ const ProfessorCombobox = ({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput
-            placeholder="Search faculty..."
-            value={search}
-            onValueChange={setSearch}
-          />
+          <CommandInput placeholder="Search faculty..." />
           <CommandList className="max-h-64 overflow-y-auto">
             <CommandEmpty>No faculty found.</CommandEmpty>
-            {filtered.map((prof) => (
+            {professors.map((prof) => (
               <CommandItem
                 key={prof.id}
-                value={prof.id}
+                value={prof.name}
                 onSelect={(currentValue) => {
-                  onChange(currentValue);
+                  const selected = professors.find(
+                    (p) => p.name === currentValue
+                  );
+                  if (selected) {
+                    onChange(selected.id);
+                  }
                   setOpen(false);
-                  setSearch('');
                 }}
               >
                 <Check
