@@ -139,7 +139,9 @@ const Profile = () => {
         const data = await res.json();
 
         const dob = data.dateOfBirth
-          ? new Date(data.dateOfBirth).toISOString().split('T')[0]
+          ? /^\d{4}-\d{2}-\d{2}$/.test(data.dateOfBirth)
+            ? data.dateOfBirth
+            : new Date(data.dateOfBirth).toISOString().split('T')[0]
           : '';
 
         setFormData((prev) => ({
@@ -198,7 +200,7 @@ const Profile = () => {
       };
 
       if (formData.dateOfBirth) {
-        payload.dateOfBirth = new Date(formData.dateOfBirth).toISOString();
+        payload.dateOfBirth = formData.dateOfBirth;
       }
 
       if (viewedRole === 'student') {
@@ -225,7 +227,8 @@ const Profile = () => {
       if (!res.ok) throw new Error('Failed to update profile');
 
       const data = await res.json();
-      setFormData((prev) => ({ ...prev, ...data }));
+      const dob = data.dateOfBirth ? data.dateOfBirth.split('T')[0] : '';
+      setFormData((prev) => ({ ...prev, ...data, dateOfBirth: dob }));
 
       if (data.profileImage !== undefined) setProfileImage(data.profileImage);
       if (viewedRole === 'student') setAcademicData((prev) => ({ ...prev, ...data }));
