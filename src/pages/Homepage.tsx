@@ -30,6 +30,7 @@ import lab3Image from "../Assets/lab_facilities/lab3.jpg";
 // Faculty images - imported directly
 import arunKumarReddy from "../Assets/faculty/arun_kumar_reddy.jpg";
 import sudhakarReddy from "../Assets/faculty/sudhakar_reddy.jpg";
+import mohammodrafi from "../Assets/faculty/shaik_mohammod_rafi.jpg";
 import lakshmiShirisha from "../Assets/faculty/lakshmi_shirisha.jpg";
 import lakshmiPrasanna from "../Assets/faculty/lakshmi_prasanna.jpg";
 import abdulMunaf from "../Assets/faculty/abdul_munaf.jpg";
@@ -265,6 +266,7 @@ const LandingPage: React.FC = () => {
   const facultyList = [
     { name: "Mr. Y Arun Kumar Reddy", title: "Head of the department", image: arunKumarReddy },
     { name: "Mr. B. V. Sudhakar Reddy", title: "Assistant Professor", image: sudhakarReddy },
+    { name: "Dr. Shaik Mohammad Rafi B", title: "Assistant Professor", image: mohammodrafi },
     { name: "Ms. G. Lakshmi Shireesha", title: "Assistant Professor", image: lakshmiShirisha },
     { name: "Mr. Janardhan. Reddy", title: "Assistant Professor", image: janardhanReddy },
     { name: "Mrs. V Lakshmi Prasanna", title: "Assistant Professor", image: lakshmiPrasanna },
