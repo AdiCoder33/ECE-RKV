@@ -214,14 +214,14 @@ const StudentMarks = () => {
 
   const chartData = subjectStats.map(stat => ({
     subject: stat.subjectName.replace(' ', '\n'),
-    percentage: stat.percentage.toFixed(1),
+    percentage: (stat.percentage ?? 0).toFixed(1),
     marks: stat.obtained,
     maxMarks: stat.total
   }));
 
   const performanceTrend = monthlyTrend.map(t => ({
     month: t.month,
-    percentage: Number(t.percentage.toFixed(1))
+    percentage: Number((t.percentage ?? 0).toFixed(1))
   }));
 
   const getGradeColor = (grade: string) => {
@@ -363,7 +363,7 @@ const StudentMarks = () => {
               <div>
                 <p className="text-xs sm:text-sm text-white font-medium">Overall Performance</p>
                 <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                  {overallPercentage.toFixed(1)}%
+                  {overallPercentage != null ? `${(overallPercentage ?? 0).toFixed(1)}%` : '–'}
                 </p>
               </div>
             </div>
