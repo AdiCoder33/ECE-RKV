@@ -52,9 +52,6 @@ import { faLocationDot } from "@fortawesome/free-solid-svg-icons";
 // NEW: Import the modal components and define the faculty type
 import FacultyDetailsModal from "../components/FacultyDetailsModal";
 
-// NEW: Import the CreatorsPage component
-import CreatorsPage from "../components/CreatorsPage";
-
 interface Announcement {
   author: string;
   time: string;
