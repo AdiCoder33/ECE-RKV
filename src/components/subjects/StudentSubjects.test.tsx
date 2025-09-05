@@ -35,10 +35,10 @@ describe('StudentSubjects', () => {
             attendance: 80
           }
         ])
-    }) as any;
+    }) as unknown as typeof fetch;
     vi.stubGlobal('localStorage', {
       getItem: vi.fn().mockReturnValue('token')
-    } as any);
+    } as unknown as Storage);
   });
 
   it('renders internal marks out of 40 and mid values', async () => {
@@ -47,5 +47,32 @@ describe('StudentSubjects', () => {
     expect(screen.getByText(/Mid1: 25/)).toBeInTheDocument();
     expect(screen.getByText(/Mid2: 30/)).toBeInTheDocument();
     expect(screen.getByText(/Mid3: 20/)).toBeInTheDocument();
+  });
+
+  it('computes internal marks from top two mids when backend lacks internal', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          {
+            id: '2',
+            name: 'Physics',
+            code: 'P1',
+            credits: 3,
+            type: 'core',
+            mid1: 16,
+            mid2: 17,
+            mid3: 10,
+            internal: 0,
+            internalTotal: 40,
+            attendance: 80
+          }
+        ])
+    }) as unknown as typeof fetch;
+    render(<StudentSubjects />);
+    await screen.findByText('33/40');
+    expect(screen.getAllByText(/Mid1: 16/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Mid2: 17/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Mid3: 10/).length).toBeGreaterThan(0);
   });
 });

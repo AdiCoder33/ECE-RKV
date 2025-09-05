@@ -99,14 +99,21 @@ const StudentSubjects = () => {
         }
         const data = await response.json();
         setSubjects(
-          data.map((s: any) => ({
-            ...s,
-            mid1: s.mid1 ?? 0,
-            mid2: s.mid2 ?? 0,
-            mid3: s.mid3 ?? 0,
-            internal: s.internal ?? 0,
-            status: 'ongoing'
-          }))
+          data.map((s: Partial<StudentSubject>) => {
+            const mids = [s.mid1 ?? 0, s.mid2 ?? 0, s.mid3 ?? 0];
+            const computedInternal = [...mids]
+              .sort((a, b) => b - a)
+              .slice(0, 2)
+              .reduce((sum, m) => sum + m, 0);
+            return {
+              ...s,
+              mid1: mids[0],
+              mid2: mids[1],
+              mid3: mids[2],
+              internal: s.internal && s.internal > 0 ? s.internal : computedInternal,
+              status: 'ongoing'
+            };
+          })
         );
       } catch (error) {
         toast({
