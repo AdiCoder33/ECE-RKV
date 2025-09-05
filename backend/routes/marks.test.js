@@ -96,4 +96,73 @@ describe('marks bulk entry', () => {
     await request(app).post('/marks/bulk').send(payload).expect(400);
     expect(executeQuery).not.toHaveBeenCalled();
   });
+
+  it('updates existing record when same mark imported twice', async () => {
+    const marksDb = [];
+    executeQuery.mockImplementation((sql, params) => {
+      if (sql.startsWith('SELECT id FROM users')) {
+        return Promise.resolve([[{ id: 1 }]]);
+      }
+      if (sql.startsWith('SELECT id FROM subjects')) {
+        return Promise.resolve([[{ id: 2 }]]);
+      }
+      if (sql.startsWith('INSERT INTO InternalMarks')) {
+        const [studentId, subjectId, type, marks] = params;
+        const existing = marksDb.find(
+          m => m.student_id === studentId && m.subject_id === subjectId && m.type === type
+        );
+        if (existing) {
+          existing.marks = marks;
+        } else {
+          marksDb.push({ student_id: studentId, subject_id: subjectId, type, marks });
+        }
+        return Promise.resolve([{}]);
+      }
+      return Promise.resolve([[]]);
+    });
+
+    const payload = {
+      type: 'internal',
+      date: '2024-01-01',
+      marksData: [
+        {
+          rollNumber: 'R1',
+          section: 'A',
+          year: 1,
+          subject: 'Math',
+          maxMarks: 100,
+          marks: 90,
+        },
+      ],
+    };
+
+    await request(app).post('/marks/bulk').send(payload).expect(200);
+    expect(marksDb).toHaveLength(1);
+    expect(marksDb[0].marks).toBe(90);
+
+    const payload2 = {
+      ...payload,
+      marksData: [
+        {
+          rollNumber: 'R1',
+          section: 'A',
+          year: 1,
+          subject: 'Math',
+          maxMarks: 100,
+          marks: 95,
+        },
+      ],
+    };
+
+    await request(app).post('/marks/bulk').send(payload2).expect(200);
+    expect(marksDb).toHaveLength(1);
+    expect(marksDb[0].marks).toBe(95);
+
+    const insertCalls = executeQuery.mock.calls.filter(([sql]) =>
+      sql.includes('INSERT INTO InternalMarks')
+    );
+    insertCalls.forEach(([sql]) => {
+      expect(sql).toContain('ON DUPLICATE KEY UPDATE');
+    });
+  });
 });

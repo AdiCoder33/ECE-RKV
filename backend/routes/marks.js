@@ -341,11 +341,17 @@ router.post('/bulk', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: message });
     }
 
-    // Insert marks
+    // Insert or update marks
     for (const p of prepared) {
       await executeQuery(
         `INSERT INTO InternalMarks (student_id, subject_id, type, marks, max_marks, date, entered_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE
+           marks = VALUES(marks),
+           max_marks = VALUES(max_marks),
+           date = VALUES(date),
+           entered_by = VALUES(entered_by),
+           updated_at = NOW()`,
         [p.studentId, p.subjectId, type, p.marks, p.maxMarks, examDate, enteredBy]
       );
     }

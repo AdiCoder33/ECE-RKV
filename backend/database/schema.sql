@@ -248,6 +248,7 @@ CREATE TABLE InternalMarks (
     entered_by INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_student_subject_type (student_id, subject_id, type),
     FOREIGN KEY (student_id) REFERENCES Users(id) ON DELETE CASCADE,
     FOREIGN KEY (subject_id) REFERENCES Subjects(id) ON DELETE CASCADE,
     FOREIGN KEY (entered_by) REFERENCES Users(id)
