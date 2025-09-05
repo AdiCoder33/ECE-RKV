@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Paperclip, Image, FileText } from 'lucide-react';
 import {
@@ -14,15 +14,20 @@ interface FileUploadProps {
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, disabled = false }) => {
+  const [open, setOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'image' | 'document'
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       onFileSelect(file, type);
+      setOpen(false);
     }
-    // Reset input
+    // Reset input so selecting the same file again triggers onChange
     event.target.value = '';
   };
 
@@ -36,7 +41,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, disabled = false 
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
