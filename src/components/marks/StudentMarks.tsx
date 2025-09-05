@@ -379,7 +379,7 @@ const StudentMarks = () => {
               <div>
                 <p className="text-xs sm:text-sm text-white font-medium">Total Marks</p>
                 <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                  {totalMarks}/{totalMaxMarks}
+                  {Math.round(totalMarks)}/{Math.round(totalMaxMarks)}
                 </p>
               </div>
             </div>
