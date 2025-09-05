@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import Logo from "../Assets/rgukt.jpeg";
-import aboutImage from "../Assets/hero3.jpeg"; // You'll need to add a relevant image
-import achievementsImage from "../Assets/hero1.jpg"; // You'll need to add a relevant image
+import aboutImage from "../Assets/hero3.jpeg";
+import achievementsImage from "../Assets/hero1.jpg";
 import heroimage1 from "../Assets/hero2.jpg";
 import heroimage2 from "../Assets/hero3.jpeg";
 import heroimage3 from "../Assets/hero1.jpg";
@@ -49,12 +49,34 @@ import venkatesulu from "../Assets/faculty/venkatesulu.jpg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot } from "@fortawesome/free-solid-svg-icons";
 
+// NEW: Import the modal components and define the faculty type
+import FacultyDetailsModal from "../components/FacultyDetailsModal";
+
+// NEW: Import the CreatorsPage component
+import CreatorsPage from "../components/CreatorsPage";
+
 interface Announcement {
   author: string;
   time: string;
   title: string;
   content: string;
   targetRole: string;
+}
+
+// Define the type for the faculty object with added details
+interface Faculty {
+  name: string;
+  title: string;
+  image: string;
+  email?: string;
+  department?: string;
+  bio?: string;
+  education?: string;
+  experience?: string;
+  researchAreas?: string[];
+  publications?: string[];
+  coursesTaught?: string[];
+  administrativeRoles?: string[];
 }
 
 /** Explicitly typed framer-motion variants */
@@ -134,9 +156,17 @@ const ThemeToggle: React.FC = () => {
     </button>
   );
 };
+
 const LandingPage: React.FC = () => {
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  // State for the faculty details floating window
+  const [selectedFaculty, setSelectedFaculty] = useState<Faculty | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // NEW state for the Creators page floating window
+  const [isCreatorsPageOpen, setIsCreatorsPageOpen] = useState(false);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -188,7 +218,7 @@ const LandingPage: React.FC = () => {
 
   // Keep track of resume timers so we can clear them on unmount
   const resumeTimerRef = useRef<number | null>(null);
-  
+
   // NEW: Ref for the announcements container
   const announcementsRef = useRef<HTMLDivElement>(null);
   const announcementsScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -219,29 +249,29 @@ const LandingPage: React.FC = () => {
       }
     };
   }, []);
-  
+
   // NEW: Auto-scroll effect for announcements
   const startAnnouncementsScroll = () => {
     if (announcementsRef.current) {
-        const announcementsContainer = announcementsRef.current;
-        const announcementsHeight = announcementsContainer.scrollHeight - announcementsContainer.clientHeight;
-        
-        // Only start scrolling if content overflows
-        if (announcementsHeight > 0) {
-            announcementsScrollIntervalRef.current = setInterval(() => {
-                announcementsContainer.scrollTop += 1;
-                // If we reach the end, reset to the top
-                if (announcementsContainer.scrollTop >= announcementsHeight) {
-                    announcementsContainer.scrollTop = 0;
-                }
-            }, 50); // Adjust speed with this value (lower is faster)
-        }
+      const announcementsContainer = announcementsRef.current;
+      const announcementsHeight = announcementsContainer.scrollHeight - announcementsContainer.clientHeight;
+
+      // Only start scrolling if content overflows
+      if (announcementsHeight > 0) {
+        announcementsScrollIntervalRef.current = setInterval(() => {
+          announcementsContainer.scrollTop += 1;
+          // If we reach the end, reset to the top
+          if (announcementsContainer.scrollTop >= announcementsHeight) {
+            announcementsContainer.scrollTop = 0;
+          }
+        }, 50); // Adjust speed with this value (lower is faster)
+      }
     }
   };
 
   const stopAnnouncementsScroll = () => {
     if (announcementsScrollIntervalRef.current) {
-        clearInterval(announcementsScrollIntervalRef.current);
+      clearInterval(announcementsScrollIntervalRef.current);
     }
   };
 
@@ -263,30 +293,235 @@ const LandingPage: React.FC = () => {
     }, delay);
   };
 
-  const facultyList = [
-    { name: "Mr. Y Arun Kumar Reddy", title: "Head of the department", image: arunKumarReddy },
-    { name: "Mr. B. V. Sudhakar Reddy", title: "Assistant Professor", image: sudhakarReddy },
-    { name: "Dr. Shaik Mohammad Rafi B", title: "Assistant Professor", image: mohammodrafi },
-    { name: "Ms. G. Lakshmi Shireesha", title: "Assistant Professor", image: lakshmiShirisha },
-    { name: "Mr. Janardhan. Reddy", title: "Assistant Professor", image: janardhanReddy },
-    { name: "Mrs. V Lakshmi Prasanna", title: "Assistant Professor", image: lakshmiPrasanna },
-    { name: "Mr. P. Siva Krishna", title: "Assistant Professor", image: shivaKrishna },
-    { name: "Mr. K. Abdul Munaf", title: "Assistant Professor", image: abdulMunaf },
-    { name: "Mrs. M. Anitha", title: "Assistant Professor", image: mAnitha },
-    { name: "Mr. B Madhan Mohan", title: "Assistant Professor", image: madhanMohan },
-    { name: "Mr. N Mohan Raju", title: "Assistant Professor", image: mohanRaju },
-    { name: "Mr. T Naresh", title: "Assistant Professor", image: naresh },
-    { name: "Mr. R. Pavan kumar", title: "Assistant Professor", image: pavanKumar },
-    { name: "Mr. SAFARI BHASKAR RAO", title: "Assistant Professor", image: safariBhaskarRao },
-    { name: "Mrs. SHAIK RIAZUM", title: "Assistant Professor", image: shaikRiyazum },
-    { name: "Mr. K. Harinath Reddy", title: "Assistant Professor", image: krishnamHarinathReddy },
-    { name: "Mr. Venkatesulu", title: "Assistant Professor", image: venkatesulu },
-  ];
 
-  const FacultySection: React.FC = () => {
+  // NEW: handler to manage the modal
+  const handleFacultyClick = (faculty: Faculty) => {
+    setSelectedFaculty(faculty);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedFaculty(null);
+  };
+
+  // UPDATED: Added more details to the faculty list for the modal
+  const facultyList: Faculty[] = [
+    {
+      name: "Mr. Y Arun Kumar Reddy",
+      title: "Head of the Department",
+      image: arunKumarReddy,
+      email: "y.arunkumarreddy@rguktrkv.ac.in",
+      bio: "Mr. Y Arun Kumar Reddy serves as the Head of the Department. He has extensive academic experience and has held several key administrative roles within the department.",
+      education: "M. Tech. (2009-2011) in Telecommunication Systems Engineering from IIT Kharagpur; B. Tech. (2004-2008) in ECE from VNR Vignana Jyothi Institute of Engineering and Technology, Hyderabad.",
+      experience: "Assistant Professor at RGUKT, RK Valley since 2011.",
+      researchAreas: ["Wireless communication"],
+      coursesTaught: [
+        "Electrical Technology", "Analog Communications", "Digital Communications", "Wireless Communications", "Information Theory and Coding", "Probability and Stochastic process", "Electromagnetic Theory and Transmission Lines", "Electronic Devices and Circuits"
+      ],
+      administrativeRoles: ["Branch Coordinator (2013-14, 2016-17)"]
+    },
+    {
+      name: "Mr. B. V. Sudhakar Reddy",
+      title: "Assistant Professor",
+      image: sudhakarReddy,
+      email: "sudhakar@rguktrkv.ac.in",
+      bio: "Mr. B. V. Sudhakar Reddy is an Assistant Professor with a strong background in telecommunications and signal processing. He has significant administrative experience within the university.",
+      education: "M. Tech. (2010) in Telecommunication Systems Engineering from IIT Kharagpur; AMIETE (2008) in E&T Engineering from IETE.",
+      experience: "Assistant Professor at RGUKT, RK Valley (2010-2016), RGUKT Nuzvid (2016), and currently at RGUKT, RK Valley (since 2016).",
+      researchAreas: ["MIMO", "Cognitive Radio", "Software Defined Radio"],
+      coursesTaught: [
+        "Wireless Communications", "Digital Communications", "Analog Communications", "Analog Electronic Circuits", "Basic Electronics", "Network Theory", "Electrical Technology"
+      ],
+      administrativeRoles: ["Mess In-charge", "Controller of Examinations In-charge (2014-16)", "Student Welfare Officer (2011-13)"]
+    },
+    {
+      name: "Ms. G. Lakshmi Shireesha",
+      title: "Assistant Professor",
+      image: lakshmiShirisha,
+      email: "glakshmishireesha@rguktrkv.ac.in",
+      bio: "Ms. G. Lakshmi Shireesha is an Assistant Professor with expertise in wireless technologies. She has held prominent administrative roles, including serving as the Head of the Department.",
+      education: "M.Tech from NIT-Trichy.",
+      experience: "Working at RGUKT, RK Valley since 2014.",
+      researchAreas: ["Cooperative Communications", "5G and 6G Wireless Technologies"],
+      coursesTaught: [
+        "Analog Communications", "Basic Electronics", "Digital Communications", "Signals and Systems", "Digital Signal Processing", "Communication Systems-1 & 2", "Mobile Communication", "Wireless Communication"
+      ],
+      administrativeRoles: ["Head of the Department (2020-2021)", "Department Placement Coordinator", "Assistant Student Welfare Officer"]
+    },
+    {
+      name: "Mr. Janardhan. Reddy",
+      title: "Assistant Professor",
+      image: janardhanReddy,
+      email: "janardhanreddy@rguktrkv.ac.in",
+      bio: "Mr. Janardhan Reddy is an Assistant Professor with a background in advanced circuit design and antennas. He has held administrative positions as a Head of the Department at multiple campuses.",
+      education: "M.Tech and Ph.D.",
+      experience: "Working at RGUKT since 2016.",
+      researchAreas: ["EMI/EMC", "Microstrip Antennas"],
+      coursesTaught: [
+        "Network Theory", "Basic Electrical and Electronics Engineering", "Basic Electronics", "Digital Image Processing", "Digital Logic Design", "Principles of Radar", "Electro Magnetic Engineering", "Radio Frequency and Microwave Engineering", "Antenna Radio Wave Propagation", "Electronic Devices and Circuits"
+      ],
+      administrativeRoles: ["Skill Development Center Coordinator (2022-present)", "Head of the Department (2019-2022)"]
+    },
+    {
+      name: "Mrs. V Lakshmi Prasanna",
+      title: "Assistant Professor",
+      image: lakshmiPrasanna,
+      email: "vella.prasu@rguktrkv.ac.in",
+      bio: "Mrs. V Lakshmi Prasanna is an Assistant Professor specializing in VLSI and embedded systems. She is currently serving in a key administrative role within the university's examination section.",
+      education: "M.Tech (2015) in VLSI from JNTU Anantapur; B.Tech (2011) in ECE from JNTU Anantapur.",
+      experience: "Assistant Professor at RGUKT-RK Valley since 2021; Assistant Professor & HOD at Sai Rajeswari Institute of Technology (2015-2021).",
+      researchAreas: ["VLSI (System Design, Testing & Testability)", "Embedded Systems", "Microprocessors & Microcontrollers"],
+      coursesTaught: [
+        "Embedded Systems", "Computer Networks", "Microprocessors and Microcontrollers", "Digital Logic Design", "Computer Organisation & Architecture", "Electronic Devices & Circuits", "Probability Theory & Stochastic Processes", "Linear Integrated Circuits"
+      ],
+      administrativeRoles: ["Associate Controller of Examination (ACOE) (2024-present)"]
+    },
+    {
+      name: "Mr. P. Siva Krishna",
+      title: "Assistant Professor",
+      image: shivaKrishna,
+      email: "psivakrishna@rguktrkv.ac.in",
+      bio: "Mr. P. Siva Krishna is an Assistant Professor with a focus on control systems, biomedical applications, and embedded systems. He has contributed to various publications and teaches a wide range of subjects.",
+      education: "M.Tech from a college affiliated to ANU (2009); B.Tech (2006).",
+      experience: "Over 13 years of teaching experience, including at RVR&JC College of engineering.",
+      researchAreas: ["Control Systems", "Biomedical", "Embedded"],
+      coursesTaught: [
+        "EDC", "AEC", "MEMS", "SC", "CONTROL SYSTEMS", "SS"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mr. K. Abdul Munaf",
+      title: "Assistant Professor",
+      image: abdulMunaf,
+      email: "kabdulmunaf@rguktrkv.ac.in",
+      bio: "Mr. K. Abdul Munaf is an Assistant Professor with a specialization in VLSI System Design. He is currently pursuing a Ph.D. and has several publications and workshop experiences to his credit.",
+      education: "M.Tech in VLSI SYSTEM DESIGN (2011) from JNTU Ananthapur; B.Tech (2008) from JNTU Hyderabad. Currently pursuing Ph.D. from SV University.",
+      experience: "Assistant Professor at RGUKT since 2018; previously worked at Ravindra College of Engineering for Women (2011-2018).",
+      researchAreas: ["ANALOG & DIGITAL ELECTRONICS", "VLSI", "MICROELECTRONICS"],
+      coursesTaught: [
+        "MICROCONTROLLERS & APPLICATIONS", "EMBEDDED SYSTEMS", "EMBEDDED REAL TIME SYSTEMS", "MICROPROCESSORS & MICROCONTROLLERS", "DIGITAL IC APPLICATIONS", "LINEAR & DIGITAL IC APPLICATIONS", "ELECTRONIC DEVICES & CIRCUITS", "ELECTONIC CIRCUIT ANALYSIS", "ANALOG ELECTONIC CIRCUITS", "SWITCHING THEORY & LOGIC DESIGN", "ELECTONIC CIRCUIT ANALYSIS & DESIGN", "MICRO ELECTRONIC & MECHANICAL SYSTEMS", "BASIC ELECTRICAL & ELECTRONICS ENGINEERING", "LOW POWER VLSI CIRCUITS & SYSTEMS", "DIGITAL LOGIC DESIGN"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mrs. M. Anitha",
+      title: "Assistant Professor",
+      image: mAnitha,
+      email: "manitha@rguktrkv.ac.in",
+      bio: "Mrs. M. Anitha is an Assistant Professor with an M.Tech and is pursuing a Ph.D. She has diverse experience at RGUKT-RKV, serving as an Academic Consultant and Guest Faculty before her current role.",
+      education: "M.Tech and pursuing Ph.D.",
+      experience: "Assistant Professor at RGUKT since 2018; previously Guest Faculty and Academic Assistant.",
+      researchAreas: [],
+      coursesTaught: [
+        "Computer Networks", "Switching Theory and Logic Design", "Control System", "Hardware Description Language", "VLSI System Design", "Basic Electrical and Electronics Engineering", "Basic Electronics", "Digital Image Processing", "Digital Logic Design", "Electronic Devices and Circuits"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mr. B Madhan Mohan",
+      title: "Head of the Department",
+      image: madhanMohan,
+      email: "madhan.betharaju@rguktrkv.ac.in",
+      bio: "Mr. B Madhan Mohan is the Head of the Department and also the IQAC Associate Coordinator. He is a member of professional bodies like SDIWC and IAENG. His research interests are in Image Processing and Communication Systems.",
+      education: "M.Tech.",
+      experience: "Working at RGUKT, RK Valley since 2021.",
+      researchAreas: ["Image Processing", "Communication Systems"],
+      coursesTaught: [
+        "Analog Communications", "Digital Communications", "Mobile Communications", "Digital Electronics", "Digital System Design", "Digital Image Processing"
+      ],
+      administrativeRoles: ["Head of the Department (since 2022)", "IQAC Associate Coordinator (since 2023)"]
+    },
+    {
+      name: "Mr. N Mohan Raju",
+      title: "Head of the Department",
+      image: mohanRaju,
+      email: "nmohanraju@rguktrkv.ac.in",
+      bio: "Mr. N Mohan Raju is the Head of the Department at RGUKT-RK Valley since November 2023. He holds an M.Tech and has served as an Associate Controller of Examinations. His research interests include VLSI, Embedded Systems, and IoT.",
+      education: "M.Tech.",
+      experience: "Working at RGUKT, RK Valley since 2018.",
+      researchAreas: ["VLSI", "Embedded systems", "IOT"],
+      coursesTaught: [
+        "Digital system design", "digital logic design", "VLSI", "Embedded systems", "Microprocessors and microcontrollers", "optical communications", "signals and systems", "Digital signal processing", "Digital IC applications"
+      ],
+      administrativeRoles: ["Head of the Department (2023-present)", "Associate Controller of Examinations (2021-22)", "NSS Program officer (2015-17)"]
+    },
+    {
+      name: "Mr. R. Pavan kumar",
+      title: "Assistant Professor",
+      image: pavanKumar,
+      email: "rpavankumar@rguktrkv.ac.in",
+      bio: "Mr. R. Pavan Kumar is an Assistant Professor with 10 years of teaching experience. His M.Tech is from JNTUCEP. His research areas of interest are Biomedical Signal Processing, Analog & Digital Electronics.",
+      education: "M.Tech from JNTUCEP.",
+      experience: "10 years of teaching experience at RGUKT RK Valley.",
+      researchAreas: ["Bio medical signal processing", "Analog & Digital Electronics"],
+      coursesTaught: [
+        "Electronic devises and circuits", "Analog electronics and circuits", "signals and systems", "BEEE", "Satellite communication", "Electronics Measurements and instrumentation", "Digital electronics"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mr. SAFARI BHASKAR RAO",
+      title: "Assistant Professor",
+      image: safariBhaskarRao,
+      email: "safaribhaskar@rguktrkv.ac.in",
+      bio: "Mr. Safari Bhaskar Rao is an Assistant Professor with an M.Tech. He has publications in various journals and has attended several FDPs on topics like VLSI design and 'Outcome Based Education'.",
+      education: "M.Tech.",
+      experience: "No detailed experience provided in the source data.",
+      researchAreas: [],
+      coursesTaught: [
+        "Electronic Devices and Circuits", "ANALOG AND DIGITAL COMMUNICATION", "Analog Electronics Circuits", "Signal and System"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mrs. SHAIK RIAZUM",
+      title: "Assistant Professor",
+      image: shaikRiyazum,
+      email: "riazunshaik@rguktrkv.ac.in",
+      bio: "Mrs. Shaik Riazum is an Assistant Professor who joined RGUKT-RKV in Feb 2024. Her research interests are Embedded Systems, Analog & Digital Electronics. She has a publication on 'Microcontroller managed module for Automatic Ventilation of Vehicle Interior'.",
+      education: "M.Tech.",
+      experience: "4 years in another college (2016-2019) and at RGUKT-RKV since 2024.",
+      researchAreas: ["Embedded Systems", "Analog & Digital Electronics"],
+      coursesTaught: [
+        "Digital Logic Design", "Switching Theory & Logic Design"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mr. K. Harinath Reddy",
+      title: "Assistant Professor",
+      image: krishnamHarinathReddy,
+      email: "harinathreddy108@rguktrkv.ac.in",
+      bio: "Mr. K. Harinath Reddy is an Assistant Professor with an M.Tech. He has multiple publications and has attended various FDPs, including one on VLSI Design. He is also a member of the Institute for Engineering Research and Publication.",
+      education: "M.Tech.",
+      experience: [],
+      researchAreas: [],
+      coursesTaught: [
+        "Electronic Devices and Circuits", "Digital signal desigen", "Analog electronic circuits", "Microprocessor and controller", "Embedded systems"
+      ],
+      administrativeRoles: []
+    },
+    {
+      name: "Mr. Venkatesulu",
+      title: "Assistant Professor",
+      image: venkatesulu,
+      email: "v.sugali7@rguktrkv.ac.in",
+      bio: "Mr. S. Venkatesulu is an Assistant Professor with a Ph.D. in ECE (2015) and an M.Tech in Embedded Systems (2008). He has extensive academic and industrial experience, including prior roles as Professor and HOD. He has published a book and numerous international journal papers.",
+      education: "Ph.D. (2015) from JNTU, Ananthapur; M.Tech (2008) in Embedded Systems from AITS, JNTU HYD; B.Tech (2004) from MITS, JNTU HYD.",
+      experience: "Assistant Professor at RGUKT since 2024; Professor and HOD at AVNIET (2015-2018); other roles as Embedded System Engineer and PCB Design Engineer.",
+      researchAreas: [],
+      coursesTaught: [
+        "Signal Processing", "Computer Networks", "Cellular & Mobile Communication", "Principles of Communications", "Digital Logic Design", "Embedded system", "Microprocessor and Interfacing", "Microprocessor and Micro Controller", "Linear Integrated Digital Circuits", "Digital Data communication", "Pulse and Digital Circuits", "Electronics and Devices circuits", "Optical Communication System", "ARM Architecture"
+      ],
+      administrativeRoles: ["NAAC Coordinator", "IQAC Director", "NBA work Tier-1 and Tier-2"]
+    }
+  ];
+  // MODIFIED: FacultySection now takes a prop `onFacultyClick`
+  const FacultySection: React.FC<{ onFacultyClick: (faculty: Faculty) => void }> = ({ onFacultyClick }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const scrollInterval = useRef<NodeJS.Timeout | null>(null);
-    // NEW: state to track scroll direction
     const [scrollDirection, setScrollDirection] = useState<"left" | "right">("right");
 
     const isMobile = window.innerWidth < 640;
@@ -302,40 +537,35 @@ const LandingPage: React.FC = () => {
       }
     };
 
-    // MODIFIED: useEffect to handle bi-directional auto-scrolling
     useEffect(() => {
-        const handleScroll = () => {
-            if (scrollRef.current) {
-                // If scrolled to the end on the right, switch direction to left
-                if (scrollRef.current.scrollLeft + scrollRef.current.clientWidth >= scrollRef.current.scrollWidth - 10) {
-                    setScrollDirection("left");
-                }
-                // If scrolled to the beginning on the left, switch direction to right
-                if (scrollRef.current.scrollLeft <= 10) {
-                    setScrollDirection("right");
-                }
-            }
-        };
+      const handleScroll = () => {
+        if (scrollRef.current) {
+          if (scrollRef.current.scrollLeft + scrollRef.current.clientWidth >= scrollRef.current.scrollWidth - 10) {
+            setScrollDirection("left");
+          }
+          if (scrollRef.current.scrollLeft <= 10) {
+            setScrollDirection("right");
+          }
+        }
+      };
 
-        const interval = setInterval(() => {
-            scroll(scrollDirection);
-        }, isMobile ? 1800 : 1200);
+      const interval = setInterval(() => {
+        scroll(scrollDirection);
+      }, isMobile ? 1800 : 1200);
 
-        scrollRef.current?.addEventListener('scroll', handleScroll);
+      scrollRef.current?.addEventListener('scroll', handleScroll);
 
-        return () => {
-            clearInterval(interval);
-            scrollRef.current?.removeEventListener('scroll', handleScroll);
-        };
+      return () => {
+        clearInterval(interval);
+        scrollRef.current?.removeEventListener('scroll', handleScroll);
+      };
     }, [scrollDirection, isMobile]);
 
-    // Start auto scroll on arrow hover
     const startAutoScroll = (direction: "left" | "right") => {
       stopAutoScroll();
       scrollInterval.current = setInterval(() => scroll(direction), 100);
     };
 
-    // Stop auto scroll
     const stopAutoScroll = () => {
       if (scrollInterval.current) {
         clearInterval(scrollInterval.current);
@@ -345,7 +575,7 @@ const LandingPage: React.FC = () => {
 
     return (
       <motion.section
-        className="bg-gray-50 py-8 px-2 sm:px-8 dark:bg-gray-900" // ADDED: dark mode class
+        className="bg-gray-50 py-8 px-2 sm:px-8 dark:bg-gray-900"
         variants={floatVariant}
         initial="hidden"
         whileInView="visible"
@@ -355,7 +585,6 @@ const LandingPage: React.FC = () => {
           Faculty
         </h2>
         <div className="relative max-w-7xl mx-auto">
-          {/* Left Arrow */}
           <button
             type="button"
             aria-label="Scroll left"
@@ -379,7 +608,6 @@ const LandingPage: React.FC = () => {
               />
             </svg>
           </button>
-          {/* Scrollable Faculty List */}
           <div
             ref={scrollRef}
             className="flex gap-4 sm:gap-6 overflow-x-auto py-2 px-4 sm:px-8"
@@ -392,7 +620,9 @@ const LandingPage: React.FC = () => {
             {facultyList.map((fac, i) => (
               <div
                 key={i}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 text-center min-w-[160px] sm:min-w-[220px]`} // ADDED: dark mode class
+                // MODIFIED: Added onClick handler and cursor styles
+                onClick={() => onFacultyClick(fac)}
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 text-center min-w-[160px] sm:min-w-[220px] cursor-pointer hover:scale-105 transition-transform duration-200`}
               >
                 {fac.image ? (
                   <img src={fac.image} alt={fac.name}
@@ -405,15 +635,13 @@ const LandingPage: React.FC = () => {
                 )}
                 <h3 className="font-bold text-base sm:text-lg dark:text-white">
                   {fac.name}
-                </h3> {/* ADDED: dark mode class */}
+                </h3>
                 <p className="text-gray-600 text-sm sm:text-base dark:text-gray-400">
                   {fac.title}
-                </p>{" "}
-                {/* ADDED: dark mode class */}
+                </p>
               </div>
             ))}
           </div>
-          {/* Right Arrow */}
           <button
             type="button"
             aria-label="Scroll right"
@@ -439,7 +667,8 @@ const LandingPage: React.FC = () => {
           </button>
         </div>
       </motion.section>
-   ) };
+    )
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -449,7 +678,6 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // NEW: Achievements Data for the carousel
   const achievementsData = [
     {
       icon: "🏆",
@@ -471,7 +699,6 @@ const LandingPage: React.FC = () => {
     },
   ];
 
-  // NEW: Achievements Carousel Component
   const AchievementsCarousel: React.FC = () => {
     const [currentAchievement, setCurrentAchievement] = useState(0);
     const achievementsIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -479,7 +706,7 @@ const LandingPage: React.FC = () => {
     useEffect(() => {
       achievementsIntervalRef.current = setInterval(() => {
         setCurrentAchievement((prev) => (prev + 1) % achievementsData.length);
-      }, 4000); // Change slide every 4 seconds
+      }, 4000);
 
       return () => {
         if (achievementsIntervalRef.current) {
@@ -520,29 +747,26 @@ const LandingPage: React.FC = () => {
           {achievementsData.map((_, idx) => (
             <button
               key={idx}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                idx === currentAchievement ? "bg-red-700" : "bg-gray-400"
-              }`}
+              className={`w-3 h-3 rounded-full transition-colors ${idx === currentAchievement ? "bg-red-700" : "bg-gray-400"
+                }`}
               onClick={() => setCurrentAchievement(idx)}
               aria-label={`Show achievement ${idx + 1}`}
             />
           ))}
         </div>
-        {/* Creative sparkle effect */}
         <div className="absolute top-2 right-2 animate-pulse">
           <svg width="244" height="24" fill="none">
-            <circle cx="12" cy="12" r="3" fill="#FBBF24" opacity="0.7"/>
-            <circle cx="18" cy="6" r="1.5" fill="#F87171" opacity="0.7"/>
-            <circle cx="6" cy="18" r="1" fill="#60A5FA" opacity="0.7"/>
+            <circle cx="12" cy="12" r="3" fill="#FBBF24" opacity="0.7" />
+            <circle cx="18" cy="6" r="1.5" fill="#F87171" opacity="0.7" />
+            <circle cx="6" cy="18" r="1" fill="#60A5FA" opacity="0.7" />
           </svg>
         </div>
       </div>
     );
   };
-  
-  // NEW: Message from HOD component to fill the gap
+
   const MessageFromHOD: React.FC = () => (
-    <motion.div 
+    <motion.div
       className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 transition-colors"
       variants={floatVariant}
       initial="hidden"
@@ -562,9 +786,6 @@ const LandingPage: React.FC = () => {
 
 
   return (
-    // MODIFIED: Added dark mode class to the main container.
-    // This class is a placeholder and should be handled by Tailwind's dark mode setup.
-    // A better approach is to toggle a class on the <html> tag as implemented in ThemeToggle component.
     <div className="font-sans bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col m-0 p-0 transition-colors duration-300">
       {/* HEADER */}
       <header className="flex flex-wrap items-center justify-between w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm px-4 sm:px-8 transition-colors">
@@ -592,9 +813,8 @@ const LandingPage: React.FC = () => {
         </div>
 
         {/* Right: Login Button */}
-        {/* MODIFIED: Added a container for the theme toggle and login button */}
         <div className="pr-2 sm:pr-6 mt-2 sm:mt-0 flex-shrink-0 flex items-center gap-4">
-          <ThemeToggle /> {/* ADDED: The new theme toggle component */}
+          <ThemeToggle />
           <Link
             to="/login"
             aria-label="Login"
@@ -644,7 +864,7 @@ const LandingPage: React.FC = () => {
         {/* Left arrow - hidden until hover */}
         <button
           type="button"
-          onClick={prevSlide} // Remove pauseThenResume here
+          onClick={prevSlide}
           aria-label="Previous slide"
           className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-3 shadow-lg select-none focus:outline-none transition-opacity opacity-0 group-hover:opacity-100"
         >
@@ -668,7 +888,7 @@ const LandingPage: React.FC = () => {
         {/* Right arrow - hidden until hover */}
         <button
           type="button"
-          onClick={nextSlide} // Remove pauseThenResume here
+          onClick={nextSlide}
           aria-label="Next slide"
           className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-3 shadow-lg select-none focus:outline-none transition-opacity opacity-0 group-hover:opacity-100"
         >
@@ -698,115 +918,107 @@ const LandingPage: React.FC = () => {
               aria-label={`Go to slide ${idx + 1}`}
               onClick={() => {
                 setCurrent(idx);
-                pauseThenResume(1000); // Only pause/resume when clicking indicators
+                pauseThenResume(1000);
               }}
-              className={`w-4 h-4 rounded-full transition-transform focus:outline-none ${
-                idx === current
-                  ? "bg-white scale-110"
-                  : "bg-white/50 hover:bg-white/80"
-              }`}
+              className={`w-4 h-4 rounded-full transition-transform focus:outline-none ${idx === current
+                ? "bg-white scale-110"
+                : "bg-white/50 hover:bg-white/80"
+                }`}
             />
           ))}
         </div>
 
         {/* Animated per-image captions (transparent background so image is visible) */}
-       {/* Animated per-image captions (transparent background so image is visible) */}
-<div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 pointer-events-none">
-  {captions.map((cap, idx) => (
-    <motion.div
-      key={idx}
-      initial={{ opacity: 0, y: 10 }}
-      animate={
-        idx === current ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
-      }
-      transition={{ duration: 0.6 }}
-      className={`w-full flex flex-col items-center justify-center absolute left-0 right-0 px-4`}
-    >
-      {/* transparent bluish backdrop for readability but very light */}
-      <h2 className="text-3xl sm:text-5xl font-bold text-white drop-shadow-md select-none">
-        {" "}
-        {cap.title}{" "}
-      </h2>{" "}
-      <p className="mt-3 max-w-2xl text-sm sm:text-lg text-white/95 select-none">
-        {" "}
-        {cap.subtitle}{" "}
-      </p>
-    </motion.div>
-  ))}
-</div>
-      </section>
-
-      {/* NAVIGATION */}
-
-      {/* ANNOUNCEMENTS */}
-      <motion.main 
-        className="flex-grow w-full flex flex-col items-start px-2 sm:px-4 py-4 md:px-16 lg:px-20 xl:px-24"
-        variants={floatVariant} 
-        initial="hidden" 
-        whileInView="visible" 
-        viewport={{ once: true, amount: 0.1 }}
-      >
-          <div className="w-full max-w-7xl">
-    {/* Announcements and Quick Links side by side on desktop, stacked on mobile */}
-    <div className="md:flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-start">
-      {/* Announcements - Left Side */}
-      <div className="flex-1 min-w-0">
-        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-red-700 mb-3 lg:mb-4 xl:mb-6 text-left">
-          Latest Announcements
-        </h2>
-        <div 
-          ref={announcementsRef}
-          className="space-y-2 sm:space-y-3 lg:space-y-4 xl:space-y-5 max-h-[280px] lg:max-h-[320px] xl:max-h-[360px] overflow-y-auto pr-2"
-          onMouseEnter={stopAnnouncementsScroll}
-          onMouseLeave={startAnnouncementsScroll}
-        >
-          {announcements.map((notice, index) => (
-            <div
-              key={index}
-              className="flex-1 bg-white dark:bg-gray-800 border-l-4 rounded-lg shadow-md p-2 sm:p-2.5 md:p-3 lg:p-4 xl:p-5 transition hover:shadow-lg text-left"
-              style={{ borderLeftColor: '#E8EAF6' }}
+        <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 pointer-events-none">
+          {captions.map((cap, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={
+                idx === current ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
+              }
+              transition={{ duration: 0.6 }}
+              className={`w-full flex flex-col items-center justify-center absolute left-0 right-0 px-4`}
             >
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 gap-1">
-                <span className="font-semibold text-red-700 text-xs sm:text-xs lg:text-sm xl:text-base">
-                  {notice.author}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 lg:text-xs xl:text-sm">
-                  {notice.time}
-                </span>
-              </div>
-              <h3 className="text-xs sm:text-sm lg:text-base xl:text-lg font-bold text-gray-800 dark:text-white mb-1">
-                {notice.title}
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-xs lg:text-sm xl:text-base">
-                {notice.content}
+              <h2 className="text-3xl sm:text-5xl font-bold text-white drop-shadow-md select-none">
+                {" "}
+                {cap.title}{" "}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm sm:text-lg text-white/95 select-none">
+                {" "}
+                {cap.subtitle}{" "}
               </p>
-              <a
-                href="#"
-                className="text-xs text-blue-600 hover:underline font-medium lg:text-xs xl:text-sm"
-              >
-                View More
-              </a>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
-      {/* Announcement Illustration - Right Side (Hidden on mobile) */}
-      <div className="hidden md:block md:w-80 lg:w-96 xl:w-[28rem] 2xl:w-[28rem] flex-shrink-0 flex flex-col justify-center pt-6 md:pt-16 lg:pt-20 xl:pt-24 h-full">
-        <img 
-          src={announcementIllustration} 
-          alt="Announcement illustration" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-    </div>
-      </div>
+      </section>
+
+      {/* ANNOUNCEMENTS */}
+      <motion.main
+        className="flex-grow w-full flex flex-col items-start px-2 sm:px-4 py-4 md:px-16 lg:px-20 xl:px-24"
+        variants={floatVariant}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.1 }}
+      >
+        <div className="w-full max-w-7xl">
+          <div className="md:flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-start">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-red-700 mb-3 lg:mb-4 xl:mb-6 text-left">
+                Latest Announcements
+              </h2>
+              <div
+                ref={announcementsRef}
+                className="space-y-2 sm:space-y-3 lg:space-y-4 xl:space-y-5 max-h-[280px] lg:max-h-[320px] xl:max-h-[360px] overflow-y-auto pr-2"
+                onMouseEnter={stopAnnouncementsScroll}
+                onMouseLeave={startAnnouncementsScroll}
+              >
+                {announcements.map((notice, index) => (
+                  <div
+                    key={index}
+                    className="flex-1 bg-white dark:bg-gray-800 border-l-4 rounded-lg shadow-md p-2 sm:p-2.5 md:p-3 lg:p-4 xl:p-5 transition hover:shadow-lg text-left"
+                    style={{ borderLeftColor: '#E8EAF6' }}
+                  >
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 gap-1">
+                      <span className="font-semibold text-red-700 text-xs sm:text-xs lg:text-sm xl:text-base">
+                        {notice.author}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 lg:text-xs xl:text-sm">
+                        {notice.time}
+                      </span>
+                    </div>
+                    <h3 className="text-xs sm:text-sm lg:text-base xl:text-lg font-bold text-gray-800 dark:text-white mb-1">
+                      {notice.title}
+                    </h3>
+                    <p className="text-gray-700 dark:text-gray-300 mb-1 text-xs sm:text-xs lg:text-sm xl:text-base">
+                      {notice.content}
+                    </p>
+                    <a
+                      href="#"
+                      className="text-xs text-blue-600 hover:underline font-medium lg:text-xs xl:text-sm"
+                    >
+                      View More
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="hidden md:block md:w-80 lg:w-96 xl:w-[28rem] 2xl:w-[28rem] flex-shrink-0 flex flex-col justify-center pt-6 md:pt-16 lg:pt-20 xl:pt-24 h-full">
+              <img
+                src={announcementIllustration}
+                alt="Announcement illustration"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
       </motion.main>
       {/* COMBINED ABOUT & ACHIEVEMENTS SECTION */}
-      <motion.section 
-        className="bg-white dark:bg-gray-800 py-12 px-4 sm:px-8" 
-        variants={floatVariant} 
-        initial="hidden" 
-        whileInView="visible" 
+      <motion.section
+        className="bg-white dark:bg-gray-800 py-12 px-4 sm:px-8"
+        variants={floatVariant}
+        initial="hidden"
+        whileInView="visible"
         viewport={{ once: false, amount: 0.2 }}
       >
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8 items-center">
@@ -823,31 +1035,31 @@ const LandingPage: React.FC = () => {
           </div>
           {/* About Image - Right Side */}
           <div className="order-2">
-            <img 
-              src={department2} 
-              alt="Department of Electronics and Communication Engineering" 
-              className="w-full h-auto object-cover rounded-lg shadow-xl" 
+            <img
+              src={department2}
+              alt="Department of Electronics and Communication Engineering"
+              className="w-full h-auto object-cover rounded-lg shadow-xl"
             />
           </div>
         </div>
       </motion.section>
 
       {/* LAB FACILITIES SECTION */}
-      <motion.section 
-        className="bg-gray-50 dark:bg-gray-900 py-16 px-4 sm:px-8" 
-        variants={floatVariant} 
-        initial="hidden" 
-        whileInView="visible" 
+      <motion.section
+        className="bg-gray-50 dark:bg-gray-900 py-16 px-4 sm:px-8"
+        variants={floatVariant}
+        initial="hidden"
+        whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
       >
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-red-700 mb-12 text-center">Lab Facilities</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             <div className="group">
               <div className="relative overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105">
-                <img 
-                  src={lab1Image} 
-                  alt="Lab Facility 1" 
+                <img
+                  src={lab1Image}
+                  alt="Lab Facility 1"
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -859,9 +1071,9 @@ const LandingPage: React.FC = () => {
             </div>
             <div className="group">
               <div className="relative overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105">
-                <img 
-                  src={lab2Image} 
-                  alt="Lab Facility 2" 
+                <img
+                  src={lab2Image}
+                  alt="Lab Facility 2"
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -873,9 +1085,9 @@ const LandingPage: React.FC = () => {
             </div>
             <div className="group">
               <div className="relative overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105">
-                <img 
-                  src={lab3Image} 
-                  alt="Lab Facility 3" 
+                <img
+                  src={lab3Image}
+                  alt="Lab Facility 3"
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -890,17 +1102,16 @@ const LandingPage: React.FC = () => {
       </motion.section>
 
       {/* ACHIEVEMENTS SECTION */}
-      <motion.section 
+      <motion.section
         className="bg-gray-50 dark:bg-gray-900 py-16 px-2 sm:px-16"
-        variants={floatVariant} 
-        initial="hidden" 
-        whileInView="visible" 
+        variants={floatVariant}
+        initial="hidden"
+        whileInView="visible"
         viewport={{ once: false, amount: 0.2 }}
       >
-        <div className="max-w-[1400px] mx-auto flex flex-col items-center"> {/* Increased max width */}
+        <div className="max-w-[1400px] mx-auto flex flex-col items-center">
           <h2 className="text-4xl font-extrabold text-red-700 mb-10 text-center">Department Achievements</h2>
           <div className="w-full flex justify-center">
-            {/* Make AchievementsCarousel wider */}
             <div className="w-full max-w-[1100px]">
               <AchievementsCarousel />
             </div>
@@ -909,7 +1120,15 @@ const LandingPage: React.FC = () => {
       </motion.section>
 
       {/* Move Faculty Section here, just above the footer */}
-      <FacultySection />
+      <FacultySection onFacultyClick={handleFacultyClick} />
+
+      {/* NEW: Conditional rendering of the modal */}
+      {showModal && selectedFaculty && (
+        <FacultyDetailsModal
+          faculty={selectedFaculty}
+          onClose={handleCloseModal}
+        />
+      )}
 
       {/* FOOTER */}
       <footer className="bg-red-700 text-white py-8 md:py-12 mt-8">
@@ -942,7 +1161,7 @@ const LandingPage: React.FC = () => {
               <div className="text-center">
                 <div className="bg-white/10 rounded-lg p-4">
                   <svg className="w-8 h-8 text-white mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                   </svg>
                   <h4 className="font-semibold text-white mb-2">LinkedIn</h4>
                   <a href="https://www.linkedin.com/company/academic-affairs-club-aac-rgukt-rkvalley/" target="_blank" rel="noopener noreferrer" className="text-white/80 hover:text-white text-sm">Academic Affairs Club</a>
@@ -959,8 +1178,8 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          {/* Copyright Section */}
+
+          {/* Copyright Row */}
           <div className="border-t border-white/20 pt-6">
             {/* Department Info, Map, and Links Row */}
             <div className="flex flex-col lg:flex-row justify-between items-start mb-6 gap-8">
@@ -990,21 +1209,20 @@ const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Center Column - Google Map Preview */}
               <div className="flex-1 min-w-0 w-full lg:w-auto">
                 <h4 className="font-semibold text-white mb-3">LOCATION</h4>
                 <div className="w-full h-48 rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
-                    <iframe
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.602741995817!2d78.5373097!3d14.3353797!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb3a24eacd4a67d%3A0x88cc62e6279e1ef0!2sIIIT%20RGUKT%20RK%20VALLEY!5e0!3m2!1sen!2sin!4v1693617600000!5m2!1sen!2sin"
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0 }}
-                        allowFullScreen=""
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        title="RGUKT RK Valley Location"
-                    ></iframe>
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.602741995817!2d78.5373097!3d14.3353797!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb3a24eacd4a67d%3A0x88cc62e6279e1ef0!2sIIIT%20RGUKT%20RK%20VALLEY!5e0!3m2!1sen!2sin!4v1693617600000!5m2!1sen!2sin"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="RGUKT RK Valley Location"
+                  ></iframe>
                 </div>
               </div>
 
@@ -1022,7 +1240,7 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Copyright Row */}
             <div className="text-center text-sm text-white/80">
               <p>© {new Date().getFullYear()} Department of Electronics and Communication Engineering, RGUKT RK Valley. All rights reserved.</p>
