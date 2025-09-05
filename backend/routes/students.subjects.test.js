@@ -56,4 +56,36 @@ describe('GET /students/:id/subjects', () => {
       internalTotal: 40
     });
   });
+
+  it('defaults missing mid max marks to 20', async () => {
+    executeQuery.mockResolvedValueOnce([
+      [
+        {
+          id: 1,
+          name: 'Science',
+          code: 'S1',
+          credits: 3,
+          type: 'core',
+          mid1: 15,
+          mid2: 10,
+          mid3: 0,
+          mid1Max: null,
+          mid2Max: null,
+          mid3Max: null,
+          total_classes: 0,
+          attended_classes: 0
+        }
+      ]
+    ]);
+
+    const res = await request(app).get('/students/1/subjects');
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toMatchObject({
+      mid1: 15,
+      mid2: 10,
+      mid3: 0,
+      internal: 25,
+      internalTotal: 40
+    });
+  });
 });

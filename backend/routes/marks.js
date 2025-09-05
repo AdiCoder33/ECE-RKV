@@ -137,14 +137,14 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
         monthlyTrendMap[monthKey] = { month: monthKey, obtained: 0, total: 0 };
       }
       monthlyTrendMap[monthKey].obtained += mid.marks;
-      monthlyTrendMap[monthKey].total += mid.max_marks;
+      monthlyTrendMap[monthKey].total += mid.max_marks || 20;
     }
 
     const subjectStats = Object.values(subjectStatsMap).map((s) => {
       const sortedMids = s.mids.sort((a, b) => b.marks - a.marks);
       const bestTwo = sortedMids.slice(0, 2);
       const bestMarks = bestTwo.reduce((s, m) => s + m.marks, 0);
-      const bestMax = bestTwo.reduce((s, m) => s + m.maxMarks, 0);
+      const bestMax = bestTwo.reduce((s, m) => s + (m.maxMarks || 20), 0);
       const internal40 = bestMax ? Math.round((bestMarks / bestMax) * 40) : 0;
       return {
         subjectId: s.subjectId,
