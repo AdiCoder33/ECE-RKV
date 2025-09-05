@@ -143,19 +143,17 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
     const subjectStats = Object.values(subjectStatsMap).map((s) => {
       const sortedMids = s.mids.sort((a, b) => b.marks - a.marks);
       const bestTwo = sortedMids.slice(0, 2);
-      const internalObtained = bestTwo.reduce((sum, m) => sum + m.marks, 0);
-      const internalTotal = bestTwo.reduce((sum, m) => sum + m.maxMarks, 0);
+      const bestMarks = bestTwo.reduce((s, m) => s + m.marks, 0);
+      const bestMax = bestTwo.reduce((s, m) => s + m.maxMarks, 0);
+      const internal40 = bestMax ? Math.round((bestMarks / bestMax) * 40) : 0;
       return {
         subjectId: s.subjectId,
         subjectName: s.subjectName,
-        obtained: internalObtained,
-        total: internalTotal,
-        percentage: internalTotal ? (internalObtained / internalTotal) * 100 : 0,
+        obtained: internal40,
+        total: 40,
+        percentage: bestMax ? (bestMarks / bestMax) * 100 : 0,
         mids: sortedMids,
-        internal: {
-          obtained: internalObtained,
-          total: internalTotal,
-        },
+        internal: { obtained: internal40, total: 40 },
       };
     });
 
@@ -166,12 +164,8 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
       internal: s.internal,
     }));
 
-    let overallObtained = 0;
-    let overallTotal = 0;
-    for (const s of subjectStats) {
-      overallObtained += s.internal.obtained;
-      overallTotal += s.internal.total;
-    }
+    const overallObtained = subjectStats.reduce((sum, s) => sum + s.internal.obtained, 0);
+    const overallTotal = subjectStats.length * 40;
     const overall = {
       obtained: overallObtained,
       total: overallTotal,
