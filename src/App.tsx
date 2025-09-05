@@ -95,23 +95,12 @@ const App: React.FC = () => {
   // Removed PWA intro video for mobile; app opens normally
 
   useEffect(() => {
-    let fired = false;
     const handler = (e: BeforeInstallPromptEvent) => {
-      // Optionally remove the next line to allow the browser's default mini-infobar
-      // e.preventDefault();
+      e.preventDefault();
       setDeferredPrompt(e);
-      fired = true;
     };
     window.addEventListener('beforeinstallprompt', handler);
-    const timeoutId = setTimeout(() => {
-      if (!fired) {
-        console.warn('beforeinstallprompt event did not fire');
-      }
-    }, 5000);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      clearTimeout(timeoutId);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   return (
@@ -124,7 +113,6 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-background">
                 {deferredPrompt && (
                   <button
-                    className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-md bg-blue-600 text-white shadow-lg hover:bg-blue-700"
                     onClick={() => {
                       deferredPrompt.prompt();
                       deferredPrompt.userChoice.finally(() => setDeferredPrompt(null));
