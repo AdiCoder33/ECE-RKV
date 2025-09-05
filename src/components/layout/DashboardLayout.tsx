@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useChat } from '@/contexts/ChatContext';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,9 +46,10 @@ import { useProfileImageSrc } from '@/hooks/useProfileImageSrc';
 
 const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { conversations } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadNotifications] = useState(3);
+  const unreadMessages = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const [chatOpen, setChatOpen] = useState(!isMobile);
@@ -338,12 +340,12 @@ const DashboardLayout: React.FC = () => {
                     className="relative z-10"
                   >
                     <MessageSquare className="h-5 w-5" />
-                    {unreadNotifications > 0 && (
+                    {unreadMessages > 0 && (
                       <Badge
                         variant="destructive"
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
                       >
-                        {unreadNotifications}
+                        {unreadMessages}
                       </Badge>
                     )}
                   </Button>
