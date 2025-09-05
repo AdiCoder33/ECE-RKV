@@ -137,6 +137,41 @@ describe('Profile image upload', () => {
     const body = JSON.parse(mockFetch.mock.calls[3][1].body);
     expect(body.profileImage).toBe('profile-key');
   });
+
+  it('includes department when saving profile', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          name: 'Alice',
+          email: 'alice@example.com',
+          phone: '123',
+          department: 'CSE',
+          profileImage: 'profile-key',
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+
+    const editBtn = screen.getByRole('button', { name: /Edit Profile/i });
+    await userEvent.click(editBtn);
+
+    const saveBtn = screen.getByRole('button', { name: /Save Changes/i });
+    await userEvent.click(saveBtn);
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    const body = JSON.parse(mockFetch.mock.calls[1][1].body);
+    expect(body.department).toBe('CSE');
+  });
 });
 
 describe('Student profile endpoints', () => {

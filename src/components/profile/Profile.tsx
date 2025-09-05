@@ -191,6 +191,7 @@ const Profile = () => {
         dateOfBirth: formData.dateOfBirth,
         address: formData.address,
         bloodGroup: formData.bloodGroup,
+        department: department || 'ECE',
       };
 
       if (viewedRole === 'student') {
