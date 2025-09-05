@@ -86,7 +86,7 @@ const ProfessorCombobox = ({
             value={search}
             onValueChange={setSearch}
           />
-          <CommandList>
+          <CommandList className="max-h-64 overflow-y-auto">
             <CommandEmpty>No faculty found.</CommandEmpty>
             {filtered.map((prof) => (
               <CommandItem
