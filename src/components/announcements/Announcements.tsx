@@ -310,6 +310,8 @@ const Announcements = () => {
     setTargetRole(announcement.targetRole ?? 'all');
     setTargetYear(announcement.targetYear ? String(announcement.targetYear) : '');
     setShowCreateForm(true);
+      // 👇 Scroll smoothly to the top when edit form opens
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Loader while fetching data
