@@ -13,7 +13,10 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 vi.mock('@/lib/profileImageCache', () => ({
-  cacheProfileImage: (value: string) => mockCacheProfileImage(value),
+  cacheProfileImage: (value: string) => {
+    localStorage.setItem('profileImageCache', value);
+    mockCacheProfileImage(value);
+  },
 }));
 
 import Profile from './Profile';
@@ -22,30 +25,41 @@ describe('Profile image upload', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
-    mockUseAuth.mockReturnValue({ user: { id: 1, name: 'Alice', role: 'professor' } });
+    mockUseAuth.mockReturnValue({
+      user: { id: 1, name: 'Alice', role: 'professor', profileImage: 'profile-key' },
+    });
     localStorage.setItem('token', 'test-token');
-    localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Alice', role: 'professor' }));
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 1, name: 'Alice', role: 'professor', profileImage: 'profile-key' })
+    );
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  it('uploads image and updates profileImage state with returned URL', async () => {
+  it('uploads image and stores key while caching URL for display', async () => {
     const file = new File(['hello'], 'avatar.png', { type: 'image/png' });
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ name: 'Alice', email: 'alice@example.com', phone: '123' }),
+        json: async () => ({
+          name: 'Alice',
+          email: 'alice@example.com',
+          phone: '123',
+          profileImage: 'profile-key',
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ url: 'http://example.com/avatar.png' }),
+        json: async () => ({ key: 'profile-key', url: 'http://example.com/avatar.png' }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ profileImage: 'http://example.com/avatar.png' }),
+        json: async () => ({ profileImage: 'profile-key' }),
       });
     global.fetch = mockFetch as unknown as typeof fetch;
 
@@ -66,13 +80,62 @@ describe('Profile image upload', () => {
     const formData = mockFetch.mock.calls[1][1].body as FormData;
     expect(formData.get('image')).toBe(file);
 
-    await waitFor(() =>
-      expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'http://example.com/avatar.png')
+    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+    expect(stored.profileImage).toBe('profile-key');
+    expect(mockCacheProfileImage).toHaveBeenCalledWith('http://example.com/avatar.png');
+  });
+
+  it('sends profile key on subsequent profile save', async () => {
+    const file = new File(['hello'], 'avatar.png', { type: 'image/png' });
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          name: 'Alice',
+          email: 'alice@example.com',
+          phone: '123',
+          profileImage: 'profile-key',
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ key: 'profile-key', url: 'http://example.com/avatar.png' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ profileImage: 'profile-key' }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    const { container } = render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
     );
 
-    const stored = JSON.parse(localStorage.getItem('user') || '{}');
-    expect(stored.profileImage).toBe('http://example.com/avatar.png');
-    expect(mockCacheProfileImage).toHaveBeenCalledWith('http://example.com/avatar.png');
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
+
+    const editBtn = screen.getByRole('button', { name: /Edit Profile/i });
+    await userEvent.click(editBtn);
+
+    const phoneInput = screen.getByDisplayValue('123');
+    await userEvent.clear(phoneInput);
+    await userEvent.type(phoneInput, '456');
+
+    const saveBtn = screen.getByRole('button', { name: /Save Changes/i });
+    await userEvent.click(saveBtn);
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(4));
+    const body = JSON.parse(mockFetch.mock.calls[3][1].body);
+    expect(body.profileImage).toBe('profile-key');
   });
 });
 
@@ -80,9 +143,14 @@ describe('Student profile endpoints', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
-    mockUseAuth.mockReturnValue({ user: { id: 2, name: 'Bob', role: 'student' } });
+    mockUseAuth.mockReturnValue({
+      user: { id: 2, name: 'Bob', role: 'student', profileImage: 'profile-key' },
+    });
     localStorage.setItem('token', 'test-token');
-    localStorage.setItem('user', JSON.stringify({ id: 2, name: 'Bob', role: 'student' }));
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 2, name: 'Bob', role: 'student', profileImage: 'profile-key' })
+    );
   });
 
   afterEach(() => {
@@ -95,15 +163,21 @@ describe('Student profile endpoints', () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ name: 'Bob', email: 'bob@example.com', phone: '123', rollNumber: 'R1' }),
+        json: async () => ({
+          name: 'Bob',
+          email: 'bob@example.com',
+          phone: '123',
+          rollNumber: 'R1',
+          profileImage: 'profile-key',
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ url: 'http://example.com/avatar.png' }),
+        json: async () => ({ key: 'profile-key', url: 'http://example.com/avatar.png' }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ profileImage: 'http://example.com/avatar.png' }),
+        json: async () => ({ profileImage: 'profile-key' }),
       });
     global.fetch = mockFetch as unknown as typeof fetch;
 
@@ -120,9 +194,6 @@ describe('Student profile endpoints', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
-    await waitFor(() =>
-      expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'http://example.com/avatar.png')
-    );
     expect(mockCacheProfileImage).toHaveBeenCalledWith('http://example.com/avatar.png');
   });
 });

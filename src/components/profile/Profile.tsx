@@ -284,7 +284,7 @@ const Profile = () => {
       if (!updateRes.ok) throw new Error('Failed to update profile image');
 
       const updated = await updateRes.json();
-      setProfileImage(result.url);
+      setProfileImage(profileValue);
 
       if (viewedRole === 'student') setAcademicData((prev) => ({ ...prev, ...updated }));
 
