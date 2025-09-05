@@ -217,7 +217,7 @@ const ResumeBuilder = () => {
           education,
           experience,
           projects,
-          skills
+          skills: [...skills, newSkill].filter(Boolean)
         })
       });
       if (!res.ok) {

@@ -37,7 +37,7 @@ router.get('/:studentId', authenticateToken, async (req, res, next) => {
 // Create or update resume
 router.post('/', authenticateToken, async (req, res, next) => {
   try {
-    const { personalInfo, education, experience, projects, skills } = req.body;
+    const { personalInfo, education, experience, projects, skills = [] } = req.body;
     const studentId = req.user.id;
     
     // Check if resume exists
