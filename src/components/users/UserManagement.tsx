@@ -610,7 +610,7 @@ const UserManagement: React.FC = () => {
         </Card>
 
         {/* Users Cards - Mobile */}
-        <div className="md:hidden grid grid-cols-2 gap-3">
+        <div className="md:hidden grid grid-cols-1 gap-3">
           {filteredUsers.map((user) => (
             <Card
               key={user.id}
@@ -631,9 +631,13 @@ const UserManagement: React.FC = () => {
                     <h3 className="font-semibold text-sm truncate">{user.name}</h3>
                     <p className="text-xs text-gray-600 truncate">{user.email}</p>
                   </div>
-                  <Badge className={`${getRoleBadgeColor(user.role || '')} text-[10px] px-2 py-0.5`}>
-                    {(user.role || 'N/A').toUpperCase()}
-                  </Badge>
+                  {user.role !== 'student' && (
+                    <Badge
+                      className={`${getRoleBadgeColor(user.role || '')} hidden sm:inline-flex text-[10px] px-2 py-0.5`}
+                    >
+                      {(user.role || 'N/A').toUpperCase()}
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-700 mb-2">
