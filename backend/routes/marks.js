@@ -164,12 +164,20 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
       internal: s.internal,
     }));
 
-    const overallObtained = subjectStats.reduce((sum, s) => sum + s.internal.obtained, 0);
-    const overallTotal = subjectStats.length * 40;
+    const overallObtained = subjectStats.reduce(
+      (sum, s) => sum + s.internal.obtained,
+      0
+    );
+    const overallTotal = subjectStats.reduce(
+      (sum, s) => sum + s.internal.total,
+      0
+    );
     const overall = {
       obtained: overallObtained,
       total: overallTotal,
-      percentage: overallTotal ? (overallObtained / overallTotal) * 100 : 0,
+      percentage: overallTotal
+        ? (overallObtained / overallTotal) * 100
+        : 0,
     };
 
     const monthlyTrend = Object.values(monthlyTrendMap)

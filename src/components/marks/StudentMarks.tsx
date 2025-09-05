@@ -210,7 +210,15 @@ const StudentMarks = () => {
     ? marks
     : marks.filter(mark => mark.subject === selectedSubject);
 
-  const { obtained: totalMarks, total: totalMaxMarks, percentage: overallPercentage } = overall;
+  const totalMarks = subjectStats.reduce(
+    (sum, s) => sum + s.internal.obtained,
+    0
+  );
+  const totalMaxMarks = subjectStats.reduce(
+    (sum, s) => sum + s.internal.total,
+    0
+  );
+  const overallPercentage = overall.percentage;
 
   const chartData = subjectStats.map(stat => ({
     subject: stat.subjectName.replace(' ', '\n'),
