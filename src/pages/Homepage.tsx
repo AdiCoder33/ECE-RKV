@@ -50,7 +50,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot } from "@fortawesome/free-solid-svg-icons";
 
 // NEW: Import the modal components and define the faculty type
-import FacultyDetailsModal from "../components/FacultyDetailsModal";
+import FacultyDetailsModal from "../components/users/FacultyDetailsModal";
 
 interface Announcement {
   author: string;
