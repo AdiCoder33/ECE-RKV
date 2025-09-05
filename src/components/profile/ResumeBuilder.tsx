@@ -95,6 +95,8 @@ const ResumeBuilder = () => {
 
   const [skills, setSkills] = useState<string[]>([]);
 
+  const [newSkill, setNewSkill] = useState('');
+
   const resumeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -176,6 +178,13 @@ const ResumeBuilder = () => {
     setProjects([...projects, newProject]);
   };
 
+  const addSkill = () => {
+    if (newSkill.trim()) {
+      setSkills([...skills, newSkill.trim()]);
+      setNewSkill('');
+    }
+  };
+
   const removeEducation = (id: string) => {
     setEducation(education.filter(edu => edu.id !== id));
   };
@@ -186,6 +195,10 @@ const ResumeBuilder = () => {
 
   const removeProject = (id: string) => {
     setProjects(projects.filter(proj => proj.id !== id));
+  };
+
+  const removeSkill = (index: number) => {
+    setSkills(skills.filter((_, i) => i !== index));
   };
 
   const saveResume = async () => {
@@ -709,6 +722,48 @@ const ResumeBuilder = () => {
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Skills */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Code className="h-5 w-5" />
+            Skills
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add a skill"
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+            />
+            <Button variant="outline" size="sm" onClick={addSkill}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Skill
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill, index) => (
+              <Badge
+                key={index}
+                variant="secondary"
+                className="flex items-center gap-1"
+              >
+                {skill}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0"
+                  onClick={() => removeSkill(index)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
