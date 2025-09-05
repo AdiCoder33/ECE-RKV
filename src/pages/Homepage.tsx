@@ -168,6 +168,13 @@ const LandingPage: React.FC = () => {
   // NEW state for the Creators page floating window
   const [isCreatorsPageOpen, setIsCreatorsPageOpen] = useState(false);
 
+  // NEW: Ref for the Faculty section to enable scrolling to it
+  const facultySectionRef = useRef<HTMLElement>(null);
+
+  const scrollToFaculty = () => {
+    facultySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
@@ -575,6 +582,7 @@ const LandingPage: React.FC = () => {
 
     return (
       <motion.section
+        ref={facultySectionRef} // ADDED: Ref to this section
         className="bg-gray-50 py-8 px-2 sm:px-8 dark:bg-gray-900"
         variants={floatVariant}
         initial="hidden"
@@ -826,17 +834,20 @@ const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Scroll to Top Button */}
-      {showScrollTop && (
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed top-4 right-4 z-50 bg-red-700 text-white px-4 py-2 rounded-full shadow-lg hover:bg-red-800 transition"
-          aria-label="Scroll to top"
-        >
-          ↑ Top
-        </button>
-      )}
+      {/* Floating vertical strip button for Creators Page */}
+      <button
+        onClick={() => setIsCreatorsPageOpen(true)}
+        // NEW: Positioned to be flush with the screen's right edge
+        className="fixed top-1/2 right-0 -translate-y-1/2 transform rotate-90 origin-bottom-left translate-x-12 z-40 bg-red-700 text-white px-4 py-2 rounded-t-lg shadow-lg hover:bg-red-800 transition-colors hidden md:block"
+        aria-label="Go to Creators page"
+      >
+        <span className="flex items-center space-x-2 whitespace-nowrap">
+          <span className="text-sm font-bold">CREATORS</span>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </span>
+      </button>
 
       {/* HERO SECTION */}
       <section
@@ -1130,6 +1141,12 @@ const LandingPage: React.FC = () => {
         />
       )}
 
+      {/* Modal for Creators Page */}
+      <CreatorsPage
+        isOpen={isCreatorsPageOpen}
+        onClose={() => setIsCreatorsPageOpen(false)}
+      />
+
       {/* FOOTER */}
       <footer className="bg-red-700 text-white py-8 md:py-12 mt-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -1215,10 +1232,11 @@ const LandingPage: React.FC = () => {
                 <h4 className="font-semibold text-white mb-3">LOCATION</h4>
                 <div className="w-full h-48 rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.602741995817!2d78.5373097!3d14.3353797!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb3a24eacd4a67d%3A0x88cc62e6279e1ef0!2sIIIT%20RGUKT%20RK%20VALLEY!5e0!3m2!1sen!2sin!4v1693617600000!5m2!1sen!2sin"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3843.0877546736293!2d78.7844031!3d14.8055428!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb366a41f9d5059%3A0xb3666d92994f31c!2sRGUKT%20RK%20Valley!5e0!3m2!1sen!2sin!4v1698242502641!5m2!1sen!2sin"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
+                    allowFullScreen={false}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     title="RGUKT RK Valley Location"
