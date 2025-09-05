@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   GraduationCap,
@@ -99,8 +97,10 @@ const StudentMarks = () => {
   const [marks, setMarks] = useState<Mark[]>([]);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
   const [subjectStats, setSubjectStats] = useState<SubjectStat[]>([]);
-  const [monthlyTrend, setMonthlyTrend] = useState<TrendPoint[]>([]);
+  const [trendPoints, setTrendPoints] = useState<TrendPoint[]>([]);
   const [overall, setOverall] = useState<Overall>({ obtained: 0, total: 0, percentage: 0 });
+  const [performanceLabel, setPerformanceLabel] = useState<string | null>(null);
+  const [trendChange, setTrendChange] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('token');
@@ -129,8 +129,10 @@ const StudentMarks = () => {
           setMarks([]);
           setSubjects([]);
           setSubjectStats([]);
-          setMonthlyTrend([]);
+          setTrendPoints([]);
           setOverall({ obtained: 0, total: 0, percentage: 0 });
+          setPerformanceLabel(null);
+          setTrendChange(null);
           return;
         }
 
@@ -165,8 +167,10 @@ const StudentMarks = () => {
 
           setMarks(mapped);
           setSubjectStats(data.subjectStats || []);
-          setMonthlyTrend(data.monthlyTrend || []);
+          setTrendPoints(data.trend?.points || []);
           setOverall(data.overall || { obtained: 0, total: 0, percentage: 0 });
+          setPerformanceLabel(data.performanceLabel ?? null);
+          setTrendChange(data.trend?.change ?? null);
           const subjOptions = (data.subjectStats || []).map((s: SubjectStat) => ({
             value: s.subjectName,
             label: s.subjectName
@@ -183,8 +187,10 @@ const StudentMarks = () => {
           setMarks([]);
           setSubjects([]);
           setSubjectStats([]);
-          setMonthlyTrend([]);
+          setTrendPoints([]);
           setOverall({ obtained: 0, total: 0, percentage: 0 });
+          setPerformanceLabel(null);
+          setTrendChange(null);
         }
       } catch (error) {
         console.error('Error fetching marks:', error);
@@ -196,8 +202,10 @@ const StudentMarks = () => {
         setMarks([]);
         setSubjects([]);
         setSubjectStats([]);
-        setMonthlyTrend([]);
+        setTrendPoints([]);
         setOverall({ obtained: 0, total: 0, percentage: 0 });
+        setPerformanceLabel(null);
+        setTrendChange(null);
       } finally {
         setLoading(false);
       }
@@ -210,15 +218,8 @@ const StudentMarks = () => {
     ? marks
     : marks.filter(mark => mark.subject === selectedSubject);
 
-  const totalMarks = subjectStats.reduce(
-    (sum, s) => sum + s.internal.obtained,
-    0
-  );
-  const totalMaxMarks = subjectStats.reduce(
-    (sum, s) => sum + s.internal.total,
-    0
-  );
-  const overallPercentage = overall.percentage;
+  const totalMarks = overall.obtained;
+  const totalMaxMarks = overall.total;
 
   const chartData = subjectStats.map(stat => ({
     subject: stat.subjectName.replace(' ', '\n'),
@@ -227,30 +228,15 @@ const StudentMarks = () => {
     maxMarks: stat.total
   }));
 
-  const performanceTrend = monthlyTrend.map(t => ({
+  const performanceTrend = trendPoints.map(t => ({
     month: t.month,
     percentage: Number((t.percentage ?? 0).toFixed(1))
   }));
 
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A+': return 'bg-green-500';
-      case 'A': return 'bg-blue-500';
-      case 'B+': return 'bg-yellow-500';
-      case 'B': return 'bg-orange-500';
-      default: return 'bg-red-500';
-    }
-  };
-
-  const getPerformanceLevel = (percentage: number) => {
-    if (percentage >= 90) return { level: 'Excellent', color: 'text-green-600' };
-    if (percentage >= 80) return { level: 'Very Good', color: 'text-blue-600' };
-    if (percentage >= 70) return { level: 'Good', color: 'text-yellow-600' };
-    if (percentage >= 60) return { level: 'Average', color: 'text-orange-600' };
-    return { level: 'Needs Improvement', color: 'text-red-600' };
-  };
-
-  const performance = getPerformanceLevel(overallPercentage);
+  const trendDisplay =
+    trendChange != null
+      ? `${trendChange > 0 ? '+' : ''}${trendChange.toFixed(1)}%`
+      : '–';
 
   // ECE-themed loader matching UserManagement
   const EceVideoLoader = () => (
@@ -371,7 +357,7 @@ const StudentMarks = () => {
               <div>
                 <p className="text-xs sm:text-sm text-white font-medium">Overall Performance</p>
                 <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                  {overallPercentage != null ? `${(overallPercentage ?? 0).toFixed(1)}%` : '–'}
+                  {performanceLabel ?? '–'}
                 </p>
               </div>
             </div>
@@ -419,7 +405,7 @@ const StudentMarks = () => {
               <div>
                 <p className="text-xs sm:text-sm text-white font-medium">Trend</p>
                 <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                  +3.2%
+                  {trendDisplay}
                 </p>
               </div>
             </div>
@@ -480,7 +466,7 @@ const StudentMarks = () => {
               Performance Trend
             </CardTitle>
             <CardDescription className="text-sm font-medium" style={{ color: THEME.textSilver }}>
-              Monthly performance trend
+              Mid-exam performance trend
             </CardDescription>
           </CardHeader>
           <CardContent>
