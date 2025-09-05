@@ -610,7 +610,7 @@ const UserManagement: React.FC = () => {
         </Card>
 
         {/* Users Cards - Mobile */}
-        <div className="md:hidden grid grid-cols-1 gap-3">
+        <div className="md:hidden grid grid-cols-2 gap-3">
           {filteredUsers.map((user) => (
             <Card
               key={user.id}
