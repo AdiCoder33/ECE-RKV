@@ -187,7 +187,45 @@ router.get('/student/:id/summary', authenticateToken, async (req, res, next) => 
         percentage: m.total ? (m.obtained / m.total) * 100 : 0
       }));
 
-    res.json({ subjectStats, monthlyTrend, records, overall });
+    // Determine overall performance label
+    let performanceLabel;
+    const pct = overall.percentage;
+    if (pct >= 75) performanceLabel = 'Good';
+    else if (pct >= 50) performanceLabel = 'Average';
+    else performanceLabel = 'Needs Improvement';
+
+    // Calculate average percentage for each mid across subjects
+    const midTotals = {};
+    for (const mid of Object.values(groupedMids)) {
+      const type = (mid.type || '').toLowerCase();
+      if (!midTotals[type]) {
+        midTotals[type] = { obtained: 0, total: 0 };
+      }
+      midTotals[type].obtained += mid.marks;
+      midTotals[type].total += mid.max_marks || 20;
+    }
+
+    const avg1 = midTotals.mid1 && midTotals.mid1.total
+      ? (midTotals.mid1.obtained / midTotals.mid1.total) * 100
+      : 0;
+    const avg2 = midTotals.mid2 && midTotals.mid2.total
+      ? (midTotals.mid2.obtained / midTotals.mid2.total) * 100
+      : 0;
+    const avg3 = midTotals.mid3 && midTotals.mid3.total
+      ? (midTotals.mid3.obtained / midTotals.mid3.total) * 100
+      : 0;
+
+    const trend = { mid1: avg1, mid2: avg2, mid3: avg3, change: 0 };
+    const availableTypes = ['mid1', 'mid2', 'mid3'].filter(
+      t => midTotals[t] && midTotals[t].total
+    );
+    if (availableTypes.length >= 2) {
+      const last = availableTypes[availableTypes.length - 1];
+      const prev = availableTypes[availableTypes.length - 2];
+      trend.change = trend[last] - trend[prev];
+    }
+
+    res.json({ subjectStats, monthlyTrend, records, overall, performanceLabel, trend });
   } catch (error) {
     console.error('Get student marks summary error:', error);
     next(error);
