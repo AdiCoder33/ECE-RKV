@@ -138,12 +138,16 @@ const Profile = () => {
 
         const data = await res.json();
 
+        const dob = data.dateOfBirth
+          ? new Date(data.dateOfBirth).toISOString().split('T')[0]
+          : '';
+
         setFormData((prev) => ({
           ...prev,
           name: data.name || '',
           email: data.email || '',
           phone: data.phone || '',
-          dateOfBirth: data.dateOfBirth || '',
+          dateOfBirth: dob,
           address: data.address || '',
           bloodGroup: data.bloodGroup || '',
         }));
@@ -188,11 +192,14 @@ const Profile = () => {
         profileImage,
         name: formData.name,
         email: formData.email,
-        dateOfBirth: formData.dateOfBirth,
         address: formData.address,
         bloodGroup: formData.bloodGroup,
         department: department || 'ECE',
       };
+
+      if (formData.dateOfBirth) {
+        payload.dateOfBirth = new Date(formData.dateOfBirth).toISOString();
+      }
 
       if (viewedRole === 'student') {
         payload.rollNumber = academicData.rollNumber;

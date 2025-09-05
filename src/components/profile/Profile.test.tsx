@@ -172,6 +172,44 @@ describe('Profile image upload', () => {
     const body = JSON.parse(mockFetch.mock.calls[1][1].body);
     expect(body.department).toBe('CSE');
   });
+
+  it('formats dateOfBirth for display and saving', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          name: 'Alice',
+          email: 'alice@example.com',
+          phone: '123',
+          profileImage: 'profile-key',
+          dateOfBirth: '1995-06-15T00:00:00.000Z',
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+
+    const dateInput = screen.getByDisplayValue('1995-06-15') as HTMLInputElement;
+
+    const editBtn = screen.getByRole('button', { name: /Edit Profile/i });
+    await userEvent.click(editBtn);
+    fireEvent.change(dateInput, { target: { value: '1996-07-20' } });
+
+    const saveBtn = screen.getByRole('button', { name: /Save Changes/i });
+    await userEvent.click(saveBtn);
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    const body = JSON.parse(mockFetch.mock.calls[1][1].body);
+    expect(body.dateOfBirth).toBe('1996-07-20T00:00:00.000Z');
+  });
 });
 
 describe('Student profile endpoints', () => {
@@ -268,7 +306,7 @@ describe('Achievement dialog layout', () => {
     expect(dialog).toHaveClass('mx-auto');
     expect(dialog).toHaveClass('sm:max-w-[500px]');
 
-    (window as any).innerWidth = 500;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
     window.dispatchEvent(new Event('resize'));
 
     expect(dialog).toHaveClass('mx-auto');
