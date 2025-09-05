@@ -540,7 +540,7 @@ const StudentMarks = () => {
                             {mid.type}
                           </div>
                           <div className="text-base font-bold" style={{ color: THEME.textPrimary }}>
-                            {mid.marks}/{mid.maxMarks}
+                            {Math.round(Number(mid.marks) || 0)}/{Math.round(Number(mid.maxMarks) || 0)}
                           </div>
                           <div className="text-xs" style={{ color: THEME.textSilver }}>
                             {mid.date ? new Date(mid.date).toLocaleDateString() : ''}
