@@ -840,7 +840,7 @@ const LandingPage: React.FC = () => {
         aria-label="Go to Creators page"
       >
         <span className="flex items-center space-x-2 whitespace-nowrap">
-          <span className="text-sm font-bold">CREATORS</span>
+          <span className="text-sm font-bold">Developers</span>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>

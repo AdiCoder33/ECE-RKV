@@ -11,23 +11,18 @@ interface Creator {
 
 const creators: Creator[] = [
   {
-    name: 'Vijay',
+    name: 'Aditya',
     role: 'Lead Developer',
     imageUrl: 'https://avatars.githubusercontent.com/u/101815393?v=4',
   },
   {
-    name: 'Pavan',
-    role: 'UI/UX Designer',
+    name: 'Vijay',
+    role: 'Frontend Developer',
     imageUrl: 'https://avatars.githubusercontent.com/u/101815393?v=4',
   },
   {
-    name: 'Charan',
+    name: 'vidya sagar reddy',
     role: 'Backend Engineer',
-    imageUrl: 'https://avatars.githubusercontent.com/u/101815393?v=4',
-  },
-  {
-    name: 'Shiva',
-    role: 'Mobile Developer',
     imageUrl: 'https://avatars.githubusercontent.com/u/101815393?v=4',
   },
 ];
