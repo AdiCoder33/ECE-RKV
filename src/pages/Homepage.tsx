@@ -836,7 +836,7 @@ const LandingPage: React.FC = () => {
       <button
         onClick={() => setIsCreatorsPageOpen(true)}
         // NEW: Positioned to be flush with the screen's right edge
-        className="fixed top-1/2 right-0 -translate-y-1/2 transform rotate-90 origin-bottom-left translate-x-12 z-40 bg-red-700 text-white px-4 py-2 rounded-t-lg shadow-lg hover:bg-red-800 transition-colors hidden md:block"
+        className="fixed top-1/2 right-0 -translate-y-1/2 transform rotate-90 origin-bottom-left translate-x-12 z-40 bg-red-700 text-white px-4 py-2 rounded-t-lg shadow-lg hover:bg-red-800 transition-colors md:block"
         aria-label="Go to Creators page"
       >
         <span className="flex items-center space-x-2 whitespace-nowrap">
