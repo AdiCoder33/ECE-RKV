@@ -91,7 +91,9 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [installMessage, setInstallMessage] = useState<string | null>(null);
   // Removed PWA intro video for mobile; app opens normally
 
   useEffect(() => {
@@ -103,6 +105,17 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!deferredPrompt) {
+        setInstallMessage(
+          'Install prompt not detected. Ensure this site is served over HTTPS, has a valid manifest with icons, and is controlled by a service worker.'
+        );
+      }
+    }, 10000);
+    return () => window.clearTimeout(timer);
+  }, [deferredPrompt]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -111,7 +124,7 @@ const App: React.FC = () => {
           <AuthProvider>
             <ChatProvider>
               <div className="min-h-screen bg-background">
-                {deferredPrompt && (
+                {deferredPrompt ? (
                   <button
                     onClick={() => {
                       deferredPrompt.prompt();
@@ -120,7 +133,11 @@ const App: React.FC = () => {
                   >
                     Install App
                   </button>
-                )}
+                ) : installMessage ? (
+                  <p className="p-4 text-center text-sm text-muted-foreground">
+                    {installMessage}
+                  </p>
+                ) : null}
                 <Toaster />
                 <Routes>
                   <Route path="/" element={<Homepage />} />
