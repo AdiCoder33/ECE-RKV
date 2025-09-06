@@ -12,7 +12,7 @@ interface Creator {
 const creators: Creator[] = [
   {
     name: 'Aditya',
-    role: 'Lead Developer',
+    role: 'FULL STACK DEVELOPER',
     imageUrl: 'https://avatars.githubusercontent.com/u/101815393?v=4',
   },
   {
@@ -22,7 +22,7 @@ const creators: Creator[] = [
   },
   {
     name: 'vidya sagar reddy',
-    role: 'Backend Engineer',
+    role: 'FULL STACK DEVELOPER',
     imageUrl: 'https://avatars.githubusercontent.com/u/101815393?v=4',
   },
 ];
