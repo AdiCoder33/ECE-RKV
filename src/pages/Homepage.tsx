@@ -836,7 +836,7 @@ const LandingPage: React.FC = () => {
       <button
         onClick={() => setIsCreatorsPageOpen(true)}
         // NEW: Positioned to be flush with the screen's right edge
-        className="fixed top-1/2 right-0 -translate-y-1/2 transform rotate-90 origin-bottom-left translate-x-12 z-40 bg-red-700 text-white px-4 py-2 rounded-t-lg shadow-lg hover:bg-red-800 transition-colors  md:block"
+        className="fixed top-1/2 right-0 -translate-y-1/2 transform rotate-90 origin-bottom-left translate-x-12 z-40 bg-red-700 text-white px-4 py-2 rounded-t-lg shadow-lg hover:bg-red-800 transition-colors hidden md:block"
         aria-label="Go to Creators page"
       >
         <span className="flex items-center space-x-2 whitespace-nowrap">
@@ -1230,7 +1230,7 @@ const LandingPage: React.FC = () => {
                 <h4 className="font-semibold text-white mb-3">LOCATION</h4>
                 <div className="w-full h-48 rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3886.602741995817!2d78.5373097!3d14.3353797!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb3a24eacd4a67d%3A0x88cc62e6279e1ef0!2sIIIT%20RGUKT%20RK%20VALLEY!5e0!3m2!1sen!2sin!4v1693617600000!5m2!1sen!2sin"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3843.0877546736293!2d78.7844031!3d14.8055428!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bb366a41f9d5059%3A0xb3666d92994f31c!2sRGUKT%20RK%20Valley!5e0!3m2!1sen!2sin!4v1698242502641!5m2!1sen!2sin"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
