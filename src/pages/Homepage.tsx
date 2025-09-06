@@ -28,7 +28,7 @@ import lab2Image from "../Assets/lab_facilities/lab2.jpg";
 import lab3Image from "../Assets/lab_facilities/lab3.jpg";
 
 // Faculty images - imported directly
-import Rafi from "../Assets/faculty/rafisir.jpg";
+import Rafi from "../Assets/rafisir.jpg";
 import arunKumarReddy from "../Assets/faculty/arun_kumar_reddy.jpg";
 import sudhakarReddy from "../Assets/faculty/sudhakar_reddy.jpg";
 import mohammodrafi from "../Assets/faculty/shaik_mohammod_rafi.jpg";
