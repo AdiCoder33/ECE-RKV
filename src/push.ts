@@ -1,15 +1,3 @@
-async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
-  try {
-    const existing = await navigator.serviceWorker.getRegistration();
-    if (existing) return existing;
-    return await navigator.serviceWorker.register('/sw.js');
-  } catch (err) {
-    console.error('Service worker registration failed', err);
-    return null;
-  }
-}
-
 export async function getPublicKey(): Promise<string> {
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const res = await fetch(`${apiBase}/push/public-key`);
@@ -29,9 +17,12 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export async function enablePush(topics: string[] = [], userId?: string | number): Promise<PushSubscription | null> {
-  const registration = await registerServiceWorker();
-  if (!registration) return null;
+export async function enablePush(
+  topics: string[] = [],
+  userId?: string | number,
+): Promise<PushSubscription | null> {
+  if (!('serviceWorker' in navigator)) return null;
+  const registration = await navigator.serviceWorker.ready;
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('Permission denied');
   const publicKey = await getPublicKey();

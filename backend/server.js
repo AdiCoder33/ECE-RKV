@@ -49,6 +49,12 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve service worker file for PWA
+app.get('/sw.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, '..', 'dist', 'sw.js'));
+});
+
 // Database connection
 const { connectDB } = require('./config/database');
 
