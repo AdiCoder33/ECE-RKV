@@ -1,4 +1,4 @@
-export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null;
   try {
     const existing = await navigator.serviceWorker.getRegistration();
