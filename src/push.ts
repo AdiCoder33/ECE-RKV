@@ -1,14 +1,4 @@
-export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
-  try {
-    const existing = await navigator.serviceWorker.getRegistration();
-    if (existing) return existing;
-    return await navigator.serviceWorker.register('/sw.js');
-  } catch (err) {
-    console.error('Service worker registration failed', err);
-    return null;
-  }
-}
+import { swRegistration } from './main.tsx';
 
 export async function getPublicKey(): Promise<string> {
   const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -29,8 +19,12 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export async function enablePush(topics: string[] = [], userId?: string | number): Promise<PushSubscription | null> {
-  const registration = await registerServiceWorker();
+export async function enablePush(
+  topics: string[] = [],
+  userId?: string | number,
+): Promise<PushSubscription | null> {
+  if (!('serviceWorker' in navigator)) return null;
+  const registration = await swRegistration;
   if (!registration) return null;
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('Permission denied');
@@ -50,7 +44,8 @@ export async function enablePush(topics: string[] = [], userId?: string | number
 
 export async function disablePush(): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await swRegistration;
+  if (!registration) return;
   const subscription = await registration.pushManager.getSubscription();
   if (subscription) {
     const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -69,7 +64,8 @@ export async function disablePush(): Promise<void> {
 
 export async function isSubscribed(): Promise<boolean> {
   if (!('serviceWorker' in navigator)) return false;
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await swRegistration;
+  if (!registration) return false;
   const subscription = await registration.pushManager.getSubscription();
   return !!subscription;
 }
