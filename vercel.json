@@ -1,7 +1,9 @@
 {
   "rewrites": [
     { "source": "/sw.js", "destination": "/sw.js" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
+    { "source": "/icons/(.*)", "destination": "/icons/$1" },
+    { "source": "/offline.html", "destination": "/offline.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
-
