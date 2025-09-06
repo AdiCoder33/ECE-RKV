@@ -28,6 +28,7 @@ import lab2Image from "../Assets/lab_facilities/lab2.jpg";
 import lab3Image from "../Assets/lab_facilities/lab3.jpg";
 
 // Faculty images - imported directly
+import Rafi from "../Assets/faculty/rafisir.jpg";
 import arunKumarReddy from "../Assets/faculty/arun_kumar_reddy.jpg";
 import sudhakarReddy from "../Assets/faculty/sudhakar_reddy.jpg";
 import mohammodrafi from "../Assets/faculty/shaik_mohammod_rafi.jpg";
@@ -340,6 +341,36 @@ const LandingPage: React.FC = () => {
       ],
       administrativeRoles: ["Mess In-charge", "Controller of Examinations In-charge (2014-16)", "Student Welfare Officer (2011-13)"]
     },
+   {
+  name: "Dr. Shaik Mohammad Rafi B",
+  title: "Assistant Professor",
+  image: Rafi,
+  email: "rafi@rguktrkv.ac.in",
+  bio: "Dr. Shaik Mohammad Rafi B is an Assistant Professor in the Department of Electronics and Communications Engineering at RGUKT, RK Valley. He has over 12 years of teaching and research experience with expertise in Machine Learning, Speech & Audio Processing, Image Processing, Brain-Computer Interface, and Robotics.",
+  education: "Ph.D. in Electrical Engineering from IIT Hyderabad (2023); M.Tech in Systems and Signal Processing from JNTU Hyderabad (2009-2011); B.E. in Electronics and Communication Engineering from Vasavi College of Engineering, Hyderabad (2005-2009).",
+  experience: "Assistant Professor at RGUKT, RK Valley since Nov 2012; Project Associate at IIT Hyderabad (2012); Lecturer at Lords Institute of Engineering & Technology, Hyderabad (2011-2012).",
+  researchAreas: [
+    "Machine Learning & Deep Learning",
+    "Audio and Speech Information Processing",
+    "Image Processing",
+    "Brain Computer Interface",
+    "Robotics"
+  ],
+  coursesTaught: [
+    "Very Large Scale Integrated Circuits",
+    "Digital Image Processing",
+    "Digital Signal Processing",
+    "Signals and Systems",
+    "Statistical Signal Processing",
+    "Artificial Neural Networks"
+  ],
+  administrativeRoles: [
+    "Additional Campus Placement Incharge (Present)",
+    "Branch Coordinator, ECE (2015-16)",
+    "Lab Coordinator, ECE (2014-15)"
+  ]
+},
+
     {
       name: "Ms. G. Lakshmi Shireesha",
       title: "Assistant Professor",
