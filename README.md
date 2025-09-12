@@ -1,40 +1,73 @@
-# ECE-RKV Backend API
+# ECE-RKV: Smart Department Portal
 
-This is the backend service for the ECE-RKV Smart Department Portal. Built with Node.js and Express, it powers authentication, user management, attendance, marks, chat, and notifications for the platform.
+> **ECE-RKV** is a modern, full-stack portal designed to streamline and digitize department operations for educational institutions. It provides a seamless interface for students, faculty, and administrators to manage attendance, marks, scheduling, notifications, real-time chat, and more—powered by a robust backend and a cutting-edge frontend.
 
 ---
 
 ## 🚀 Features
 
-- **Secure JWT Authentication & Role-based Access**
-- **Student, Faculty, and Admin Management**
-- **Attendance Tracking and Analytics**
-- **Marks and Assessment Management**
-- **Real-time Notifications (Web Push, Email)**
-- **Chat System with WebSockets (Socket.io)**
-- **RESTful API and WebSocket Endpoints**
-- **Environment-based Configurations**
+- **Role-based Authentication & Authorization**
+  - Secure JWT-based login for students, faculty, and admins
+- **Attendance Management**
+  - Mark, view, and analyze attendance trends interactively
+- **Marks & Assessment Tracking**
+  - Record, summarize, and visualize marks and progress
+- **Real-time Notifications**
+  - Web push and email alerts for key events
+- **Smart Scheduling**
+  - Timetable and class management
+- **Chat Feature**
+  - Secure, real-time messaging for students, faculty, and admins
+- **Customizable API**
+  - RESTful backend with extensive endpoints for integration
+- **Responsive UI**
+  - Built with React, shadcn-ui, and Tailwind CSS for a modern experience
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Node.js** + **Express** (REST API)
-- **MySQL** (Relational Database)
-- **Socket.io** (Real-time chat)
-- **Nodemailer** (Email notifications)
-- **Web Push** (Push notifications)
-- **JWT** (Authentication)
-- **Firebase** (Web push key storage/management)
-- **dotenv** (Environment management)
+| Frontend             | Backend            | Infrastructure         |
+|----------------------|-------------------|------------------------|
+| React + TypeScript   | Node.js + Express | MySQL                  |
+| Vite                 | JWT Auth          | Firebase (for push)    |
+| Tailwind CSS         | Nodemailer        | Render (deployment)    |
+| shadcn-ui            | Web Push, Socket.io| GitHub Codespaces      |
 
 ---
 
-## ⚙️ Environment Variables
+## 📦 Getting Started
 
-Create a `.env` file in the backend directory and define the following variables:
+### 1. Clone the Repository
+
+```sh
+git clone https://github.com/AdiCoder33/ECE-RKV.git
+cd ECE-RKV
+```
+
+### 2. Install Dependencies
+
+**Frontend:**
+```sh
+npm install
+```
+
+**Backend:**
+```sh
+cd backend
+npm install
+```
+
+### 3. Environment Configuration
+
+- Copy `.env.example` to `.env` in both root and `/backend`
+- Set the following variables (see backend/README.md for full list):
 
 ```env
+# Frontend (.env)
+VITE_API_URL=https://your-backend-url/api
+
+# Backend (.env)
 PORT=5000
 DB_HOST=localhost
 DB_NAME=ece_db
@@ -43,93 +76,77 @@ DB_PASSWORD=yourpassword
 JWT_SECRET=your_jwt_secret
 ALLOWED_ORIGINS=http://localhost:5173
 EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_USER=your_email_user
-EMAIL_PASS=your_email_password
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_CLIENT_EMAIL=your_firebase_service_email
-FIREBASE_PRIVATE_KEY=your_firebase_private_key
-VAPID_PUBLIC=your_vapid_public_key
-VAPID_PRIVATE=your_vapid_private_key
-VAPID_SUBJECT=mailto:your@email.com
-OTP_EXPIRY_MINUTES=10
-TZ=Asia/Kolkata
-API_BASE_URL=https://your-backend-url
+...
+```
+
+### 4. Development
+
+**Frontend:**
+```sh
+npm run dev
+```
+
+**Backend:**
+```sh
+npm run dev
+```
+
+Access the frontend at `http://localhost:5173` and the backend API at `http://localhost:5000/api`
+
+---
+
+## 🏗️ Project Structure
+
+```
+ECE-RKV/
+├── backend/         # Express API & business logic
+├── public/          # Static assets
+├── src/             # Frontend source (React)
+├── .env             # Frontend env variables
+└── README.md
 ```
 
 ---
 
-## 📦 Installation & Running
+## 🔒 Security & Best Practices
 
-1. **Install dependencies**
-    ```sh
-    npm install
-    ```
-2. **Run database migrations**  
-   *(if applicable, describe your migration step here)*
-
-3. **Start in development mode**
-    ```sh
-    npm run dev
-    ```
-   Or in production:
-    ```sh
-    npm start
-    ```
+- All sensitive operations require JWT authentication.
+- CORS and allowed origins are configurable for production.
+- Passwords and secrets are **never** hardcoded.
 
 ---
 
-## 📚 API Overview
+## 🌐 Deployment
 
-### Authentication
-
-- `POST /api/auth/login` — User login (JWT issued)
-- `POST /api/auth/register` — Register user (admin/faculty)
-- `POST /api/auth/otp` — OTP verification (if enabled)
-- `POST /api/auth/refresh` — Refresh token
-
-### Students
-
-- `GET /api/students` — Fetch class roster (by year, semester, section, etc.)
-- `GET /api/students/:id` — Fetch student profile
-
-### Attendance
-
-- `GET /api/attendance/student/:id` — Attendance stats for a student
-- `POST /api/attendance/mark` — Mark attendance (faculty/admin)
-
-### Marks
-
-- `GET /api/marks/student/:id/summary` — Marks summary for a student
-- `POST /api/marks/record` — Record marks (faculty/admin)
-
-### Chat
-
-- **WebSocket endpoint:** `/api/chat`
-- Real-time messaging via Socket.io for authenticated users
-
-### Notifications
-
-- Web push and email notifications for important events
+- **Render:** Configure environment variables and deploy backend and frontend as needed. You can use Render, Vercel, Netlify, or any cloud provider that supports Node.js and static site hosting.
+- **Custom Domain:** Set up using your hosting provider’s domain configuration guide.
 
 ---
 
-## 🛡️ Security
+## 📓 API Overview
 
-- All endpoints (except authentication) require a valid JWT token.
-- CORS and allowed origins are enforced based on configuration.
-- Passwords and secrets are never stored in code.
+See [`backend/README.md`](./backend/README.md) for detailed API documentation, including endpoints for:
+
+- `/students` – Fetch class rosters
+- `/attendance/student/:id` – Attendance stats
+- `/marks/student/:id/summary` – Mark summaries
+- `/chat` – Real-time chat endpoints and WebSocket integration
+
+All endpoints require JWT and role validation for access control.
 
 ---
 
 ## 📝 License
 
-Distributed under the MIT License. See [`../LICENSE`](../LICENSE) for details.
+Distributed under the MIT License. See [`LICENSE`](./LICENSE) for details.
 
 ---
 
 ## 📫 Contact
 
-For questions or support, contact the maintainer at [AdiCoder33](https://github.com/AdiCoder33).
+- **Repository:** [GitHub](https://github.com/AdiCoder33/ECE-RKV)
+- **Maintainer:** [AdiCoder33](https://github.com/AdiCoder33)
 
 ---
+
+> _Transforming department management for the digital age. Experience seamless, secure, and smart education workflows with ECE-RKV._
